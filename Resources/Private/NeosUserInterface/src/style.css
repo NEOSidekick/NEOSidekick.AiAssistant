@@ -1,0 +1,44 @@
+
+.codeQ_appWrapper {
+    display: flex;
+    height: 100%;
+}
+
+.codeQ_appWrapper > :first-child {
+    flex-grow: 1;
+}
+
+.codeQ_sideBar {
+    background: #222;
+
+    z-index: 800;
+    border-left: 2px solid #141414;
+
+    display: flex;
+    flex-direction: column;
+}
+
+.codeQ_sideBar--open {
+    width: 25%;
+    min-width: 350px;
+}
+
+.codeQ_sideBar__title {
+    display: flex;
+    justify-content: space-between;
+}
+
+.codeQ_sideBar__title--headline {
+    padding: 0 40px 0 16px;
+    height: 40px;
+    line-height: 40px;
+    margin: 0;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.codeQ_sideBar__frame {
+    background: #141414;
+    border: 0px;
+    flex-grow: 1;
+}

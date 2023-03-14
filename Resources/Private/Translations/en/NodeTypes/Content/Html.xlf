@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="ui.label" xml:space="preserve">
+                <source>HTML</source>
+            </trans-unit>
+            <trans-unit id="groups.htmlcontent" xml:space="preserve">
+                <source>Settings</source>
+            </trans-unit>
+            <trans-unit id="properties.html" xml:space="preserve">
+                <source>HTML Content</source>
+            </trans-unit>
+            <trans-unit id="properties.html.codeEditor.buttonLabel" xml:space="preserve">
+                <source>Edit HTML source</source>
+            </trans-unit>
+            <trans-unit id="properties.assets" xml:space="preserve">
+                <source>Media assets used</source>
+            </trans-unit>
+            <trans-unit id="properties.assets.ui.help.message" xml:space="preserve">
+                <source>If you are use dynamic assets in your HTML, you can prevent those assets from being deleted by linking them here. This will have no effect on the HTML itself, the references here are never actually used. But it prevents that these media assets can be deleted.</source>
+            </trans-unit>
+            <trans-unit id="javaScriptRemovaleNotice" xml:space="preserve">
+                <source>JavaScript is blocked in the Backend, but will be rendered in the live website.</source>
+            </trans-unit>
+            <trans-unit id="htmlInvalidNotice" xml:space="preserve">
+                <source>The HTML was not valid and can not be displayed. %s Please fix the following issues:</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

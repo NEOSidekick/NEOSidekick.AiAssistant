@@ -1,0 +1,25 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+indent_style = space
+indent_size = 4
+
+[*.{js, mjs}]
+max_line_length = 100
+
+[{*.{yaml,yml,sh,jscsrc},package.json, .*rc}]
+indent_size = 2
+
+[*.{scss,sass,css,pcss,styl,less}]
+max_line_length = 300
+indent_size = 2
+
+# Markdown uses trailing whitespace for line breaks
+[*.{note,md,edit,read}]
+max_line_length = 200
+trim_trailing_whitespace = false
+indent_size = 2

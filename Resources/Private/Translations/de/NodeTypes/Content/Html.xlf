@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext" target-language="de">
+        <body>
+            <trans-unit id="ui.label" xml:space="preserve">
+                <source>HTML</source>
+                <target xml:lang="de" state="translated">HTML</target>
+            </trans-unit>
+            <trans-unit id="groups.htmlcontent" xml:space="preserve">
+                <source>Settings</source>
+                <target xml:lang="de" state="translated">Einstellungen</target>
+            </trans-unit>
+            <trans-unit id="properties.html" xml:space="preserve">
+                <source>HTML Content</source>
+                <target xml:lang="de" state="translated">HTML-Quellcode</target>
+            </trans-unit>
+            <trans-unit id="properties.html.codeEditor.buttonLabel" xml:space="preserve">
+                <source>Edit HTML source</source>
+                <target xml:lang="de" state="translated">HTML-Quellcode bearbeiten</target>
+            </trans-unit>
+            <trans-unit id="properties.assets" xml:space="preserve">
+                <source>Media assets used</source>
+                <target xml:lang="de" state="translated">Verwendete Medien-Dateien</target>
+            </trans-unit>
+            <trans-unit id="properties.assets.ui.help.message" xml:space="preserve">
+                <source>You can link any used media assets. This will have no effect on the HTML itself, but it prevents that these media assets can be deleted and shows the correct usage information in the media browser.</source>
+                <target xml:lang="de" state="translated">Du kannst beliebige Medieninhalte verlinken. Dies hat keine Auswirkung auf das HTML, es verhindert jedoch, dass diese Medienelemente gelöscht werden können und zeigt die korrekten Nutzungsinformationen im Medienbrowser an.</target>
+            </trans-unit>
+            <trans-unit id="javaScriptRemovaleNotice" xml:space="preserve">
+                <source>JavaScript is blocked in the Backend, but will be rendered in the live website.</source>
+                <target xml:lang="de" state="translated">JavaScript wird hier in der Administration blockiert, auf der Live-Webseite wird es ausgeführt.</target>
+            </trans-unit>
+            <trans-unit id="htmlInvalidNotice" xml:space="preserve">
+                <source>The HTML was not valid and can not be displayed. %s Please fix the following issues:</source>
+                <target xml:lang="de" state="translated">Der HTML-Code war ungültig und kann nicht angezeigt werden. %s Bitte beheben Sie die folgende Probleme:</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

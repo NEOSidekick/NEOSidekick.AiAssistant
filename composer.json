@@ -1,0 +1,42 @@
+{
+    "name": "codeq/writingssistant",
+    "description": "Use the power of ChatGPT to assist you in writing content",
+    "type": "neos-plugin",
+    "license": "GPL-3.0-or-later",
+    "keywords": [
+        "flow",
+        "neos",
+        "fusion",
+        "html"
+    ],
+    "require": {
+        "neos/neos": "~5.0 || ~7.0 || ~8.0 || dev-master"
+    },
+    "authors": [
+        {
+            "name": "Roland Schütz",
+            "email": "rs@codeq.at",
+            "homepage": "https://codeq.at",
+            "role": "Developer"
+        }
+    ],
+    "archive": {
+        "exclude": [
+            ".editorconfig",
+            ".gitattributes",
+            ".github",
+            ".gitignore"
+        ]
+    },
+    "autoload": {
+        "psr-4": {
+            "CodeQ\\WritingAssistant\\": "Classes"
+        }
+    },
+    "extra": {
+        "neos": {
+            "package-key": "CodeQ.WritingAssistant"
+        },
+        "applied-flow-migrations": []
+    }
+}

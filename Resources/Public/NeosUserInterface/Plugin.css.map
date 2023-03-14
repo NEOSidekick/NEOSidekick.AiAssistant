@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../Private/NeosUserInterface/src/style.css"],
+  "sourcesContent": ["\n.codeQ_appWrapper {\n    display: flex;\n    height: 100%;\n}\n\n.codeQ_appWrapper > :first-child {\n    flex-grow: 1;\n}\n\n.codeQ_sideBar {\n    background: #222;\n\n    z-index: 800;\n    border-left: 2px solid #141414;\n\n    display: flex;\n    flex-direction: column;\n}\n\n.codeQ_sideBar--open {\n    width: 25%;\n    min-width: 350px;\n}\n\n.codeQ_sideBar__title {\n    display: flex;\n    justify-content: space-between;\n}\n\n.codeQ_sideBar__title--headline {\n    padding: 0 40px 0 16px;\n    height: 40px;\n    line-height: 40px;\n    margin: 0;\n    font-size: 14px;\n    font-weight: bold;\n}\n\n.codeQ_sideBar__frame {\n    background: #141414;\n    border: 0px;\n    flex-grow: 1;\n    display: none;\n}\n\n.codeQ_sideBar--open .codeQ_sideBar__frame {\n    display: block;\n}\n"],
+  "mappings": "AACA,kBACI,aACA,YAGJ,+BACI,YAGJ,eACI,gBAEA,YACA,8BAEA,aACA,sBAGJ,qBACI,UACA,gBAGJ,sBACI,aACA,8BAGJ,gCA9BA,sBAgCI,YACA,iBAjCJ,SAmCI,eACA,gBAGJ,sBACI,mBACA,WACA,YACA,aAGJ,2CACI",
+  "names": []
+}

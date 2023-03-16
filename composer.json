@@ -1,5 +1,5 @@
 {
-    "name": "codeq/writingssistant",
+    "name": "codeq/writingassistant",
     "description": "Use the power of ChatGPT to assist you in writing content",
     "type": "neos-plugin",
     "license": "GPL-3.0-or-later",

@@ -18,15 +18,15 @@ manifest("CodeQ.WritingAssistant", {}, (globalRegistry, { store, frontendConfigu
 		const activeContentDimensions = useSelector(selectors.CR.ContentDimensions.active);
 		const interfaceLanguage = useSelector((state) => state?.user?.preferences?.interfaceLanguage);
 
-		return <div className="codeQ_appWrapper">
+        return <div className={`codeQ_appWrapper ${isOpen ? "codeQ_appWrapper--sidebar-open" : ""}`}>
 			<App {...props} />
-			<div className={`codeQ_sideBar ${isOpen ? "codeQ_sideBar--open" : ""}`}>
+            <div className="codeQ_sideBar">
 				<div className="codeQ_sideBar__title">
-					{isOpen && <Headline className="codeQ_sideBar__title--headline">AI Sidekick</Headline>}
+					<Headline className={`codeQ_sideBar__title-headline ${isOpen ? "codeQ_sideBar__title-headline--open" : ""}`}>AI Sidekick</Headline>
 					<IconButton icon={isOpen ? "chevron-circle-right" : "chevron-circle-left"} onClick={() => setOpen(!isOpen)} />
 				</div>
-				<iframe className="codeQ_sideBar__frame" src={"https://docs.codeq.at/chat/?contentLanguage=" + (activeContentDimensions.language ? activeContentDimensions.language[0] : "") + "&interfaceLanguage=" + interfaceLanguage} />
-			</div>
+                <iframe className={`codeQ_sideBar__frame ${isOpen ? "codeQ_sideBar__frame--open" : ""}`} src={"https://docs.codeq.at/chat/?contentLanguage=" + (activeContentDimensions.language ? activeContentDimensions.language[0] : "") + "&interfaceLanguage=" + interfaceLanguage} />
+            </div>
 		</div>
 	}
 	containerRegistry.set('App', WrappedApp);

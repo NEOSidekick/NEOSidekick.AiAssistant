@@ -1,12 +1,15 @@
-# Writing Assistant for Neos CMS
+# [NEOSidekick](https://neosidekick.com/)
 
+## Revolutionize how you write copy
+
+AI is the game changer in content marketing. Use the innovative writing assistant now, directly in your NEOS CMS!
 
 ## Installation
 
-CodeQ.WritingAssistant is available via packagist. `"codeq/writingassistant" : "~1.0"` to the require section of the composer.json or run:
+`CodeQ.AiSidekick` is available via packagist. `"codeq/ai-sidekick" : "~1.0"` to the require section of the composer.json or run:
 
 ```bash
-composer require codeq/writingassistant
+composer require codeq/ai-sidekick
 ```
 
 We use semantic-versioning so every breaking change will increase the major-version number.

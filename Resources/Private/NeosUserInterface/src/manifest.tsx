@@ -4,11 +4,13 @@ import manifest from "@neos-project/neos-ui-extensibility";
 import { IconButton, Headline } from "@neos-project/react-ui-components";
 // @ts-ignore
 import {selectors} from '@neos-project/neos-ui-redux-store';
+// @ts-ignore
 import * as React from 'react';
+// @ts-ignore
 import { useSelector } from 'react-redux';
 import "./style.css";
 
-manifest("CodeQ.WritingAssistant", {}, (globalRegistry, { store, frontendConfiguration }) => {
+manifest("CodeQ.AiSidekick", {}, (globalRegistry, { store, frontendConfiguration }) => {
 	const containerRegistry = globalRegistry.get('containers');
 	const App = containerRegistry.get('App');
 
@@ -25,7 +27,7 @@ manifest("CodeQ.WritingAssistant", {}, (globalRegistry, { store, frontendConfigu
 					<Headline className={`codeQ_sideBar__title-headline ${isOpen ? "codeQ_sideBar__title-headline--open" : ""}`}>AI Sidekick</Headline>
 					<IconButton icon={isOpen ? "chevron-circle-right" : "chevron-circle-left"} onClick={() => setOpen(!isOpen)} />
 				</div>
-                <iframe className={`codeQ_sideBar__frame ${isOpen ? "codeQ_sideBar__frame--open" : ""}`} src={"https://docs.codeq.at/chat/?contentLanguage=" + (activeContentDimensions.language ? activeContentDimensions.language[0] : "") + "&interfaceLanguage=" + interfaceLanguage} />
+                <iframe className={`codeQ_sideBar__frame ${isOpen ? "codeQ_sideBar__frame--open" : ""}`} src={"https://api.neosidekick.com/chat/?contentLanguage=" + (activeContentDimensions.language ? activeContentDimensions.language[0] : "") + "&interfaceLanguage=" + interfaceLanguage} />
             </div>
 		</div>
 	}

@@ -3,18 +3,8 @@ Neos:
     Ui:
       resources:
         javascript:
-          'CodeQ.WritingAssistant':
-            resource: resource://CodeQ.WritingAssistant/Public/NeosUserInterface/Plugin.js
+          'CodeQ.AiSidekick':
+            resource: resource://CodeQ.AiSidekick/Public/NeosUserInterface/Plugin.js
         stylesheets:
-          'CodeQ.WritingAssistant':
-            resource: resource://CodeQ.WritingAssistant/Public/NeosUserInterface/Plugin.css
-
-    modules:
-      management:
-        submodules:
-          publications:
-            label: 'Chat'
-            controller: 'CodeQ\WritingAssistant\Controller\AssistantBackendModuleController'
-            description: 'i18n'
-            icon: 'icon-star'
-            mainStylesheet: 'Lite'
+          'CodeQ.AiSidekick':
+            resource: resource://CodeQ.AiSidekick/Public/NeosUserInterface/Plugin.css

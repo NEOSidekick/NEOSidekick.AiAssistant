@@ -2,14 +2,15 @@
 
 ## Revolutionize how you write copy
 
-AI is the game changer in content marketing. Use the innovative writing assistant now, directly in your NEOS CMS!
+AI is the game changer in content marketing. 
+Use the innovative writing assistant now, directly in your Neos CMS!
 
 ## Installation
 
-`CodeQ.AiSidekick` is available via packagist. `"codeq/ai-sidekick" : "~1.0"` to the require section of the composer.json or run:
+`NEOSidekick.AiAssistant` is available via packagist. `"neosidekick/ai-assistant" : "~1.0"` to the require section of the composer.json or run:
 
 ```bash
-composer require codeq/ai-sidekick
+composer require neosidekick/ai-assistant
 ```
 
 We use semantic-versioning so every breaking change will increase the major-version number.

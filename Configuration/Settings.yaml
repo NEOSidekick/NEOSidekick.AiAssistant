@@ -3,8 +3,8 @@ Neos:
     Ui:
       resources:
         javascript:
-          'CodeQ.AiSidekick':
-            resource: resource://CodeQ.AiSidekick/Public/NeosUserInterface/Plugin.js
+          'NEOSidekick.AiAssistant':
+            resource: resource://NEOSidekick.AiAssistant/Public/NeosUserInterface/Plugin.js
         stylesheets:
-          'CodeQ.AiSidekick':
-            resource: resource://CodeQ.AiSidekick/Public/NeosUserInterface/Plugin.css
+          'NEOSidekick.AiAssistant':
+            resource: resource://NEOSidekick.AiAssistant/Public/NeosUserInterface/Plugin.css

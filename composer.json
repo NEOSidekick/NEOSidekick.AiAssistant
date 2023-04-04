@@ -1,5 +1,5 @@
 {
-    "name": "codeq/ai-sidekick",
+    "name": "neosidekick/ai-assistant",
     "description": "Use the power of ChatGPT to assist you in writing content",
     "type": "neos-plugin",
     "license": "GPL-3.0-or-later",
@@ -16,7 +16,7 @@
         {
             "name": "Roland Schütz",
             "email": "rs@codeq.at",
-            "homepage": "https://codeq.at",
+            "homepage": "https://neosidekick.com/",
             "role": "Developer"
         }
     ],
@@ -30,12 +30,12 @@
     },
     "autoload": {
         "psr-4": {
-            "CodeQ\\AiSidekick\\": "Classes"
+            "NEOSidekick\\AiAssistant\\": "Classes"
         }
     },
     "extra": {
         "neos": {
-            "package-key": "CodeQ.AiSidekick"
+            "package-key": "NEOSidekick.AiAssistant"
         },
         "applied-flow-migrations": []
     }

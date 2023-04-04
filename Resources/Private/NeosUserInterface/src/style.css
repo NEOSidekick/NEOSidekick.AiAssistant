@@ -9,6 +9,18 @@
   grid-template-columns: auto 402px;
 }
 
+/* compability witn Neos 7 start */
+.neosidekick_appWrapper--sidebar-open div[class*="style__primaryToolbar"] {
+  width: calc(100% - 402px);
+}
+div[class*="style__rightSideBar"] {
+  right: 40px;
+}
+.neosidekick_appWrapper--sidebar-open div[class*="style__rightSideBar"] {
+  right: 402px;
+}
+/* compability witn Neos 7 end */
+
 .neosidekick_sideBar {
   display: flex;
   flex-direction: column;

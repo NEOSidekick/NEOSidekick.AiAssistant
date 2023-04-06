@@ -1,13 +1,17 @@
 {
     "name": "neosidekick/ai-assistant",
-    "description": "Use the power of ChatGPT to assist you in writing content",
+    "description": "Use the power of GPT-4 to assist you in writing content",
     "type": "neos-plugin",
     "license": "GPL-3.0-or-later",
     "keywords": [
         "flow",
         "neos",
-        "fusion",
-        "html"
+        "openai",
+        "gpt",
+        "gpt-4".
+        "chatgpt",
+        "ai",
+        "writing"
     ],
     "require": {
         "neos/neos": "~5.0 || ~7.0 || ~8.0 || dev-master"

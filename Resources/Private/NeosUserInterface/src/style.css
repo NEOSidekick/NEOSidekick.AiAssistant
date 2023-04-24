@@ -9,6 +9,10 @@
   grid-template-columns: auto 402px;
 }
 
+.neosidekick_appWrapper--sidebar-fullscreen {
+  grid-template-columns: 0 100%;
+}
+
 /* compability witn Neos 7 start */
 .neosidekick_appWrapper--sidebar-open div[class*="style__primaryToolbar"] {
   width: calc(100% - 402px);

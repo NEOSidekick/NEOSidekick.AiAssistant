@@ -1,12 +1,29 @@
 .neosidekick_appWrapper {
+  --neosidekick-sidebar-width: 40px;
   display: grid;
   height: 100%;
-  grid-template-columns: auto 40px;
+  grid-template-columns: auto var(--neosidekick-sidebar-width);
   grid-template-rows: 100%;
 }
 
 .neosidekick_appWrapper--sidebar-open {
-  grid-template-columns: auto 402px;
+  --neosidekick-sidebar-width: 402px;
+}
+
+@media screen and (max-width: 1480px) {
+  .neosidekick_appWrapper--sidebar-open {
+    --neosidekick-sidebar-width: 302px;
+  }
+}
+
+@media screen and (max-width: 1375px) {
+  .neosidekick_appWrapper--sidebar-open {
+    grid-template-columns: 0 100%;
+  }
+  .neosidekick_sideBar__title > div > button:first-child:not(:last-child) {
+    /* hide fullscreen option on fullscreen-only screen */
+    display: none;
+  }
 }
 
 .neosidekick_appWrapper--sidebar-fullscreen {
@@ -14,14 +31,11 @@
 }
 
 /* compability witn Neos 7 start */
-.neosidekick_appWrapper--sidebar-open div[class*="style__primaryToolbar"] {
-  width: calc(100% - 402px);
+div[class*="style__primaryToolbar___"] {
+  width: calc(100% - var(--neosidekick-sidebar-width));
 }
 div[class*="style__rightSideBar"] {
-  right: 40px;
-}
-.neosidekick_appWrapper--sidebar-open div[class*="style__rightSideBar"] {
-  right: 402px;
+  right: var(--neosidekick-sidebar-width);
 }
 /* compability witn Neos 7 end */
 

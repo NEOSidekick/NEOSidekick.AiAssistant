@@ -14,3 +14,17 @@ composer require neosidekick/ai-assistant
 ```
 
 We use semantic-versioning so every breaking change will increase the major-version number.
+
+## Configuration
+
+To have access to Sidekick, you need to define your api key in the configuration:
+
+```yaml
+Neos:
+  Neos:
+    Ui:
+      frontendConfiguration:
+        NEOSidekick:
+          AiAssistant:
+            apikey: 'your-api-key-here'
+```

@@ -8,3 +8,7 @@ Neos:
         stylesheets:
           'NEOSidekick.AiAssistant':
             resource: resource://NEOSidekick.AiAssistant/Public/NeosUserInterface/Plugin.css
+      frontendConfiguration:
+        NEOSidekick:
+          AiAssistant:
+            apikey: ''

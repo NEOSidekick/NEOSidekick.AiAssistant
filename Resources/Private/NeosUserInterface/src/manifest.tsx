@@ -10,9 +10,11 @@ import * as React from 'react';
 import { useSelector } from 'react-redux';
 import "./style.css";
 
-manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { store, frontendConfiguration }) => {
+manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { frontendConfiguration }) => {
 	const containerRegistry = globalRegistry.get('containers');
 	const App = containerRegistry.get('App');
+
+    const apikey = frontendConfiguration?.NEOSidekick?.AiAssistant?.apikey || ''
 
 	const WrappedApp = (props: Record<string, unknown>) => {
         const state = localStorage.getItem('NEOSidekick') ? JSON.parse(localStorage.getItem('NEOSidekick')) : { open: true, fullscreen: false };
@@ -54,7 +56,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { store, frontendConfig
                         {toggleButton(isOpen, isFullscreen, () => setOpenAndPersistState(!isOpen))}
                     </div>
 				</div>
-                <iframe className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={"https://api.neosidekick.com/chat/?contentLanguage=" + (activeContentDimensions.language ? activeContentDimensions.language[0] : "") + "&interfaceLanguage=" + interfaceLanguage} />
+                <iframe className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={"https://api.neosidekick.com/chat/?contentLanguage=" + (activeContentDimensions.language ? activeContentDimensions.language[0] : "") + "&interfaceLanguage=" + interfaceLanguage + "&apikey=" + apikey} />
             </div>
 		</div>
 	}

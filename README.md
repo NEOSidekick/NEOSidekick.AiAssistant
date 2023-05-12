@@ -20,11 +20,31 @@ We use semantic-versioning so every breaking change will increase the major-vers
 To have access to Sidekick, you need to define your api key in the configuration:
 
 ```yaml
-Neos:
-  Neos:
-    Ui:
-      frontendConfiguration:
-        NEOSidekick:
-          AiAssistant:
-            apikey: 'your-api-key-here'
+NEOSidekick:
+  AiAssistant:
+    apikey: 'your-api-key-here'
 ```
+
+# Permissions
+
+By default, every editor can use the assistant.
+However, if you want to restrict the access to certain roles,
+you can copy this configuration into your site package.
+It will give you an additional role `AiAssistantEditor`.
+
+```yaml
+roles:
+  'Neos.Neos:AbstractEditor':
+    privileges:
+      - privilegeTarget: NEOSidekick.AiAssistant:CanUse
+        permission: ABSTAIN
+
+  'NEOSidekick.AiAssistant:AiAssistantEditor':
+    description: Grants access to the NEOSidekick AiAssistant sidebar
+    privileges:
+      - privilegeTarget: NEOSidekick.AiAssistant:CanUse
+        permission: GRANT
+```
+
+Of course, you can also define the privilege for any
+other role that you are using, for example `Neos.Neos:Administrator`.

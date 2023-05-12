@@ -1,0 +1,11 @@
+privilegeTargets:
+  'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
+    'NEOSidekick.AiAssistant:CanUse':
+      label: 'Can use AiAssistant'
+      matcher: 'method(NEOSidekick\AiAssistant\Controller\ServiceController->configurationAction())'
+
+roles:
+  'Neos.Neos:AbstractEditor':
+    privileges:
+      - privilegeTarget: NEOSidekick.AiAssistant:CanUse
+        permission: GRANT

@@ -31,10 +31,10 @@
 }
 
 /* compability witn Neos 7 start */
-div[class*="style__primaryToolbar___"] {
+.neosidekick_appWrapper div[class*="style__primaryToolbar___"] {
   width: calc(100% - var(--neosidekick-sidebar-width));
 }
-div[class*="style__rightSideBar"] {
+.neosidekick_appWrapper div[class*="style__rightSideBar"] {
   right: var(--neosidekick-sidebar-width);
 }
 /* compability witn Neos 7 end */

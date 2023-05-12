@@ -8,7 +8,21 @@ Neos:
         stylesheets:
           'NEOSidekick.AiAssistant':
             resource: resource://NEOSidekick.AiAssistant/Public/NeosUserInterface/Plugin.css
-      frontendConfiguration:
-        NEOSidekick:
-          AiAssistant:
-            apikey: ''
+  Flow:
+    mvc:
+      routes:
+        'NEOSidekick.AiAssistant':
+          position: 'start'
+    security:
+      authentication:
+        providers:
+          'Neos.Neos:Backend':
+            requestPatterns:
+              'NEOSidekick.AiAssistant':
+                pattern: 'ControllerObjectName'
+                patternOptions:
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\.*'
+
+NEOSidekick:
+  AiAssistant:
+    apikey: ''

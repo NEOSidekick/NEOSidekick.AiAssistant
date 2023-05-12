@@ -10,12 +10,36 @@ import * as React from 'react';
 import { useSelector } from 'react-redux';
 import "./style.css";
 
+
 manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { frontendConfiguration }) => {
-	const containerRegistry = globalRegistry.get('containers');
-	const App = containerRegistry.get('App');
+    let configuration = null;
+    // Call the configuration endpoint to get the plugin configuration
+    // and to check whether the user has permission to use AiAsisstant
+    // If not, the endpoint will return a 403 status
+    const pingRequest = new XMLHttpRequest();
+    pingRequest.open('GET', '/neosidekick/aiassistant/configuration', false);
+    pingRequest.withCredentials = true;
+    pingRequest.addEventListener('load', (event) => {
+        const response = event.target;
+        // @ts-ignore
+        if (response?.status >= 200 && response?.status <= 299) {
+            // @ts-ignore
+            configuration = JSON.parse(response.responseText)
+        }
+    })
+    pingRequest.send();
 
-    const apikey = frontendConfiguration?.NEOSidekick?.AiAssistant?.apikey || ''
+    if (configuration === null) {
+        return
+    }
 
+    const apikey = configuration?.apikey || ''
+    if (!apikey) {
+        return
+    }
+
+    const containerRegistry = globalRegistry.get('containers');
+    const App = containerRegistry.get('App');
 	const WrappedApp = (props: Record<string, unknown>) => {
         const state = localStorage.getItem('NEOSidekick') ? JSON.parse(localStorage.getItem('NEOSidekick')) : { open: true, fullscreen: false };
 		const [isOpen, setOpen] = React.useState(state?.open);

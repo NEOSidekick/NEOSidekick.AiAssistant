@@ -69,6 +69,19 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { frontendConfiguration
 
 		const activeContentDimensions = useSelector(selectors.CR.ContentDimensions.active);
 		const interfaceLanguage = useSelector((state) => state?.user?.preferences?.interfaceLanguage);
+        const iframeSrc = new URL('https://api.neosidekick.com/chat/');
+        iframeSrc.searchParams.append('contentLanguage', activeContentDimensions.language ? activeContentDimensions.language[0] : "");
+        iframeSrc.searchParams.append('interfaceLanguage', interfaceLanguage);
+        iframeSrc.searchParams.append('userId', configuration.userId);
+        iframeSrc.searchParams.append('plattform', 'neos');
+        iframeSrc.searchParams.append('domain', configuration.domain);
+        iframeSrc.searchParams.append('siteName', configuration.siteName)
+        if (configuration?.referral) {
+            iframeSrc.searchParams.append('referral', configuration?.referral);
+        }
+        if (configuration?.apikey) {
+            iframeSrc.searchParams.append('apikey', configuration?.apikey);
+        }
 
         return <div className={`neosidekick_appWrapper ${isOpen ? "neosidekick_appWrapper--sidebar-open" : ""}  ${isFullscreen ? "neosidekick_appWrapper--sidebar-fullscreen" : ""}`}>
 			<App {...props} />
@@ -80,7 +93,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { frontendConfiguration
                         {toggleButton(isOpen, isFullscreen, () => setOpenAndPersistState(!isOpen))}
                     </div>
 				</div>
-                <iframe className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={"https://api.neosidekick.com/chat/?contentLanguage=" + (activeContentDimensions.language ? activeContentDimensions.language[0] : "") + "&interfaceLanguage=" + interfaceLanguage + "&apikey=" + apikey} />
+                <iframe className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={iframeSrc.toString()} />
             </div>
 		</div>
 	}

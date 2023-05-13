@@ -33,11 +33,6 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { frontendConfiguration
         return
     }
 
-    const apikey = configuration?.apikey || ''
-    if (!apikey) {
-        return
-    }
-
     const containerRegistry = globalRegistry.get('containers');
     const App = containerRegistry.get('App');
 	const WrappedApp = (props: Record<string, unknown>) => {

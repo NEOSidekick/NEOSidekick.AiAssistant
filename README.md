@@ -17,7 +17,8 @@ We use semantic-versioning so every breaking change will increase the major-vers
 
 ## Configuration
 
-To have access to Sidekick, you need to define your api key in the configuration:
+You can use the free version, or [get more features with a license](https://www.neosidekick.com/en/pricing).
+To configure your license key, add the following to your Settings.yaml:
 
 ```yaml
 NEOSidekick:

@@ -88,7 +88,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { frontendConfiguration
                         {toggleButton(isOpen, isFullscreen, () => setOpenAndPersistState(!isOpen))}
                     </div>
 				</div>
-                <iframe className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={iframeSrc.toString()} />
+                <iframe className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={iframeSrc.toString()} allow="clipboard-write" />
             </div>
 		</div>
 	}

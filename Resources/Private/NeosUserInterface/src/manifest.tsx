@@ -99,8 +99,12 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
 	}
 	containerRegistry.set('App', WrappedApp);
 
+    let requiredChangedEvent = false
     const watchDocumentNodeChange = function * () {
-        yield takeLatest([actionTypes.UI.ContentCanvas.SET_SRC, actionTypes.UI.ContentCanvas.RELOAD, actionTypes.CR.Nodes.MERGE], function * () {
+        yield takeLatest([actionTypes.UI.ContentCanvas.SET_SRC, actionTypes.UI.ContentCanvas.RELOAD, actionTypes.CR.Nodes.MERGE], function * (action) {
+            if (action.type === actionTypes.UI.ContentCanvas.SET_SRC) {
+                requiredChangedEvent = true;
+            }
             yield delay(500)
 
             const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
@@ -128,7 +132,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
 
             const message = {
                 version: '1.0',
-                eventName: 'page-changed', /* or page-updated */
+                eventName: requiredChangedEvent ? 'page-changed' : 'page-updated',
                 data: {
                     'url': previewUrl,
                     'title': guestFrameDocument?.title, /* page title */
@@ -138,6 +142,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
             }
             console.log(message)
             assistantFrame.contentWindow.postMessage(message, '*');
+            requiredChangedEvent = false;
         });
     }
 

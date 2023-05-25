@@ -3,15 +3,20 @@ import manifest from "@neos-project/neos-ui-extensibility";
 // @ts-ignore
 import { IconButton, Headline } from "@neos-project/react-ui-components";
 // @ts-ignore
-import {selectors} from '@neos-project/neos-ui-redux-store';
+import { actionTypes, selectors } from '@neos-project/neos-ui-redux-store';
 // @ts-ignore
 import * as React from 'react';
 // @ts-ignore
 import { useSelector } from 'react-redux';
+// @ts-ignore
+import { takeLatest } from 'redux-saga/effects';
 import "./style.css";
 
+export default function delay(timeInMilliseconds: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, timeInMilliseconds));
+}
 
-manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { frontendConfiguration }) => {
+manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
     let configuration = null;
     // Call the configuration endpoint to get the plugin configuration
     // and to check whether the user has permission to use AiAsisstant
@@ -93,4 +98,49 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, { frontendConfiguration
 		</div>
 	}
 	containerRegistry.set('App', WrappedApp);
+
+    const watchDocumentNodeChange = function * () {
+        yield takeLatest([actionTypes.UI.ContentCanvas.SET_SRC, actionTypes.UI.ContentCanvas.RELOAD, actionTypes.CR.Nodes.MERGE], function * () {
+            yield delay(500)
+
+            const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
+            const state = context.store.getState();
+
+            const guestFrame = document.getElementsByName('neos-content-main')[0];
+            const guestFrameDocument = guestFrame?.contentDocument;
+
+            const assistantFrame = document.getElementsByClassName('neosidekick_sideBar__frame')[0];
+
+            const previewUrl = state?.ui?.contentCanvas?.previewUrl
+
+            const currentDocumentNodePath = state?.cr?.nodes?.documentNode
+            const relevantNodes = Object.values(state?.cr?.nodes?.byContextPath || {}).filter(node => {
+                const documentRole = nodeTypesRegistry.getRole('document');
+                if (!documentRole) {
+                    throw new Error('Document role is not loaded!');
+                }
+                const documentSubNodeTypes = nodeTypesRegistry.getSubTypesOf(documentRole);
+                // only get nodes that are children of the current document node
+                return currentDocumentNodePath &&
+                    node.contextPath.indexOf(currentDocumentNodePath.split('@')[0]) === 0 &&
+                    (node.contextPath === currentDocumentNodePath || !documentSubNodeTypes.includes(node.nodeType))
+            })
+
+            const message = {
+                version: '1.0',
+                eventName: 'page-changed', /* or page-updated */
+                data: {
+                    'url': previewUrl,
+                    'title': guestFrameDocument?.title, /* page title */
+                    'content': guestFrameDocument?.body?.innerHTML,
+                    'structuredContent': relevantNodes
+                },
+            }
+            console.log(message)
+            assistantFrame.contentWindow.postMessage(message, '*');
+        });
+    }
+
+    const sagasRegistry = globalRegistry.get('sagas')
+    sagasRegistry.set('NEOSidekick.AiAssistant/debug', {saga: watchDocumentNodeChange})
 });

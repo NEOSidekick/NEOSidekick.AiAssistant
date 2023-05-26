@@ -135,7 +135,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
                 eventName: requiredChangedEvent ? 'page-changed' : 'page-updated',
                 data: {
                     'url': previewUrl,
-                    'title': guestFrameDocument?.title, /* page title */
+                    'title': state?.cr?.nodes?.byContextPath[currentDocumentNodePath]?.properties?.title || guestFrameDocument?.title,
                     'content': guestFrameDocument?.body?.innerHTML,
                     'structuredContent': relevantNodes
                 },

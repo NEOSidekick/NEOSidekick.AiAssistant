@@ -93,11 +93,26 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
                         {toggleButton(isOpen, isFullscreen, () => setOpenAndPersistState(!isOpen))}
                     </div>
 				</div>
-                <iframe className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={iframeSrc.toString()} allow="clipboard-write" />
+                <iframe id="neosidekickAssistant" className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={iframeSrc.toString()} allow="clipboard-write" onLoad={(e) => e.target.dataset.loaded = true} />
             </div>
 		</div>
 	}
 	containerRegistry.set('App', WrappedApp);
+
+    const sendMessageToIframe = (message) => {
+        const checkLoadedStatusAndSendMessage = setInterval(() => {
+            const assistantFrame = document.getElementById('neosidekickAssistant')
+            const isLoaded = assistantFrame.dataset.hasOwnProperty('loaded')
+            if (isLoaded) {
+                console.log('loaded, sending message to frame', message)
+                assistantFrame.contentWindow.postMessage(message, '*')
+                clearInterval(checkLoadedStatusAndSendMessage)
+            } else {
+                console.log('not loaded, waiting...')
+                return
+            }
+        }, 250)
+    }
 
     let requiredChangedEvent = false
     const watchDocumentNodeChange = function * () {
@@ -112,8 +127,6 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
 
             const guestFrame = document.getElementsByName('neos-content-main')[0];
             const guestFrameDocument = guestFrame?.contentDocument;
-
-            const assistantFrame = document.getElementsByClassName('neosidekick_sideBar__frame')[0];
 
             const previewUrl = state?.ui?.contentCanvas?.previewUrl
 
@@ -130,7 +143,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
                     (node.contextPath === currentDocumentNodePath || !documentSubNodeTypes.includes(node.nodeType))
             })
 
-            const message = {
+            sendMessageToIframe({
                 version: '1.0',
                 eventName: requiredChangedEvent ? 'page-changed' : 'page-updated',
                 data: {
@@ -139,9 +152,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
                     'content': guestFrameDocument?.body?.innerHTML,
                     'structuredContent': relevantNodes
                 },
-            }
-            console.log(message)
-            assistantFrame.contentWindow.postMessage(message, '*');
+            })
             requiredChangedEvent = false;
         });
     }

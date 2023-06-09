@@ -67,7 +67,7 @@ class ServiceController extends ActionController
         $configuration = [
             ...$this->settings,
             'userId' => sha1($this->persistenceManager->getIdentifierByObject($this->userService->getBackendUser())),
-            'siteName' => $currentSite?->getName(),
+            'siteName' => $currentSite ? $currentSite->getName() : '',
             'domain' => $currentDomain ? $currentDomain->getHostname() : $_SERVER['SERVER_NAME']
         ];
         $this->view->assign('value', $configuration);

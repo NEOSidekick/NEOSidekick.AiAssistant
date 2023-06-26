@@ -13,28 +13,13 @@ import { takeLatest } from 'redux-saga/effects';
 import "./style.css";
 
 export default function delay(timeInMilliseconds: number): Promise<void> {
+    // @ts-ignore
     return new Promise(resolve => setTimeout(resolve, timeInMilliseconds));
 }
 
-manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
-    let configuration = null;
-    // Call the configuration endpoint to get the plugin configuration
-    // and to check whether the user has permission to use AiAsisstant
-    // If not, the endpoint will return a 403 status
-    const pingRequest = new XMLHttpRequest();
-    pingRequest.open('GET', '/neosidekick/aiassistant/configuration', false);
-    pingRequest.withCredentials = true;
-    pingRequest.addEventListener('load', (event) => {
-        const response = event.target;
-        // @ts-ignore
-        if (response?.status >= 200 && response?.status <= 299) {
-            // @ts-ignore
-            configuration = JSON.parse(response.responseText)
-        }
-    })
-    pingRequest.send();
-
-    if (configuration === null) {
+manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfiguration}) => {
+    let configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
+    if (configuration === null || configuration.enabled === false) {
         return
     }
 
@@ -69,7 +54,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
 
 		const activeContentDimensions = useSelector(selectors.CR.ContentDimensions.active);
 		const interfaceLanguage = useSelector((state) => state?.user?.preferences?.interfaceLanguage);
-        const iframeSrc = new URL('https://api.neosidekick.com/chat/');
+        const iframeSrc = new URL(`${configuration.apiDomain}/chat/`);
         iframeSrc.searchParams.append('contentLanguage', activeContentDimensions.language ? activeContentDimensions.language[0] : "");
         iframeSrc.searchParams.append('interfaceLanguage', interfaceLanguage);
         iframeSrc.searchParams.append('userId', configuration.userId);
@@ -79,8 +64,8 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
         if (configuration?.referral) {
             iframeSrc.searchParams.append('referral', configuration?.referral);
         }
-        if (configuration?.apikey) {
-            iframeSrc.searchParams.append('apikey', configuration?.apikey);
+        if (configuration?.apiKey) {
+            iframeSrc.searchParams.append('apikey', configuration?.apiKey);
         }
 
         return <div className={`neosidekick_appWrapper ${isOpen ? "neosidekick_appWrapper--sidebar-open" : ""}  ${isFullscreen ? "neosidekick_appWrapper--sidebar-fullscreen" : ""}`}>
@@ -105,6 +90,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
             const isLoaded = assistantFrame.dataset.hasOwnProperty('loaded')
             if (isLoaded) {
                 console.log('loaded, sending message to frame', message)
+                // @ts-ignore
                 assistantFrame.contentWindow.postMessage(message, '*')
                 clearInterval(checkLoadedStatusAndSendMessage)
             } else {
@@ -123,14 +109,16 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, context) => {
             yield delay(500)
 
             const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
-            const state = context.store.getState();
+            const state = store.getState();
 
             const guestFrame = document.getElementsByName('neos-content-main')[0];
+            // @ts-ignore
             const guestFrameDocument = guestFrame?.contentDocument;
 
             const previewUrl = state?.ui?.contentCanvas?.previewUrl
 
             const currentDocumentNodePath = state?.cr?.nodes?.documentNode
+            // @ts-ignore
             const relevantNodes = Object.values(state?.cr?.nodes?.byContextPath || {}).filter(node => {
                 const documentRole = nodeTypesRegistry.getRole('document');
                 if (!documentRole) {

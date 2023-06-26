@@ -1,0 +1,9 @@
+'Neos.Seo:SeoMetaTagsMixin':
+  properties:
+    metaDescription:
+      ui:
+        inspector:
+          editor: 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor'
+          editorOptions:
+            placeholder: 'Neos.Seo:NodeTypes.SeoMetaTagsMixin:properties.metaDescription.textAreaEditor.placeholder'
+            module: 'meta_description'

@@ -1,16 +1,20 @@
 // @ts-ignore
-import manifest from "@neos-project/neos-ui-extensibility";
+import manifest, {SynchronousRegistry} from "@neos-project/neos-ui-extensibility";
 // @ts-ignore
 import { IconButton, Headline } from "@neos-project/react-ui-components";
 // @ts-ignore
 import { actionTypes, selectors } from '@neos-project/neos-ui-redux-store';
 // @ts-ignore
-import * as React from 'react';
+import React from 'react';
 // @ts-ignore
 import { useSelector } from 'react-redux';
 // @ts-ignore
 import { takeLatest } from 'redux-saga/effects';
+import MagicTextFieldEditor from './MagicTextFieldEditor';
+import MagicTextAreaEditor from './MagicTextAreaEditor';
 import "./style.css";
+import ExternalService from './ExternalService';
+import ContentService from './ContentService';
 
 export default function delay(timeInMilliseconds: number): Promise<void> {
     // @ts-ignore
@@ -146,5 +150,19 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     }
 
     const sagasRegistry = globalRegistry.get('sagas')
-    sagasRegistry.set('NEOSidekick.AiAssistant/debug', {saga: watchDocumentNodeChange})
+    sagasRegistry.set('NEOSidekick.AiAssistant/watchDocumentNodeChange', {saga: watchDocumentNodeChange})
+
+    const editorsRegistry = globalRegistry.get('inspector').get('editors');
+    editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor', {
+        component: MagicTextFieldEditor
+    });
+    editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor', {
+        component: MagicTextAreaEditor
+    });
+
+    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(`test`))
+    globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', new ExternalService(configuration['apiDomain'], configuration['apiKey']))
+    globalRegistry.get('NEOSidekick.AiAssistant').set('contentService', new ContentService())
+
+    console.log(globalRegistry)
 });

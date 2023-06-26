@@ -1,5 +1,10 @@
 Neos:
   Neos:
+    userInterface:
+      translation:
+        autoInclude:
+          NEOSidekick.AiAssistant:
+            - 'Main'
     Ui:
       resources:
         javascript:

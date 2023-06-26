@@ -81,3 +81,7 @@
 .neosidekick_sideBar__frame--open {
   display: block;
 }
+
+.generateBtn {
+  width: 100%;
+}

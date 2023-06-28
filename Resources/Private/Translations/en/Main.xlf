@@ -2,8 +2,11 @@
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
     <file original="" source-language="en" datatype="plaintext">
         <body>
-            <trans-unit id="generateMetaDescription" xml:space="preserve">
+            <trans-unit id="generate" xml:space="preserve">
                 <source>Generate with Sidekick</source>
+            </trans-unit>
+            <trans-unit id="failedToGenerate" xml:space="preserve">
+                <source>Failed to fetch generated text</source>
             </trans-unit>
         </body>
     </file>

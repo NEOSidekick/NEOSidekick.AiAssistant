@@ -3,7 +3,7 @@ import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import {neos} from '@neos-project/neos-ui-decorators';
 import {TextArea, Icon, Button} from '@neos-project/react-ui-components';
-import { selectors } from '@neos-project/neos-ui-redux-store';
+import { actions, selectors } from '@neos-project/neos-ui-redux-store';
 
 const defaultOptions = {
     autoFocus: false,
@@ -21,7 +21,9 @@ const defaultOptions = {
     nodesByContextPath: selectors.CR.Nodes.nodesByContextPathSelector(state),
     currentDocumentNodePath: selectors.CR.Nodes.documentNodeContextPathSelector(state),
     activeContentDimensions: selectors.CR.ContentDimensions.active(state)
-}))
+}), {
+    addFlashMessage: actions.UI.FlashMessages.add
+})
 export default class MagicTextAreaEditor extends Component {
     constructor(props) {
         super(props);
@@ -40,7 +42,8 @@ export default class MagicTextAreaEditor extends Component {
         activeContentDimensions: PropTypes.object.isRequired,
         i18nRegistry: PropTypes.object.isRequired,
         externalService: PropTypes.object.isRequired,
-        contentService: PropTypes.object.isRequired
+        contentService: PropTypes.object.isRequired,
+        addFlashMessage: PropTypes.func.isRequired
     };
 
     static defaultProps = {
@@ -62,13 +65,20 @@ export default class MagicTextAreaEditor extends Component {
             contentService,
             nodesByContextPath,
             currentDocumentNodePath,
-            activeContentDimensions
+            activeContentDimensions,
+            addFlashMessage,
+            i18nRegistry
         } = this.props;
         this.setState({loading: true});
         const title = nodesByContextPath[currentDocumentNodePath]?.properties?.title
         const content = contentService.getGuestFrameDocumentHtml()
-        const metaDescription = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", title, content)
-        commit(metaDescription)
+        try {
+            const metaDescription = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", title, content)
+            commit(metaDescription)
+        } catch (e) {
+            console.error(e)
+            addFlashMessage('NEOSidekick.AiAssistant', i18nRegistry.translate('NEOSidekick.AiAssistant:Main:failedToGenerate'), 'ERROR')
+        }
         this.setState({loading: false});
     }
 
@@ -119,7 +129,7 @@ export default class MagicTextAreaEditor extends Component {
                             disabled={this.state.loading}
                             onClick={async () => await this.fetch(finalOptions.module)}
                         >
-                            {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generateMetaDescription')}&nbsp;
+                            {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generate')}&nbsp;
                             {this.getIcon(this.state.loading)}
                         </Button>
                     </div>

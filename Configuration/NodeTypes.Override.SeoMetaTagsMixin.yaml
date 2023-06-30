@@ -1,3 +1,6 @@
+##
+# We add the NEOSidekick meta description generation button to the SEO field
+##
 'Neos.Seo:SeoMetaTagsMixin':
   properties:
     metaDescription:

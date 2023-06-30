@@ -54,6 +54,17 @@ class ContentService {
         return null
     }
 
+    getCurrentDocumentFocusKeyword = (): string => {
+        const node = this.getCurrentDocumentNode()
+        const focusKeyword = this.getCurrentDocumentNodeType()?.options?.sidekick?.focusKeyword
+
+        if (focusKeyword) {
+            return this.processClientEval(focusKeyword, node, node)
+        }
+
+        return null
+    }
+
     private processClientEval = (value: string, node: Node, parentNode: Node): string => {
         if (typeof value === 'string' && value.startsWith('ClientEval:')) {
             try {

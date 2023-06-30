@@ -150,7 +150,8 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
                     'content': guestFrameDocument?.body?.innerHTML,
                     'structuredContent': relevantNodes,
                     'targetAudience': contentService.getCurrentDocumentTargetAudience(),
-                    'pageBriefing': contentService.getCurrentDocumentPageBriefing()
+                    'pageBriefing': contentService.getCurrentDocumentPageBriefing(),
+                    'focusKeyword': contentService.getCurrentDocumentFocusKeyword()
                 },
             })
             requiredChangedEvent = false;

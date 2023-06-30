@@ -14,7 +14,7 @@ import MagicTextFieldEditor from './MagicTextFieldEditor';
 import MagicTextAreaEditor from './MagicTextAreaEditor';
 import "./style.css";
 import ExternalService from './ExternalService';
-import ContentService from './ContentService';
+import { createContentService } from './ContentService';
 
 export default function delay(timeInMilliseconds: number): Promise<void> {
     // @ts-ignore
@@ -26,6 +26,10 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     if (configuration === null || configuration.enabled === false) {
         return
     }
+
+    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(`test`))
+    globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', new ExternalService(configuration['apiDomain'], configuration['apiKey']))
+    globalRegistry.get('NEOSidekick.AiAssistant').set('contentService', createContentService(globalRegistry, store))
 
     const containerRegistry = globalRegistry.get('containers');
     const App = containerRegistry.get('App');
@@ -159,10 +163,6 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor', {
         component: MagicTextAreaEditor
     });
-
-    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(`test`))
-    globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', new ExternalService(configuration['apiDomain'], configuration['apiKey']))
-    globalRegistry.get('NEOSidekick.AiAssistant').set('contentService', new ContentService())
 
     console.log(globalRegistry)
 });

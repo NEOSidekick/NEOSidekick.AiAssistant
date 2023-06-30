@@ -18,8 +18,6 @@ const defaultOptions = {
     contentService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentService')
 }))
 @connect(state => ({
-    nodesByContextPath: selectors.CR.Nodes.nodesByContextPathSelector(state),
-    currentDocumentNodePath: selectors.CR.Nodes.documentNodeContextPathSelector(state),
     activeContentDimensions: selectors.CR.ContentDimensions.active(state)
 }), {
     addFlashMessage: actions.UI.FlashMessages.add
@@ -37,9 +35,9 @@ export default class MagicTextAreaEditor extends Component {
         onKeyPress: PropTypes.func,
         onEnterKey: PropTypes.func,
         id: PropTypes.string,
-        nodesByContextPath: PropTypes.object,
-        currentDocumentNodePath: PropTypes.string,
+
         activeContentDimensions: PropTypes.object.isRequired,
+
         i18nRegistry: PropTypes.object.isRequired,
         externalService: PropTypes.object.isRequired,
         contentService: PropTypes.object.isRequired,
@@ -63,14 +61,12 @@ export default class MagicTextAreaEditor extends Component {
             commit,
             externalService,
             contentService,
-            nodesByContextPath,
-            currentDocumentNodePath,
             activeContentDimensions,
             addFlashMessage,
             i18nRegistry
         } = this.props;
         this.setState({loading: true});
-        const title = nodesByContextPath[currentDocumentNodePath]?.properties?.title
+        const title = contentService.getCurrentDocumentNode()?.properties?.title
         const content = contentService.getGuestFrameDocumentHtml()
         try {
             const metaDescription = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", title, content)

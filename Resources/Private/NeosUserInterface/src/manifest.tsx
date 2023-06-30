@@ -29,7 +29,8 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
 
     globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(`test`))
     globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', new ExternalService(configuration['apiDomain'], configuration['apiKey']))
-    globalRegistry.get('NEOSidekick.AiAssistant').set('contentService', createContentService(globalRegistry, store))
+    const contentService = createContentService(globalRegistry, store);
+    globalRegistry.get('NEOSidekick.AiAssistant').set('contentService', contentService)
 
     const containerRegistry = globalRegistry.get('containers');
     const App = containerRegistry.get('App');
@@ -125,7 +126,8 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
 
             const previewUrl = state?.ui?.contentCanvas?.previewUrl
 
-            const currentDocumentNodePath = state?.cr?.nodes?.documentNode
+            const currentDocumentNode = contentService.getCurrentDocumentNode()
+            const currentDocumentNodePath = currentDocumentNode?.contextPath
             // @ts-ignore
             const relevantNodes = Object.values(state?.cr?.nodes?.byContextPath || {}).filter(node => {
                 const documentRole = nodeTypesRegistry.getRole('document');
@@ -144,9 +146,11 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
                 eventName: requiredChangedEvent ? 'page-changed' : 'page-updated',
                 data: {
                     'url': previewUrl,
-                    'title': state?.cr?.nodes?.byContextPath[currentDocumentNodePath]?.properties?.title || guestFrameDocument?.title,
+                    'title': currentDocumentNode?.properties?.title || guestFrameDocument?.title,
                     'content': guestFrameDocument?.body?.innerHTML,
-                    'structuredContent': relevantNodes
+                    'structuredContent': relevantNodes,
+                    'targetAudience': contentService.getCurrentDocumentTargetAudience(),
+                    'pageBriefing': contentService.getCurrentDocumentPageBriefing()
                 },
             })
             requiredChangedEvent = false;
@@ -163,6 +167,4 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor', {
         component: MagicTextAreaEditor
     });
-
-    console.log(globalRegistry)
 });

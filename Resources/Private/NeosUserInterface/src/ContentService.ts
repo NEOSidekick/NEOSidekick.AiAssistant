@@ -1,4 +1,5 @@
 import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
+import {Node, NodeType} from '@neos-project/neos-ts-interfaces';
 import {Store} from 'react-redux'
 
 export const createContentService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store): ContentService => {
@@ -20,21 +21,50 @@ class ContentService {
         return guestFrameDocument?.body?.innerHTML;
     }
 
-    getCurrentDocumentNode = (): object => {
+    getCurrentDocumentNode = (): Node => {
         const state = this.store.getState()
         const currentDocumentNodePath = state?.cr?.nodes?.documentNode
         return state?.cr?.nodes?.byContextPath[currentDocumentNodePath]
     }
 
-    getCurrentDocumentNodeType = (): object => {
+    getCurrentDocumentNodeType = (): NodeType => {
         const currentDocumentNode = this.getCurrentDocumentNode()
         return this.globalRegistry.get('@neos-project/neos-ui-contentrepository').get(currentDocumentNode?.nodeType)
     }
 
+    getCurrentDocumentTargetAudience = (): string => {
+        const node = this.getCurrentDocumentNode()
+        const targetAudience = this.getCurrentDocumentNodeType()?.options?.sidekick?.targetAudience
+
+        if (targetAudience) {
+            return this.processClientEval(targetAudience, node, node)
+        }
+
+        return null
+    }
+
     getCurrentDocumentPageBriefing = (): string => {
         const node = this.getCurrentDocumentNode()
-        const template = this.getCurrentDocumentNodeType().options.sidekick.pageBriefing.replaceAll('\`', '\\`')
-        console.log(node, template)
-        return eval('`' + template + '`');
+        const pageBriefing = this.getCurrentDocumentNodeType()?.options?.sidekick?.pageBriefing
+
+        if (pageBriefing) {
+            return this.processClientEval(pageBriefing, node, node)
+        }
+
+        return null
+    }
+
+    private processClientEval = (value: string, node: Node, parentNode: Node): string => {
+        if (typeof value === 'string' && value.startsWith('ClientEval:')) {
+            try {
+                // eslint-disable-next-line no-new-func
+                const evaluateFn = new Function('node,parentNode', 'return ' + value.replace('ClientEval:', ''));
+                return evaluateFn(node, parentNode)
+            } catch (e) {
+                console.warn('An error occurred while trying to evaluate "' + value + '"\n', e);
+            }
+        }
+
+        return value;
     }
 }

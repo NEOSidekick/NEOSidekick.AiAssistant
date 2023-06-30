@@ -13,8 +13,8 @@ import { takeLatest } from 'redux-saga/effects';
 import MagicTextFieldEditor from './MagicTextFieldEditor';
 import MagicTextAreaEditor from './MagicTextAreaEditor';
 import "./style.css";
-import ExternalService from './ExternalService';
-import { createContentService } from './ContentService';
+import {createExternalService} from './ExternalService';
+import {createContentService} from './ContentService';
 
 export default function delay(timeInMilliseconds: number): Promise<void> {
     // @ts-ignore
@@ -22,13 +22,14 @@ export default function delay(timeInMilliseconds: number): Promise<void> {
 }
 
 manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfiguration}) => {
-    let configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
+    const configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
     if (configuration === null || configuration.enabled === false) {
         return
     }
 
     globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(`test`))
-    globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', new ExternalService(configuration['apiDomain'], configuration['apiKey']))
+    const externalService = createExternalService(frontendConfiguration);
+    globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', externalService)
     const contentService = createContentService(globalRegistry, store);
     globalRegistry.get('NEOSidekick.AiAssistant').set('contentService', contentService)
 

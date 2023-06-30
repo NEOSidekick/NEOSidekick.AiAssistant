@@ -1,9 +1,13 @@
-export default class ExternalService {
-    apiDomain = ''
-    apiKey = ''
+export const createExternalService = (frontendConfiguration): ExternalService => {
+    const configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
+    return new ExternalService(configuration['apiDomain'], configuration['apiKey'])
+}
 
-    constructor(apiDomain, apiKey) {
-        // super(`This is the external API connector for NEOSidekick AiAssistant`);
+class ExternalService {
+    private readonly apiDomain: string = ''
+    private readonly apiKey: string = ''
+
+    constructor(apiDomain: string, apiKey: string) {
         this.apiDomain = apiDomain
         this.apiKey = apiKey
     }

@@ -10,8 +10,8 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 // @ts-ignore
 import { takeLatest } from 'redux-saga/effects';
-import MagicTextFieldEditor from './MagicTextFieldEditor';
-import MagicTextAreaEditor from './MagicTextAreaEditor';
+import MagicTextFieldEditor from './Editors/MagicTextFieldEditor';
+import MagicTextAreaEditor from './Editors/MagicTextAreaEditor';
 import "./style.css";
 import {createExternalService} from './ExternalService';
 import {createContentService} from './ContentService';

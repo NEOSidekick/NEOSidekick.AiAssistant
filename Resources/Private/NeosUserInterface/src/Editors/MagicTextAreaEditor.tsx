@@ -1,8 +1,8 @@
-import React, {PureComponent} from 'react';
+import React, {Component} from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import {neos} from '@neos-project/neos-ui-decorators';
-import {TextInput, Icon, Button} from '@neos-project/react-ui-components';
+import {TextArea, Icon, Button} from '@neos-project/react-ui-components';
 import { actions, selectors } from '@neos-project/neos-ui-redux-store';
 
 const defaultOptions = {
@@ -22,11 +22,11 @@ const defaultOptions = {
 }), {
     addFlashMessage: actions.UI.FlashMessages.add
 })
-export default class MagicTextFieldEditor extends PureComponent {
+export default class MagicTextAreaEditor extends Component<any, any> {
     constructor(props) {
         super(props);
+        this.state = {loading: false}
     }
-
     static propTypes = {
         className: PropTypes.string,
         value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
@@ -47,10 +47,6 @@ export default class MagicTextFieldEditor extends PureComponent {
     static defaultProps = {
         options: {}
     };
-
-    state = {
-        loading: false
-    }
 
     getIcon = (loading) => {
         if (loading) {
@@ -77,7 +73,7 @@ export default class MagicTextFieldEditor extends PureComponent {
             commit(metaDescription)
         } catch (e) {
             console.error(e)
-            addFlashMessage('NEOSidekick.AiAssistant', i18nRegistry.translate('NEOSidekick.AiAssistant:Main:failedToGenerate'), 'ERROR')
+            addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error')
         }
         this.setState({loading: false});
     }
@@ -104,7 +100,7 @@ export default class MagicTextFieldEditor extends PureComponent {
         return (
             <div style={{display: 'flex', flexDirection: 'column'}} className={className}>
                 <div>
-                    <TextInput
+                    <TextArea
                         id={id}
                         value={value}
                         onChange={commit}
@@ -112,6 +108,8 @@ export default class MagicTextFieldEditor extends PureComponent {
                         maxLength={finalOptions.maxlength}
                         readOnly={finalOptions.readonly}
                         placeholder={placeholder}
+                        minRows={finalOptions.minRows}
+                        expandedRows={finalOptions.expandedRows}
                         onKeyPress={onKeyPress}
                         onEnterKey={onEnterKey}
                     />

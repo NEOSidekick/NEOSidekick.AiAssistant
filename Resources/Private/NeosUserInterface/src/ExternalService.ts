@@ -18,7 +18,7 @@ class ExternalService {
             throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
         }
 
-        const response = await fetch(`${this.apiDomain}/api/v1/chatxxx?language=${language}`, {
+        const response = await fetch(`${this.apiDomain}/api/v1/chat?language=${language}`, {
             method: "POST", // or 'PUT'
             headers: {
                 "Content-Type": "application/json",

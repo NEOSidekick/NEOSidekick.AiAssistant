@@ -5,6 +5,7 @@ Neos:
         autoInclude:
           NEOSidekick.AiAssistant:
             - 'Main'
+            - 'Error'
     Ui:
       resources:
         javascript:

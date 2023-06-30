@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="1688157373215" xml:space="preserve">
+                <source>This feature is not available in the free version.</source>
+            </trans-unit>
+            <trans-unit id="1688158193038" xml:space="preserve">
+                <source>The AISidekick api key provided is not valid.</source>
+            </trans-unit>
+            <trans-unit id="1688158257149" xml:space="preserve">
+                <source>An error occurred while asking AISidekick.</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

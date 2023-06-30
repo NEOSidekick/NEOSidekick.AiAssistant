@@ -1,3 +1,4 @@
+import AiAssistantError from "./AiAssistantError";
 export const createExternalService = (frontendConfiguration): ExternalService => {
     const configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
     return new ExternalService(configuration['apiDomain'], configuration['apiKey'])
@@ -13,7 +14,11 @@ class ExternalService {
     }
 
     generate = async (module, language, title, content) => {
-        const response = await fetch(`${this.apiDomain}/api/v1/chat?language=${language}`, {
+        if (!this.apiKey) {
+            throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
+        }
+
+        const response = await fetch(`${this.apiDomain}/api/v1/chatxxx?language=${language}`, {
             method: "POST", // or 'PUT'
             headers: {
                 "Content-Type": "application/json",
@@ -29,6 +34,12 @@ class ExternalService {
                 ]
             })
         });
+
+        if (response.status === 401) {
+            throw new AiAssistantError('The AISidekick api key provided is not valid.', '1688158193038')
+        } else if (response.status < 200 || response.status >= 400) {
+            throw new AiAssistantError('An error occurred while asking AISidekick.', '1688158257149')
+        }
 
         const jsonData = await response.json()
         return jsonData?.data?.message?.message

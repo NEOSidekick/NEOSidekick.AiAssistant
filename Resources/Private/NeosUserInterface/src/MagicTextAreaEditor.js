@@ -73,7 +73,7 @@ export default class MagicTextAreaEditor extends Component {
             commit(metaDescription)
         } catch (e) {
             console.error(e)
-            addFlashMessage('NEOSidekick.AiAssistant', i18nRegistry.translate('NEOSidekick.AiAssistant:Main:failedToGenerate'), 'ERROR')
+            addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error')
         }
         this.setState({loading: false});
     }

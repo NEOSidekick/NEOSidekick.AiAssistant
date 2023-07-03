@@ -27,39 +27,37 @@ export class ContentService {
         return state?.cr?.nodes?.byContextPath[currentDocumentNodePath]
     }
 
+    getCurrentDocumentParentNode = (): Node => {
+        const state = this.store.getState()
+        const currentDocumentNode = this.getCurrentDocumentNode()
+        return state?.cr?.nodes?.byContextPath[currentDocumentNode.parent]
+    }
+
     getCurrentDocumentNodeType = (): NodeType => {
         const currentDocumentNode = this.getCurrentDocumentNode()
         return this.globalRegistry.get('@neos-project/neos-ui-contentrepository').get(currentDocumentNode?.nodeType)
     }
 
     getCurrentDocumentTargetAudience = (): string => {
-        const node = this.getCurrentDocumentNode()
         const targetAudience = this.getCurrentDocumentNodeType()?.options?.sidekick?.targetAudience
-
         if (targetAudience) {
-            return this.processClientEval(targetAudience, node, node)
+            return this.processClientEval(targetAudience, this.getCurrentDocumentNode(), this.getCurrentDocumentParentNode())
         }
-
         return null
     }
 
     getCurrentDocumentPageBriefing = (): string => {
-        const node = this.getCurrentDocumentNode()
         const pageBriefing = this.getCurrentDocumentNodeType()?.options?.sidekick?.pageBriefing
-
         if (pageBriefing) {
-            return this.processClientEval(pageBriefing, node, node)
+            return this.processClientEval(pageBriefing, this.getCurrentDocumentNode(), this.getCurrentDocumentParentNode())
         }
-
         return null
     }
 
     getCurrentDocumentFocusKeyword = (): string => {
-        const node = this.getCurrentDocumentNode()
         const focusKeyword = this.getCurrentDocumentNodeType()?.options?.sidekick?.focusKeyword
-
         if (focusKeyword) {
-            return this.processClientEval(focusKeyword, node, node)
+            return this.processClientEval(focusKeyword, this.getCurrentDocumentNode(), this.getCurrentDocumentParentNode())
         }
 
         return null
@@ -75,7 +73,6 @@ export class ContentService {
                 console.warn('An error occurred while trying to evaluate "' + value + '"\n', e);
             }
         }
-
         return value;
     }
 }

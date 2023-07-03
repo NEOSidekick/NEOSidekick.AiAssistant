@@ -15,6 +15,8 @@ import MagicTextAreaEditor from './Editors/MagicTextAreaEditor';
 import "./style.css";
 import {createExternalService} from './ExternalService';
 import {createContentService} from './ContentService';
+import {createWatchNodeCreatedSaga} from "./Sagas/NodeCreated";
+import {createAssistantService} from "./Service/AssistantService";
 
 export default function delay(timeInMilliseconds: number): Promise<void> {
     // @ts-ignore
@@ -32,6 +34,10 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', externalService)
     const contentService = createContentService(globalRegistry, store);
     globalRegistry.get('NEOSidekick.AiAssistant').set('contentService', contentService)
+    const assistantService = createAssistantService(globalRegistry, store)
+    globalRegistry.get('NEOSidekick.AiAssistant').set('assistantService', assistantService)
+
+    assistantService.listenToMessages()
 
     const containerRegistry = globalRegistry.get('containers');
     const App = containerRegistry.get('App');
@@ -94,22 +100,6 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
 	}
 	containerRegistry.set('App', WrappedApp);
 
-    const sendMessageToIframe = (message) => {
-        const checkLoadedStatusAndSendMessage = setInterval(() => {
-            const assistantFrame = document.getElementById('neosidekickAssistant')
-            const isLoaded = assistantFrame.dataset.hasOwnProperty('loaded')
-            if (isLoaded) {
-                console.log('loaded, sending message to frame', message)
-                // @ts-ignore
-                assistantFrame.contentWindow.postMessage(message, '*')
-                clearInterval(checkLoadedStatusAndSendMessage)
-            } else {
-                console.log('not loaded, waiting...')
-                return
-            }
-        }, 250)
-    }
-
     let requiredChangedEvent = false
     const watchDocumentNodeChange = function * () {
         yield takeLatest([actionTypes.UI.ContentCanvas.SET_SRC, actionTypes.UI.ContentCanvas.RELOAD, actionTypes.CR.Nodes.MERGE], function * (action) {
@@ -142,7 +132,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
                     (node.contextPath === currentDocumentNodePath || !documentSubNodeTypes.includes(node.nodeType))
             })
 
-            sendMessageToIframe({
+            assistantService.sendMessageToIframe({
                 version: '1.0',
                 eventName: requiredChangedEvent ? 'page-changed' : 'page-updated',
                 data: {
@@ -161,6 +151,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
 
     const sagasRegistry = globalRegistry.get('sagas')
     sagasRegistry.set('NEOSidekick.AiAssistant/watchDocumentNodeChange', {saga: watchDocumentNodeChange})
+    sagasRegistry.set('NEOSidekick.AiAssistant/watchNodeCreated', {saga: createWatchNodeCreatedSaga(globalRegistry, store)})
 
     const editorsRegistry = globalRegistry.get('inspector').get('editors');
     editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor', {

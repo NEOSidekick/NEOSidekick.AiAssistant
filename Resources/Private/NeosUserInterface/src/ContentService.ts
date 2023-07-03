@@ -6,7 +6,7 @@ export const createContentService = (globalRegistry: SynchronousMetaRegistry<any
     return new ContentService(globalRegistry, store)
 }
 
-class ContentService {
+export class ContentService {
     private globalRegistry: SynchronousMetaRegistry<any>;
     private store: Store;
     constructor(globalRegistry: SynchronousMetaRegistry<any>, store: Store) {
@@ -65,7 +65,7 @@ class ContentService {
         return null
     }
 
-    private processClientEval = (value: string, node: Node, parentNode: Node): string => {
+    processClientEval = (value: string, node: Node, parentNode: Node): string => {
         if (typeof value === 'string' && value.startsWith('ClientEval:')) {
             try {
                 // eslint-disable-next-line no-new-func

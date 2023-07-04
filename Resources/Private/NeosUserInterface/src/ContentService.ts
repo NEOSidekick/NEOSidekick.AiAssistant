@@ -75,4 +75,26 @@ export class ContentService {
         }
         return value;
     }
+
+    processObjectWithClientEval = (obj: object, node: Node, parentNode: Node): object => {
+        Object.keys(obj).forEach(key => {
+            const value: any = obj[key]
+
+            if (typeof value === 'string') {
+                obj[key] = this.processClientEval(value, node, parentNode)
+            }
+
+            if (typeof value === 'object') {
+                obj[key] = this.processObjectWithClientEval(value, node, parentNode)
+            }
+
+            if (Array.isArray(value)) {
+                obj[key] = value.map(itemValue => {
+                    return this.processClientEval(itemValue, node, parentNode)
+                })
+            }
+        })
+
+        return obj
+    }
 }

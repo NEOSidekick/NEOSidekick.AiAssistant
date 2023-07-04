@@ -1,5 +1,4 @@
 import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
-import {Node, NodeType} from '@neos-project/neos-ts-interfaces';
 import {Store} from 'react-redux'
 
 export const createAssistantService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store): AssistantService => {
@@ -14,7 +13,7 @@ export class AssistantService {
         this.store = store
     }
 
-    sendMessageToIframe = (message) => {
+    sendMessageToIframe = (message): void => {
         const checkLoadedStatusAndSendMessage = setInterval(() => {
             const assistantFrame = document.getElementById('neosidekickAssistant')
             const isLoaded = assistantFrame.dataset.hasOwnProperty('loaded')
@@ -30,7 +29,7 @@ export class AssistantService {
         }, 250)
     }
 
-    listenToMessages = () => {
+    listenToMessages = (): void => {
         const checkLoadedStatusAndSendMessage = setInterval(() => {
             const assistantFrame = document.getElementById('neosidekickAssistant')
             const isLoaded = assistantFrame?.dataset?.hasOwnProperty('loaded')
@@ -49,20 +48,23 @@ export class AssistantService {
         }, 250)
     }
 
-    private handleMessage = message => {
-        if (message.data.eventName === 'write-content') {
-            const {contextPath, propertyName, propertyValue} = message.data.data;
-            this.changePropertyValue(contextPath, propertyName, propertyValue)
+    private handleMessage = (message): void => {
+        if (message?.data?.eventName === 'write-content') {
+            const {nodePath, propertyName, propertyValue} = message.data.data;
+            this.changePropertyValue(nodePath, propertyName, propertyValue)
         }
     }
 
-    private changePropertyValue = (contextPath, propertyName, propertyValue) => {
+    private changePropertyValue = (nodePath, propertyName, propertyValue): void => {
         const guestFrame = document.getElementsByName('neos-content-main')[0];
         // @ts-ignore
         const guestFrameDocument = guestFrame?.contentDocument;
-        const inlineField = guestFrameDocument.querySelector(`[data-__neos-editable-node-contextpath="${contextPath}"][data-__neos-property="${propertyName}"]`)
-        setTimeout(() => {
-            inlineField.ckeditorInstance.setData(propertyValue)
-        }, 100)
+        const inlineField = guestFrameDocument.querySelector(`[data-__neos-editable-node-contextpath="${nodePath}"][data-__neos-property="${propertyName}"]`)
+        if (inlineField) {
+            setTimeout(() => {
+                // @ts-ignore
+                inlineField?.ckeditorInstance?.setData(propertyValue)
+            }, 100)
+        }
     }
 }

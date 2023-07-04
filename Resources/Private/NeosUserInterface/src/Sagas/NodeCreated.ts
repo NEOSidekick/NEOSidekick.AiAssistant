@@ -35,27 +35,21 @@ export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
                         throw new AiAssistantError('You can only generate content on inline editable properties', '1688395273728')
                     }
 
-                    const topic = contentService.processClientEval(propertyConfiguration.options.sidekick.onCreate.arguments.topic, node, parentNode)
-                    assistantService.sendMessageToIframe({
+                    const processedData = contentService.processObjectWithClientEval(propertyConfiguration.options.sidekick.onCreate, node, parentNode)
+                    const message = {
                         version: '1.0',
                         eventName: 'call-module',
                         data: {
-                            'plattform': 'neos',
-                            'module': 'paragraph_generator',
-                            'arguments': {
-                                'topic': topic,
-                                // 'writing_style': 'tech_advocate' /*optional writing style */
-                            },
+                            'platform': 'neos',
                             'target': {
-                                /* this is for the platform Neos CMS, what properties you need? */
                                 'nodePath': node.contextPath,
                                 'propertyName': propertyName
-                            }
-                            /* Vielleicht mal in Der Zukunft.
-                            'configuration': {
-                                'formatting': ['strong', 'sub', ...] /*Das einfach GPT als Anweisung zu geben führt zu schlechten Ergebnissen. Aktuell soll der CKEditor sich um die Umformattierung kümmern */
+                            },
+                            ...processedData
                         }
-                    })
+                    }
+                    console.log('Message: ', message)
+                    assistantService.sendMessageToIframe(message)
                 })
             })
         })

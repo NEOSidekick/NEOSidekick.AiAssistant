@@ -50,19 +50,25 @@ div[class*="_unappliedChangesOverlay"] {
 }
 
 /**
- * Resize node creation overlay outside the app wrapper
+ * Resize dialog overlay outside the app wrapper
  */
-#appContainer:has(.neosidekick_appWrapper) ~ div > #neos-SelectNodeTypeDialog {
-  --neosidekick-sidebar-width: 40px;
+#appContainer:has(.neosidekick_appWrapper) ~ div > [id^="neos-"][id$="Dialog"] {
   width: calc(100vw - var(--neosidekick-sidebar-width));
 }
 
-#appContainer:has(.neosidekick_appWrapper--sidebar-open) ~ div > #neos-SelectNodeTypeDialog {
+/**
+ * Define sidebar-width variable for all following elements of #appContainer
+ */
+#appContainer:has(.neosidekick_appWrapper) ~ div {
+  --neosidekick-sidebar-width: 40px;
+}
+
+#appContainer:has(.neosidekick_appWrapper--sidebar-open) ~ div {
   --neosidekick-sidebar-width: 402px;
 }
 
 @media screen and (max-width: 1480px) {
-  #appContainer:has(.neosidekick_appWrapper--sidebar-open) ~ div > #neos-SelectNodeTypeDialog {
+  #appContainer:has(.neosidekick_appWrapper--sidebar-open) ~ div {
     --neosidekick-sidebar-width: 302px;
   }
 }

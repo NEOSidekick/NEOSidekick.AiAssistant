@@ -1,5 +1,7 @@
 import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
 import {Store} from 'react-redux'
+import { actions } from '@neos-project/neos-ui-redux-store'
+import slugify from '@sindresorhus/slugify'
 
 export const createAssistantService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store): AssistantService => {
     return new AssistantService(globalRegistry, store)
@@ -52,6 +54,9 @@ export class AssistantService {
         if (message?.data?.eventName === 'write-content') {
             const {nodePath, propertyName, value, isFinished} = message.data.data;
             this.changePropertyValue(nodePath, propertyName, value, isFinished)
+        } else if (message?.data?.eventName === 'error') {
+            const { message } = message.data.data;
+            this.store.dispatch(actions.UI.FlashMessages.add(slugify(message), 'Sidekick error: ' + message), 'error')
         }
     }
 

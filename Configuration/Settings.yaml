@@ -1,5 +1,8 @@
 Neos:
   Neos:
+    fusion:
+      autoInclude:
+        NEOSidekick.AiAssistant: true
     userInterface:
       translation:
         autoInclude:

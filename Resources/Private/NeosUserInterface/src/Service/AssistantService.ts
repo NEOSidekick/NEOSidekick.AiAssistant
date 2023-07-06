@@ -50,21 +50,20 @@ export class AssistantService {
 
     private handleMessage = (message): void => {
         if (message?.data?.eventName === 'write-content') {
-            const {nodePath, propertyName, propertyValue} = message.data.data;
-            this.changePropertyValue(nodePath, propertyName, propertyValue)
+            const {nodePath, propertyName, value, isFinished} = message.data.data;
+            this.changePropertyValue(nodePath, propertyName, value, isFinished)
         }
     }
 
-    private changePropertyValue = (nodePath, propertyName, propertyValue): void => {
+    private changePropertyValue = (nodePath: string, propertyName: string, propertyValue: string, isFinished: bool = false): void => {
         const guestFrame = document.getElementsByName('neos-content-main')[0];
         // @ts-ignore
         const guestFrameDocument = guestFrame?.contentDocument;
         const inlineField = guestFrameDocument.querySelector(`[data-__neos-editable-node-contextpath="${nodePath}"][data-__neos-property="${propertyName}"]`)
         if (inlineField) {
-            setTimeout(() => {
-                // @ts-ignore
-                inlineField?.ckeditorInstance?.setData(propertyValue)
-            }, 100)
+            // @ts-ignore
+            inlineField?.ckeditorInstance?.setData(propertyValue)
+            inlineField.classList.toggle('typing-caret', !isFinished)
         }
     }
 }

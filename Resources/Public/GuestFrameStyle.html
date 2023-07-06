@@ -1,0 +1,17 @@
+<style>
+    @keyframes pulse {
+        50% {
+            opacity: .5;
+        }
+    }
+
+    .typing-caret > :not(ol):not(ul):not(pre):last-child:after,
+    .typing-caret > ol:last-child > li:last-child:not(ul):not(ol):after,
+    .typing-caret > ul:last-child > li:last-child:not(ul):not(ol):after,
+    .typing-caret > pre:last-child code:after {
+        margin-left: .125rem;
+        animation: pulse 2s cubic-bezier(.4, 0, .6, 1) infinite;
+        vertical-align: baseline;
+        content: "▋";
+    }
+</style>

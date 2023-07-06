@@ -1,0 +1,8 @@
+prototype(Neos.Neos:Page) {
+    head {
+        sidekick = Neos.Fusion:Template {
+            @if.inBackend = ${documentNode.context.inBackend}
+            templatePath = 'resource://NEOSidekick.AiAssistant/Public/GuestFrameStyle.html'
+        }
+    }
+}

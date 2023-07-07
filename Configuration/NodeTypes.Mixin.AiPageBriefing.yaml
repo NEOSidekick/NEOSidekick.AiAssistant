@@ -1,0 +1,54 @@
+#
+# You can add this mixin to any Document NodeType to allow editors to fine-tine the NEOSidekick AI Assistant behavior
+#
+'NEOSidekick.AiAssistant:Mixin.AiPageBriefing':
+  abstract: true
+  ui:
+    inspector:
+      groups:
+        briefing:
+          label: AI Briefing
+          icon: route
+          position: 10
+  options:
+    sidekick:
+      focusKeyword: 'ClientEval: node.properties.focusKeyword || ""'
+      targetAudience: 'ClientEval: node.properties.targetAudience || ""'
+      pageBriefing: 'ClientEval: node.properties.pageBriefing || ""'
+  properties:
+    focusKeyword:
+      type: string
+      ui:
+        label: SEO Focus Keyword
+        inspector:
+          group: 'briefing'
+          position: 10
+          editorOptions:
+            placeholder: 'Define one keyword to optimize for'
+    targetAudience:
+      type: string
+      ui:
+        label: Target Audience
+        inspector:
+          group: 'briefing'
+          position: 20
+          editor: 'Neos.Neos/Inspector/Editors/TextAreaEditor'
+          editorOptions:
+            placeholder: 'What is your target audience?'
+            rows: 7
+      validation:
+        'Neos.Neos/Validation/StringLengthValidator':
+          maximum: 450
+    pageBriefing:
+      type: string
+      ui:
+        label: Page Briefing
+        inspector:
+          group: 'briefing'
+          position: 30
+          editor: 'Neos.Neos/Inspector/Editors/TextAreaEditor'
+          editorOptions:
+            placeholder: 'What should the NEOSidekick AI Assistant also know?'
+      validation:
+        'Neos.Neos/Validation/StringLengthValidator':
+          maximum: 450

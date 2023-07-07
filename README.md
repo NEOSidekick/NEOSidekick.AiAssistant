@@ -17,6 +17,8 @@ We use semantic-versioning so every breaking change will increase the major-vers
 
 ## Configuration
 
+### API Key
+
 You can use the free version, or [get more features with a license](https://www.neosidekick.com/en/pricing).
 To configure your license key, add the following to your Settings.yaml:
 
@@ -26,7 +28,12 @@ NEOSidekick:
     apikey: 'your-api-key-here'
 ```
 
-# Permissions
+### Page-specific AI briefings
+
+You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Document NodeType to allow editors to fine-tine the NEOSidekick AI Assistant behavior, 
+or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).
+
+### Permissions
 
 By default, every editor can use the assistant.
 However, if you want to restrict the access to certain roles,

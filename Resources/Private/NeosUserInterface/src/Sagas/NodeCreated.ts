@@ -35,7 +35,8 @@ export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
                         throw new AiAssistantError('You can only generate content on inline editable properties', '1688395273728')
                     }
 
-                    const processedData = contentService.processObjectWithClientEval(propertyConfiguration.options.sidekick.onCreate, node, parentNode)
+                    const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick.onCreate))
+                    const processedData = contentService.processObjectWithClientEval(configuration, node, parentNode)
                     const message = {
                         version: '1.0',
                         eventName: 'call-module',

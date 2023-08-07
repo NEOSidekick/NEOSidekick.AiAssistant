@@ -1,8 +1,9 @@
 // @ts-ignore
 import { takeEvery } from 'redux-saga/effects';
-import { actionTypes, selectors } from '@neos-project/neos-ui-redux-store';
+import { actions, actionTypes, selectors } from '@neos-project/neos-ui-redux-store';
 import {ContentService} from '../ContentService'
 import {AssistantService} from "../Service/AssistantService";
+import {ExternalService} from "../ExternalService";
 import AiAssistantError from "../AiAssistantError";
 
 export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
@@ -14,8 +15,10 @@ export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
                 }
 
                 const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
+                const i18nRegistry = globalRegistry.get('i18n')
                 const contentService: ContentService = globalRegistry.get('NEOSidekick.AiAssistant').get('contentService')
                 const assistantService: AssistantService = globalRegistry.get('NEOSidekick.AiAssistant').get('assistantService')
+                const externalService: ExternalService = globalRegistry.get('NEOSidekick.AiAssistant').get('externalService')
                 const state = store.getState()
                 const node = selectors.CR.Nodes.nodesByContextPathSelector(state)[feedback.payload.contextPath]
                 const parentNode = selectors.CR.Nodes.nodesByContextPathSelector(state)[node.parent]
@@ -31,8 +34,16 @@ export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
                         return;
                     }
 
-                    if (!propertyConfiguration?.ui?.inlineEditable) {
-                        throw new AiAssistantError('You can only generate content on inline editable properties', '1688395273728')
+                    try {
+                        if (!propertyConfiguration?.ui?.inlineEditable) {
+                            throw new AiAssistantError('You can only generate content on inline editable properties', '1688395273728')
+                        }
+
+                        if (!externalService.hasApiKey()) {
+                            throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
+                        }
+                    } catch (e) {
+                        store.dispatch(actions.UI.FlashMessages.add(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error'))
                     }
 
                     const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick.onCreate))

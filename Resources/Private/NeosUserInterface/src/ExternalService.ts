@@ -4,13 +4,17 @@ export const createExternalService = (frontendConfiguration): ExternalService =>
     return new ExternalService(configuration['apiDomain'], configuration['apiKey'])
 }
 
-class ExternalService {
+export class ExternalService {
     private readonly apiDomain: string = ''
     private readonly apiKey: string = ''
 
     constructor(apiDomain: string, apiKey: string) {
         this.apiDomain = apiDomain
         this.apiKey = apiKey
+    }
+
+    hasApiKey = () => {
+        return this.apiKey !== null && this.apiKey !== ''
     }
 
     generate = async (module, language, title, content) => {

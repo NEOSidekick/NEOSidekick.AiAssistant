@@ -7,12 +7,12 @@
                 <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version nicht verfügbar.</target>
             </trans-unit>
             <trans-unit id="1688158193038" xml:space="preserve">
-                <source>The AISidekick api key provided is not valid.</source>
-                <target xml:lang="de" state="translated">Der API-Schlüssel für AISidekick ist nicht korrekt.</target>
+                <source>The NEOSidekick api key provided is not valid.</source>
+                <target xml:lang="de" state="translated">Der API-Schlüssel für NEOSidekick ist nicht korrekt.</target>
             </trans-unit>
             <trans-unit id="1688158257149" xml:space="preserve">
-                <source>An error occured while asking AISidekick</source>
-                <target xml:lang="de" state="translated">tbd</target>
+                <source>An error occurred while asking NEOSidekick</source>
+                <target xml:lang="de" state="translated">Bei der Abfrage von NEOSidekick ist ein Fehler aufgetreten</target>
             </trans-unit>
         </body>
     </file>

@@ -40,9 +40,9 @@ export class ExternalService {
         });
 
         if (response.status === 401) {
-            throw new AiAssistantError('The AISidekick api key provided is not valid.', '1688158193038')
+            throw new AiAssistantError('The NEOSidekick api key provided is not valid.', '1688158193038')
         } else if (response.status < 200 || response.status >= 400) {
-            throw new AiAssistantError('An error occurred while asking AISidekick.', '1688158257149')
+            throw new AiAssistantError('An error occurred while asking NEOSidekick.', '1688158257149')
         }
 
         const jsonData = await response.json()

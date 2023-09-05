@@ -6,10 +6,10 @@
                 <source>This feature is not available in the free version.</source>
             </trans-unit>
             <trans-unit id="1688158193038" xml:space="preserve">
-                <source>The AISidekick api key provided is not valid.</source>
+                <source>The NEOSidekick api key provided is not valid.</source>
             </trans-unit>
             <trans-unit id="1688158257149" xml:space="preserve">
-                <source>An error occurred while asking AISidekick.</source>
+                <source>An error occurred while asking NEOSidekick.</source>
             </trans-unit>
         </body>
     </file>

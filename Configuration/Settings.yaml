@@ -1,5 +1,14 @@
 Neos:
   Neos:
+    fusion:
+      autoInclude:
+        NEOSidekick.AiAssistant: true
+    userInterface:
+      translation:
+        autoInclude:
+          NEOSidekick.AiAssistant:
+            - 'Main'
+            - 'Error'
     Ui:
       resources:
         javascript:
@@ -8,21 +17,19 @@ Neos:
         stylesheets:
           'NEOSidekick.AiAssistant':
             resource: resource://NEOSidekick.AiAssistant/Public/NeosUserInterface/Plugin.css
-  Flow:
-    mvc:
-      routes:
-        'NEOSidekick.AiAssistant':
-          position: 'start'
-    security:
-      authentication:
-        providers:
-          'Neos.Neos:Backend':
-            requestPatterns:
-              'NEOSidekick.AiAssistant':
-                pattern: 'ControllerObjectName'
-                patternOptions:
-                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\.*'
+      configurationDefaultEelContext:
+        NEOSidekick.AiAssistant: NEOSidekick\AiAssistant\EelHelper
+      frontendConfiguration:
+        NEOSidekick.AiAssistant:
+          enabled: '${NEOSidekick.AiAssistant.isEnabled()}'
+          apiDomain: '${NEOSidekick.AiAssistant.apiDomain()}'
+          apiKey: '${NEOSidekick.AiAssistant.apiKey()}'
+          userId: '${NEOSidekick.AiAssistant.userId(user)}'
+          siteName: '${NEOSidekick.AiAssistant.siteName()}'
+          domain: '${NEOSidekick.AiAssistant.domain()}'
+          referrer: '${NEOSidekick.AiAssistant.referrer()}'
 
 NEOSidekick:
   AiAssistant:
     apikey: ''
+    developmentBuild: false

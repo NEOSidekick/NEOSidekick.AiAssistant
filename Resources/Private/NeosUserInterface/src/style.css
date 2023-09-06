@@ -1,3 +1,6 @@
+/**
+ * Place the sidekick iframe on the right side of the screen
+ */
 .neosidekick_appWrapper {
   --neosidekick-sidebar-width: 40px;
   display: grid;
@@ -30,15 +33,49 @@
   grid-template-columns: 0 100%;
 }
 
-/* compability witn Neos 7 start */
+/* compatibility with Neos 7 start */
 .neosidekick_appWrapper div[class*="style__primaryToolbar___"] {
   width: calc(100% - var(--neosidekick-sidebar-width));
 }
 .neosidekick_appWrapper div[class*="style__rightSideBar"] {
   right: var(--neosidekick-sidebar-width);
 }
-/* compability witn Neos 7 end */
+/* compatibility with Neos 7 Neos 7 end */
 
+/**
+ * Resize unapplied changes overlay
+ */
+div[class*="_unappliedChangesOverlay"] {
+  width: calc(100% - 320px - var(--neosidekick-sidebar-width));
+}
+
+/**
+ * Resize dialog overlay outside the app wrapper
+ */
+#appContainer:has(.neosidekick_appWrapper) ~ div > [id^="neos-"][id$="Dialog"] {
+  width: calc(100vw - var(--neosidekick-sidebar-width));
+}
+
+/**
+ * Define sidebar-width variable for all following elements of #appContainer
+ */
+#appContainer:has(.neosidekick_appWrapper) ~ div {
+  --neosidekick-sidebar-width: 40px;
+}
+
+#appContainer:has(.neosidekick_appWrapper--sidebar-open) ~ div {
+  --neosidekick-sidebar-width: 402px;
+}
+
+@media screen and (max-width: 1480px) {
+  #appContainer:has(.neosidekick_appWrapper--sidebar-open) ~ div {
+    --neosidekick-sidebar-width: 302px;
+  }
+}
+
+/**
+ * Style the sidebar
+ */
 .neosidekick_sideBar {
   display: flex;
   flex-direction: column;
@@ -80,4 +117,8 @@
 
 .neosidekick_sideBar__frame--open {
   display: block;
+}
+
+.generateBtn {
+  width: 100%;
 }

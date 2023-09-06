@@ -1,7 +1,0 @@
-- name: 'Get plugin configuration'
-  uriPattern: 'neosidekick/aiassistant/configuration'
-  defaults:
-    '@package': 'NEOSidekick.AiAssistant'
-    '@controller': 'Service'
-    '@action': 'configuration'
-    '@format': 'json'

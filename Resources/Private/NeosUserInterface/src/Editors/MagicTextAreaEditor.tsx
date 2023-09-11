@@ -56,7 +56,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         }
     }
 
-    fetch = async (module) => {
+    fetch = async (module: string, userInput: object) => {
         const {
             commit,
             externalService,
@@ -66,16 +66,19 @@ export default class MagicTextAreaEditor extends Component<any, any> {
             i18nRegistry
         } = this.props;
         this.setState({loading: true});
-        const title = contentService.getCurrentDocumentNode()?.properties?.title
-        const content = contentService.getGuestFrameDocumentHtml()
         try {
-            const metaDescription = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", title, content)
+            // Process SidekickClientEval und ClientEval
+            userInput = contentService.processObjectWithClientEval(Object.assign({}, userInput))
+            // Map to external format
+            userInput = Object.keys(userInput).map((identifier: string) => ({"identifier": identifier, "value": userInput[identifier]}))
+            const metaDescription = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", userInput)
             commit(metaDescription)
         } catch (e) {
             console.error(e)
             addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error')
+        } finally {
+            this.setState({loading: false});
         }
-        this.setState({loading: false});
     }
 
     render () {
@@ -123,7 +126,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
                             style="neutral"
                             hoverStyle="clean"
                             disabled={this.state.loading}
-                            onClick={async () => await this.fetch(finalOptions.module)}
+                            onClick={async () => await this.fetch(finalOptions.module, finalOptions.arguments ?? {})}
                         >
                             {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generate')}&nbsp;
                             {this.getIcon(this.state.loading)}

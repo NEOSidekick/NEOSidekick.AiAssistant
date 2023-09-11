@@ -10,3 +10,6 @@
           editorOptions:
             placeholder: 'Neos.Seo:NodeTypes.SeoMetaTagsMixin:properties.metaDescription.textAreaEditor.placeholder'
             module: 'meta_description'
+            arguments:
+              title: 'SidekickClientEval:documentTitle'
+              content: 'SidekickClientEval:documentContent'

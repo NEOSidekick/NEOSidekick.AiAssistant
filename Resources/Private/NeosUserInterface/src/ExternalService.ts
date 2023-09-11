@@ -17,7 +17,7 @@ export class ExternalService {
         return this.apiKey !== null && this.apiKey !== ''
     }
 
-    generate = async (module, language, title, content) => {
+    generate = async (module: string, language: string, user_input: object = {}) => {
         if (!this.apiKey) {
             throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
         }
@@ -30,12 +30,9 @@ export class ExternalService {
                 "Accept": "application/json"
             },
             body: JSON.stringify({
-                module: "meta_description",
+                module,
                 platform: "neos",
-                user_input: [
-                    {"identifier": "title", "value": title},
-                    {"identifier": "content", "value": content},
-                ]
+                user_input
             })
         });
 

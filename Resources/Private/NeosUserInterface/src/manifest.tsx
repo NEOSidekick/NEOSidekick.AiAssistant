@@ -111,12 +111,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
             const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
             const state = store.getState();
 
-            const guestFrame = document.getElementsByName('neos-content-main')[0];
-            // @ts-ignore
-            const guestFrameDocument = guestFrame?.contentDocument;
-
             const previewUrl = state?.ui?.contentCanvas?.previewUrl
-
             const currentDocumentNode = contentService.getCurrentDocumentNode()
             const currentDocumentNodePath = currentDocumentNode?.contextPath
             // @ts-ignore
@@ -137,8 +132,8 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
                 eventName: requiredChangedEvent ? 'page-changed' : 'page-updated',
                 data: {
                     'url': previewUrl,
-                    'title': currentDocumentNode?.properties?.title || guestFrameDocument?.title,
-                    'content': guestFrameDocument?.body?.innerHTML,
+                    'title': currentDocumentNode?.properties?.title || contentService.getGuestFrameDocumentTitle(),
+                    'content': contentService.getGuestFrameDocumentHtml(),
                     'structuredContent': relevantNodes,
                     'targetAudience': contentService.getCurrentDocumentTargetAudience(),
                     'pageBriefing': contentService.getCurrentDocumentPageBriefing(),

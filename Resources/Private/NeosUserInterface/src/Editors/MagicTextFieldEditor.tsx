@@ -72,14 +72,13 @@ export default class MagicTextFieldEditor extends Component<any, any> {
         this.setState({loading: true});
         try {
             // Process SidekickClientEval und ClientEval
-            userInput = contentService.processObjectWithClientEval(Object.assign({}, userInput))
+            userInput = await contentService.processObjectWithClientEval(Object.assign({}, userInput))
             // Map to external format
             userInput = Object.keys(userInput).map((identifier: string) => ({"identifier": identifier, "value": userInput[identifier]}))
             const generatedValue = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", userInput)
             commit(generatedValue)
         } catch (e) {
-            console.error(e)
-            addFlashMessage('NEOSidekick.AiAssistant', i18nRegistry.translate('NEOSidekick.AiAssistant:Main:failedToGenerate'), 'ERROR')
+            addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error')
         } finally {
             this.setState({loading: false});
         }

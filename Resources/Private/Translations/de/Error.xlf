@@ -14,6 +14,18 @@
                 <source>An error occurred while asking NEOSidekick</source>
                 <target xml:lang="de" state="translated">Bei der Abfrage von NEOSidekick ist ein Fehler aufgetreten</target>
             </trans-unit>
+            <trans-unit id="1694595562191" xml:space="preserve">
+                <source>The property does not have a valid image.</source>
+                <target xml:lang="de" state="translated">Die Eigenschaft enthält kein gültiges Bild.</target>
+            </trans-unit>
+            <trans-unit id="1694595598880" xml:space="preserve">
+                <source>Could not fetch image object.</source>
+                <target xml:lang="de" state="translated">Das Bild-Objekt konnte nicht abgerufen werden.</target>
+            </trans-unit>
+            <trans-unit id="1694595462402" xml:space="preserve">
+                <source>The given image does not have a correct url.</source>
+                <target xml:lang="de" state="translated">Die Bild-URL ist nicht korrekt.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

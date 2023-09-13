@@ -11,6 +11,15 @@
             <trans-unit id="1688158257149" xml:space="preserve">
                 <source>An error occurred while asking NEOSidekick.</source>
             </trans-unit>
+            <trans-unit id="1694595562191" xml:space="preserve">
+                <source>The property does not have a valid image.</source>
+            </trans-unit>
+            <trans-unit id="1694595598880" xml:space="preserve">
+                <source>Could not fetch image object.</source>
+            </trans-unit>
+            <trans-unit id="1694595462402" xml:space="preserve">
+                <source>The given image does not have a correct url.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

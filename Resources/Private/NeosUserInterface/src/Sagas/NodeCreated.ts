@@ -47,21 +47,23 @@ export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
                     }
 
                     const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick.onCreate))
-                    const processedData = contentService.processObjectWithClientEval(configuration, node, parentNode)
-                    const message = {
-                        version: '1.0',
-                        eventName: 'call-module',
-                        data: {
-                            'platform': 'neos',
-                            'target': {
-                                'nodePath': node.contextPath,
-                                'propertyName': propertyName
-                            },
-                            ...processedData
-                        }
-                    }
-                    console.log('Message: ', message)
-                    assistantService.sendMessageToIframe(message)
+                    contentService.processObjectWithClientEval(configuration, node, parentNode)
+                        .then(processedData => {
+                            const message = {
+                                version: '1.0',
+                                eventName: 'call-module',
+                                data: {
+                                    'platform': 'neos',
+                                    'target': {
+                                        'nodePath': node.contextPath,
+                                        'propertyName': propertyName
+                                    },
+                                    ...processedData
+                                }
+                            }
+                            console.log('Message: ', message)
+                            assistantService.sendMessageToIframe(message)
+                        })
                 })
             })
         })

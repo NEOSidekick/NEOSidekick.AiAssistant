@@ -102,7 +102,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
 
     let requiredChangedEvent = false
     const watchDocumentNodeChange = function * () {
-        yield takeLatest([actionTypes.UI.ContentCanvas.SET_SRC, actionTypes.UI.ContentCanvas.RELOAD, actionTypes.CR.Nodes.MERGE], function * (action) {
+        yield takeLatest([actionTypes.UI.ContentCanvas.SET_SRC, actionTypes.UI.ContentCanvas.RELOAD, actionTypes.CR.Nodes.MERGE], async function * (action) {
             if (action.type === actionTypes.UI.ContentCanvas.SET_SRC) {
                 requiredChangedEvent = true;
             }
@@ -135,9 +135,9 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
                     'title': currentDocumentNode?.properties?.title || contentService.getGuestFrameDocumentTitle(),
                     'content': contentService.getGuestFrameDocumentHtml(),
                     'structuredContent': relevantNodes,
-                    'targetAudience': contentService.getCurrentDocumentTargetAudience(),
-                    'pageBriefing': contentService.getCurrentDocumentPageBriefing(),
-                    'focusKeyword': contentService.getCurrentDocumentFocusKeyword()
+                    'targetAudience': await contentService.getCurrentDocumentTargetAudience(),
+                    'pageBriefing': await contentService.getCurrentDocumentPageBriefing(),
+                    'focusKeyword': await contentService.getCurrentDocumentFocusKeyword()
                 },
             })
             requiredChangedEvent = false;

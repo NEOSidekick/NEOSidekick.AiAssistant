@@ -68,13 +68,12 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         this.setState({loading: true});
         try {
             // Process SidekickClientEval und ClientEval
-            userInput = contentService.processObjectWithClientEval(Object.assign({}, userInput))
+            userInput = await contentService.processObjectWithClientEval(Object.assign({}, userInput))
             // Map to external format
             userInput = Object.keys(userInput).map((identifier: string) => ({"identifier": identifier, "value": userInput[identifier]}))
-            const metaDescription = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", userInput)
-            commit(metaDescription)
+            const generatedValue = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", userInput)
+            commit(generatedValue)
         } catch (e) {
-            console.error(e)
             addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error')
         } finally {
             this.setState({loading: false});

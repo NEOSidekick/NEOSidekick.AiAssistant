@@ -73,11 +73,11 @@ export class ContentService {
         return null
     }
 
-    processClientEval = async (value: string): string => {
+    processClientEval = async (value: string, node: Node = null, parentNode: Node = null): string => {
         if (typeof value === 'string' && (value.startsWith('SidekickClientEval:') || value.startsWith('ClientEval:'))) {
             try {
-                const node = this.getCurrentDocumentNode()
-                const parentNode = this.getCurrentDocumentParentNode()
+                node = node ?? this.getCurrentDocumentNode()
+                parentNode = parentNode ?? this.getCurrentDocumentParentNode()
                 const documentTitle = this.getGuestFrameDocumentTitle()
                 const documentContent = this.getGuestFrameDocumentHtml()
                 // Functions

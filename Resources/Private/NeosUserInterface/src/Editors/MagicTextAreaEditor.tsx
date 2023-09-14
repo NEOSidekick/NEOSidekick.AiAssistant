@@ -74,7 +74,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
             const generatedValue = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", userInput)
             commit(generatedValue)
         } catch (e) {
-            addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error')
+            addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage}) : e.message, e?.severity ?? 'error')
         } finally {
             this.setState({loading: false});
         }

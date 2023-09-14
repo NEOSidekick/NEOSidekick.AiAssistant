@@ -90,27 +90,28 @@ export class ContentService {
                 if (e instanceof AiAssistantError) {
                     throw e
                 } else {
-                    console.warn('An error occurred while trying to evaluate "' + value + '"\n', e);
+                    console.error(e)
+                    throw new AiAssistantError('An error occurred while trying to evaluate "' + value + '"', 1694682118365, value)
                 }
             }
         }
         return value;
     }
 
-    processObjectWithClientEval = async (obj: object): object => {
+    processObjectWithClientEval = async (obj: object, node: Node = null, parentNode: Node = null): object => {
         await Promise.all(Object.keys(obj).map(async key => {
             const value: any = obj[key]
             if (typeof value === 'string') {
-                obj[key] = await this.processClientEval(value)
+                obj[key] = await this.processClientEval(value, node, parentNode)
             }
 
             if (typeof value === 'object') {
-                obj[key] = await this.processObjectWithClientEval(value)
+                obj[key] = await this.processObjectWithClientEval(value, node, parentNode)
             }
 
             if (Array.isArray(value)) {
                 obj[key] = await Promise.all(value.map(async itemValue => {
-                    return await this.processObjectWithClientEval(itemValue)
+                    return await this.processObjectWithClientEval(itemValue, node, parentNode)
                 }))
             }
         }))
@@ -124,9 +125,10 @@ export class ContentService {
 
         // Fetch image object
         const {loadImageMetadata} = backend.get().endpoints;
+        let imageUri
         try {
             const image = await loadImageMetadata(propertyValue?.__identity)
-            const imageUri = image?.originalImageResourceUri
+            imageUri = image?.originalImageResourceUri
         } catch (e) {
             throw new AiAssistantError('Could not fetch image object.', 1694595598880)
         }

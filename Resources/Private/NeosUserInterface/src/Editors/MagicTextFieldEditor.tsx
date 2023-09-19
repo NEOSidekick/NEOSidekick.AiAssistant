@@ -119,7 +119,7 @@ export default class MagicTextFieldEditor extends Component<any, any> {
                     />
                 </div>
                 {showGenerateButton ? (
-                    <div>
+                    <div style={{'margin-top': '4px'}}>
                         <Button
                             className="generateBtn"
                             size="regular"

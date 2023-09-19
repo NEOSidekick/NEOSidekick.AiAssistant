@@ -17,9 +17,14 @@ const defaultOptions = {
     externalService: globalRegistry.get('NEOSidekick.AiAssistant').get('externalService'),
     contentService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentService')
 }))
-@connect(state => ({
-    activeContentDimensions: selectors.CR.ContentDimensions.active(state)
-}), {
+@connect(state => {
+    return state => {
+        const activeContentDimensions = selectors.CR.ContentDimensions.active(state);
+        const node = selectors.CR.Nodes.focusedSelector(state);
+        const parentNode = selectors.CR.Nodes.nodeByContextPath(state)(node.parent);
+        return {activeContentDimensions, node, parentNode}
+    }
+}, {
     addFlashMessage: actions.UI.FlashMessages.add
 })
 export default class MagicTextAreaEditor extends Component<any, any> {
@@ -37,6 +42,8 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         id: PropTypes.string,
 
         activeContentDimensions: PropTypes.object.isRequired,
+        node: PropTypes.object,
+        parentNode: PropTypes.object,
 
         i18nRegistry: PropTypes.object.isRequired,
         externalService: PropTypes.object.isRequired,
@@ -63,12 +70,14 @@ export default class MagicTextAreaEditor extends Component<any, any> {
             contentService,
             activeContentDimensions,
             addFlashMessage,
-            i18nRegistry
+            i18nRegistry,
+            node,
+            parentNode
         } = this.props;
         this.setState({loading: true});
         try {
             // Process SidekickClientEval und ClientEval
-            userInput = await contentService.processObjectWithClientEval(Object.assign({}, userInput))
+            userInput = await contentService.processObjectWithClientEval(Object.assign({}, userInput), node, parentNode)
             // Map to external format
             userInput = Object.keys(userInput).map((identifier: string) => ({"identifier": identifier, "value": userInput[identifier]}))
             const generatedValue = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", userInput)

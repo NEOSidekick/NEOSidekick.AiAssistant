@@ -81,11 +81,11 @@ export class ContentService {
                 const documentTitle = this.getGuestFrameDocumentTitle()
                 const documentContent = this.getGuestFrameDocumentHtml()
                 // Functions
-                const AssetUrl = await this.getImageMetadata
+                const AssetUri = await this.getImageMetadata
                 const AsyncFunction = Object.getPrototypeOf(async function () {
                 }).constructor
-                const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUrl', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
-                return await evaluateFn(node, parentNode, documentTitle, documentContent, AssetUrl)
+                const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
+                return await evaluateFn(node, parentNode, documentTitle, documentContent, AssetUri)
             } catch (e) {
                 if (e instanceof AiAssistantError) {
                     throw e

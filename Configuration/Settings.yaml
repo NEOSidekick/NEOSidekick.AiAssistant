@@ -28,8 +28,10 @@ Neos:
           siteName: '${NEOSidekick.AiAssistant.siteName()}'
           domain: '${NEOSidekick.AiAssistant.domain()}'
           referrer: '${NEOSidekick.AiAssistant.referrer()}'
+          defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
 
 NEOSidekick:
   AiAssistant:
     apikey: ''
     developmentBuild: false
+    defaultLanguage: 'en'

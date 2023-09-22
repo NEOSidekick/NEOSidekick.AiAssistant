@@ -29,7 +29,8 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
         return
     }
 
-    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(`test`))
+    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry())
+    globalRegistry.get('NEOSidekick.AiAssistant').set('configuration', configuration)
     const externalService = createExternalService(frontendConfiguration);
     globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', externalService)
     const contentService = createContentService(globalRegistry, store);

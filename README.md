@@ -28,6 +28,24 @@ NEOSidekick:
     apikey: 'your-api-key-here'
 ```
 
+### Content Language
+
+If your Neos installation uses content dimensions, we will retrieve the content language from the
+currently active content dimension. However, if you are not using this feature of Neos, 
+you need to define the default content language in the configuration, like this:
+
+```yaml
+NEOSidekick:
+  AiAssistant:
+    apikey: 'en'
+```
+
+English (`en`) is already configured out of the box. Supported languages are:
+
+* English (`en`)
+* German (`de`)
+* TODO Roland complete the list
+
 ### Page-specific AI briefings
 
 You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Document NodeType to allow editors to fine-tine the NEOSidekick AI Assistant behavior, 

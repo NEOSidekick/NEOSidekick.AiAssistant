@@ -103,6 +103,11 @@ class EelHelper implements ProtectedContextAwareInterface
         return $this->settings['referrer'] ?? null;
     }
 
+    public function defaultLanguage(): ?string
+    {
+        return $this->settings['defaultLanguage'] ?? null;
+    }
+
     /**
      * @inheritDoc
      */

@@ -15,7 +15,8 @@ const defaultOptions = {
 @neos(globalRegistry => ({
     i18nRegistry: globalRegistry.get('i18n'),
     externalService: globalRegistry.get('NEOSidekick.AiAssistant').get('externalService'),
-    contentService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentService')
+    contentService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentService'),
+    frontendConfiguration: globalRegistry.get('NEOSidekick.AiAssistant').get('configuration')
 }))
 @connect(state => {
     return state => {
@@ -48,7 +49,8 @@ export default class MagicTextFieldEditor extends Component<any, any> {
         i18nRegistry: PropTypes.object.isRequired,
         externalService: PropTypes.object.isRequired,
         contentService: PropTypes.object.isRequired,
-        addFlashMessage: PropTypes.func.isRequired
+        addFlashMessage: PropTypes.func.isRequired,
+        frontendConfiguration: PropTypes.object
     };
 
     static defaultProps = {
@@ -76,7 +78,8 @@ export default class MagicTextFieldEditor extends Component<any, any> {
             addFlashMessage,
             i18nRegistry,
             node,
-            parentNode
+            parentNode,
+            frontendConfiguration
         } = this.props;
         this.setState({loading: true});
         try {
@@ -84,7 +87,7 @@ export default class MagicTextFieldEditor extends Component<any, any> {
             userInput = await contentService.processObjectWithClientEval(Object.assign({}, userInput), node, parentNode)
             // Map to external format
             userInput = Object.keys(userInput).map((identifier: string) => ({"identifier": identifier, "value": userInput[identifier]}))
-            const generatedValue = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : "", userInput)
+            const generatedValue = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : frontendConfiguration.defaultLanguage, userInput)
             commit(generatedValue)
         } catch (e) {
             addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage}) : e.message, e?.severity ?? 'error')

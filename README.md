@@ -30,21 +30,38 @@ NEOSidekick:
 
 ### Content Language
 
-If your Neos installation uses content dimensions, we will retrieve the content language from the
-currently active content dimension. However, if you are not using this feature of Neos, 
+If you're using content dimensions in your Neos setup, we will retrieve the content language 
+from the currently active content dimension. However, if you are not using this feature of Neos, 
 you need to define the default content language in the configuration, like this:
 
 ```yaml
 NEOSidekick:
   AiAssistant:
-    apikey: 'en'
+    defaultLanguage: 'en'
 ```
 
-English (`en`) is already configured out of the box. Supported languages are:
+English (`en`) is configured out of the box. Supported languages are:
 
-* English (`en`)
-* German (`de`)
-* TODO Roland complete the list
+* English `en`
+* English (US) `en_US`
+* English (Australia) `en_AU`
+* English (UK) `en_UK`
+* French `fr`
+* French (Belgium) `fr_BE`
+* French (Switzerland) `fr_CH`
+* French (France) `fr_FR`
+* French (Canada) `fr_CA`
+* German `de`
+* German (Austria) `de_AT`
+* German (Germany) `de_DE`
+* German (Switzerland) `de_CH`
+* Italian `it`
+* Italian (Italy) `it_IT`
+* Italian (Switzerland) `it_CH`
+* Spanish `es`
+* Spanish (Spain) `es_ES`
+* Spanish (Mexico) `es_MX`
+* Spanish (Argentina) `es_AR`
 
 ### Page-specific AI briefings
 

@@ -1,19 +1,17 @@
-# [NEOSidekick](https://neosidekick.com/)
+# [NEOSidekick](https://neosidekick.com/) - Your Personal Writing Assistant for Neos
 
-## Revolutionize how you write copy
-
-AI is the game changer in content marketing. 
-Use the innovative writing assistant now, directly in your Neos CMS!
+Create content 10x faster, brainstorm new ideas, and turn thoughts into brilliant text. 
+Based on the latest findings in artificial intelligence.
 
 ## Installation
 
-`NEOSidekick.AiAssistant` is available via packagist. `"neosidekick/ai-assistant" : "~1.0"` to the require section of the composer.json or run:
+`NEOSidekick.AiAssistant` is available via Packagist. Add `"neosidekick/ai-assistant" : "^1.6"` to the require section of the composer.json or run:
 
 ```bash
 composer require neosidekick/ai-assistant
 ```
 
-We use semantic-versioning so every breaking change will increase the major-version number.
+We use semantic versioning, so every breaking change will increase the major version number.
 
 ## Configuration
 
@@ -63,11 +61,6 @@ English (`en`) is configured out of the box. Supported languages are:
 * Spanish (Mexico) `es_MX`
 * Spanish (Argentina) `es_AR`
 
-### Page-specific AI briefings
-
-You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Document NodeType to allow editors to fine-tine the NEOSidekick AI Assistant behavior, 
-or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).
-
 ### Permissions
 
 By default, every editor can use the assistant.
@@ -90,4 +83,9 @@ roles:
 ```
 
 Of course, you can also define the privilege for any
-other role that you are using, for example `Neos.Neos:Administrator`.
+other role that you are using for example `Neos.Neos:Administrator`.
+
+### Page-specific AI briefings
+
+You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Document NodeType to allow editors to fine-tune the NEOSidekick AI Assistant behavior,
+or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).

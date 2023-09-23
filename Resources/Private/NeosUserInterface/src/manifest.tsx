@@ -29,6 +29,11 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
         return
     }
 
+    if (!configuration.hasOwnProperty('defaultLanguage') || !configuration['defaultLanguage']) {
+        console.error('Could not initialize AiAssistant: defaultLanguage is not configured correctly, see README.')
+        return;
+    }
+
     globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry())
     globalRegistry.get('NEOSidekick.AiAssistant').set('configuration', configuration)
     const externalService = createExternalService(frontendConfiguration);
@@ -72,7 +77,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
 		const activeContentDimensions = useSelector(selectors.CR.ContentDimensions.active);
 		const interfaceLanguage = useSelector((state) => state?.user?.preferences?.interfaceLanguage);
         const iframeSrc = new URL(`${configuration.apiDomain}/chat/`);
-        iframeSrc.searchParams.append('contentLanguage', activeContentDimensions.language ? activeContentDimensions.language[0] : "");
+        iframeSrc.searchParams.append('contentLanguage', activeContentDimensions.language ? activeContentDimensions.language[0] : configuration['defaultLanguage']);
         iframeSrc.searchParams.append('interfaceLanguage', interfaceLanguage);
         iframeSrc.searchParams.append('userId', configuration.userId);
         iframeSrc.searchParams.append('plattform', 'neos');

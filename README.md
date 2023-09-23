@@ -1,19 +1,17 @@
-# [NEOSidekick](https://neosidekick.com/)
+# [NEOSidekick](https://neosidekick.com/) - Your Personal Writing Assistant for Neos
 
-## Revolutionize how you write copy
-
-AI is the game changer in content marketing. 
-Use the innovative writing assistant now, directly in your Neos CMS!
+Create content 10x faster, brainstorm new ideas, and turn thoughts into brilliant text. 
+Based on the latest findings in artificial intelligence.
 
 ## Installation
 
-`NEOSidekick.AiAssistant` is available via packagist. `"neosidekick/ai-assistant" : "~1.0"` to the require section of the composer.json or run:
+`NEOSidekick.AiAssistant` is available via Packagist. Add `"neosidekick/ai-assistant" : "^1.6"` to the require section of the composer.json or run:
 
 ```bash
 composer require neosidekick/ai-assistant
 ```
 
-We use semantic-versioning so every breaking change will increase the major-version number.
+We use semantic versioning, so every breaking change will increase the major version number.
 
 ## Configuration
 
@@ -28,10 +26,40 @@ NEOSidekick:
     apikey: 'your-api-key-here'
 ```
 
-### Page-specific AI briefings
+### Content Language
 
-You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Document NodeType to allow editors to fine-tine the NEOSidekick AI Assistant behavior, 
-or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).
+If you're using content dimensions in your Neos setup, we will retrieve the content language 
+from the currently active content dimension. However, if you are not using this feature of Neos, 
+you need to define the default content language in the configuration, like this:
+
+```yaml
+NEOSidekick:
+  AiAssistant:
+    defaultLanguage: 'en'
+```
+
+English (`en`) is configured out of the box. Supported languages are:
+
+* English `en`
+* English (US) `en_US`
+* English (Australia) `en_AU`
+* English (UK) `en_UK`
+* French `fr`
+* French (Belgium) `fr_BE`
+* French (Switzerland) `fr_CH`
+* French (France) `fr_FR`
+* French (Canada) `fr_CA`
+* German `de`
+* German (Austria) `de_AT`
+* German (Germany) `de_DE`
+* German (Switzerland) `de_CH`
+* Italian `it`
+* Italian (Italy) `it_IT`
+* Italian (Switzerland) `it_CH`
+* Spanish `es`
+* Spanish (Spain) `es_ES`
+* Spanish (Mexico) `es_MX`
+* Spanish (Argentina) `es_AR`
 
 ### Permissions
 
@@ -55,4 +83,9 @@ roles:
 ```
 
 Of course, you can also define the privilege for any
-other role that you are using, for example `Neos.Neos:Administrator`.
+other role that you are using for example `Neos.Neos:Administrator`.
+
+### Page-specific AI briefings
+
+You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Document NodeType to allow editors to fine-tune the NEOSidekick AI Assistant behavior,
+or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).

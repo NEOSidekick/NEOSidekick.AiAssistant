@@ -30,6 +30,10 @@
                 <source>An error occurred while trying to evaluate: {0}</source>
                 <target xml:lang="de" state="translated">Folgende Konfiguration konnte nicht ausgewertet werden: {0}</target>
             </trans-unit>
+            <trans-unit id="1695668144026">
+                <source>You cannot start two text generations at the same time.</source>
+                <target xml:lang="de" state="translated">Du kannst nicht zwei Text-Generierungen gleichzeitig starten.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

@@ -10,12 +10,23 @@ export const createAssistantService = (globalRegistry: SynchronousMetaRegistry<a
 export class AssistantService {
     private globalRegistry: SynchronousMetaRegistry<any>;
     private store: Store;
+    public currentlyHandledNodePath: string;
     constructor(globalRegistry: SynchronousMetaRegistry<any>, store: Store) {
         this.globalRegistry = globalRegistry
         this.store = store
+        this.currentlyHandledNodePath = null
     }
 
     sendMessageToIframe = (message): void => {
+        if (this.currentlyHandledNodePath && message?.eventName === 'call-module') {
+            this.addFlashMessage('1695668144026', 'You cannot start two text generations at the same time.')
+            return
+        }
+
+        if (message?.eventName === 'call-module') {
+            this.currentlyHandledNodePath = message?.data?.target?.nodePath
+        }
+
         const checkLoadedStatusAndSendMessage = setInterval(() => {
             const assistantFrame = document.getElementById('neosidekickAssistant')
             const isLoaded = assistantFrame.dataset.hasOwnProperty('loaded')
@@ -54,21 +65,64 @@ export class AssistantService {
         if (message?.data?.eventName === 'write-content') {
             const {nodePath, propertyName, value, isFinished} = message.data.data;
             this.changePropertyValue(nodePath, propertyName, value, isFinished)
+        } else if (message?.data?.eventName === 'stopped-generation') {
+            this.resetTypingCaret()
+            this.resetCurrentlyHandledNodePath()
         } else if (message?.data?.eventName === 'error') {
             const { message } = message.data.data;
-            this.store.dispatch(actions.UI.FlashMessages.add(slugify(message), 'Sidekick error: ' + message), 'error')
+            this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + message, 'error', message)
+            this.resetTypingCaret()
+            this.resetCurrentlyHandledNodePath()
+        }
+    }
+
+    private resetTypingCaret() {
+        const guestFrame = document.getElementsByName('neos-content-main')[0];
+        // @ts-ignore
+        const guestFrameDocument = guestFrame?.contentDocument;
+        const inlineFieldWithTypingCaret = guestFrameDocument.querySelector(`.typing-caret`)
+        if (inlineFieldWithTypingCaret) {
+            inlineFieldWithTypingCaret.classList.remove('typing-caret')
         }
     }
 
     private changePropertyValue = (nodePath: string, propertyName: string, propertyValue: string, isFinished: bool = false): void => {
+        if (nodePath !== this.currentlyHandledNodePath) {
+            console.log('aborting...')
+            return;
+        }
+
         const guestFrame = document.getElementsByName('neos-content-main')[0];
         // @ts-ignore
         const guestFrameDocument = guestFrame?.contentDocument;
         const inlineField = guestFrameDocument.querySelector(`[data-__neos-editable-node-contextpath="${nodePath}"][data-__neos-property="${propertyName}"]`)
-        if (inlineField) {
-            // @ts-ignore
-            inlineField?.ckeditorInstance?.setData(propertyValue)
-            inlineField.classList.toggle('typing-caret', !isFinished)
+        if (!inlineField) {
+            this.resetCurrentlyHandledNodePath()
+            return;
         }
+        // Check if node is still present
+        const state = this.store.getState()
+        if (!state?.cr?.nodes?.byContextPath.hasOwnProperty(nodePath)) {
+            inlineField.classList.remove('typing-caret')
+            this.resetCurrentlyHandledNodePath()
+            return;
+        }
+        // @ts-ignore
+        inlineField?.ckeditorInstance?.setData(propertyValue)
+        inlineField?.classList.toggle('typing-caret', !isFinished)
+
+        if (isFinished) {
+            this.resetCurrentlyHandledNodePath()
+        }
+    }
+
+    public resetCurrentlyHandledNodePath(): void
+    {
+        this.currentlyHandledNodePath = null
+    }
+
+    private addFlashMessage(code: string, message: string, severity: string = 'error', externalMessage: string = null): void {
+        const i18nRegistry = this.globalRegistry.get('i18n')
+        this.store.dispatch(actions.UI.FlashMessages.add(code, i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + code, message, {0: externalMessage}), severity))
     }
 }

@@ -105,7 +105,7 @@ export class ContentService {
                 obj[key] = await this.processClientEval(value, node, parentNode)
             }
 
-            if (typeof value === 'object') {
+            if (typeof value === 'object' && value !== null) {
                 obj[key] = await this.processObjectWithClientEval(value, node, parentNode)
             }
 

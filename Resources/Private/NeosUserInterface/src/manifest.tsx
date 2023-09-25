@@ -16,6 +16,7 @@ import "./style.css";
 import {createExternalService} from './ExternalService';
 import {createContentService} from './ContentService';
 import {createWatchNodeCreatedSaga} from "./Sagas/NodeCreated";
+import {createWatchNodeRemovedSaga} from "./Sagas/NodeRemoved"
 import {createAssistantService} from "./Service/AssistantService";
 
 export default function delay(timeInMilliseconds: number): Promise<void> {
@@ -153,6 +154,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     const sagasRegistry = globalRegistry.get('sagas')
     sagasRegistry.set('NEOSidekick.AiAssistant/watchDocumentNodeChange', {saga: watchDocumentNodeChange})
     sagasRegistry.set('NEOSidekick.AiAssistant/watchNodeCreated', {saga: createWatchNodeCreatedSaga(globalRegistry, store)})
+    sagasRegistry.set('NEOSidekick.AiAssistant/watchNodeRemoved', {saga: createWatchNodeRemovedSaga(globalRegistry, store)})
 
     const editorsRegistry = globalRegistry.get('inspector').get('editors');
     editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor', {

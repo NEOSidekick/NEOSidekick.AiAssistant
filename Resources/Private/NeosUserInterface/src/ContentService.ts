@@ -136,6 +136,17 @@ export class ContentService {
         if (!imageUri || imageUri === '') {
             throw new AiAssistantError('The given image does not have a correct url.', 1694595462402)
         }
-        return imageUri;
+
+        // Make sure that the imageUri has a domain prepended
+        // Get instance domain from configuration
+        const instanceDomain = this.globalRegistry.get('NEOSidekick.AiAssistant').get('configuration').domain
+        // Remove the scheme and split URL into parts
+        imageUri = imageUri.replace('http://', '').replace('https://').split('/')
+        // Remove the domain
+        imageUri.shift()
+        // Add the domain from configuration
+        imageUri.unshift(instanceDomain)
+        // Re-join the array to an URL and return
+        return imageUri.join('/')
     }
 }

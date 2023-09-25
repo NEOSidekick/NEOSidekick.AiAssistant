@@ -2,13 +2,12 @@
 
 namespace NEOSidekick\AiAssistant;
 
+use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
-use Neos\Flow\Security\Context;
 use Neos\Flow\Security\Cryptography\HashService;
-use Neos\Neos\Domain\Model\User;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Service\UserService;
@@ -84,7 +83,12 @@ class EelHelper implements ProtectedContextAwareInterface
     public function domain(): string
     {
         $currentDomain = $this->domainRepository->findOneByActiveRequest();
-        return $currentDomain ? $currentDomain->getHostname() : $_SERVER['SERVER_NAME'];
+        if ($currentDomain) {
+            return $currentDomain->getScheme() . '://' . $currentDomain->getHostname();
+        }
+
+        $uriFromGlobals = ServerRequest::getUriFromGlobals();
+        return $uriFromGlobals->getScheme() . '://' . $uriFromGlobals->getHost();
     }
 
     public function siteName(): string

@@ -84,11 +84,13 @@ class EelHelper implements ProtectedContextAwareInterface
     {
         $currentDomain = $this->domainRepository->findOneByActiveRequest();
         if ($currentDomain) {
-            return $currentDomain->getScheme() . '://' . $currentDomain->getHostname();
+            $scheme = $currentDomain->getScheme() ?: 'http';
+            return "$scheme://" . $currentDomain->getHostname();
         }
 
         $uriFromGlobals = ServerRequest::getUriFromGlobals();
-        return $uriFromGlobals->getScheme() . '://' . $uriFromGlobals->getHost();
+        $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
+        return "$schemeFromGlobals://" . $uriFromGlobals->getHost();
     }
 
     public function siteName(): string

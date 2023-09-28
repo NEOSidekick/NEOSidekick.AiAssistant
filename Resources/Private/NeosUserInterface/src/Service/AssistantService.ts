@@ -35,6 +35,11 @@ export class AssistantService {
                 // @ts-ignore
                 assistantFrame.contentWindow.postMessage(message, '*')
                 clearInterval(checkLoadedStatusAndSendMessage)
+
+                if (message?.eventName === 'call-module') {
+                    // If nothing happens for a while, reset handledNodePath
+                    this.resetCurrentlyHandledNodePathDebounced()
+                }
             } else {
                 console.log('not loaded, waiting...')
                 return
@@ -62,18 +67,23 @@ export class AssistantService {
     }
 
     private handleMessage = (message): void => {
+        console.info('Handle Sidekick Message: ' + message.data.eventName)
         if (message?.data?.eventName === 'write-content') {
             const {nodePath, propertyName, value, isFinished} = message.data.data;
+            // Make sure the handledNodePath is set while we alter the content
+            this.currentlyHandledNodePath = nodePath
             this.changePropertyValue(nodePath, propertyName, value, isFinished)
         } else if (message?.data?.eventName === 'stopped-generation') {
             this.resetTypingCaret()
             this.resetCurrentlyHandledNodePath()
         } else if (message?.data?.eventName === 'error') {
-            const { message } = message.data.data;
-            this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + message, 'error', message)
+            const errorMessage = message?.data?.data?.message;
+            this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + errorMessage, 'error', errorMessage)
             this.resetTypingCaret()
             this.resetCurrentlyHandledNodePath()
         }
+        // Make sure that the handledNodePath is reset eventually
+        this.resetCurrentlyHandledNodePathDebounced()
     }
 
     private resetTypingCaret() {
@@ -87,11 +97,6 @@ export class AssistantService {
     }
 
     private changePropertyValue = (nodePath: string, propertyName: string, propertyValue: string, isFinished: bool = false): void => {
-        if (nodePath !== this.currentlyHandledNodePath) {
-            console.log('aborting...')
-            return;
-        }
-
         const guestFrame = document.getElementsByName('neos-content-main')[0];
         // @ts-ignore
         const guestFrameDocument = guestFrame?.contentDocument;
@@ -119,6 +124,17 @@ export class AssistantService {
     public resetCurrentlyHandledNodePath(): void
     {
         this.currentlyHandledNodePath = null
+    }
+
+    public resetCurrentlyHandledNodePathDebounced(): void
+    {
+        let timer, timeout = 1000
+        return () => {
+            clearTimeout(timer)
+            timer = setTimeout(() => {
+                this.currentlyHandledNodePath = null
+            }, timeout)
+        }
     }
 
     private addFlashMessage(code: string, message: string, severity: string = 'error', externalMessage: string = null): void {

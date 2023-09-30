@@ -3,6 +3,7 @@ import {Node, NodeType} from '@neos-project/neos-ts-interfaces';
 import {Store} from 'react-redux'
 import backend from '@neos-project/neos-ui-backend-connector';
 import AiAssistantError from './AiAssistantError'
+import { actions, selectors } from '@neos-project/neos-ui-redux-store';
 
 export const createContentService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store): ContentService => {
     return new ContentService(globalRegistry, store)
@@ -11,10 +12,15 @@ export const createContentService = (globalRegistry: SynchronousMetaRegistry<any
 export class ContentService {
     private globalRegistry: SynchronousMetaRegistry<any>;
     private store: Store;
+    public nodeTypesRegistry;
+    public externalService;
+
 
     constructor(globalRegistry: SynchronousMetaRegistry<any>, store: Store) {
         this.globalRegistry = globalRegistry
         this.store = store
+        this.nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
+        this.externalService = globalRegistry.get('NEOSidekick.AiAssistant').get('externalService')
     }
 
     getGuestFrameDocumentTitle = (): string => {
@@ -148,5 +154,66 @@ export class ContentService {
         imageUri.unshift(instanceDomain)
         // Re-join the array to an URL and return
         return imageUri.join('/')
+    }
+
+    public getCurrentlyFocusedNodePathAndProperty () {
+        const state = this.store.getState()
+        const nodeTypesRegistry = this.globalRegistry.get('@neos-project/neos-ui-contentrepository')
+        const nodePath = state?.cr?.nodes?.focused?.contextPaths[0]
+        const node = selectors.CR.Nodes.nodeByContextPath(state)(nodePath)
+        return {
+            nodePath,
+            node,
+            property: state?.ui?.contentCanvas?.currentlyEditedPropertyName,
+            nodeType: nodeTypesRegistry.get(node?.nodeType),
+            parentNode: selectors.CR.Nodes.nodesByContextPathSelector(state)[node.parent]
+        }
+    }
+
+    public evaluateNodeTypeConfigurationAndStartGeneration(node: Node, propertyName: string, nodeType: NodeType, parentNode: Node = null)
+    {
+        if (!nodeType) {
+            return;
+        }
+
+        if (propertyName[0] === '_') {
+            return;
+        }
+
+        const propertyConfiguration = nodeType.properties[propertyName]
+        if (!propertyConfiguration?.options?.sidekick?.onCreate) {
+            return;
+        }
+
+        try {
+            if (!propertyConfiguration?.ui?.inlineEditable) {
+                throw new AiAssistantError('You can only generate content on inline editable properties', '1688395273728')
+            }
+
+            if (!this.externalService.hasApiKey()) {
+                throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
+            }
+        } catch (e) {
+            this.store.dispatch(actions.UI.FlashMessages.add(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error'))
+        }
+
+        const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick.onCreate))
+        const assistantService = this.globalRegistry.get('NEOSidekick.AiAssistant').get('assistantService')
+        this.processObjectWithClientEval(configuration, node, parentNode)
+            .then(processedData => {
+                const message = {
+                    version: '1.0',
+                    eventName: 'call-module',
+                    data: {
+                        'platform': 'neos',
+                        'target': {
+                            'nodePath': node.contextPath,
+                            'propertyName': propertyName
+                        },
+                        ...processedData
+                    }
+                }
+                assistantService.sendMessageToIframe(message)
+            })
     }
 }

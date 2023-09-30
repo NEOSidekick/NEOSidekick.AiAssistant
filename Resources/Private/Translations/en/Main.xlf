@@ -5,6 +5,9 @@
             <trans-unit id="generate" xml:space="preserve">
                 <source>Generate with Sidekick</source>
             </trans-unit>
+            <trans-unit id="regenerate" xml:space="preserve">
+                <source>Regenerate</source>
+            </trans-unit>
             <trans-unit id="failedToGenerate" xml:space="preserve">
                 <source>Failed to fetch generated text</source>
             </trans-unit>

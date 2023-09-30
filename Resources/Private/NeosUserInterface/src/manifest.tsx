@@ -1,23 +1,19 @@
-// @ts-ignore
 import manifest, {SynchronousRegistry} from "@neos-project/neos-ui-extensibility";
-// @ts-ignore
-import { IconButton, Headline } from "@neos-project/react-ui-components";
-// @ts-ignore
-import { actionTypes, selectors } from '@neos-project/neos-ui-redux-store';
-// @ts-ignore
+import {Headline, IconButton} from "@neos-project/react-ui-components";
+import {actionTypes, selectors} from '@neos-project/neos-ui-redux-store';
 import React from 'react';
-// @ts-ignore
-import { useSelector } from 'react-redux';
-// @ts-ignore
-import { takeLatest } from 'redux-saga/effects';
+import {useSelector} from 'react-redux';
+import {takeLatest} from 'redux-saga/effects';
 import MagicTextFieldEditor from './Editors/MagicTextFieldEditor';
 import MagicTextAreaEditor from './Editors/MagicTextAreaEditor';
-import "./style.css";
 import {createExternalService} from './ExternalService';
 import {createContentService} from './ContentService';
 import {createWatchNodeCreatedSaga} from "./Sagas/NodeCreated";
 import {createWatchNodeRemovedSaga} from "./Sagas/NodeRemoved"
 import {createAssistantService} from "./Service/AssistantService";
+import RegenerateButton from './Components/RegenerateButton'
+
+import "./style.css";
 
 export default function delay(timeInMilliseconds: number): Promise<void> {
     // @ts-ignore
@@ -163,4 +159,14 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor', {
         component: MagicTextAreaEditor
     });
+
+    // Regenerate Button in Secondary Toolbar
+    const ckEditorRegistry = globalRegistry.get('ckEditor5');
+    const richtextToolbar = ckEditorRegistry.get('richtextToolbar');
+    richtextToolbar.set('NEOSidekick.AiAssistant:regenerate', {
+        component: RegenerateButton,
+        isVisible: () => {
+            return true
+        },
+    }, 'end');
 });

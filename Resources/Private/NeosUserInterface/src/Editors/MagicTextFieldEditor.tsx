@@ -2,8 +2,8 @@ import React, {Component} from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import {neos} from '@neos-project/neos-ui-decorators';
-import {TextInput, Icon, Button} from '@neos-project/react-ui-components';
-import { actions, selectors } from '@neos-project/neos-ui-redux-store';
+import {Button, Icon, TextInput} from '@neos-project/react-ui-components';
+import {actions, selectors} from '@neos-project/neos-ui-redux-store';
 
 const defaultOptions = {
     autoFocus: false,

@@ -1,7 +1,6 @@
 import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
 import {Store} from 'react-redux'
-import { actions } from '@neos-project/neos-ui-redux-store'
-import slugify from '@sindresorhus/slugify'
+import {actions} from '@neos-project/neos-ui-redux-store'
 
 export const createAssistantService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store): AssistantService => {
     return new AssistantService(globalRegistry, store)

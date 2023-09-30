@@ -1,10 +1,5 @@
-// @ts-ignore
-import { takeEvery } from 'redux-saga/effects';
-import { actions, actionTypes, selectors } from '@neos-project/neos-ui-redux-store';
-import {ContentService} from '../ContentService'
-import {AssistantService} from "../Service/AssistantService";
-import {ExternalService} from "../ExternalService";
-import AiAssistantError from "../AiAssistantError";
+import {takeEvery} from 'redux-saga/effects';
+import {actionTypes} from '@neos-project/neos-ui-redux-store';
 
 export const createWatchNodeRemovedSaga = (globalRegistry, store) => {
     return function * (){

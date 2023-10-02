@@ -187,7 +187,7 @@ export class ContentService {
         }
     }
 
-    public evaluateNodeTypeConfigurationAndStartGeneration(node: Node, propertyName: string, nodeType: NodeType, parentNode: Node = null)
+    public evaluateNodeTypeConfigurationAndStartGeneration(node: Node, propertyName: string, nodeType: NodeType, parentNode: Node = null, isOnCreate = false)
     {
         if (!nodeType) {
             return;
@@ -198,11 +198,20 @@ export class ContentService {
         }
 
         const propertyConfiguration = nodeType.properties[propertyName]
-        if (!propertyConfiguration?.options?.sidekick?.onCreate) {
-            return;
-        }
-
         try {
+            // Warn about legacy configuration
+            if (propertyConfiguration?.options?.sidekick?.onCreate?.module) {
+                throw new AiAssistantError('Please do not use options.sidekick.onCreate.module anymore. Read the docs to find out about the new configuration.', '1696264259260')
+            }
+
+            if (!propertyConfiguration?.options?.sidekick?.module) {
+                return;
+            }
+
+            if (isOnCreate && propertyConfiguration?.options?.sidekick?.onCreate !== true) {
+                return;
+            }
+
             if (!propertyConfiguration?.ui?.inlineEditable) {
                 throw new AiAssistantError('You can only generate content on inline editable properties', '1688395273728')
             }
@@ -216,7 +225,7 @@ export class ContentService {
             return;
         }
 
-        const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick.onCreate))
+        const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick))
         const assistantService = this.globalRegistry.get('NEOSidekick.AiAssistant').get('assistantService')
         this.processObjectWithClientEval(configuration, node, parentNode)
             .then(processedData => {

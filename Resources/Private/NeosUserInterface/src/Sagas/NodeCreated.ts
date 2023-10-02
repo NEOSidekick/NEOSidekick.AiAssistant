@@ -37,7 +37,7 @@ export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
                     const nodeType = nodeTypesRegistry.get(node.nodeType)
 
                     Object.keys(nodeType.properties).forEach((propertyName) => {
-                        contentService.evaluateNodeTypeConfigurationAndStartGeneration(node, propertyName, nodeType, parentNode)
+                        contentService.evaluateNodeTypeConfigurationAndStartGeneration(node, propertyName, nodeType, parentNode, true)
                     })
                 })
             })

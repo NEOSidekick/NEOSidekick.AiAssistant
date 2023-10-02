@@ -26,6 +26,9 @@
             <trans-unit id="1695668144026">
                 <source>You cannot start two text generations at the same time.</source>
             </trans-unit>
+            <trans-unit id="1696264259260">
+                <source>Please do not use options.sidekick.onCreate.module anymore. Read the docs to find out about the new configuration.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

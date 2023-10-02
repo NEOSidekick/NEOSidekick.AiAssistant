@@ -139,7 +139,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
                             disabled={this.state.loading}
                             onClick={async () => await this.fetch(finalOptions.module, finalOptions.arguments ?? {})}
                         >
-                            {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generate')}&nbsp;
+                            {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generateWithSidekick')}&nbsp;
                             {this.getIcon(this.state.loading)}
                         </Button>
                     </div>

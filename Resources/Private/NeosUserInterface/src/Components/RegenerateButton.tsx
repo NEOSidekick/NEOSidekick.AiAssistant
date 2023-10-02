@@ -38,7 +38,7 @@ export default class RegenerateButton extends PureComponent {
         }
 
         const propertyConfiguration = nodeType.properties[property];
-        this.setState({show: propertyConfiguration?.ui?.inlineEditable === true && propertyConfiguration?.options?.sidekick?.onCreate !== undefined})
+        this.setState({show: propertyConfiguration?.ui?.inlineEditable === true && propertyConfiguration?.options?.sidekick?.module !== undefined})
     }
 
     onClick = () => {
@@ -58,9 +58,9 @@ export default class RegenerateButton extends PureComponent {
             i18nRegistry
         } = this.props;
 
-        return (this.state.show ? <Button disabled={!this.state.enabled} style="transparent" hoverStyle="brand" onClick={this.onClick} isActive={Boolean(this.props.isActive)} title={i18nRegistry.translate('NEOSidekick.AiAssistant:Main:regenerate')}>
-            <Icon icon="magic" size="" fixedWidth padded="right" />&nbsp;
-            {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:regenerate')}
+        return (this.state.show ? <Button disabled={!this.state.enabled} style="transparent" hoverStyle="brand" onClick={this.onClick} isActive={Boolean(this.props.isActive)} title={i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generate')}>
+            <Icon icon="magic" size="" fixedWidth padded="right" />
+            {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generate')}
         </Button> : '');
     }
 }

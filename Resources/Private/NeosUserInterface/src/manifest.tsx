@@ -163,7 +163,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     // Regenerate Button in Secondary Toolbar
     const ckEditorRegistry = globalRegistry.get('ckEditor5');
     const richtextToolbar = ckEditorRegistry.get('richtextToolbar');
-    richtextToolbar.set('NEOSidekick.AiAssistant:regenerate', {
+    richtextToolbar.set('NEOSidekick.AiAssistant:generate', {
         component: RegenerateButton,
         isVisible: () => {
             return true

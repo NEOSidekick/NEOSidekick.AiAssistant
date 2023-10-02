@@ -20,13 +20,25 @@ export default class RegenerateButton extends PureComponent {
 
     constructor(props) {
         super(props);
-        // We need a timeout here for the store to catch up
-        // TODO: Improve
-        setTimeout(() => {
-            const {nodeType, property} = this.props.contentService.getCurrentlyFocusedNodePathAndProperty()
-            const propertyConfiguration = nodeType.properties[property]
-            this.setState({show: propertyConfiguration?.ui?.inlineEditable === true && propertyConfiguration?.options?.sidekick?.onCreate})
-        }, 25)
+    }
+
+    componentDidMount() {
+        this.evaluateFocusedNodeAndPropertyAndShowButton()
+    }
+
+    private evaluateFocusedNodeAndPropertyAndShowButton = (retries = 5) => {
+        const {nodeType, property} = this.props.contentService.getCurrentlyFocusedNodePathAndProperty()
+        if (!nodeType || !property) {
+            if (retries === 0) {
+                return;
+            }
+
+            setTimeout(() => this.evaluateFocusedNodeAndPropertyAndShowButton(retries - 1), 100);
+            return;
+        }
+
+        const propertyConfiguration = nodeType.properties[property];
+        this.setState({show: propertyConfiguration?.ui?.inlineEditable === true && propertyConfiguration?.options?.sidekick?.onCreate !== undefined})
     }
 
     onClick = () => {

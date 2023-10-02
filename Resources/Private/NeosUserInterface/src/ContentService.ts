@@ -162,8 +162,7 @@ export class ContentService {
     private prependConfiguredDomainToImageUri(imageUri) {
         // Make sure that the imageUri has a domain prepended
         // Get instance domain from configuration
-        // const instanceDomain = this.globalRegistry.get('NEOSidekick.AiAssistant').get('configuration').domain
-        const instanceDomain = 'https://rested-pheasant-vocal.ngrok-free.app'
+        const instanceDomain = this.globalRegistry.get('NEOSidekick.AiAssistant').get('configuration').domain
         // Remove the scheme and split URL into parts
         imageUri = imageUri.replace('http://', '').replace('https://').split('/')
         // Remove the domain

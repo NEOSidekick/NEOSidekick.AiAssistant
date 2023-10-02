@@ -3,8 +3,8 @@
     <file original="" source-language="en" target-language="de" datatype="plaintext">
         <body>
             <trans-unit id="1688157373215" xml:space="preserve">
-                <source><![CDATA[This feature is not available in the free version of NEOSidekick. Sign up for a free trial at <a href="https://neosidekick.com/en/pricing" target="_blank">https://neosidekick.com/en/pricing</a>.]]></source>
-                <target xml:lang="de" state="translated"><![CDATA[Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter <a href="https://neosidekick.com/preise" target="_blank">https://neosidekick.com/preise</a>.]]></target>
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+                <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
             </trans-unit>
             <trans-unit id="1688158193038" xml:space="preserve">
                 <source>The NEOSidekick api key provided is not valid.</source>

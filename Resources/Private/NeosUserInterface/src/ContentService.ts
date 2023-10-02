@@ -211,7 +211,9 @@ export class ContentService {
                 throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
             }
         } catch (e) {
+            const i18nRegistry = this.globalRegistry.get('i18n')
             this.store.dispatch(actions.UI.FlashMessages.add(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code) : e?.message, e?.severity ?? 'error'))
+            return;
         }
 
         const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick.onCreate))

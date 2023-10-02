@@ -3,7 +3,9 @@ import {Node, NodeType} from '@neos-project/neos-ts-interfaces';
 import {Store} from 'react-redux'
 import backend from '@neos-project/neos-ui-backend-connector';
 import AiAssistantError from './AiAssistantError'
-import { actions, selectors } from '@neos-project/neos-ui-redux-store';
+import {actions, selectors} from '@neos-project/neos-ui-redux-store';
+import {produce} from 'immer';
+import mapValues from 'lodash.mapvalues';
 
 export const createContentService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store): ContentService => {
     return new ContentService(globalRegistry, store)
@@ -83,6 +85,10 @@ export class ContentService {
         if (typeof value === 'string' && (value.startsWith('SidekickClientEval:') || value.startsWith('ClientEval:'))) {
             try {
                 node = node ?? this.getCurrentDocumentNode()
+
+                const transientValues = selectors.UI.Inspector.transientValues(this.store.getState())
+                node = this.generateNodeForContext(node, transientValues)
+
                 parentNode = parentNode ?? this.getCurrentDocumentParentNode()
                 const documentTitle = this.getGuestFrameDocumentTitle()
                 const documentContent = this.getGuestFrameDocumentHtml()
@@ -131,10 +137,12 @@ export class ContentService {
 
         // Fetch image object
         const {loadImageMetadata} = backend.get().endpoints;
-        let imageUri
+        let imageUri, previewUri
         try {
             const image = await loadImageMetadata(propertyValue?.__identity)
             imageUri = image?.originalImageResourceUri
+            previewUri = image?.previewImageResourceUri
+
         } catch (e) {
             throw new AiAssistantError('Could not fetch image object.', 1694595598880)
         }
@@ -143,9 +151,19 @@ export class ContentService {
             throw new AiAssistantError('The given image does not have a correct url.', 1694595462402)
         }
 
+        let imagesArray = []
+        imagesArray.push(this.prependConfiguredDomainToImageUri(imageUri))
+        if (previewUri) {
+            imagesArray.push(this.prependConfiguredDomainToImageUri(previewUri))
+        }
+        return imagesArray
+    }
+
+    private prependConfiguredDomainToImageUri(imageUri) {
         // Make sure that the imageUri has a domain prepended
         // Get instance domain from configuration
-        const instanceDomain = this.globalRegistry.get('NEOSidekick.AiAssistant').get('configuration').domain
+        // const instanceDomain = this.globalRegistry.get('NEOSidekick.AiAssistant').get('configuration').domain
+        const instanceDomain = 'https://rested-pheasant-vocal.ngrok-free.app'
         // Remove the scheme and split URL into parts
         imageUri = imageUri.replace('http://', '').replace('https://').split('/')
         // Remove the domain
@@ -160,13 +178,13 @@ export class ContentService {
         const state = this.store.getState()
         const nodeTypesRegistry = this.globalRegistry.get('@neos-project/neos-ui-contentrepository')
         const nodePath = state?.cr?.nodes?.focused?.contextPaths[0]
-        const node = selectors.CR.Nodes.nodeByContextPath(state)(nodePath)
+        const node = nodePath ? selectors.CR.Nodes.nodeByContextPath(state)(nodePath) : null
         return {
             nodePath,
             node,
             property: state?.ui?.contentCanvas?.currentlyEditedPropertyName,
-            nodeType: nodeTypesRegistry.get(node?.nodeType),
-            parentNode: selectors.CR.Nodes.nodesByContextPathSelector(state)[node.parent]
+            nodeType: node ? nodeTypesRegistry.get(node?.nodeType) : null,
+            parentNode: node ? selectors.CR.Nodes.nodesByContextPathSelector(state)[node.parent] : null
         }
     }
 
@@ -215,5 +233,16 @@ export class ContentService {
                 }
                 assistantService.sendMessageToIframe(message)
             })
+    }
+
+    private generateNodeForContext(node, transientValues) {
+        if (transientValues) {
+            return produce(node, draft => {
+                const mappedTransientValues = mapValues(transientValues, item => item?.value);
+                draft.properties = Object.assign({}, draft.properties, mappedTransientValues);
+            });
+        }
+
+        return node;
     }
 }

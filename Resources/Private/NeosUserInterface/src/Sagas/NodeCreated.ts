@@ -12,18 +12,33 @@ export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
                     return;
                 }
 
+                const createdNodeContextPath = feedback.payload.contextPath
+                const createdNodePath = createdNodeContextPath.split('@')[0]
+
+                // Get nodesByContextPath in store
+                const state = store.getState()
+                const nodesByContextPath = selectors.CR.Nodes.nodesByContextPathSelector(state);
+
+                // Get services
                 const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
                 const i18nRegistry = globalRegistry.get('i18n')
                 const contentService: ContentService = globalRegistry.get('NEOSidekick.AiAssistant').get('contentService')
                 const assistantService: AssistantService = globalRegistry.get('NEOSidekick.AiAssistant').get('assistantService')
                 const externalService: ExternalService = globalRegistry.get('NEOSidekick.AiAssistant').get('externalService')
-                const state = store.getState()
-                const node = selectors.CR.Nodes.nodesByContextPathSelector(state)[feedback.payload.contextPath]
-                const parentNode = selectors.CR.Nodes.nodesByContextPathSelector(state)[node.parent]
-                const nodeType = nodeTypesRegistry.get(node.nodeType)
 
-                Object.keys(nodeType.properties).forEach((propertyName) => {
-                    contentService.evaluateNodeTypeConfigurationAndStartGeneration(node, propertyName, nodeType, parentNode)
+                Object.keys(nodesByContextPath).forEach(nodeContextPath => {
+                    const nodePath = nodeContextPath.split('@')[0]
+                    if (!nodePath.startsWith(createdNodePath)) {
+                        return;
+                    }
+
+                    const node = nodesByContextPath[nodeContextPath]
+                    const parentNode = nodesByContextPath[node.parent]
+                    const nodeType = nodeTypesRegistry.get(node.nodeType)
+
+                    Object.keys(nodeType.properties).forEach((propertyName) => {
+                        contentService.evaluateNodeTypeConfigurationAndStartGeneration(node, propertyName, nodeType, parentNode)
+                    })
                 })
             })
         })

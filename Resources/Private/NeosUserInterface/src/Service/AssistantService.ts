@@ -17,7 +17,13 @@ export class AssistantService {
     }
 
     sendMessageToIframe = (message): void => {
-        if (this.currentlyHandledNodePath && message?.eventName === 'call-module') {
+        // If busy, ignore all page-changed and page-updated events silently
+        if (this.currentlyHandledNodePath && ['page-changed', 'page-updated'].indexOf(message?.eventName) > -1) {
+            return
+        }
+
+        // If busy, disallow further call-module events and show error
+        if (this.currentlyHandledNodePath && ['call-module'].indexOf(message?.eventName) > -1) {
             this.addFlashMessage('1695668144026', 'You cannot start two text generations at the same time.')
             return
         }

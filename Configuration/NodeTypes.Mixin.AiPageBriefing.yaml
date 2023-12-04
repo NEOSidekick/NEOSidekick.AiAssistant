@@ -20,6 +20,8 @@
       type: string
       ui:
         label: SEO Focus Keyword
+        help:
+          message: 'Currently this focus keyword is used for generating better content briefings and can help you document your SEO efforts. We are working on more features.'
         inspector:
           group: 'briefing'
           position: 10
@@ -29,6 +31,8 @@
       type: string
       ui:
         label: Target Audience
+        help:
+          message: 'Help NEOSidekick to understand your target audience and write more optimized content, especially when writing FAQ. This will override the site-wide target audience.'
         inspector:
           group: 'briefing'
           position: 20
@@ -43,6 +47,8 @@
       type: string
       ui:
         label: Page Briefing
+        help:
+          message: 'Give NEOSidekick additional context, e.g., that this is a landing page which you want to optimize for the primary target of booking consultation calls with your sales team.'
         inspector:
           group: 'briefing'
           position: 30

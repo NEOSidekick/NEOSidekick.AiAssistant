@@ -31,11 +31,11 @@ Neos:
           referrer: '${NEOSidekick.AiAssistant.referrer()}'
           defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
     modules:
-      administration:
+      management:
         submodules:
           neosidekickAiassistantAssets:
-            label: 'AiAssistant: Alt-Texte generieren'
-            icon: 'magic'
+            label: 'NEOSidekick.AiAssistant:AssetModule:label'
+            icon: 'fas fa-magic'
             controller: 'NEOSidekick\AiAssistant\Controller\AssetModuleController'
             privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
             mainStylesheet: Lite

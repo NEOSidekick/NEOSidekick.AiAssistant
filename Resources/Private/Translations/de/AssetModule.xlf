@@ -2,6 +2,10 @@
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
     <file original="" source-language="en" target-language="de" datatype="plaintext">
         <body>
+            <trans-unit id="label">
+                <source>Alternative Text Generator</source>
+                <target xml:lang="de">Alternativer Text Generator</target>
+            </trans-unit>
             <trans-unit id="saveAndNextPage" xml:space="preserve">
                 <source>Save all and get next page</source>
                 <target xml:lang="de" state="translated">Alle Speichern und nächste Seite</target>

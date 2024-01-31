@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="saveAndNextPage" xml:space="preserve">
+                <source>Save all and get next page</source>
+                <target xml:lang="de" state="translated">Alle Speichern und nächste Seite</target>
+            </trans-unit>
+            <trans-unit id="save">
+                <source>Save</source>
+                <target xml:lang="de">Speichern</target>
+            </trans-unit>
+            <trans-unit id="discard">
+                <source>Discard</source>
+                <target xml:lang="de">Verwerfen</target>
+            </trans-unit>
+            <trans-unit id="assetListItemLabel">
+                <source>File »{0}«</source>
+                <target xml:lang="de">Datei »{0}«</target>
+            </trans-unit>
+            <trans-unit id="generating">
+                <source>Generating...</source>
+                <target xml:lang="de">Wird generiert...</target>
+            </trans-unit>
+            <trans-unit id="listEmpty">
+                <source>There are no assets with a missing alternative text!</source>
+                <target xml:lang="de">Es gibt keine Medien mit fehlendem alternativem Text!</target>
+            </trans-unit>
+            <trans-unit id="loading">
+                <source>Loading...</source>
+                <target xml:lang="de">Lade...</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

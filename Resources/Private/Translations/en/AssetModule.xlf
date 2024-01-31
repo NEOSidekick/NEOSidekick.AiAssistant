@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="saveAndNextPage" xml:space="preserve">
+                <source>Save all and get next page</source>
+            </trans-unit>
+            <trans-unit id="save">
+                <source>Save</source>
+            </trans-unit>
+            <trans-unit id="discard">
+                <source>Discard</source>
+            </trans-unit>
+            <trans-unit id="assetListItemLabel">
+                <source>File »{0}«</source>
+            </trans-unit>
+            <trans-unit id="generating">
+                <source>Generating...</source>
+            </trans-unit>
+            <trans-unit id="listEmpty">
+                <source>There are no assets with a missing alternative text!</source>
+            </trans-unit>
+            <trans-unit id="loading">
+                <source>Loading...</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

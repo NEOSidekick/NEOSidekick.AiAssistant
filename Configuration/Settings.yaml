@@ -9,6 +9,7 @@ Neos:
           NEOSidekick.AiAssistant:
             - 'Main'
             - 'Error'
+            - 'AssetModule'
     Ui:
       resources:
         javascript:
@@ -29,6 +30,24 @@ Neos:
           domain: '${NEOSidekick.AiAssistant.domain()}'
           referrer: '${NEOSidekick.AiAssistant.referrer()}'
           defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
+    modules:
+      administration:
+        submodules:
+          neosidekickAiassistantAssets:
+            label: 'AiAssistant: Alt-Texte generieren'
+            icon: 'magic'
+            controller: 'NEOSidekick\AiAssistant\Controller\AssetModuleController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
+            additionalResources:
+              styleSheets:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.css
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+  Flow:
+    mvc:
+      routes:
+        'NEOSidekick.AiAssistant': true
 
 NEOSidekick:
   AiAssistant:

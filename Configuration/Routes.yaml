@@ -1,0 +1,9 @@
+-
+  name:  'Backend Service'
+  uriPattern: 'neosidekick/aiassistant/service/{@action}'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'BackendService'
+    '@action':     'index'
+    '@format':     'json'
+  httpMethods: ['GET', 'POST']

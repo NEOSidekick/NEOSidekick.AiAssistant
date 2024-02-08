@@ -1,30 +1,26 @@
-import React, {PureComponent} from "react";
+import React from "react";
 import {connect} from "react-redux";
 import PropTypes from "prop-types";
 import {AssetListItem} from "./index";
-import BackendAssetResultItemDto from "../Model/BackendAssetResultItemDto";
 import StateInterface from "../Store/StateInterface";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faSpinner} from "@fortawesome/free-solid-svg-icons";
-import TranslationService from "../Service/TranslationService";
+import BackendAssetModuleResultDtoInterface from "../Model/BackendAssetModuleResultDtoInterface";
+import PureComponent from "./PureComponent";
 
 @connect((state: StateInterface) => ({
-    assets: state.assets.items,
-    loading: state.app.loading
+    assets: state.app.items,
+    loading: state.app.loading,
+    started: state.app.started
 }))
 export default class AssetList extends PureComponent {
     static propTypes = {
         assets: PropTypes.object,
+        started: PropTypes.bool,
         loading: PropTypes.bool
     }
-    private translationService: TranslationService;
 
-    constructor(props) {
-        super(props)
-        this.translationService = TranslationService.getInstance()
-    }
-
-    assetsAsArray(): BackendAssetResultItemDto[]
+    assetsAsArray(): BackendAssetModuleResultDtoInterface[]
     {
         const {assets} = this.props;
         return Object.keys(assets).map(key => assets[key])
@@ -53,17 +49,18 @@ export default class AssetList extends PureComponent {
 
     private renderList()
     {
-        const assets: BackendAssetResultItemDto[] = this.assetsAsArray()
-        return (assets.map((asset: BackendAssetResultItemDto) => (
+        const assets: BackendAssetModuleResultDtoInterface[] = this.assetsAsArray()
+        return (assets.map((asset: BackendAssetModuleResultDtoInterface) => (
             <AssetListItem asset={asset} />
         )))
     }
 
     render() {
-        return [
+        const {started} = this.props
+        return started ? [
             this.loadingIndicator(),
             this.emptyListIndicator(),
             this.renderList()
-        ]
+        ] : null
     }
 }

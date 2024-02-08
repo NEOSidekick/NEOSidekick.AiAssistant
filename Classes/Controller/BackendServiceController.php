@@ -27,13 +27,23 @@ class BackendServiceController extends ActionController
     protected $defaultViewObjectName = JsonView::class;
     protected $supportedMediaTypes = ['application/json'];
 
+    public function initializeIndexAction()
+    {
+        $propertyMappingConfiguration = $this->arguments->getArgument('configuration')->getPropertyMappingConfiguration();
+        $propertyMappingConfiguration->allowProperties('propertyName');
+        $propertyMappingConfiguration->allowProperties('onlyAssetsInUse');
+        $propertyMappingConfiguration->allowProperties('limit');
+    }
+
     /**
      * @return void
      */
-    public function indexAction(): void
+    public function indexAction(AssetModuleConfigurationDto $configuration = null): void
     {
-        $configurationDto = new AssetModuleConfigurationDto(false, 'title', 5);
-        $nextTenAssetsToBeProcessed = $this->assetService->getAssetsThatNeedProcessing($configurationDto);
+        if (!$configuration) {
+            $configuration = new AssetModuleConfigurationDto(false, 'title', 5);
+        }
+        $nextTenAssetsToBeProcessed = $this->assetService->getAssetsThatNeedProcessing($configuration);
         $this->view->assign('value', $nextTenAssetsToBeProcessed);
     }
 

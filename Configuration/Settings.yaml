@@ -54,3 +54,7 @@ NEOSidekick:
     apikey: ''
     developmentBuild: false
     defaultLanguage: 'en'
+    altTextGeneratorModule:
+      onlyAssetsInUse: null
+      propertyName: null
+      limit: 10

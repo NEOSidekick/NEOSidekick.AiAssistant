@@ -1,46 +1,27 @@
-import React, {PureComponent, useId} from "react";
+import React from "react";
 import PropTypes from "prop-types";
 import {connect} from "react-redux";
-import {setGenerating, setPersisted, setPersisting, updatePropertyValue} from "../Store/AssetsSlice";
 import {ExternalService} from "../Service/ExternalService";
-import BackendService from "../Service/BackendService";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faSpinner} from "@fortawesome/free-solid-svg-icons"
-import TranslationService from "../Service/TranslationService";
-import {text} from "@fortawesome/fontawesome-svg-core";
+import {faCheck, faSpinner} from "@fortawesome/free-solid-svg-icons"
+import {
+    persistOneItem,
+    updateItemPropertyValue
+} from "../Store/AppSlice";
+import PureComponent from "./PureComponent";
 @connect(null, (dispatch, ownProps) => ({
-    update(data: object) {
-        dispatch(updatePropertyValue({ identifier: ownProps.asset.assetIdentifier, data }))
+    update(propertyValue: string) {
+        dispatch(updateItemPropertyValue({ identifier: ownProps.asset.assetIdentifier, propertyValue }))
     },
-    setGenerating(generating: boolean) {
-        dispatch(setGenerating({ identifier: ownProps.asset.assetIdentifier, generating }))
-    },
-    setPersisting(persisting: boolean) {
-        dispatch(setPersisting({ identifier: ownProps.asset.assetIdentifier, persisting }))
-    },
-    setPersisted(persisted: boolean = true) {
-        dispatch(setPersisted({ identifier: ownProps.asset.assetIdentifier, persisted }))
+    persist() {
+        dispatch(persistOneItem(ownProps.asset.assetIdentifier))
     }
 }))
 export default class AssetListItem extends PureComponent {
     static propTypes = {
         asset: PropTypes.object.isRequired,
         update: PropTypes.func,
-        setPersisted: PropTypes.func,
-        setGenerating: PropTypes.func,
-        setPersisting: PropTypes.func
-    }
-    private readonly translationService: TranslationService;
-
-    constructor(props) {
-        super(props);
-        this.translationService = TranslationService.getInstance()
-    }
-
-    async componentDidMount() {
-        const {setGenerating} = this.props
-        setGenerating(true)
-        await this.generate()
+        persist: PropTypes.func
     }
 
     handleChange(event) {
@@ -54,31 +35,22 @@ export default class AssetListItem extends PureComponent {
         update('')
     }
 
+    canChangeValue(): boolean
+    {
+        const {asset} = this.props;
+        return !(asset.persisted || asset.generating || asset.persisting);
+    }
+
     canDiscard(): boolean
     {
         const {asset} = this.props;
-        return asset.propertyValue !== '' && !asset.busy;
+        return !(asset.persisted || asset.generating || asset.persisting || asset.propertyValue === '');
     }
 
     canPersist(): boolean
     {
         const {asset} = this.props;
-        if (asset.propertyValue === '') {
-            return false;
-        }
-        return !asset.busy;
-
-    }
-
-    async persist()
-    {
-        const {asset, setPersisted, setPersisting} = this.props;
-        setPersisting(true)
-        const backend = BackendService.getInstance()
-        const response = await backend.persistAssets([asset])
-        console.log(response)
-        setPersisting(false)
-        setPersisted()
+        return !(asset.persisted || asset.generating || asset.persisting || asset.propertyValue === '');
     }
 
     async generate()
@@ -102,10 +74,10 @@ export default class AssetListItem extends PureComponent {
     }
 
     render() {
-        const { asset } = this.props;
+        const { asset, persist } = this.props;
         const textfieldId = asset.propertyName + '-' + asset.assetIdentifier
-        return (asset.persisted ? null :
-            <div className={'neos-row-fluid'} style={{marginBottom: '2rem'}}>
+        return (
+            <div className={'neos-row-fluid'} style={{marginBottom: '2rem', opacity: (asset.persisted ? '0.5' : '1')}}>
                 <div className={'neos-span4'} style={{aspectRatio: '3 / 2', position: 'relative'}}>
                     <img style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover'}} src={asset.thumbnailUri}  alt=""/>
                 </div>
@@ -119,7 +91,8 @@ export default class AssetListItem extends PureComponent {
                                 className={'neos-span12'}
                                 value={asset.propertyValue}
                                 rows={5}
-                                onChange={this.handleChange.bind(this)} />
+                                onChange={this.handleChange.bind(this)}
+                                disabled={!this.canChangeValue()} />
                         </div>
                     </div>
                     <div>
@@ -134,9 +107,12 @@ export default class AssetListItem extends PureComponent {
                             className={'neos-button neos-button-success'}
                             style={{marginRight: '8px'}}
                             disabled={!this.canPersist()}
-                            onClick={this.persist.bind(this)}>
+                            onClick={persist}>
+                            {(!asset.persisting && !asset.persisted) ? this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persist', 'Save') : null}
                             {asset.persisting ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : null}
-                            {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:save', 'Save')}
+                            {asset.persisting ? this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persisting', 'Saving...') : null}
+                            {asset.persisted ? <FontAwesomeIcon icon={faCheck} /> : null}
+                            {asset.persisted ? this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persisted', 'Saved') : null}
                         </button>
                         {asset.generating ? <span>
                             <FontAwesomeIcon icon={faSpinner} spin={true}/> {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:generating', 'Generating...')}

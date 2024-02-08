@@ -1,4 +1,5 @@
 import EndpointsInterface from "../Model/EndpointsInterface";
+import BackendAssetModuleResultDtoInterface from "../Model/BackendAssetModuleResultDtoInterface";
 
 export default class BackendService {
     private static instance: BackendService | null = null;
@@ -14,12 +15,15 @@ export default class BackendService {
         this.endpoints = endpoints
     }
 
-    public async getAssetsThatNeedProcessing()
+    public *getAssetsThatNeedProcessing(configuration: BackendAssetModuleResultDtoInterface)
     {
-        const response = await fetch(this.endpoints.getAssets, {
+        const params = new URLSearchParams()
+        Object.keys(configuration).map(key => params.append(`configuration[${key}]`, configuration[key]))
+        console.log(configuration, params)
+        const response = yield fetch(this.endpoints.getAssets + '?' + params.toString(), {
             credentials: 'include'
         });
-        return await response.json()
+        return yield response.json()
     }
 
     public async persistAssets(assets: object[])

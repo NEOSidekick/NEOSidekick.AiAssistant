@@ -17,8 +17,9 @@ final class AssetModuleConfigurationDto
     /**
      * @param bool   $onlyAssetsInUse
      * @param string $propertyName
+     * @param int    $limit
      */
-    public function __construct(bool $onlyAssetsInUse, string $propertyName, int $limit)
+    public function __construct(bool $onlyAssetsInUse, string $propertyName, int $limit = 10)
     {
         $this->onlyAssetsInUse = $onlyAssetsInUse;
         $this->propertyName = $propertyName;

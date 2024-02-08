@@ -10,9 +10,17 @@
                 <source>Save all and get next page</source>
                 <target xml:lang="de" state="translated">Alle Speichern und nächste Seite</target>
             </trans-unit>
-            <trans-unit id="save">
+            <trans-unit id="persist">
                 <source>Save</source>
                 <target xml:lang="de">Speichern</target>
+            </trans-unit>
+            <trans-unit id="persisted">
+                <source>Saved</source>
+                <target xml:lang="de">Gespeichert</target>
+            </trans-unit>
+            <trans-unit id="persisting">
+                <source>Saving...</source>
+                <target xml:lang="de">Speichert...</target>
             </trans-unit>
             <trans-unit id="discard">
                 <source>Discard</source>

@@ -8,9 +8,16 @@
             <trans-unit id="saveAndNextPage" xml:space="preserve">
                 <source>Save all and get next page</source>
             </trans-unit>
-            <trans-unit id="save">
+            <trans-unit id="persist">
                 <source>Save</source>
             </trans-unit>
+            <trans-unit id="persisted">
+                <source>Saved</source>
+            </trans-unit>
+            <trans-unit id="persisting">
+                <source>Saving...</source>
+            </trans-unit>
+            <trans-unit id="discard">
             <trans-unit id="discard">
                 <source>Discard</source>
             </trans-unit>

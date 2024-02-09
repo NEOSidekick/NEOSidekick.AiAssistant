@@ -5,6 +5,12 @@
             <trans-unit id="label">
                 <source>Alternative Text Generator</source>
             </trans-unit>
+            <trans-unit id="error.configuration">
+                <source>This module is not configured correctly. Please consult the documentation!</source>
+            </trans-unit>
+            <trans-unit id="error.noApiKey">
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+            </trans-unit>
             <trans-unit id="saveAndNextPage" xml:space="preserve">
                 <source>Save all and get next page</source>
             </trans-unit>
@@ -32,6 +38,45 @@
             </trans-unit>
             <trans-unit id="loading">
                 <source>Loading...</source>
+            </trans-unit>
+            <trans-unit id="configuration.onlyAssetsInUse.label">
+                <source>Which images?</source>
+            </trans-unit>
+            <trans-unit id="configuration.onlyAssetsInUse.0">
+                <source>All images</source>
+            </trans-unit>
+            <trans-unit id="configuration.onlyAssetsInUse.1">
+                <source>Only images in use</source>
+            </trans-unit>
+            <trans-unit id="configuration.propertyName.label">
+                <source>Which field?</source>
+            </trans-unit>
+            <trans-unit id="configuration.limit.label">
+                <source>How many images per page?</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.label">
+                <source>Which language should be used?</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.en">
+                <source>English</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.de">
+                <source>German</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.fr">
+                <source>French</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.es">
+                <source>Spanish</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.it">
+                <source>Italian</source>
+            </trans-unit>
+            <trans-unit id="startModule">
+                <source>Start generation</source>
+            </trans-unit>
+            <trans-unit id="startModule">
+                <source>Start generation</source>
             </trans-unit>
         </body>
     </file>

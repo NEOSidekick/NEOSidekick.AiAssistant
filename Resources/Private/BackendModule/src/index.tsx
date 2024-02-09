@@ -8,11 +8,12 @@ import TranslationService from "./Service/TranslationService";
 import {ExternalService} from "./Service/ExternalService";
 document.addEventListener('DOMContentLoaded', async() => {
     const endpoints: EndpointsInterface = window['_NEOSIDEKICK_AIASSISTANT_endpoints']
-    const configuration = window['_NEOSIDEKICK_AIASSISTANT_configuration']
-
-    if (!endpoints || !configuration) {
-        throw new Error('Failed loading configuration!')
-    }
+    const configuration: {
+        apiDomain: string,
+        apiKey: string,
+        defaultLanguage: string,
+        altTextGeneratorModule: object|null
+    } = window['_NEOSIDEKICK_AIASSISTANT_configuration']
 
     const backend = BackendService.getInstance()
     backend.configure(endpoints)
@@ -20,6 +21,22 @@ document.addEventListener('DOMContentLoaded', async() => {
     const translationService = TranslationService.getInstance()
     const translations = await backend.getTranslations()
     translationService.configure(translations)
+
+    const root = createRoot(document.getElementById('appContainer'))
+
+    if (!endpoints || !configuration) {
+        root.render(
+            <p dangerouslySetInnerHTML={{ __html: translationService.translate('NEOSidekick.AiAssistant:AssetModule:error.configuration', 'This module is not configured correctly. Please consult the documentation!') }} />
+        )
+        return
+    }
+
+    if (!configuration.apiKey) {
+        root.render(
+            <p dangerouslySetInnerHTML={{ __html: translationService.translate('NEOSidekick.AiAssistant:AssetModule:error.noApiKey', 'This feature is not available in the free version!') }} />
+        )
+        return
+    }
 
     const externalService = ExternalService.getInstance()
     externalService.configure(configuration.apiDomain, configuration.apiKey)
@@ -29,6 +46,7 @@ document.addEventListener('DOMContentLoaded', async() => {
         onlyAssetsInUse: false,
         propertyName: 'title',
         limit: 5,
+        language: configuration.defaultLanguage,
         ...configuration?.altTextGeneratorModule
     }
     const store = createStore({
@@ -41,7 +59,6 @@ document.addEventListener('DOMContentLoaded', async() => {
         }
     })
 
-    const root = createRoot(document.getElementById('appContainer'))
     root.render(
         <Root store={store} />
     )

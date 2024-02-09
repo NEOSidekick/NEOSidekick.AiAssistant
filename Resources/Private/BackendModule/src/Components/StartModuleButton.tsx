@@ -21,7 +21,7 @@ export default class StartModuleButton extends PureComponent {
     render() {
         const {started, startModule} = this.props;
         return (!started ? <button className={'neos-button neos-button-primary'} onClick={startModule}>
-            Starten
+            {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:startModule', 'Start generation')}
         </button> : null);
     }
 }

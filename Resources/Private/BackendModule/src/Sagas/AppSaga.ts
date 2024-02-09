@@ -12,6 +12,7 @@ import BackendAssetModuleResultDtoInterface from "../Model/BackendAssetModuleRes
 import AssetDtoInterface from "../Model/AssetDtoInterface";
 import {ExternalService} from "../Service/ExternalService";
 import {PayloadAction} from "@reduxjs/toolkit";
+import StateInterface from "../Store/StateInterface";
 
 function* startModuleSaga() {
     const isStarted = yield select(isAppStarted)
@@ -57,11 +58,11 @@ function* saveAllAndFetchNextSaga() {
     })
 
     if (assetsWithSetPropertyValue.length > 0) {
-        assetsWithSetPropertyValue.forEach(function* (asset: BackendAssetModuleResultDtoInterface)  {
+        for (let asset of assetsWithSetPropertyValue) {
             yield put(setItemPersisting({ identifier: asset.assetIdentifier, persisting: true }))
-        })
+        }
 
-        const response = yield BackendService.getInstance().persistAssets(assetsWithSetPropertyValue)
+        yield BackendService.getInstance().persistAssets(assetsWithSetPropertyValue)
         yield fetchNewPage()
     }
 }
@@ -72,8 +73,9 @@ export function* watchSaveAllAndFetchNext() {
 
 function* addItemSaga({ payload: item }: PayloadAction<BackendAssetModuleResultDtoInterface>) {
     yield put(setItemGenerating({ identifier: item.assetIdentifier, generating: true }))
+    const language = yield select((state: StateInterface) => state.app.moduleConfiguration.language)
     const externalService = ExternalService.getInstance()
-    const response = yield externalService.generate('alt_tag_generator', 'de', [
+    const response = yield externalService.generate('alt_tag_generator', language, [
         {
             identifier: 'url',
             value: [

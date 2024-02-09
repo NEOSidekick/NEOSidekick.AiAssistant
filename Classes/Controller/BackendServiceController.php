@@ -33,6 +33,7 @@ class BackendServiceController extends ActionController
         $propertyMappingConfiguration->allowProperties('propertyName');
         $propertyMappingConfiguration->allowProperties('onlyAssetsInUse');
         $propertyMappingConfiguration->allowProperties('limit');
+        $propertyMappingConfiguration->allowProperties('language');
     }
 
     /**
@@ -41,7 +42,7 @@ class BackendServiceController extends ActionController
     public function indexAction(AssetModuleConfigurationDto $configuration = null): void
     {
         if (!$configuration) {
-            $configuration = new AssetModuleConfigurationDto(false, 'title', 5);
+            $configuration = new AssetModuleConfigurationDto(false, 'title', 5, 'en');
         }
         $nextTenAssetsToBeProcessed = $this->assetService->getAssetsThatNeedProcessing($configuration);
         $this->view->assign('value', $nextTenAssetsToBeProcessed);

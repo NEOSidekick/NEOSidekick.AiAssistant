@@ -13,17 +13,20 @@ final class AssetModuleConfigurationDto
     protected bool $onlyAssetsInUse;
     protected string $propertyName;
     protected int $limit;
+    protected string $language;
 
     /**
      * @param bool   $onlyAssetsInUse
      * @param string $propertyName
      * @param int    $limit
+     * @param string $language
      */
-    public function __construct(bool $onlyAssetsInUse, string $propertyName, int $limit = 10)
+    public function __construct(bool $onlyAssetsInUse, string $propertyName, int $limit = 10, string $language = 'en')
     {
         $this->onlyAssetsInUse = $onlyAssetsInUse;
         $this->propertyName = $propertyName;
         $this->limit = $limit;
+        $this->language = $language;
     }
 
     public function isOnlyAssetsInUse(): bool

@@ -1,7 +1,8 @@
 export default interface AssetModuleConfigurationInterface {
-    readonly onlyAssetsInUse: OnlyAssetsInUse
-    readonly propertyName: AssetPropertyName
-    readonly limit: number
+    onlyAssetsInUse: OnlyAssetsInUse
+    propertyName: AssetPropertyName
+    limit: number,
+    language: string
 }
 
 export enum OnlyAssetsInUse {
@@ -11,4 +12,12 @@ export enum OnlyAssetsInUse {
 export enum AssetPropertyName {
     title = 'title',
     caption = 'caption'
+}
+
+export enum Language {
+    'de',
+    'en',
+    'fr',
+    'it',
+    'es'
 }

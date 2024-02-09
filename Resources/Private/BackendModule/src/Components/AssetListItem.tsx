@@ -73,6 +73,33 @@ export default class AssetListItem extends PureComponent {
         setGenerating(false)
     }
 
+    saveButtonLabel() {
+        const { asset } = this.props;
+        if (asset.persisting) {
+            return (
+                <span>
+                    <FontAwesomeIcon icon={faSpinner} spin={true}/>
+                    &nbsp;
+                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persisting', 'Saving...')}
+                </span>
+            )
+        } else if (asset.persisted) {
+            return (
+                <span>
+                    <FontAwesomeIcon icon={faCheck} />
+                    &nbsp;
+                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persisted', 'Saved')}
+                </span>
+            )
+        } else {
+            return (
+                <span>
+                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persist', 'Save')}
+                </span>
+            )
+        }
+    }
+
     render() {
         const { asset, persist } = this.props;
         const textfieldId = asset.propertyName + '-' + asset.assetIdentifier
@@ -107,12 +134,7 @@ export default class AssetListItem extends PureComponent {
                             className={'neos-button neos-button-success'}
                             style={{marginRight: '8px'}}
                             disabled={!this.canPersist()}
-                            onClick={persist}>
-                            {(!asset.persisting && !asset.persisted) ? this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persist', 'Save') : null}
-                            {asset.persisting ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : null}
-                            {asset.persisting ? this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persisting', 'Saving...') : null}
-                            {asset.persisted ? <FontAwesomeIcon icon={faCheck} /> : null}
-                            {asset.persisted ? this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:persisted', 'Saved') : null}
+                            onClick={persist}>{this.saveButtonLabel()}
                         </button>
                         {asset.generating ? <span>
                             <FontAwesomeIcon icon={faSpinner} spin={true}/> {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:generating', 'Generating...')}

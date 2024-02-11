@@ -37,6 +37,9 @@ NEOSidekick.AiAssistant.AssetModuleController.index = Neos.Fusion:Component {
         }
         @process.json = ${Json.stringify(value)}
     }
+    // TODO: maybe refactor this and not use prototypes
+    // from Neos.Neos.Ui to avoid polluting the UI configuration
+    // in Neos.Neos.Ui
     frontendConfiguration = Neos.Neos.Ui:RenderConfiguration {
         path = 'frontendConfiguration'
         @process.subset = ${value['NEOSidekick.AiAssistant']}

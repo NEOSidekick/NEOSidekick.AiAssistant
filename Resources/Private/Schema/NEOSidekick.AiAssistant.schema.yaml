@@ -1,0 +1,13 @@
+type: dictionary
+additionalProperties: false
+properties:
+  altTextGeneratorModule:
+    type: dictionary
+    additionalProperties: false
+    properties:
+      limit: { type: integer }
+      onlyAssetsInUse: { type: boolean }
+      propertyName: { type: [string, 'null'], enum: ['title', 'caption'] }
+  apikey: { type: string }
+  defaultLanguage: { type: string, enum: ['de', 'en', 'fr', 'it', 'es']}
+  developmentBuild: { type: boolean }

@@ -7,6 +7,7 @@ export const AppSlice = createSlice({
     name: 'app',
     initialState: {
         moduleConfiguration: {},
+        initialModuleConfiguration: {},
         loading: true,
         started: false,
         busy: false,

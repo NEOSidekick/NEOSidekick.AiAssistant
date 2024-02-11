@@ -42,16 +42,18 @@ document.addEventListener('DOMContentLoaded', async() => {
     externalService.configure(configuration.apiDomain, configuration.apiKey)
 
     // Set default configuration
+    const initialModuleConfiguration = configuration?.altTextGeneratorModule;
     const moduleConfiguration = {
         onlyAssetsInUse: false,
         propertyName: 'title',
         limit: 5,
         language: configuration.defaultLanguage,
-        ...configuration?.altTextGeneratorModule
+        ...initialModuleConfiguration
     }
     const store = createStore({
         app: {
             moduleConfiguration,
+            initialModuleConfiguration,
             loading: true,
             started: false,
             busy: false,

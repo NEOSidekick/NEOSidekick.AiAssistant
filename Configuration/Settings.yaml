@@ -30,6 +30,7 @@ Neos:
           domain: '${NEOSidekick.AiAssistant.domain()}'
           referrer: '${NEOSidekick.AiAssistant.referrer()}'
           defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
+          altTextGeneratorModule: '${NEOSidekick.AiAssistant.altTextGeneratorModuleConfiguration()}'
     modules:
       management:
         submodules:

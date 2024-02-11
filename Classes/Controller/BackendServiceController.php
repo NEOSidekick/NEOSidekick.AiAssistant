@@ -27,13 +27,19 @@ class BackendServiceController extends ActionController
     protected $defaultViewObjectName = JsonView::class;
     protected $supportedMediaTypes = ['application/json'];
 
-    public function initializeIndexAction()
+    public function initializeIndexAction(): void
     {
-        $propertyMappingConfiguration = $this->arguments->getArgument('configuration')->getPropertyMappingConfiguration();
-        $propertyMappingConfiguration->allowProperties('propertyName');
-        $propertyMappingConfiguration->allowProperties('onlyAssetsInUse');
-        $propertyMappingConfiguration->allowProperties('limit');
-        $propertyMappingConfiguration->allowProperties('language');
+        try {
+            $propertyMappingConfiguration = $this->arguments->getArgument('configuration')
+                ->getPropertyMappingConfiguration();
+            $propertyMappingConfiguration->allowProperties('propertyName');
+            $propertyMappingConfiguration->allowProperties('onlyAssetsInUse');
+            $propertyMappingConfiguration->allowProperties('limit');
+            $propertyMappingConfiguration->allowProperties('language');
+        } catch (NoSuchArgumentException) {
+            // This cannot happen, otherwise we have a broken
+            // request anyway
+        }
     }
 
     /**
@@ -56,7 +62,7 @@ class BackendServiceController extends ActionController
             $propertyMappingConfiguration->allowAllProperties();
         } catch (NoSuchArgumentException $e) {
             // This cannot happen, otherwise we have a broken
-            // request anyways
+            // request anyway
         }
     }
 

@@ -12,6 +12,7 @@ import {createWatchNodeCreatedSaga} from "./Sagas/NodeCreated";
 import {createWatchNodeRemovedSaga} from "./Sagas/NodeRemoved"
 import {createAssistantService} from "./Service/AssistantService";
 import RegenerateButton from './Components/RegenerateButton'
+import {TextField, TextArea} from '@neos-project/neos-ui-editors'
 
 import "./style.css";
 
@@ -21,6 +22,15 @@ export default function delay(timeInMilliseconds: number): Promise<void> {
 }
 
 manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfiguration}) => {
+    const editorsRegistry = globalRegistry.get('inspector').get('editors');
+    // Initially register default editors
+    editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor', {
+        component: TextField
+    });
+    editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor', {
+        component: TextArea
+    });
+
     const configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
     if (configuration === null || configuration.enabled === false) {
         return
@@ -31,7 +41,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
         return;
     }
 
-    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry())
+    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(""))
     globalRegistry.get('NEOSidekick.AiAssistant').set('configuration', configuration)
     const externalService = createExternalService(frontendConfiguration);
     globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', externalService)
@@ -152,7 +162,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     sagasRegistry.set('NEOSidekick.AiAssistant/watchNodeCreated', {saga: createWatchNodeCreatedSaga(globalRegistry, store)})
     sagasRegistry.set('NEOSidekick.AiAssistant/watchNodeRemoved', {saga: createWatchNodeRemovedSaga(globalRegistry, store)})
 
-    const editorsRegistry = globalRegistry.get('inspector').get('editors');
+    // Register editors with generate button
     editorsRegistry.set('NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor', {
         component: MagicTextFieldEditor
     });

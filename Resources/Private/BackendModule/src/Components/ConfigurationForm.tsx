@@ -34,7 +34,7 @@ export default class ConfigurationForm extends PureComponent<ConfigurationFormPr
         return (initialConfiguration?.onlyAssetsInUse == null ?
             <div className={'neos-control-group'}>
                 <label className={'neos-control-label'}>
-                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.onlyAssetsInUse.label', 'Which images?')}
+                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.onlyAssetsInUse.label', 'Selection of images')}
                 </label>
                 <div className={'neos-controls'}>
                     <select
@@ -77,7 +77,8 @@ export default class ConfigurationForm extends PureComponent<ConfigurationFormPr
     render() {
         const {started, configuration, updateConfiguration} = this.props;
         return (!started ?
-            <div style={{marginBottom: '1rem'}}>
+            <div style={{marginBottom: '1rem', maxWidth: '600px'}}>
+                <p style={{marginBottom: '1rem'}} dangerouslySetInnerHTML={{ __html: this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:intro', 'With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>')}} />
                 {this.renderOnlyInUseField()}
                 {this.renderPropertyNameField()}
                 <div className={'neos-control-group'}>

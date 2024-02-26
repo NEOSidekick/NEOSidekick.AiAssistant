@@ -39,8 +39,11 @@
             <trans-unit id="loading">
                 <source>Loading...</source>
             </trans-unit>
+            <trans-unit id="intro">
+                <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>]]></source>
+            </trans-unit>
             <trans-unit id="configuration.onlyAssetsInUse.label">
-                <source>Which images?</source>
+                <source>Selection of images</source>
             </trans-unit>
             <trans-unit id="configuration.onlyAssetsInUse.0">
                 <source>All images</source>
@@ -49,13 +52,13 @@
                 <source>Only images in use</source>
             </trans-unit>
             <trans-unit id="configuration.propertyName.label">
-                <source>Which field?</source>
+                <source>Field to save the description in</source>
             </trans-unit>
             <trans-unit id="configuration.limit.label">
                 <source>How many images per page?</source>
             </trans-unit>
             <trans-unit id="configuration.language.label">
-                <source>Which language should be used?</source>
+                <source>Language for the description</source>
             </trans-unit>
             <trans-unit id="configuration.language.en">
                 <source>English</source>

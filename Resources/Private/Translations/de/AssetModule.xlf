@@ -50,9 +50,13 @@
                 <source>Loading...</source>
                 <target xml:lang="de">Lade...</target>
             </trans-unit>
+            <trans-unit id="intro">
+                <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>]]></source>
+                <target xml:lang="de"><![CDATA[Mit diesem Tool kannst du Bildbeschreibungen erstellen und diese in das Feld Titel oder Beschreibung des Mediums speichern. Diese Beschreibungen sind als Bild-Alternativtexte für SEO und Barrierefreiheit optimiert. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Hier gehts zum Tutorial, wie ein Entwickler sie einbinden kann.</a>]]></target>
+            </trans-unit>
             <trans-unit id="configuration.onlyAssetsInUse.label">
-                <source>Which images?</source>
-                <target xml:lang="de">Welche Bilder?</target>
+                <source>Selection of images</source>
+                <target xml:lang="de">Auswahl der Bilder</target>
             </trans-unit>
             <trans-unit id="configuration.onlyAssetsInUse.0">
                 <source>All images</source>
@@ -63,16 +67,16 @@
                 <target>Nur Bilder in Verwendung</target>
             </trans-unit>
             <trans-unit id="configuration.propertyName.label">
-                <source>Which field?</source>
-                <target xml:lang="de">Welches Feld?</target>
+                <source>Field to save the description in</source>
+                <target xml:lang="de">Beschreibung speichern in</target>
             </trans-unit>
             <trans-unit id="configuration.limit.label">
-                <source>How many images per page?</source>
-                <target xml:lang="de">Wie viele Bilder pro Seite?</target>
+                <source>Number of images per page</source>
+                <target xml:lang="de">Anzahl der Bilder pro Seite</target>
             </trans-unit>
             <trans-unit id="configuration.language.label">
-                <source>Which language should be used?</source>
-                <target xml:lang="de">Welche Sprache soll verwendet werden?</target>
+                <source>Language for the description</source>
+                <target xml:lang="de">Sprache der Beschreibung</target>
             </trans-unit>
             <trans-unit id="configuration.language.en">
                 <source>English</source>

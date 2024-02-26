@@ -79,6 +79,7 @@ export default class ConfigurationForm extends PureComponent<ConfigurationFormPr
         return (!started ?
             <div style={{marginBottom: '1rem', maxWidth: '600px'}}>
                 <p style={{marginBottom: '1rem'}} dangerouslySetInnerHTML={{ __html: this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:intro', 'With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>')}} />
+                <div style={{marginBottom: '1.5rem'}} dangerouslySetInnerHTML={{ __html: '<div style="background-color: #00a338; padding: 12px; font-weight: 400; font-size: 14px; line-height: 1.4;">Dieses Feature ist standardmäßig für bis zu 30 Bilder pro Monat verfügbar und bei Enterprise für bis zu 1.000 Bilder.<br/><br/>Zum Feature-Start dürfen alle die automatische Generierung der Bild-Alternativtexte auf Fair-Use-Basis unbegrenzt nutzen.</div>' }}/>
                 {this.renderOnlyInUseField()}
                 {this.renderPropertyNameField()}
                 <div className={'neos-control-group'}>

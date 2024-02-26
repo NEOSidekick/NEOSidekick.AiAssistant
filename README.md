@@ -1,6 +1,6 @@
 # [NEOSidekick](https://neosidekick.com/) - Your Personal Writing Assistant for Neos
 
-Create content 10x faster, brainstorm new ideas, and turn thoughts into brilliant text. 
+Create content drafts faster, brainstorm new ideas, and turn thoughts into brilliant text. 
 Based on the latest findings in artificial intelligence.
 
 ## Installation
@@ -89,3 +89,5 @@ other role that you are using for example `Neos.Neos:Administrator`.
 
 You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Document NodeType to allow editors to fine-tune the NEOSidekick AI Assistant behavior,
 or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).
+
+![AiPageBriefing.png](docs%2FAiPageBriefing.png)

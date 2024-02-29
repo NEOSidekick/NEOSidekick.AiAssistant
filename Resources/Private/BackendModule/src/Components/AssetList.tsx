@@ -11,7 +11,8 @@ import PureComponent from "./PureComponent";
 @connect((state: StateInterface) => ({
     assets: state.app.items,
     loading: state.app.loading,
-    started: state.app.started
+    started: state.app.started,
+    hasError: state.app.hasError,
 }))
 export default class AssetList extends PureComponent {
     static propTypes = {
@@ -56,8 +57,8 @@ export default class AssetList extends PureComponent {
     }
 
     render() {
-        const {started} = this.props
-        return started ? [
+        const {started, hasError} = this.props
+        return (started && !hasError) ? [
             this.loadingIndicator(),
             this.emptyListIndicator(),
             this.renderList()

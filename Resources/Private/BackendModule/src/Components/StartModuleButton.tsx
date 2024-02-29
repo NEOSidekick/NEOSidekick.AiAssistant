@@ -6,7 +6,8 @@ import {startModule} from "../Store/AppSlice";
 import PureComponent from "./PureComponent";
 
 @connect((state: StateInterface) => ({
-    started: state.app.started
+    started: state.app.started,
+    hasError: state.app.hasError,
 }), (dispatch, ownProps) => ({
     startModule() {
         dispatch(startModule())
@@ -19,8 +20,8 @@ export default class StartModuleButton extends PureComponent {
     }
 
     render() {
-        const {started, startModule} = this.props;
-        return (!started ? <button className={'neos-button neos-button-primary'} onClick={startModule}>
+        const {started, startModule, hasError} = this.props;
+        return ((!started && !hasError) ? <button className={'neos-button neos-button-primary'} onClick={startModule}>
             {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:startModule', 'Start generation')}
         </button> : null);
     }

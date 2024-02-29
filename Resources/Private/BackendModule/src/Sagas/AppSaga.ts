@@ -6,13 +6,15 @@ import {
     getModuleConfiguration,
     isAppStarted, resetItems, setItemGenerating, setItemPersisted, setItemPersisting,
     setLoading,
-    setStarted, updateItemPropertyValue, hasUnpersistedItem, getItem
+    setStarted, updateItemPropertyValue, hasUnpersistedItem, getItem, setErrorMessage
 } from "../Store/AppSlice";
 import BackendAssetModuleResultDtoInterface from "../Model/BackendAssetModuleResultDtoInterface";
 import AssetDtoInterface from "../Model/AssetDtoInterface";
 import {ExternalService} from "../Service/ExternalService";
 import {PayloadAction} from "@reduxjs/toolkit";
 import StateInterface from "../Store/StateInterface";
+import TranslationService from "../Service/TranslationService";
+import AiAssistantError from "../Service/AiAssistantError";
 
 function* startModuleSaga() {
     const isStarted = yield select(isAppStarted)
@@ -75,19 +77,23 @@ function* addItemSaga({ payload: item }: PayloadAction<BackendAssetModuleResultD
     yield put(setItemGenerating({ identifier: item.assetIdentifier, generating: true }))
     const language = yield select((state: StateInterface) => state.app.moduleConfiguration.language)
     const externalService = ExternalService.getInstance()
-    const response = yield externalService.generate('alt_tag_generator', language, [
-        {
-            identifier: 'url',
-            value: [
-                item.fullsizeUri,
-                item.thumbnailUri
-            ]
-        }
-    ])
-    if (response) {
+    const translationService = TranslationService.getInstance()
+    try {
+        const response = yield externalService.generate('alt_tag_generator', language, [
+            {
+                identifier: 'url',
+                value: [
+                    item.fullsizeUri,
+                    item.thumbnailUri
+                ]
+            }
+        ])
         yield put(updateItemPropertyValue({ identifier: item.assetIdentifier, propertyValue: response }))
-    } else {
-        // resolve error
+    } catch (e) {
+        if (e instanceof AiAssistantError) {
+            yield put(setErrorMessage(translationService.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage})))
+        }
+        // todo catch other errors with a more generic message?
     }
     yield put(setItemGenerating({ identifier: item.assetIdentifier, generating: false }))
 }

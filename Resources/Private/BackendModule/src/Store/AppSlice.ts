@@ -11,7 +11,9 @@ export const AppSlice = createSlice({
         loading: true,
         started: false,
         busy: false,
-        items: {}
+        items: {},
+        hasError: false,
+        errorMessage: null
     },
     selectors: {
         isAppStarted: (state) => {
@@ -105,7 +107,11 @@ export const AppSlice = createSlice({
             const asset: AssetDtoInterface = state.items[action.payload.identifier]
             asset.persisting = action.payload.persisting
         }),
-        persistOneItem: ((state, action) => {})
+        persistOneItem: ((state, action) => {}),
+        setErrorMessage: ((state, action) => {
+            state.hasError = true
+            state.errorMessage = action.payload
+        })
     },
 })
 
@@ -122,7 +128,8 @@ export const {
     setItemGenerating,
     addItem,
     resetItems,
-    persistOneItem
+    persistOneItem,
+    setErrorMessage
 } = AppSlice.actions
 
 export const {

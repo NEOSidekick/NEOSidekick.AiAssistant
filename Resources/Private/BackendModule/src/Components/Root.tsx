@@ -6,6 +6,7 @@ import ConfigurationForm from "./ConfigurationForm";
 import StartModuleButton from "./StartModuleButton";
 import SubmitAndFetchNextButton from "./SubmitAndFetchNextButton";
 import PureComponent from "./PureComponent";
+import ErrorMessage from "./ErrorMessage";
 
 export default class Root extends PureComponent {
     static propTypes = {
@@ -17,6 +18,7 @@ export default class Root extends PureComponent {
         return (
             <Provider store={store}>
                 <div className={'neos-content neos-indented neos-fluid-container'}>
+                    <ErrorMessage />
                     <ConfigurationForm />
                     <AssetList />
                     <div className={'neos-footer'}>

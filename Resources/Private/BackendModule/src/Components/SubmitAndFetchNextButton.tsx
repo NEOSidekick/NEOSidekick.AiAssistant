@@ -16,6 +16,7 @@ import PropTypes from "prop-types";
 @connect((state: StateInterface) => ({
     isLoading: state.app.loading,
     started: state.app.started,
+    hasError: state.app.hasError,
     isGenerating: hasGeneratingItem(state),
     isPersisting: hasPersistingItem(state),
     hasItems: Object.keys(getItems(state) || {}).length > 0,
@@ -35,8 +36,8 @@ export default class SubmitAndFetchNextButton extends PureComponent {
     }
 
     render() {
-        const {started, hasItems, isPersisting, isLoading, isGenerating, hasItemWithoutPropertyValue, saveAllAndFetchNext} = this.props;
-        return ((started && hasItems) ? <button
+        const {started, hasItems, hasError, isPersisting, isLoading, isGenerating, hasItemWithoutPropertyValue, saveAllAndFetchNext} = this.props;
+        return ((started && hasItems && !hasError) ? <button
                 onClick={saveAllAndFetchNext}
                 className={'neos-button neos-button-success'}
                 disabled={isPersisting || isLoading || isGenerating || hasItemWithoutPropertyValue}>

@@ -6,6 +6,7 @@ import EndpointsInterface from "./Model/EndpointsInterface";
 import BackendService from "./Service/BackendService";
 import TranslationService from "./Service/TranslationService";
 import {ExternalService} from "./Service/ExternalService";
+import {omitBy, isNull} from "lodash"
 document.addEventListener('DOMContentLoaded', async() => {
     const endpoints: EndpointsInterface = window['_NEOSIDEKICK_AIASSISTANT_endpoints']
     const configuration: {
@@ -42,7 +43,7 @@ document.addEventListener('DOMContentLoaded', async() => {
     externalService.configure(configuration.apiDomain, configuration.apiKey)
 
     // Set default configuration
-    const initialModuleConfiguration = configuration?.altTextGeneratorModule;
+    const initialModuleConfiguration = omitBy(configuration?.altTextGeneratorModule || {}, isNull);
     const moduleConfiguration = {
         onlyAssetsInUse: false,
         propertyName: 'title',

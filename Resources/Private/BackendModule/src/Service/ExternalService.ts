@@ -61,4 +61,21 @@ export class ExternalService {
         }
         return message
     }
+
+    getBackendNotification = async (name: string): Promise<string|null> => {
+        const response = await fetch(`${this.apiDomain}/api/v1/backend-notification?name=${name}&language=${this.interfaceLanguage}`, {
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json"
+            }
+        });
+
+        const jsonData = await response.json()
+
+        if (response.status < 200 || response.status >= 400) {
+            throw new AiAssistantError('An error occurred while asking NEOSidekick', '1688158257149', jsonData?.message)
+        }
+
+        return jsonData?.message
+    }
 }

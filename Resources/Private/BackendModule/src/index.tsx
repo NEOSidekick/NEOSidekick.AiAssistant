@@ -59,7 +59,8 @@ document.addEventListener('DOMContentLoaded', async() => {
             loading: true,
             started: false,
             busy: false,
-            items: {}
+            items: {},
+            backendMessage: await externalService.getBackendNotification('bulk-image-generation')
         }
     })
 

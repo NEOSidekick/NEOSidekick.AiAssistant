@@ -14,6 +14,7 @@ export default interface StateInterface {
         busy: boolean,
         items: AssetDtoInterface[],
         hasError: boolean,
-        errorMessage: string|null
+        errorMessage: string|null,
+        backendMessage: string|null
     }
 }

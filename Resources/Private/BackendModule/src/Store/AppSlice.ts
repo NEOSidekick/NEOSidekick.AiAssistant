@@ -13,7 +13,8 @@ export const AppSlice = createSlice({
         busy: false,
         items: {},
         hasError: false,
-        errorMessage: null
+        errorMessage: null,
+        backendMessage: null
     },
     selectors: {
         isAppStarted: (state) => {
@@ -111,6 +112,9 @@ export const AppSlice = createSlice({
         setErrorMessage: ((state, action) => {
             state.hasError = true
             state.errorMessage = action.payload
+        }),
+        setBackendMessage: ((state, action) => {
+            state.backendMessage = action.payload
         })
     },
 })
@@ -129,7 +133,8 @@ export const {
     addItem,
     resetItems,
     persistOneItem,
-    setErrorMessage
+    setErrorMessage,
+    setBackendMessage
 } = AppSlice.actions
 
 export const {

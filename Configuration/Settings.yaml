@@ -31,6 +31,7 @@ Neos:
           referrer: '${NEOSidekick.AiAssistant.referrer()}'
           defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
           altTextGeneratorModule: '${NEOSidekick.AiAssistant.altTextGeneratorModuleConfiguration()}'
+          userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
     modules:
       management:
         submodules:

@@ -34,6 +34,8 @@ class AssetModuleController extends AbstractModuleController
      */
     public function indexAction()
     {
+        $user = $this->userService->getBackendUser();
+        $this->view->assign('user', $user);
         $this->view->assign('interfaceLanguage', $this->userService->getInterfaceLanguage());
     }
 }

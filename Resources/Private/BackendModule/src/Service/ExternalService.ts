@@ -4,6 +4,7 @@ export class ExternalService {
     private static instance: ExternalService | null = null;
     private apiDomain: string = ''
     private apiKey: string = ''
+    private interfaceLanguage: string = 'en';
 
     constructor() {
     }
@@ -16,9 +17,10 @@ export class ExternalService {
         return ExternalService.instance
     }
 
-    public configure = (apiDomain: string, apiKey: string) => {
+    public configure = (apiDomain: string, apiKey: string, interfaceLanguage: string) => {
         this.apiDomain = apiDomain
         this.apiKey = apiKey
+        this.interfaceLanguage = interfaceLanguage
     }
 
     hasApiKey = () => {

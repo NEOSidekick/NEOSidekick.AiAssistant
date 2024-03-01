@@ -13,7 +13,8 @@ document.addEventListener('DOMContentLoaded', async() => {
         apiDomain: string,
         apiKey: string,
         defaultLanguage: string,
-        altTextGeneratorModule: object|null
+        altTextGeneratorModule: object|null,
+        userInterfaceLanguage: string
     } = window['_NEOSIDEKICK_AIASSISTANT_configuration']
 
     const backend = BackendService.getInstance()
@@ -40,7 +41,7 @@ document.addEventListener('DOMContentLoaded', async() => {
     }
 
     const externalService = ExternalService.getInstance()
-    externalService.configure(configuration.apiDomain, configuration.apiKey)
+    externalService.configure(configuration.apiDomain, configuration.apiKey, configuration.userInterfaceLanguage)
 
     // Set default configuration
     const initialModuleConfiguration = omitBy(configuration?.altTextGeneratorModule || {}, isNull);

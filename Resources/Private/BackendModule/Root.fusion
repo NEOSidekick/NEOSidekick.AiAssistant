@@ -42,6 +42,7 @@ NEOSidekick.AiAssistant.AssetModuleController.index = Neos.Fusion:Component {
     // in Neos.Neos.Ui
     frontendConfiguration = Neos.Neos.Ui:RenderConfiguration {
         path = 'frontendConfiguration'
+        context.user = ${user}
         @process.subset = ${value['NEOSidekick.AiAssistant']}
         @process.json = ${Json.stringify(value)}
     }

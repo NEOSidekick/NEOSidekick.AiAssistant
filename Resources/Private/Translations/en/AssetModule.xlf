@@ -24,7 +24,6 @@
                 <source>Saving...</source>
             </trans-unit>
             <trans-unit id="discard">
-            <trans-unit id="discard">
                 <source>Discard</source>
             </trans-unit>
             <trans-unit id="assetListItemLabel">

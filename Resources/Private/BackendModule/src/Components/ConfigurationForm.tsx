@@ -76,47 +76,63 @@ export default class ConfigurationForm extends PureComponent<ConfigurationFormPr
         )
     }
 
+    private renderLimitField(): ReactElement
+    {
+        const {configuration, updateConfiguration} = this.props;
+        return (
+            <div className={'neos-control-group'}>
+                <label className={'neos-control-label'}>
+                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.limit.label', 'How many images per page?')}
+                </label>
+                <div className={'neos-controls'}>
+                    <select
+                        value={configuration.limit}
+                        onChange={e => updateConfiguration({limit: e.target.value})}
+                        defaultValue={10}>
+                        <option>5</option>
+                        <option>10</option>
+                        <option>15</option>
+                        <option>20</option>
+                        <option>25</option>
+                    </select>
+                </div>
+            </div>
+        )
+    }
+
+    private renderLanguageField(): ReactElement
+    {
+        const {configuration, initialConfiguration, updateConfiguration} = this.props;
+        return (initialConfiguration?.language == null ?
+            <div className={'neos-control-group'}>
+                <label className={'neos-control-label'}>
+                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.language.label', 'Which language?')}
+                </label>
+                <div className={'neos-controls'}>
+                    <select
+                        value={configuration.language}
+                        onChange={e => updateConfiguration({language: e.target.value})}>
+                        {enumKeys(Language).map(language =>
+                            <option value={language}>
+                                {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.language.' + language, language)}
+                            </option>
+                        )}
+                    </select>
+                </div>
+            </div> : null
+        )
+    }
+
     render() {
-        const {started, hasError, configuration, updateConfiguration, backendMessage} = this.props;
+        const {started, hasError, backendMessage} = this.props;
         return ((!started && !hasError) ?
             <div style={{marginBottom: '1rem', maxWidth: '600px'}}>
                 <p style={{marginBottom: '1rem'}} dangerouslySetInnerHTML={{ __html: this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:intro', 'With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>')}} />
                 <div style={{marginBottom: '1.5rem'}} dangerouslySetInnerHTML={{ __html: backendMessage }}/>
                 {this.renderOnlyInUseField()}
                 {this.renderPropertyNameField()}
-                <div className={'neos-control-group'}>
-                    <label className={'neos-control-label'}>
-                        {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.limit.label', 'How many images per page?')}
-                    </label>
-                    <div className={'neos-controls'}>
-                        <select
-                            value={configuration.limit}
-                            onChange={e => updateConfiguration({limit: e.target.value})}
-                            defaultValue={10}>
-                            <option>5</option>
-                            <option>10</option>
-                            <option>15</option>
-                            <option>20</option>
-                            <option>25</option>
-                        </select>
-                    </div>
-                </div>
-                <div className={'neos-control-group'}>
-                    <label className={'neos-control-label'}>
-                        {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.language.label', 'Which language?')}
-                    </label>
-                    <div className={'neos-controls'}>
-                        <select
-                            value={configuration.language}
-                            onChange={e => updateConfiguration({language: e.target.value})}>
-                            {enumKeys(Language).map(language =>
-                                <option value={language}>
-                                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.language.' + language, language)}
-                                </option>
-                            )}
-                        </select>
-                    </div>
-                </div>
+                {this.renderLimitField()}
+                {this.renderLanguageField()}
             </div> : null
         )
     }

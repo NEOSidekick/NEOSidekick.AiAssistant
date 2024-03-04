@@ -42,7 +42,7 @@ export default class AssetList extends PureComponent {
     {
         const {assets, loading} = this.props;
         return (
-            (Object.keys(assets).length === 0 && !loading) ? <span style={{backgroundColor: '#00a338', padding: '12px', fontWeight: 400, fontSize: '14px', lineHeight: 1.4}}>
+            (Object.keys(assets).length === 0 && !loading) ? <span style={{backgroundColor: '#00a338', padding: '12px', fontWeight: 400, fontSize: '14px', lineHeight: 1.4, marginTop: '18px', display: 'inline-block'}}>
                 {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:listEmpty', 'There are no assets with a missing alternative text!')}
             </span> : null
         )

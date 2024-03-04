@@ -64,7 +64,7 @@ export class ExternalService {
 
     getBackendNotification = async (name: string): Promise<string|null> => {
         try {
-            const response = await fetch(`${this.apiDomain}/api/v1/backend-notification?name=${name}&language=${this.interfaceLanguage}`, {
+            const response = await fetch(`${this.apiDomain}/api/v1/ackend-notification?name=${name}&language=${this.interfaceLanguage}`, {
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "application/json"
@@ -74,13 +74,15 @@ export class ExternalService {
             const jsonData = await response.json()
 
             if (response.status < 200 || response.status >= 400) {
-                throw new AiAssistantError('An error occurred while asking NEOSidekick', '1688158257149', jsonData?.message)
+                // This function is not vital for the plugin, so we just log it and return an empty string
+                console.warn('An error occurred while asking NEOSidekick: could not load backend notification')
+                return null
             }
 
             return jsonData?.message
         } catch (e) {
             // This function is not vital for the plugin, so we just log it and return an empty string
-            console.warn(e)
+            console.warn('An error occurred while asking NEOSidekick: could not load backend notification')
             return null
         }
     }

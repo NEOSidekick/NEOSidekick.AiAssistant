@@ -91,3 +91,7 @@ You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Docu
 or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).
 
 ![AiPageBriefing.png](docs%2FAiPageBriefing.png)
+
+### Asset Alt-Tag Generator
+
+todo

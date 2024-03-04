@@ -55,6 +55,14 @@ NEOSidekick:
     developmentBuild: false
     defaultLanguage: 'en'
     altTextGeneratorModule:
+      # Defines whether only asset that are used in content should be processed
+      # Allowed: true, false, null
       onlyAssetsInUse: null
+      # The AssetInterface property to write the generated value to
+      # Allowed: title, caption, null
       propertyName: null
+      # Predefines how many images should be processed per page, to avoid overload
+      # Allowed: 5, 10, 15, 20, 25, null
       limit: 10
+      # See allowed language keys in README
+      language: null

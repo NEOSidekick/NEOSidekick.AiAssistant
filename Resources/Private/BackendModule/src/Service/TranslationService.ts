@@ -78,7 +78,6 @@ export default class TranslationService {
     }
 
     public configure = (translations: object): void => {
-        console.log(translations)
         this.translations = translations
     }
 

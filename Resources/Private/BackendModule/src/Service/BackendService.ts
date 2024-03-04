@@ -19,7 +19,6 @@ export default class BackendService {
     {
         const params = new URLSearchParams()
         Object.keys(configuration).map(key => params.append(`configuration[${key}]`, configuration[key]))
-        console.log(configuration, params)
         const response = yield fetch(this.endpoints.getAssets + '?' + params.toString(), {
             credentials: 'include'
         });

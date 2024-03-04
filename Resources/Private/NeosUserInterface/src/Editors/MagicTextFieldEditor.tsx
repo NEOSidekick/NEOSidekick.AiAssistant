@@ -84,7 +84,7 @@ export default class MagicTextFieldEditor extends Component<any, any> {
         this.setState({loading: true});
         try {
             // Process SidekickClientEval und ClientEval
-            userInput = await contentService.processObjectWithClientEval(Object.assign({}, userInput), node, parentNode)
+            userInput = await contentService.processObjectWithClientEval(userInput, node, parentNode)
             // Map to external format
             userInput = Object.keys(userInput).map((identifier: string) => ({"identifier": identifier, "value": userInput[identifier]}))
             const generatedValue = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : frontendConfiguration.defaultLanguage, userInput)

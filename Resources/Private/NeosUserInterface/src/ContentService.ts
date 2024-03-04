@@ -110,24 +110,29 @@ export class ContentService {
         return value;
     }
 
+    processValueWithClientEval = async (value: any, node: Node = null, parentNode: Node = null): Promise<any> => {
+        if (typeof value === 'string') {
+            return this.processClientEval(value, node, parentNode)
+        }
+
+        if (typeof value === 'object' && value !== null) {
+            return this.processObjectWithClientEval(value, node, parentNode)
+        }
+
+        if (Array.isArray(value)) {
+            return Promise.all(value.map(async itemValue => {
+                return this.processObjectWithClientEval(itemValue, node, parentNode)
+            }))
+        }
+    }
+
     processObjectWithClientEval = async (obj: object, node: Node = null, parentNode: Node = null): object => {
+        const result = {};
         await Promise.all(Object.keys(obj).map(async key => {
             const value: any = obj[key]
-            if (typeof value === 'string') {
-                obj[key] = await this.processClientEval(value, node, parentNode)
-            }
-
-            if (typeof value === 'object' && value !== null) {
-                obj[key] = await this.processObjectWithClientEval(value, node, parentNode)
-            }
-
-            if (Array.isArray(value)) {
-                obj[key] = await Promise.all(value.map(async itemValue => {
-                    return await this.processObjectWithClientEval(itemValue, node, parentNode)
-                }))
-            }
+            result[key] = await this.processValueWithClientEval(value, node, parentNode)
         }))
-        return obj
+        return result
     }
 
     private getImageMetadata = async (propertyValue: any): string => {

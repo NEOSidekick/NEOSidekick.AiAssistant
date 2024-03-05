@@ -21,7 +21,7 @@
       ui:
         label: SEO Focus Keyword
         help:
-          message: 'Currently this focus keyword is used for generating better content briefings and can help you document your SEO efforts. We are working on more features.'
+          message: 'This focus keyword is used for generating better content briefings and optimized meta descriptions. Let us know know if you would like additional features based on that keyword.'
         inspector:
           group: 'briefing'
           position: 10

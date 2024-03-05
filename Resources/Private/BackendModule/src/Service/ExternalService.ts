@@ -64,7 +64,7 @@ export class ExternalService {
 
     getBackendNotification = async (name: string): Promise<string|null> => {
         try {
-            const response = await fetch(`${this.apiDomain}/api/v1/ackend-notification?name=${name}&language=${this.interfaceLanguage}`, {
+            const response = await fetch(`${this.apiDomain}/api/v1/backend-notification?name=${name}&language=${this.interfaceLanguage}`, {
                 headers: {
                     "Content-Type": "application/json",
                     "Accept": "application/json"

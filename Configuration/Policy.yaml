@@ -5,7 +5,7 @@ privilegeTargets:
       matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\AssetModuleController)'
 
 roles:
-  'Neos.Flow:Everybody':
+  'Neos.Neos:AbstractEditor':
     privileges:
       - privilegeTarget: NEOSidekick.AiAssistant:CanUse
         permission: GRANT

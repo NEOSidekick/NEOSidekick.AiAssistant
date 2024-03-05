@@ -91,3 +91,11 @@ You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Docu
 or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).
 
 ![AiPageBriefing.png](docs%2FAiPageBriefing.png)
+
+### Asset Alt-Text Generator
+
+Image alternative texts are essential for SEO and accessibility. With good image descriptions, you can help Google and screen readers to understand your images.
+
+[Read the tutorial](https://neosidekick.com/en/product/features/image-description-generator) on how create dozens of image descriptions in no time.
+
+![Alternative-Text-Generator.png](docs%2FAlternative-Text-Generator.png)

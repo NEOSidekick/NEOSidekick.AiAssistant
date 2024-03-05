@@ -38,6 +38,11 @@
             "NEOSidekick\\AiAssistant\\": "Classes"
         }
     },
+    "autoload-dev": {
+        "psr-4": {
+            "NEOSidekick\\AiAssistant\\Tests\\": "Tests"
+        }
+    },
     "extra": {
         "neos": {
             "package-key": "NEOSidekick.AiAssistant"

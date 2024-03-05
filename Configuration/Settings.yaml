@@ -9,6 +9,7 @@ Neos:
           NEOSidekick.AiAssistant:
             - 'Main'
             - 'Error'
+            - 'AssetModule'
     Ui:
       resources:
         javascript:
@@ -29,9 +30,39 @@ Neos:
           domain: '${NEOSidekick.AiAssistant.domain()}'
           referrer: '${NEOSidekick.AiAssistant.referrer()}'
           defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
+          altTextGeneratorModule: '${NEOSidekick.AiAssistant.altTextGeneratorModuleConfiguration()}'
+          userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
+    modules:
+      management:
+        submodules:
+          neosidekickAiassistantAssets:
+            label: 'NEOSidekick.AiAssistant:AssetModule:label'
+            icon: 'fas fa-magic'
+            controller: 'NEOSidekick\AiAssistant\Controller\AssetModuleController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
+            additionalResources:
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+  Flow:
+    mvc:
+      routes:
+        'NEOSidekick.AiAssistant': true
 
 NEOSidekick:
   AiAssistant:
     apikey: ''
     developmentBuild: false
     defaultLanguage: 'en'
+    altTextGeneratorModule:
+      # Defines whether only asset that are used in content should be processed, null let's the user choose
+      # Allowed: true, false, null
+      onlyAssetsInUse: null
+      # The AssetInterface property to write the generated value to, null let's the user choose
+      # Allowed: title, caption, null
+      propertyName: null
+      # Predefines how many images should be processed per page, to avoid generate too many in parallel
+      # Allowed: 5, 10, 15, 20, 25
+      limit: 10
+      # The language to write the text in, see allowed language keys in README
+      language: null

@@ -48,3 +48,12 @@ Neos:
     mvc:
       routes:
         'NEOSidekick.AiAssistant': true
+    security:
+      authentication:
+        providers:
+          'Neos.Neos:Backend':
+            requestPatterns:
+              'NEOSidekick.AiAssistant:BackendControllers':
+                pattern: ControllerObjectName
+                patternOptions:
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\.*'

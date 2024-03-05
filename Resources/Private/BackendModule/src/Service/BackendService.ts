@@ -23,6 +23,9 @@ export default class BackendService {
         const response = yield fetch(this.endpoints.getAssets + '?' + params.toString(), {
             credentials: 'include'
         });
+        if (response.status < 200 || response.status >= 400) {
+            throw new AiAssistantError('An error occurred while fetching the assets', '1709650151037')
+        }
         return yield response.json()
     }
 
@@ -35,10 +38,7 @@ export default class BackendService {
             },
             body: JSON.stringify({resultDtos: assets})
         })
-        if (response.status === 401) {
-            // TODO: use actual link from backend, in case someone configures it differently
-            window.location.href = '/neos/login'
-        } else if (response.status < 200 || response.status >= 400) {
+        if (response.status < 200 || response.status >= 400) {
             throw new AiAssistantError('An error occurred while persisting an asset', '1709648035592')
         }
         return await response.json()

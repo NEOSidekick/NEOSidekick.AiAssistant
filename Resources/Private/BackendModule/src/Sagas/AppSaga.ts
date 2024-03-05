@@ -31,12 +31,20 @@ function* fetchNewPage() {
     yield put(setLoading({loading: true}))
     const configuration = yield select(getModuleConfiguration)
     const backend: BackendService = BackendService.getInstance()
-    const response = yield backend.getAssetsThatNeedProcessing(configuration)
-    yield put(resetItems())
-    for (let item of response) {
-        yield put(addItem(item))
+    try {
+        const response = yield backend.getAssetsThatNeedProcessing(configuration)
+        yield put(resetItems())
+        for (let item of response) {
+            yield put(addItem(item))
+        }
+        yield put(setLoading({loading: false}))
+    } catch (e) {
+        if (e instanceof AiAssistantError) {
+            const translationService = TranslationService.getInstance()
+            yield put(setErrorMessage(translationService.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage})))
+        }
+        yield put(setLoading({loading: false}))
     }
-    yield put(setLoading({loading: false}))
 }
 
 export function* watchStartModule() {

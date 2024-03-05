@@ -10,9 +10,21 @@ use Neos\Flow\Annotations as Flow;
  */
 final class AssetModuleConfigurationDto
 {
+    /**
+     * @var bool
+     */
     protected bool $onlyAssetsInUse;
+    /**
+     * @var string
+     */
     protected string $propertyName;
+    /**
+     * @var int
+     */
     protected int $limit;
+    /**
+     * @var string
+     */
     protected string $language;
 
     /**

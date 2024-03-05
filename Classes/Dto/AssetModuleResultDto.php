@@ -10,11 +10,29 @@ use Neos\Flow\Annotations as Flow;
  */
 final class AssetModuleResultDto
 {
+    /**
+     * @var string
+     */
     protected string $filename;
+    /**
+     * @var string
+     */
     protected string $assetIdentifier;
+    /**
+     * @var string
+     */
     protected string $thumbnailUri;
+    /**
+     * @var string
+     */
     protected string $fullsizeUri;
+    /**
+     * @var string
+     */
     protected string $propertyName;
+    /**
+     * @var string
+     */
     protected string $propertyValue;
 
     /**

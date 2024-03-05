@@ -14,7 +14,10 @@
         "writing"
     ],
     "require": {
-        "neos/neos": "~5.0 || ~7.0 || ~8.0 || dev-master",
+        "neos/neos": "~7.0 || ~8.0 || dev-master",
+        "neos/media": "~7.0 || ~8.0 || dev-master",
+        "neos/neos-ui": "~7.0 || ~8.0 || dev-master",
+        "sitegeist/fusionlinkprototypes": "v1.0.1",
         "neos/seo": "*"
     },
     "authors": [

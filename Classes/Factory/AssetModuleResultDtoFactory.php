@@ -20,13 +20,13 @@ class AssetModuleResultDtoFactory
      * @Flow\Inject
      * @var ThumbnailService
      */
-    protected ThumbnailService $thumbnailService;
+    protected $thumbnailService;
 
     /**
      * @Flow\Inject
      * @var ResourceManager
      */
-    protected ResourceManager $resourceManager;
+    protected $resourceManager;
 
     public function create(Asset $asset, AssetModuleConfigurationDto $configuration): AssetModuleResultDto
     {

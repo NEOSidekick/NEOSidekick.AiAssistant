@@ -1,10 +1,10 @@
 include: resource://Neos.Fusion/Private/Fusion/Root.fusion
 include: resource://Neos.Neos.Ui/Private/Fusion/Prototypes/RenderConfiguration.fusion
+include: resource://Sitegeist.FusionLinkPrototypes/Private/Fusion/Root.fusion
 
 NEOSidekick.AiAssistant.AssetModuleController.index = Neos.Fusion:Component {
     endpoints = Neos.Fusion:DataStructure {
-        translations = Neos.Fusion:ActionUri {
-            request = ${request.mainRequest}
+        translations = Sitegeist.FusionLinkPrototypes:ActionUri {
             package = 'Neos.Neos'
             controller = 'Backend\\Backend'
             action = 'xliffAsJson'
@@ -19,16 +19,14 @@ NEOSidekick.AiAssistant.AssetModuleController.index = Neos.Fusion:Component {
                 }
             }
         }
-        getAssets = Neos.Fusion:ActionUri {
-            request = ${request.mainRequest}
+        getAssets = Sitegeist.FusionLinkPrototypes:ActionUri {
             package = 'NEOSidekick.AiAssistant'
             controller = 'BackendService'
             action = 'index'
             absolute = true
             format = 'json'
         }
-        updateAssets = Neos.Fusion:ActionUri {
-            request = ${request.mainRequest}
+        updateAssets = Sitegeist.FusionLinkPrototypes:ActionUri {
             package = 'NEOSidekick.AiAssistant'
             controller = 'BackendService'
             action = 'update'

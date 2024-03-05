@@ -106,9 +106,17 @@ function* persistOneItemSaga({ payload: id}: PayloadAction<string>) {
     const item = yield select(state => getItem(state, id))
     yield put(setItemPersisting({ identifier: item.assetIdentifier, persisting: true}))
     const backend = BackendService.getInstance()
-    const response = yield backend.persistAssets([item])
-    yield put(setItemPersisted({ identifier: item.assetIdentifier, persisted: true}))
-    yield put(setItemPersisting({ identifier: item.assetIdentifier, persisting: false}))
+    try {
+        yield backend.persistAssets([item])
+        yield put(setItemPersisted({identifier: item.assetIdentifier, persisted: true}))
+        yield put(setItemPersisting({identifier: item.assetIdentifier, persisting: false}))
+    } catch (e) {
+        if (e instanceof AiAssistantError) {
+            const translationService = TranslationService.getInstance()
+            yield put(setErrorMessage(translationService.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage})))
+        }
+        yield put(setItemPersisting({identifier: item.assetIdentifier, persisting: false}))
+    }
 }
 
 export function* watchPersistOneItem() {

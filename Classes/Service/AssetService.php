@@ -23,13 +23,13 @@ class AssetService
      * @Flow\Inject
      * @var AssetRepository
      */
-    protected AssetRepository $assetRepository;
+    protected $assetRepository;
 
     /**
      * @Flow\Inject
      * @var AssetModuleResultDtoFactory
      */
-    protected AssetModuleResultDtoFactory $assetModuleResultDtoFactory;
+    protected $assetModuleResultDtoFactory;
 
     /**
      * @param AssetModuleConfigurationDto $configurationDto

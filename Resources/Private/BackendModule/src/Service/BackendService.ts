@@ -1,5 +1,6 @@
 import EndpointsInterface from "../Model/EndpointsInterface";
 import BackendAssetModuleResultDtoInterface from "../Model/BackendAssetModuleResultDtoInterface";
+import AiAssistantError from "./AiAssistantError";
 
 export default class BackendService {
     private static instance: BackendService | null = null;
@@ -34,6 +35,12 @@ export default class BackendService {
             },
             body: JSON.stringify({resultDtos: assets})
         })
+        if (response.status === 401) {
+            // TODO: use actual link from backend, in case someone configures it differently
+            window.location.href = '/neos/login'
+        } else if (response.status < 200 || response.status >= 400) {
+            throw new AiAssistantError('An error occurred while persisting an asset', '1709648035592')
+        }
         return await response.json()
     }
 

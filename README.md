@@ -92,6 +92,10 @@ or you can build your own based on the [NEOSidekick YAML API](https://neosidekic
 
 ![AiPageBriefing.png](docs%2FAiPageBriefing.png)
 
-### Asset Alt-Tag Generator
+### Asset Alt-Text Generator
 
-todo
+Image alternative texts are essential for SEO and accessibility. With good image descriptions, you can help Google and screen readers to understand your images.
+
+[Read the tutorial](https://neosidekick.com/en/product/features/image-description-generator) on how create dozens of image descriptions in no time.
+
+![Alternative-Text-Generator.png](docs%2FAlternative-Text-Generator.png)

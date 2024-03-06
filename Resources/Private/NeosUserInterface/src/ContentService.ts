@@ -103,7 +103,7 @@ export class ContentService {
                     throw e
                 } else {
                     console.error(e)
-                    throw new AiAssistantError('An error occurred while trying to evaluate "' + value + '"', 1694682118365, value)
+                    throw new AiAssistantError('An error occurred while trying to evaluate "' + value + '"', '1694682118365', value)
                 }
             }
         }
@@ -137,7 +137,7 @@ export class ContentService {
 
     private getImageMetadata = async (propertyValue: any): string => {
         if (!propertyValue || !propertyValue?.__identity) {
-            throw new AiAssistantError('The property does not have a valid image.', 1694595562191)
+            throw new AiAssistantError('The property does not have a valid image.', '1694595562191')
         }
 
         // Fetch image object
@@ -149,11 +149,11 @@ export class ContentService {
             previewUri = image?.previewImageResourceUri
 
         } catch (e) {
-            throw new AiAssistantError('Could not fetch image object.', 1694595598880)
+            throw new AiAssistantError('Could not fetch image object.', '1694595598880')
         }
 
         if (!imageUri || imageUri === '') {
-            throw new AiAssistantError('The given image does not have a correct url.', 1694595462402)
+            throw new AiAssistantError('The given image does not have a correct url.', '1694595462402')
         }
 
         let imagesArray = []
@@ -192,7 +192,7 @@ export class ContentService {
         }
     }
 
-    public evaluateNodeTypeConfigurationAndStartGeneration(node: Node, propertyName: string, nodeType: NodeType, parentNode: Node = null, isOnCreate = false)
+    public async evaluateNodeTypeConfigurationAndStartGeneration(node: Node, propertyName: string, nodeType: NodeType, parentNode: Node = null, isOnCreate = false)
     {
         if (!nodeType) {
             return;
@@ -232,22 +232,20 @@ export class ContentService {
 
         const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick))
         const assistantService = this.globalRegistry.get('NEOSidekick.AiAssistant').get('assistantService')
-        this.processObjectWithClientEval(configuration, node, parentNode)
-            .then(processedData => {
-                const message = {
-                    version: '1.0',
-                    eventName: 'call-module',
-                    data: {
-                        'platform': 'neos',
-                        'target': {
-                            'nodePath': node.contextPath,
-                            'propertyName': propertyName
-                        },
-                        ...processedData
-                    }
-                }
-                assistantService.sendMessageToIframe(message)
-            })
+        const processedData = await this.processObjectWithClientEval(configuration, node, parentNode)
+        const message = {
+            version: '1.0',
+            eventName: 'call-module',
+            data: {
+                'platform': 'neos',
+                'target': {
+                    'nodePath': node.contextPath,
+                    'propertyName': propertyName
+                },
+                ...processedData
+            }
+        }
+        assistantService.sendMessageToIframe(message)
     }
 
     private generateNodeForContext(node, transientValues) {

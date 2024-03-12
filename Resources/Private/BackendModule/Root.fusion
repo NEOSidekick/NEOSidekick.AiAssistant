@@ -47,6 +47,6 @@ NEOSidekick.AiAssistant.AssetModuleController.index = Neos.Fusion:Component {
     renderer = afx`
         <script>{'_NEOSIDEKICK_AIASSISTANT_endpoints = ' + props.endpoints}</script>
         <script>{'_NEOSIDEKICK_AIASSISTANT_configuration = ' + props.frontendConfiguration}</script>
-        <div id="appContainer"></div>
+        <div id="appContainer" data-csrf-token={csrfToken}></div>
     `
 }

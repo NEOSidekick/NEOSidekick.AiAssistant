@@ -8,6 +8,7 @@ namespace NEOSidekick\AiAssistant\Controller;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Mvc\View\ViewInterface;
+use Neos\Flow\Security\Context;
 use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Backend\ModuleController;
 use Neos\Neos\Controller\Module\AbstractModuleController;
@@ -23,6 +24,12 @@ class AssetModuleController extends AbstractModuleController
      */
     protected $userService;
 
+    /**
+     * @Flow\Inject
+     * @var Context
+     */
+    protected $securityContext;
+
     protected function initializeView(ViewInterface $view)
     {
         parent::initializeView($view);
@@ -37,5 +44,6 @@ class AssetModuleController extends AbstractModuleController
         $user = $this->userService->getBackendUser();
         $this->view->assign('user', $user);
         $this->view->assign('interfaceLanguage', $this->userService->getInterfaceLanguage());
+        $this->view->assign('csrfToken', $this->securityContext->getCsrfProtectionToken());
     }
 }

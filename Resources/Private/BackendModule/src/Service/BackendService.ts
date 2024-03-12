@@ -5,6 +5,7 @@ import AiAssistantError from "./AiAssistantError";
 export default class BackendService {
     private static instance: BackendService | null = null;
     private endpoints: object;
+    private csrfToken: string;
     public static getInstance(): BackendService {
         if (!BackendService.instance) {
             BackendService.instance = new BackendService();
@@ -12,8 +13,9 @@ export default class BackendService {
         return BackendService.instance
     }
 
-    public configure(endpoints: EndpointsInterface) {
+    public configure(endpoints: EndpointsInterface, csrfToken: string) {
         this.endpoints = endpoints
+        this.csrfToken = csrfToken
     }
 
     public *getAssetsThatNeedProcessing(configuration: BackendAssetModuleResultDtoInterface)
@@ -34,6 +36,7 @@ export default class BackendService {
         const response = await fetch(this.endpoints.updateAssets, {
             method: 'POST',
             headers: {
+                'X-Flow-Csrftoken': this.csrfToken,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({resultDtos: assets})

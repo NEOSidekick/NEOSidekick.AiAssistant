@@ -17,14 +17,16 @@ document.addEventListener('DOMContentLoaded', async() => {
         userInterfaceLanguage: string
     } = window['_NEOSIDEKICK_AIASSISTANT_configuration']
 
+    const appContainer = document.getElementById('appContainer');
+
     const backend = BackendService.getInstance()
-    backend.configure(endpoints)
+    backend.configure(endpoints, appContainer.dataset.csrfToken)
 
     const translationService = TranslationService.getInstance()
     const translations = await backend.getTranslations()
     translationService.configure(translations)
 
-    const root = createRoot(document.getElementById('appContainer'))
+    const root = createRoot(appContainer)
 
     if (!endpoints || !configuration) {
         root.render(

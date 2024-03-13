@@ -30,6 +30,7 @@ Neos:
           domain: '${NEOSidekick.AiAssistant.domain()}'
           referrer: '${NEOSidekick.AiAssistant.referrer()}'
           defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
+          chatSidebarEnabled: '${NEOSidekick.AiAssistant.chatSidebarEnabled()}'
           altTextGeneratorModule: '${NEOSidekick.AiAssistant.altTextGeneratorModuleConfiguration()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
     modules:

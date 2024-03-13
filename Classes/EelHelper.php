@@ -114,6 +114,11 @@ class EelHelper implements ProtectedContextAwareInterface
         return $this->settings['defaultLanguage'] ?? null;
     }
 
+    public function chatSidebarEnabled(): bool
+    {
+        return $this->settings['chatSidebarEnabled'] ?? false;
+    }
+
     public function altTextGeneratorModuleConfiguration(): ?array
     {
         return $this->settings['altTextGeneratorModule'] ?? null;

@@ -119,6 +119,10 @@ div[class*="_unappliedChangesOverlay"] {
   display: block;
 }
 
+.neosidekick__frame--hidden {
+  display: none;
+}
+
 .generateBtn {
   width: 100%;
 }

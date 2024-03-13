@@ -3,6 +3,7 @@ NEOSidekick:
     apikey: ''
     developmentBuild: false
     defaultLanguage: 'en'
+    chatSidebarEnabled: true
     altTextGeneratorModule:
       # Defines whether only asset that are used in content should be processed, null let's the user choose
       # Allowed: true, false, null

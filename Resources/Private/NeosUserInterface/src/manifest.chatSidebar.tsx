@@ -6,6 +6,19 @@ import SidekickIFrame from "./Components/SidekickIFrame";
 export default (globalRegistry: GlobalRegistry, configuration: object) => {
     const containerRegistry = globalRegistry.get('containers');
     const App = containerRegistry.get('App');
+
+    if (!configuration.chatSidebarEnabled) {
+        containerRegistry.set('App', (props: Record<string, unknown>) => {
+            return (
+                <div>
+                    <App {...props} />
+                    <SidekickIFrame className="neosidekick__frame--hidden"/>
+                </div>
+            )
+        });
+        return;
+    }
+
     const WrappedApp = (props: Record<string, unknown>) => {
         // @ts-ignore
         const state = localStorage.getItem('NEOSidekick') ? JSON.parse(localStorage.getItem('NEOSidekick')) : { open: true, fullscreen: false };
@@ -17,21 +30,23 @@ export default (globalRegistry: GlobalRegistry, configuration: object) => {
         }
 
         const [isFullscreen, setFullscreen] = React.useState(state?.fullscreen);
-        const setFullscreenAndPersistState = (fullscreen) => {
+        const setFullscreenAndPersistState = (fullscreen: boolean) => {
             setFullscreen(fullscreen);
             state.fullscreen = fullscreen;
             localStorage.setItem('NEOSidekick', JSON.stringify(state));
         }
 
-        const fullscreenButton = (isOpen, isFullscreen, onClick) => {
+        const fullscreenButton = (isOpen: boolean, isFullscreen: boolean, onClick: fn) => {
             if (isOpen) {
                 return <IconButton icon={isFullscreen ? "compress" : "expand"} onClick={onClick} />
             }
+            return '';
         }
-        const toggleButton = (isOpen, isFullscreen, onClick) => {
+        const toggleButton = (isOpen: boolean, isFullscreen: boolean, onClick: fn) => {
             if (!isFullscreen) {
                 return <IconButton icon={isOpen ? "chevron-circle-right" : "chevron-circle-left"} onClick={onClick} />
             }
+            return '';
         }
 
         return <div className={`neosidekick_appWrapper ${isOpen ? "neosidekick_appWrapper--sidebar-open" : ""}  ${isFullscreen ? "neosidekick_appWrapper--sidebar-fullscreen" : ""}`}>

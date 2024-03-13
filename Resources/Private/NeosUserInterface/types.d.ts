@@ -474,7 +474,7 @@ declare module "@neos-project/neos-ts-interfaces" {
 
     /**
      * Component Wiring
-     * 
+     *
      * {@link https://docs.neos.io/cms/manual/extending-the-user-interface/react-extensibility-api#component-wiring}
      */
     export type EditorProps<Options = {}, Value = any> = {
@@ -489,7 +489,7 @@ declare module "@neos-project/neos-ts-interfaces" {
         /**
          * label of the node property
          * to be possibly translated via i18n.translate(label)
-         * 
+         *
          * recommended, when {@link RegisteredEditor.hasOwnLabel} = true is used
          *
          *  @example
@@ -520,14 +520,14 @@ declare module "@neos-project/neos-ts-interfaces" {
         ): void;
         /**
          * register value change of the node property, which can be applied or discarded
-         * 
-         * @param value the new value. 
+         *
+         * @param value the new value.
          * @param hooks an object whose keys are saveHooks to be triggered, the values are hook-specific options: Example: `{'Neos.UI:Hook.BeforeSave.CreateImageVariant': nextImage}`
          */
         commit(value: Value, hooks?: Record<string, unknown>): void;
         /**
          * unsets the property
-         * 
+         *
          * @param value an empty string to unset the property
          */
         commit(value: "", hooks?: Record<string, unknown>): void;
@@ -537,7 +537,7 @@ declare module "@neos-project/neos-ts-interfaces" {
         editor: string;
         /**
          * renders toggleable button
-         * 
+         *
          * see for an examle:
          * {@link EditorProps.label}
          */
@@ -555,7 +555,7 @@ declare module "@neos-project/neos-ts-interfaces" {
          * styles an orange or red box-shadow
          * around the element the class is applied
          * to indicate pending changes or failure on validation errors
-         * 
+         *
          * @example
          * ```css
          *  box-shadow: 0 0 0 2px /^(red|orange)$/;
@@ -570,7 +570,7 @@ declare module "@neos-project/neos-ts-interfaces" {
         component: React.ComponentType<any>;
         /**
          * No label of the property and helpmessage will be rendered above the component.
-         * 
+         *
          * You need to render the label internally in the component
          * @example
          * ```jsx
@@ -613,22 +613,13 @@ declare module "@neos-project/neos-ts-interfaces" {
 
     export interface GlobalRegistry extends SynchronousMetaRegistry<any> {
         get: <
-            K extends
-                | "i18n"
+            K extends | "i18n"
                 | "validators"
                 | "inspector"
                 | "frontendConfiguration"
         >(
-            key: K
-        ) => K extends "i18n"
-            ? I18nRegistry
-            : K extends "validators"
-            ? ValidatorRegistry
-            : K extends "inspector"
-            ? InspectorRegistry
-            : K extends "frontendConfiguration"
-            ? FrontendConfigurationRegistry
-            : never;
+            key: string
+        ) => K extends "i18n" ? I18nRegistry : (K extends "validators" ? ValidatorRegistry : (K extends "inspector" ? InspectorRegistry : (K extends "frontendConfiguration" ? FrontendConfigurationRegistry : never)));
     }
 }
 

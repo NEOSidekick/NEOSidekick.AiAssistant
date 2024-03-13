@@ -1,4 +1,4 @@
-import AiAssistantError from "./AiAssistantError";
+import AiAssistantError from "../AiAssistantError";
 export const createExternalService = (frontendConfiguration): ExternalService => {
     const configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
     return new ExternalService(configuration['apiDomain'], configuration['apiKey'])

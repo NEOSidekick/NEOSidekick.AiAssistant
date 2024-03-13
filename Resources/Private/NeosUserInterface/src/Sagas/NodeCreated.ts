@@ -1,8 +1,8 @@
 import {takeEvery} from 'redux-saga/effects';
 import {actionTypes, selectors} from '@neos-project/neos-ui-redux-store';
-import {ContentService} from '../ContentService'
+import {ContentService} from '../Service/ContentService'
 import {AssistantService} from "../Service/AssistantService";
-import {ExternalService} from "../ExternalService";
+import {ExternalService} from "../Service/ExternalService";
 
 export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
     return function * (){

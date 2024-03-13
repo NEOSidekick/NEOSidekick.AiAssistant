@@ -3,7 +3,7 @@ import {actionTypes} from "@neos-project/neos-ui-redux-store";
 // @ts-ignore
 import {takeLatest} from 'redux-saga/effects';
 import {AssistantService} from "./Service/AssistantService";
-import {ContentService} from "./ContentService";
+import {ContentService} from "./Service/ContentService";
 import {createWatchNodeCreatedSaga} from "./Sagas/NodeCreated";
 import {createWatchNodeRemovedSaga} from "./Sagas/NodeRemoved";
 import {Store} from "@neos-project/neos-ui";

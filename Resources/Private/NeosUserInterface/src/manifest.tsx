@@ -1,7 +1,7 @@
 import manifest, {SynchronousRegistry} from "@neos-project/neos-ui-extensibility";
 
-import {createExternalService} from './ExternalService';
-import {createContentService} from './ContentService';
+import {createExternalService} from './Service/ExternalService';
+import {createContentService} from './Service/ContentService';
 import {createAssistantService} from "./Service/AssistantService";
 
 import initializeEditor from './manifest.editors';

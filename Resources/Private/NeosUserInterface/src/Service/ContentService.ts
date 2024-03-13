@@ -2,7 +2,7 @@ import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
 import {Node, NodeType} from '@neos-project/neos-ts-interfaces';
 import {Store} from 'react-redux'
 import backend from '@neos-project/neos-ui-backend-connector';
-import AiAssistantError from './AiAssistantError'
+import AiAssistantError from '../AiAssistantError'
 import {actions, selectors} from '@neos-project/neos-ui-redux-store';
 import {produce} from 'immer';
 import mapValues from 'lodash.mapvalues';

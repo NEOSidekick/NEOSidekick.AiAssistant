@@ -1,8 +1,7 @@
 import React from "react";
 import {Headline, IconButton} from "@neos-project/react-ui-components";
-import {useSelector} from "react-redux";
-import {selectors} from "@neos-project/neos-ui-redux-store";
 import {GlobalRegistry} from "@neos-project/neos-ts-interfaces";
+import SidekickIFrame from "./Components/SidekickIFrame";
 
 export default (globalRegistry: GlobalRegistry, configuration: object) => {
     const containerRegistry = globalRegistry.get('containers');
@@ -35,22 +34,6 @@ export default (globalRegistry: GlobalRegistry, configuration: object) => {
             }
         }
 
-        const activeContentDimensions = useSelector(selectors.CR.ContentDimensions.active);
-        const interfaceLanguage = useSelector((state) => state?.user?.preferences?.interfaceLanguage);
-        const iframeSrc = new URL(`${configuration.apiDomain}/chat/`);
-        iframeSrc.searchParams.append('contentLanguage', activeContentDimensions.language ? activeContentDimensions.language[0] : configuration['defaultLanguage']);
-        iframeSrc.searchParams.append('interfaceLanguage', interfaceLanguage);
-        iframeSrc.searchParams.append('userId', configuration.userId);
-        iframeSrc.searchParams.append('plattform', 'neos');
-        iframeSrc.searchParams.append('domain', configuration.domain);
-        iframeSrc.searchParams.append('siteName', configuration.siteName)
-        if (configuration?.referral) {
-            iframeSrc.searchParams.append('referral', configuration?.referral);
-        }
-        if (configuration?.apiKey) {
-            iframeSrc.searchParams.append('apikey', configuration?.apiKey);
-        }
-
         return <div className={`neosidekick_appWrapper ${isOpen ? "neosidekick_appWrapper--sidebar-open" : ""}  ${isFullscreen ? "neosidekick_appWrapper--sidebar-fullscreen" : ""}`}>
             <App {...props} />
             <div className="neosidekick_sideBar">
@@ -61,7 +44,7 @@ export default (globalRegistry: GlobalRegistry, configuration: object) => {
                         {toggleButton(isOpen, isFullscreen, () => setOpenAndPersistState(!isOpen))}
                     </div>
                 </div>
-                <iframe id="neosidekickAssistant" className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`} src={iframeSrc.toString()} allow="clipboard-write" onLoad={(e) => e.target.dataset.loaded = true} />
+                <SidekickIFrame className={`neosidekick_sideBar__frame ${isOpen ? "neosidekick_sideBar__frame--open" : ""}`}/>
             </div>
         </div>
     }

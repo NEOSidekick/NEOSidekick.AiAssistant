@@ -36,13 +36,13 @@ export default (globalRegistry: GlobalRegistry, configuration: object) => {
             localStorage.setItem('NEOSidekick', JSON.stringify(state));
         }
 
-        const fullscreenButton = (isOpen: boolean, isFullscreen: boolean, onClick: fn) => {
+        const fullscreenButton = (isOpen: boolean, isFullscreen: boolean, onClick: Function) => {
             if (isOpen) {
                 return <IconButton icon={isFullscreen ? "compress" : "expand"} onClick={onClick} />
             }
             return '';
         }
-        const toggleButton = (isOpen: boolean, isFullscreen: boolean, onClick: fn) => {
+        const toggleButton = (isOpen: boolean, isFullscreen: boolean, onClick: Function) => {
             if (!isFullscreen) {
                 return <IconButton icon={isOpen ? "chevron-circle-right" : "chevron-circle-left"} onClick={onClick} />
             }

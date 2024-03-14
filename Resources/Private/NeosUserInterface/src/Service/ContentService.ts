@@ -231,21 +231,9 @@ export class ContentService {
         }
 
         const configuration = JSON.parse(JSON.stringify(propertyConfiguration.options.sidekick))
-        const assistantService = this.globalRegistry.get('NEOSidekick.AiAssistant').get('assistantService')
-        const processedData = await this.processObjectWithClientEval(configuration, node, parentNode)
-        const message = {
-            version: '1.0',
-            eventName: 'call-module',
-            data: {
-                'platform': 'neos',
-                'target': {
-                    'nodePath': node.contextPath,
-                    'propertyName': propertyName
-                },
-                ...processedData
-            }
-        }
-        assistantService.sendMessageToIframe(message)
+        const contentCanvasService = this.globalRegistry.get('NEOSidekick.AiAssistant').get('contentCanvasService')
+        const processedData = await this.processObjectWithClientEval(configuration, node, parentNode);
+        contentCanvasService.streamGenerationIntoInlineProperty(node.contextPath, propertyName, processedData);
     }
 
     private generateNodeForContext(node, transientValues) {

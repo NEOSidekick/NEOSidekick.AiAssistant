@@ -2,8 +2,8 @@
 import {actionTypes} from "@neos-project/neos-ui-redux-store";
 // @ts-ignore
 import {takeLatest} from 'redux-saga/effects';
-import {AssistantService} from "./Service/AssistantService";
 import {ContentService} from "./Service/ContentService";
+import {IFrameApiService} from "./Service/IFrameApiService";
 import {createWatchNodeCreatedSaga} from "./Sagas/NodeCreated";
 import {createWatchNodeRemovedSaga} from "./Sagas/NodeRemoved";
 import {Store} from "@neos-project/neos-ui";
@@ -12,7 +12,7 @@ function delay(timeInMilliseconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, timeInMilliseconds));
 }
 
-export default (globalRegistry: object, store: Store, assistantService: AssistantService, contentService: ContentService) => {
+export default (globalRegistry: object, store: Store, iFrameApiService: IFrameApiService, contentService: ContentService) => {
     let requiredChangedEvent = false
     const watchDocumentNodeChange = function * () {
         yield takeLatest([actionTypes.UI.ContentCanvas.SET_SRC, actionTypes.UI.ContentCanvas.RELOAD, actionTypes.CR.Nodes.MERGE], async function * (action) {
@@ -40,19 +40,16 @@ export default (globalRegistry: object, store: Store, assistantService: Assistan
                     (node.contextPath === currentDocumentNodePath || !documentSubNodeTypes.includes(node.nodeType))
             })
 
-            assistantService.sendMessageToIframe({
-                version: '1.0',
-                eventName: requiredChangedEvent ? 'page-changed' : 'page-updated',
-                data: {
-                    'url': previewUrl,
-                    'title': currentDocumentNode?.properties?.title || contentService.getGuestFrameDocumentTitle(),
-                    'content': contentService.getGuestFrameDocumentHtml(),
-                    'structuredContent': relevantNodes,
-                    'targetAudience': await contentService.getCurrentDocumentTargetAudience(),
-                    'pageBriefing': await contentService.getCurrentDocumentPageBriefing(),
-                    'focusKeyword': await contentService.getCurrentDocumentFocusKeyword()
-                },
-            })
+            const data = {
+                'url': previewUrl,
+                'title': currentDocumentNode?.properties?.title || contentService.getGuestFrameDocumentTitle(),
+                'content': contentService.getGuestFrameDocumentHtml(),
+                'structuredContent': relevantNodes,
+                'targetAudience': await contentService.getCurrentDocumentTargetAudience(),
+                'pageBriefing': await contentService.getCurrentDocumentPageBriefing(),
+                'focusKeyword': await contentService.getCurrentDocumentFocusKeyword()
+            };
+            iFrameApiService.updateWebContext(requiredChangedEvent, data);
             requiredChangedEvent = false;
         });
     }

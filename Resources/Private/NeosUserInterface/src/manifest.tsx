@@ -2,7 +2,6 @@ import manifest, {SynchronousRegistry} from "@neos-project/neos-ui-extensibility
 
 import {createExternalService} from './Service/ExternalService';
 import {createContentService} from './Service/ContentService';
-import {createAssistantService} from "./Service/AssistantService";
 
 import initializeEditor from './manifest.editors';
 import initializeChatSidebar from './manifest.chatSidebar';
@@ -10,6 +9,8 @@ import initializeWatchPageContent from './manifest.watchPageContent';
 import initializeRichToolbarIcon from './manifest.richToolbarIcon';
 
 import "./manifest.chatSidebar.css";
+import {createContentCanvasService} from "./Service/ContentCanvasService";
+import {createIFrameApiService} from "./Service/IFrameApiService";
 
 manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfiguration}) => {
     const configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
@@ -26,17 +27,19 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     }
 
     // initialize services
-    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(""))
-    globalRegistry.get('NEOSidekick.AiAssistant').set('configuration', configuration)
+    globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(""));
+    const neosidekickRegistry = globalRegistry.get('NEOSidekick.AiAssistant');
+    neosidekickRegistry.set('configuration', configuration);
     const externalService = createExternalService(frontendConfiguration);
-    globalRegistry.get('NEOSidekick.AiAssistant').set('externalService', externalService)
+    neosidekickRegistry.set('externalService', externalService);
     const contentService = createContentService(globalRegistry, store);
-    globalRegistry.get('NEOSidekick.AiAssistant').set('contentService', contentService)
-    const assistantService = createAssistantService(globalRegistry, store)
-    globalRegistry.get('NEOSidekick.AiAssistant').set('assistantService', assistantService)
-    assistantService.listenToMessages()
+    neosidekickRegistry.set('contentService', contentService);
+    const iFrameApiService = createIFrameApiService(globalRegistry, store);
+    neosidekickRegistry.set('iFrameApiService', iFrameApiService);
+    const contentCanvasService = createContentCanvasService(globalRegistry, store, iFrameApiService);
+    neosidekickRegistry.set('contentCanvasService', contentCanvasService);
 
     initializeChatSidebar(globalRegistry, configuration);
-    initializeWatchPageContent(globalRegistry, store, assistantService, contentService);
+    initializeWatchPageContent(globalRegistry, store, iFrameApiService, contentService);
     initializeRichToolbarIcon(globalRegistry);
 });

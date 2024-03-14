@@ -1,10 +1,11 @@
 import {takeEvery} from 'redux-saga/effects';
 import {actionTypes, selectors} from '@neos-project/neos-ui-redux-store';
 import {ContentService} from '../Service/ContentService'
-import {AssistantService} from "../Service/AssistantService";
 import {ExternalService} from "../Service/ExternalService";
+import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
+import {Store} from "react-redux";
 
-export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
+export const createWatchNodeCreatedSaga = (globalRegistry: SynchronousMetaRegistry<any>, store: Store) => {
     return function * (){
         yield takeEvery(actionTypes.ServerFeedback.HANDLE_SERVER_FEEDBACK, function * (action) {
             action.payload.feedbackEnvelope.feedbacks.forEach(feedback => {
@@ -21,10 +22,7 @@ export const createWatchNodeCreatedSaga = (globalRegistry, store) => {
 
                 // Get services
                 const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
-                const i18nRegistry = globalRegistry.get('i18n')
                 const contentService: ContentService = globalRegistry.get('NEOSidekick.AiAssistant').get('contentService')
-                const assistantService: AssistantService = globalRegistry.get('NEOSidekick.AiAssistant').get('assistantService')
-                const externalService: ExternalService = globalRegistry.get('NEOSidekick.AiAssistant').get('externalService')
 
                 Object.keys(nodesByContextPath).forEach(nodeContextPath => {
                     const nodePath = nodeContextPath.split('@')[0]

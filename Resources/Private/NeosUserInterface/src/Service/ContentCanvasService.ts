@@ -3,6 +3,7 @@ import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
 import {Store} from 'react-redux'
 import {actions} from '@neos-project/neos-ui-redux-store'
 import {IFrameApiService} from "./IFrameApiService";
+import {ServerStreamMessage} from "../interfaces";
 
 export const createContentCanvasService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store, iFrameApiService: IFrameApiService): ContentCanvasService => {
     return new ContentCanvasService(globalRegistry, store, iFrameApiService);

@@ -10,3 +10,15 @@ export interface SidekickFrontendConfiguration {
     chatSidebarEnabled: boolean;
     userInterfaceLanguage: string;
 }
+
+export interface ServerStreamMessage {
+    data : {
+        eventName: 'write-content' | 'stopped-generation' | 'error';
+        data: {
+            nodePath?: string;
+            propertyName?: string;
+            value?: string;
+            isFinished?: boolean;
+        };
+    }
+}

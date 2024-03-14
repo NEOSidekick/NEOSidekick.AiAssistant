@@ -8,12 +8,14 @@ export class IFrameApiService {
     private isStreaming: boolean = false;
     private unsyncedWebContextIsNewPage?: boolean;
     private unsyncedWebContextData?: object;
+    private callModuleQueue: Array<object> = [];
 
     // the function calling this, must reset isStreaming after the call is done
     callModule = (data: object): void => {
         // If busy, disallow further call-module events and throw error
         if (this.isStreaming) {
-            throw new AiAssistantError('You cannot start two text generations at the same time.', '1695668144026');
+            this.callModuleQueue.push(data);
+            return;
         }
 
         this.isStreaming = true;
@@ -31,6 +33,10 @@ export class IFrameApiService {
             this.updateWebContext(this.unsyncedWebContextIsNewPage || false, this.unsyncedWebContextData);
             this.unsyncedWebContextData = undefined;
             this.unsyncedWebContextIsNewPage = undefined;
+        }
+        const nextCallModule = this.callModuleQueue.shift();
+        if (nextCallModule) {
+            this.callModule(nextCallModule);
         }
     }
 

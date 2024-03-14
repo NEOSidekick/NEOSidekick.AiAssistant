@@ -18,23 +18,35 @@ export class ExternalService {
     }
 
     generate = async (module: string, language: string, user_input: object = {}) => {
-        if (!this.apiKey) {
-            throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
-        }
-
-        const response = await fetch(`${this.apiDomain}/api/v1/chat?language=${language}`, {
+        const jsonData = await this.fetch(`/api/v1/chat?language=${language}`, {
             method: "POST", // or 'PUT'
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.apiKey}`,
-                "Accept": "application/json"
-            },
             body: JSON.stringify({
                 module,
                 platform: "neos",
                 user_input
             })
-        });
+        })
+
+        let message = jsonData?.data?.message?.message
+        // Truncate obsolete quotation marks
+        if(message.startsWith('"') && message.endsWith('"')) {
+            message = message.substr(1, message.length-2);
+        }
+        return message
+    }
+
+    fetch = async (path: string, options: object = {}) => {
+        if (!this.apiKey) {
+            throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
+        }
+
+        const response = await fetch(this.apiDomain + path, Object.assign({}, options, {
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${this.apiKey}`,
+                "Accept": "application/json"
+            },
+        }));
 
         const jsonData = await response.json()
 
@@ -44,11 +56,6 @@ export class ExternalService {
             throw new AiAssistantError('An error occurred while asking NEOSidekick.', '1688158257149', jsonData?.message)
         }
 
-        let message = jsonData?.data?.message?.message
-        // Truncate obsolete quotation marks
-        if(message.startsWith('"') && message.endsWith('"')) {
-            message = message.substr(1, message.length-2);
-        }
-        return message
+        return jsonData
     }
 }

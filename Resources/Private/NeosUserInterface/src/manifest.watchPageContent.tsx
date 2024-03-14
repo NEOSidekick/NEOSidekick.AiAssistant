@@ -7,13 +7,16 @@ import {IFrameApiService} from "./Service/IFrameApiService";
 import {createWatchNodeCreatedSaga} from "./Sagas/NodeCreated";
 import {createWatchNodeRemovedSaga} from "./Sagas/NodeRemoved";
 import {Store} from "@neos-project/neos-ui";
+import { debounce } from 'lodash';
 
 function delay(timeInMilliseconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, timeInMilliseconds));
 }
 
 export default (globalRegistry: object, store: Store, iFrameApiService: IFrameApiService, contentService: ContentService) => {
-    let requiredChangedEvent = false
+    let requiredChangedEvent = false;
+    let updateWebContextDebounce = debounce((requiredChangedEvent, data) => iFrameApiService.updateWebContext(requiredChangedEvent, data), 500);
+
     const watchDocumentNodeChange = function * () {
         yield takeLatest([actionTypes.UI.ContentCanvas.SET_SRC, actionTypes.UI.ContentCanvas.RELOAD, actionTypes.CR.Nodes.MERGE], async function * (action) {
             if (action.type === actionTypes.UI.ContentCanvas.SET_SRC) {
@@ -49,7 +52,7 @@ export default (globalRegistry: object, store: Store, iFrameApiService: IFrameAp
                 'pageBriefing': await contentService.getCurrentDocumentPageBriefing(),
                 'focusKeyword': await contentService.getCurrentDocumentFocusKeyword()
             };
-            iFrameApiService.updateWebContext(requiredChangedEvent, data);
+            updateWebContextDebounce(requiredChangedEvent, data);
             requiredChangedEvent = false;
         });
     }

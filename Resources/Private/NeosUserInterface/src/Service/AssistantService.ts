@@ -16,6 +16,14 @@ export class AssistantService {
         this.currentlyHandledNodePath = null
     }
 
+    cancelCallModule = (): void => {
+        const message = {
+            version: '1.0',
+            eventName: 'cancel-call-module'
+        };
+        this.sendMessageToIframe(message)
+    }
+
     sendMessageToIframe = (message): void => {
         // If busy, ignore all page-changed and page-updated events silently
         if (this.currentlyHandledNodePath && ['page-changed', 'page-updated'].indexOf(message?.eventName) > -1) {

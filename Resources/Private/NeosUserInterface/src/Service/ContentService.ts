@@ -1,14 +1,16 @@
 import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
 import {Node, NodeType} from '@neos-project/neos-ts-interfaces';
+// @ts-ignore
 import {Store} from 'react-redux'
 import backend from '@neos-project/neos-ui-backend-connector';
 import AiAssistantError from '../AiAssistantError'
 import {actions, selectors} from '@neos-project/neos-ui-redux-store';
 import {produce} from 'immer';
+// @ts-ignore
 import mapValues from 'lodash.mapvalues';
 
 export const createContentService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store): ContentService => {
-    return new ContentService(globalRegistry, store)
+    return new ContentService(globalRegistry, store);
 }
 
 export class ContentService {
@@ -19,10 +21,10 @@ export class ContentService {
 
 
     constructor(globalRegistry: SynchronousMetaRegistry<any>, store: Store) {
-        this.globalRegistry = globalRegistry
-        this.store = store
-        this.nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
-        this.externalService = globalRegistry.get('NEOSidekick.AiAssistant').get('externalService')
+        this.globalRegistry = globalRegistry;
+        this.store = store;
+        this.nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository');
+        this.externalService = globalRegistry.get('NEOSidekick.AiAssistant').get('externalService');
     }
 
     getGuestFrameDocumentTitle = (): string => {
@@ -56,32 +58,34 @@ export class ContentService {
         return this.globalRegistry.get('@neos-project/neos-ui-contentrepository').get(currentDocumentNode?.nodeType)
     }
 
-    getCurrentDocumentTargetAudience = async (): string => {
+    getCurrentDocumentTargetAudience = async (): Promise<string> => {
+        // @ts-ignore
         const targetAudience = this.getCurrentDocumentNodeType()?.options?.sidekick?.targetAudience
         if (targetAudience) {
-            return await this.processClientEval(targetAudience)
+            return this.processClientEval(targetAudience);
         }
-        return null
+        return '';
     }
 
-    getCurrentDocumentPageBriefing = async (): string => {
+    getCurrentDocumentPageBriefing = async (): Promise<string> => {
+        // @ts-ignore
         const pageBriefing = this.getCurrentDocumentNodeType()?.options?.sidekick?.pageBriefing
         if (pageBriefing) {
-            return await this.processClientEval(pageBriefing)
+            return this.processClientEval(pageBriefing);
         }
-        return null
+        return '';
     }
 
-    getCurrentDocumentFocusKeyword = async (): string => {
+    getCurrentDocumentFocusKeyword = async (): Promise<string> => {
+        // @ts-ignore
         const focusKeyword = this.getCurrentDocumentNodeType()?.options?.sidekick?.focusKeyword
         if (focusKeyword) {
             return await this.processClientEval(focusKeyword)
         }
-
-        return null
+        return '';
     }
 
-    processClientEval = async (value: string, node: Node = null, parentNode: Node = null): string => {
+    processClientEval = async (value: any, node?: Node, parentNode?: Node): Promise<string> => {
         if (typeof value === 'string' && (value.startsWith('SidekickClientEval:') || value.startsWith('ClientEval:'))) {
             try {
                 node = node ?? this.getCurrentDocumentNode()
@@ -93,7 +97,7 @@ export class ContentService {
                 const documentTitle = this.getGuestFrameDocumentTitle()
                 const documentContent = this.getGuestFrameDocumentHtml()
                 // Functions
-                const AssetUri = await this.getImageMetadata
+                const AssetUri = this.getImageMetadata
                 const AsyncFunction = Object.getPrototypeOf(async function () {
                 }).constructor
                 const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
@@ -110,13 +114,17 @@ export class ContentService {
         return value;
     }
 
-    processValueWithClientEval = async (value: any, node: Node = null, parentNode: Node = null): Promise<any> => {
+    processValueWithClientEval = async (value: any, node?: Node, parentNode?: Node): Promise<any> => {
         if (typeof value === 'string') {
             return this.processClientEval(value, node, parentNode)
         }
 
         if (typeof value === 'object' && value !== null) {
             return this.processObjectWithClientEval(value, node, parentNode)
+        }
+
+        if (value === null) {
+            return null;
         }
 
         if (Array.isArray(value)) {
@@ -126,28 +134,30 @@ export class ContentService {
         }
     }
 
-    processObjectWithClientEval = async (obj: object, node: Node = null, parentNode: Node = null): object => {
+    processObjectWithClientEval = async (obj: object, node?: Node, parentNode?: Node): Promise<object> => {
         const result = {};
         await Promise.all(Object.keys(obj).map(async key => {
-            const value: any = obj[key]
+            // @ts-ignore
+            const value: any = obj[key];
+            // @ts-ignore
             result[key] = await this.processValueWithClientEval(value, node, parentNode)
         }))
-        return result
+        return result;
     }
 
-    private getImageMetadata = async (propertyValue: any): string => {
+    private getImageMetadata = async (propertyValue: any): Promise<string[]> => {
         if (!propertyValue || !propertyValue?.__identity) {
             throw new AiAssistantError('The property does not have a valid image.', '1694595562191')
         }
 
         // Fetch image object
+        // @ts-ignore
         const {loadImageMetadata} = backend.get().endpoints;
         let imageUri, previewUri
         try {
             const image = await loadImageMetadata(propertyValue?.__identity)
             imageUri = image?.originalImageResourceUri
             previewUri = image?.previewImageResourceUri
-
         } catch (e) {
             throw new AiAssistantError('Could not fetch image object.', '1694595598880')
         }
@@ -164,35 +174,37 @@ export class ContentService {
         return imagesArray
     }
 
-    private prependConfiguredDomainToImageUri(imageUri) {
+    private prependConfiguredDomainToImageUri(imageUri: string) {
         // Make sure that the imageUri has a domain prepended
         // Get instance domain from configuration
         const instanceDomain = this.globalRegistry.get('NEOSidekick.AiAssistant').get('configuration').domain
         // Remove the scheme and split URL into parts
-        imageUri = imageUri.replace('http://', '').replace('https://').split('/')
+        const imageUriParts = imageUri.replace('http://', '').replace('https://', '').split('/')
         // Remove the domain
-        imageUri.shift()
+        imageUriParts.shift()
         // Add the domain from configuration
-        imageUri.unshift(instanceDomain)
-        // Re-join the array to an URL and return
-        return imageUri.join('/')
+        imageUriParts.unshift(instanceDomain)
+        // Re-join the array to a URL and return
+        return imageUriParts.join('/')
     }
 
     public getCurrentlyFocusedNodePathAndProperty () {
         const state = this.store.getState()
         const nodeTypesRegistry = this.globalRegistry.get('@neos-project/neos-ui-contentrepository')
         const nodePath = state?.cr?.nodes?.focused?.contextPaths[0]
+        // @ts-ignore
         const node = nodePath ? selectors.CR.Nodes.nodeByContextPath(state)(nodePath) : null
         return {
             nodePath,
             node,
             property: state?.ui?.contentCanvas?.currentlyEditedPropertyName,
             nodeType: node ? nodeTypesRegistry.get(node?.nodeType) : null,
+            // @ts-ignore
             parentNode: node ? selectors.CR.Nodes.nodesByContextPathSelector(state)[node.parent] : null
         }
     }
 
-    public async evaluateNodeTypeConfigurationAndStartGeneration(node: Node, propertyName: string, nodeType: NodeType, parentNode: Node = null, isOnCreate = false)
+    public async evaluateNodeTypeConfigurationAndStartGeneration(node: Node, propertyName: string, nodeType: NodeType, parentNode?: Node, isOnCreate: boolean = false)
     {
         if (!nodeType) {
             return;
@@ -202,7 +214,8 @@ export class ContentService {
             return;
         }
 
-        const propertyConfiguration = nodeType.properties[propertyName]
+        const propertyConfiguration = nodeType.properties ? nodeType.properties[propertyName] : null;
+
         try {
             // Warn about legacy configuration
             if (propertyConfiguration?.options?.sidekick?.onCreate?.module) {
@@ -236,9 +249,10 @@ export class ContentService {
         contentCanvasService.streamGenerationIntoInlineProperty(node.contextPath, propertyName, processedData);
     }
 
-    private generateNodeForContext(node, transientValues) {
+    private generateNodeForContext(node: Node, transientValues: any) {
         if (transientValues) {
             return produce(node, draft => {
+                // @ts-ignore
                 const mappedTransientValues = mapValues(transientValues, item => item?.value);
                 draft.properties = Object.assign({}, draft.properties, mappedTransientValues);
             });

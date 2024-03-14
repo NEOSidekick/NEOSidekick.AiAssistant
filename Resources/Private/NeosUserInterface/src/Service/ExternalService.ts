@@ -1,7 +1,7 @@
 import AiAssistantError from "../AiAssistantError";
-export const createExternalService = (frontendConfiguration): ExternalService => {
-    const configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
-    return new ExternalService(configuration['apiDomain'], configuration['apiKey'])
+import {SidekickFrontendConfiguration} from "../interfaces";
+export const createExternalService = (configuration: SidekickFrontendConfiguration): ExternalService => {
+    return new ExternalService(configuration.apiDomain, configuration.apiKey);
 }
 
 export class ExternalService {
@@ -23,16 +23,16 @@ export class ExternalService {
             body: JSON.stringify({
                 module,
                 platform: "neos",
-                user_input
+                user_input,
             })
         })
 
-        let message = jsonData?.data?.message?.message
+        let message = jsonData?.data?.message?.message;
         // Truncate obsolete quotation marks
         if(message.startsWith('"') && message.endsWith('"')) {
-            message = message.substr(1, message.length-2);
+            message = message.substring(1, message.length-1);
         }
-        return message
+        return message;
     }
 
     fetch = async (path: string, options: object = {}) => {
@@ -44,18 +44,18 @@ export class ExternalService {
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${this.apiKey}`,
-                "Accept": "application/json"
+                "Accept": "application/json",
             },
         }));
 
-        const jsonData = await response.json()
+        const jsonData = await response.json();
 
         if (response.status === 401) {
-            throw new AiAssistantError('The NEOSidekick api key provided is not valid.', '1688158193038')
+            throw new AiAssistantError('The NEOSidekick api key provided is not valid.', '1688158193038');
         } else if (response.status < 200 || response.status >= 400) {
-            throw new AiAssistantError('An error occurred while asking NEOSidekick.', '1688158257149', jsonData?.message)
+            throw new AiAssistantError('An error occurred while asking NEOSidekick.', '1688158257149', jsonData?.message);
         }
 
-        return jsonData
+        return jsonData;
     }
 }

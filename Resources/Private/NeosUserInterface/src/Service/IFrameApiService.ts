@@ -1,4 +1,3 @@
-import AiAssistantError from "../AiAssistantError";
 
 export const createIFrameApiService = (): IFrameApiService => {
     return new IFrameApiService();

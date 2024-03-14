@@ -2,8 +2,9 @@ import React from "react";
 import {Headline, IconButton} from "@neos-project/react-ui-components";
 import {GlobalRegistry} from "@neos-project/neos-ts-interfaces";
 import SidekickIFrame from "./Components/SidekickIFrame";
+import {SidekickFrontendConfiguration} from "./interfaces";
 
-export default (globalRegistry: GlobalRegistry, configuration: object) => {
+export default (globalRegistry: GlobalRegistry, configuration: SidekickFrontendConfiguration) => {
     const containerRegistry = globalRegistry.get('containers');
     const App = containerRegistry.get('App');
 

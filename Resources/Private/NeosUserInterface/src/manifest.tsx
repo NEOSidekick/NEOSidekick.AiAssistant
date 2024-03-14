@@ -1,7 +1,10 @@
-import manifest, {SynchronousRegistry} from "@neos-project/neos-ui-extensibility";
+import manifest, {SynchronousMetaRegistry, SynchronousRegistry} from "@neos-project/neos-ui-extensibility";
 
+import {SidekickFrontendConfiguration} from "./interfaces";
 import {createExternalService} from './Service/ExternalService';
 import {createContentService} from './Service/ContentService';
+import {createContentCanvasService} from "./Service/ContentCanvasService";
+import {createIFrameApiService} from "./Service/IFrameApiService";
 
 import initializeEditor from './manifest.editors';
 import initializeChatSidebar from './manifest.chatSidebar';
@@ -9,15 +12,12 @@ import initializeWatchPageContent from './manifest.watchPageContent';
 import initializeRichToolbarIcon from './manifest.richToolbarIcon';
 
 import "./manifest.chatSidebar.css";
-import {createContentCanvasService} from "./Service/ContentCanvasService";
-import {createIFrameApiService} from "./Service/IFrameApiService";
 
-manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfiguration}) => {
-    const configuration = frontendConfiguration['NEOSidekick.AiAssistant'];
-    const enabled = !!configuration && configuration.enabled !== false;
-    initializeEditor(globalRegistry, enabled);
+manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry<any>, {store, frontendConfiguration}) => {
+    const configuration = frontendConfiguration['NEOSidekick.AiAssistant'] as SidekickFrontendConfiguration;
+    initializeEditor(globalRegistry, configuration?.enabled);
 
-    if (!enabled) {
+    if (!configuration?.enabled) {
         return;
     }
 
@@ -30,11 +30,11 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry, {store, frontendConfigu
     globalRegistry.set('NEOSidekick.AiAssistant', new SynchronousRegistry(""));
     const neosidekickRegistry = globalRegistry.get('NEOSidekick.AiAssistant');
     neosidekickRegistry.set('configuration', configuration);
-    const externalService = createExternalService(frontendConfiguration);
+    const externalService = createExternalService(configuration);
     neosidekickRegistry.set('externalService', externalService);
     const contentService = createContentService(globalRegistry, store);
     neosidekickRegistry.set('contentService', contentService);
-    const iFrameApiService = createIFrameApiService(globalRegistry, store);
+    const iFrameApiService = createIFrameApiService();
     neosidekickRegistry.set('iFrameApiService', iFrameApiService);
     const contentCanvasService = createContentCanvasService(globalRegistry, store, iFrameApiService);
     neosidekickRegistry.set('contentCanvasService', contentCanvasService);

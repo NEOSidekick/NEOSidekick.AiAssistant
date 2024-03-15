@@ -10,10 +10,10 @@ export class IFrameApiService {
     private callModuleQueue: Array<object> = [];
 
     // the function calling this, must reset isStreaming after the call is done
-    callModule = (data: object): void => {
+    callModule = (data: object, onStarted?: () => void): void => {
         // If busy, disallow further call-module events and throw error
         if (this.isStreaming) {
-            this.callModuleQueue.push(data);
+            this.callModuleQueue.push({data, onStarted});
             return;
         }
 
@@ -21,9 +21,12 @@ export class IFrameApiService {
         const message = {
             version: '1.0',
             eventName: 'call-module',
-            data,
+            data: {
+                'platform': 'neos',
+                ...data,
+            }
         }
-        this.sendMessage(message);
+        this.sendMessage(message, onStarted);
     }
 
     setStreamingFinished = (): void => {
@@ -35,7 +38,8 @@ export class IFrameApiService {
         }
         const nextCallModule = this.callModuleQueue.shift();
         if (nextCallModule) {
-            this.callModule(nextCallModule);
+            const {data, onStarted} = nextCallModule;
+            this.callModule(data, onStarted);
         }
     }
 

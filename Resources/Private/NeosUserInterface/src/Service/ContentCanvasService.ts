@@ -24,20 +24,13 @@ export class ContentCanvasService {
     }
 
     streamGenerationIntoInlineProperty = (nodePath: string, propertyName: string, data: object): void => {
-        // If busy, disallow further call-module events and show error
-        if (this.currentlyHandledNodePath) {
-            this.addFlashMessage('1695668144026', 'You cannot start two text generations at the same time.');
-            return;
-        }
-
         this.iFrameApiService.callModule({
-            'platform': 'neos',
             'target': {
                 'nodePath': nodePath,
                 'propertyName': propertyName
             },
             ...data
-        });
+        }, () => this.currentlyHandledNodePath = nodePath);
     }
 
     onNodeRemoved = (nodePath: string): void => {
@@ -51,16 +44,17 @@ export class ContentCanvasService {
         this.currentlyHandledNodePath = null;
     }
 
-    private handleMessage = (message: object): void => {
+    private handleMessage = (message: ServerStreamMessage): void => {
         switch (message?.data?.eventName) {
             case 'write-content':
-                const {nodePath, propertyName, value, isFinished} = message.data.data;
+                const {nodePath, propertyName, value, isFinished} = message?.data?.data;
                 // Make sure the handledNodePath is set while we alter the content
-                this.currentlyHandledNodePath = nodePath;
-                console.info(nodePath + ': ' + value);
-                this.setPropertyValue(nodePath, propertyName, value);
-                if (isFinished) {
-                    this.handleStreamingFinished();
+                if (nodePath) { // is this a message for the content canvas?
+                    console.info(nodePath + ': ' + value);
+                    this.setPropertyValue(nodePath, propertyName, value, isFinished);
+                    if (isFinished) {
+                        this.handleStreamingFinished();
+                    }
                 }
                 break;
             case 'stopped-generation':
@@ -93,14 +87,17 @@ export class ContentCanvasService {
         }
     }
 
-    private setPropertyValue = (nodePath: string, propertyName: string, propertyValue: string): void => {
+    private setPropertyValue = (nodePath: string, propertyName: string, propertyValue: string, isFinished: string): void => {
         const guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
         const guestFrameDocument = guestFrame?.contentDocument;
         const inlineField = guestFrameDocument?.querySelector(`[data-__neos-editable-node-contextpath="${nodePath}"][data-__neos-property="${propertyName}"]`);
-        if (!inlineField) {
+        if (!inlineField && isFinished) { // can initially be undefined, on a new page with onCreate generation
             const errorMessage = 'Could not find inline field for nodePath: ' + nodePath + ' and propertyName: ' + propertyName;
             this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + errorMessage, 'error', errorMessage);
             this.unsetCurrentlyHandledNodePath();
+            return;
+        }
+        if (!inlineField) {
             return;
         }
 

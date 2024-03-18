@@ -81,7 +81,9 @@ declare module "@neos-project/neos-ui-i18n" {
         className?: string;
     }
 
-    export default class I18n extends React.PureComponent<I18nProps> {}
+    export default class I18n extends React.PureComponent<I18nProps> {
+        public render(): JSX.Element {}
+    }
 }
 
 declare module "@neos-project/neos-ui" {
@@ -617,6 +619,7 @@ declare module "@neos-project/neos-ts-interfaces" {
                 | "validators"
                 | "inspector"
                 | "frontendConfiguration"
+                | "NEOSidekick.AiAssistant"
         >(
             key: string
         ) => K extends "i18n" ? I18nRegistry : (K extends "validators" ? ValidatorRegistry : (K extends "inspector" ? InspectorRegistry : (K extends "frontendConfiguration" ? FrontendConfigurationRegistry : never)));

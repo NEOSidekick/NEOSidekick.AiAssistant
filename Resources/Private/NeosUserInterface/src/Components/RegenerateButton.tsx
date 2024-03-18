@@ -4,6 +4,14 @@ import PropTypes from 'prop-types';
 import {Button, Icon} from '@neos-project/react-ui-components';
 import {neos} from '@neos-project/neos-ui-decorators';
 import {actions} from '@neos-project/neos-ui-redux-store';
+import {ContentService} from "../../Service/ContentService";
+import {I18nRegistry} from "@neos-project/neos-ts-interfaces";
+
+interface RegenerateButtonProps {
+    contentService: ContentService;
+    i18nRegistry: I18nRegistry;
+    addFlashMessage: (code: string, message: string, severity: string) => void;
+}
 
 @neos(globalRegistry => ({
     contentService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentService'),
@@ -12,7 +20,7 @@ import {actions} from '@neos-project/neos-ui-redux-store';
 @connect(() => {}, {
     addFlashMessage: actions.UI.FlashMessages.add
 })
-export default class RegenerateButton extends PureComponent {
+export default class RegenerateButton extends PureComponent<RegenerateButtonProps> {
     static propTypes = {
         contentService: PropTypes.object.isRequired,
         i18nRegistry: PropTypes.object.isRequired,
@@ -24,12 +32,8 @@ export default class RegenerateButton extends PureComponent {
         enabled: true
     }
 
-    constructor(props) {
-        super(props);
-    }
-
     componentDidMount() {
-        this.evaluateFocusedNodeAndPropertyAndShowButton()
+        this.evaluateFocusedNodeAndPropertyAndShowButton();
     }
 
     private evaluateFocusedNodeAndPropertyAndShowButton = (retries = 5) => {

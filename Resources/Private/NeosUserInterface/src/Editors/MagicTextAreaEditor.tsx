@@ -5,11 +5,15 @@ import {neos} from '@neos-project/neos-ui-decorators';
 import {Button, Icon, TextArea} from '@neos-project/react-ui-components';
 import {actions, selectors} from '@neos-project/neos-ui-redux-store';
 
+import "./index.css";
+
 const defaultOptions = {
-    autoFocus: false,
     disabled: false,
     maxlength: null,
-    readonly: false
+    readonly: false,
+    placeholder: '',
+    minRows: 2,
+    expandedRows: 6
 };
 
 @neos(globalRegistry => ({
@@ -19,17 +23,17 @@ const defaultOptions = {
     frontendConfiguration: globalRegistry.get('NEOSidekick.AiAssistant').get('configuration')
 }))
 @connect(state => {
-    return state => {
-        const activeContentDimensions = selectors.CR.ContentDimensions.active(state);
-        const node = selectors.CR.Nodes.focusedSelector(state);
-        const parentNode = selectors.CR.Nodes.nodeByContextPath(state)(node.parent);
-        return {activeContentDimensions, node, parentNode}
-    }
+    const node = selectors.CR.Nodes.focusedSelector(state);
+    return {
+        activeContentDimensions: selectors.CR.ContentDimensions.active(state),
+        node: node,
+        parentNode: selectors.CR.Nodes.nodeByContextPath(state)(node.parent),
+    };
 }, {
     addFlashMessage: actions.UI.FlashMessages.add
 })
 export default class MagicTextAreaEditor extends Component<any, any> {
-    constructor(props) {
+    constructor(props: any) {
         super(props);
         this.state = {loading: false}
     }
@@ -38,8 +42,6 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
         commit: PropTypes.func.isRequired,
         options: PropTypes.object,
-        onKeyPress: PropTypes.func,
-        onEnterKey: PropTypes.func,
         id: PropTypes.string,
 
         activeContentDimensions: PropTypes.object.isRequired,
@@ -57,33 +59,25 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         options: {}
     };
 
-    getIcon = (loading) => {
+    renderIcon(loading: boolean) {
         if (loading) {
-            return <Icon icon="spinner" size="" fixedWidth padded="right" spin={true} />
+            return <Icon icon="spinner" fixedWidth padded="right" spin={true} />
         } else {
-            return <Icon icon="magic" size="" fixedWidth padded="right" />
+            return <Icon icon="magic" fixedWidth padded="right" />
         }
     }
 
     fetch = async (module: string, userInput: object) => {
-        const {
-            commit,
-            externalService,
-            contentService,
-            activeContentDimensions,
-            addFlashMessage,
-            i18nRegistry,
-            node,
-            parentNode,
-            frontendConfiguration
-        } = this.props;
+        const {commit, externalService, contentService, activeContentDimensions, addFlashMessage, i18nRegistry, node, parentNode, frontendConfiguration} = this.props;
         this.setState({loading: true});
         try {
             // Process SidekickClientEval und ClientEval
             userInput = await contentService.processObjectWithClientEval(userInput, node, parentNode)
             // Map to external format
-            userInput = Object.keys(userInput).map((identifier: string) => ({"identifier": identifier, "value": userInput[identifier]}))
-            const generatedValue = await externalService.generate(module, activeContentDimensions.language ? activeContentDimensions.language[0] : frontendConfiguration.defaultLanguage, userInput)
+            // @ts-ignore
+            userInput = Object.keys(userInput).map((identifier: string) => ({'identifier': identifier, 'value': userInput[identifier]}));
+            const lang = activeContentDimensions.language ? activeContentDimensions.language[0] : frontendConfiguration.defaultLanguage;
+            const generatedValue = await externalService.generate(module, lang, userInput)
             commit(generatedValue)
         } catch (e) {
             addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage}) : e.message, e?.severity ?? 'error')
@@ -93,23 +87,12 @@ export default class MagicTextAreaEditor extends Component<any, any> {
     }
 
     render () {
-        const {
-            id,
-            value,
-            className,
-            commit,
-            options,
-            i18nRegistry,
-            onKeyPress,
-            onEnterKey
-        } = this.props;
+        const {id, value, className, commit, options, i18nRegistry} = this.props;
 
-        const finalOptions = Object.assign({}, defaultOptions, options);
         // Placeholder text must be unescaped in case html entities were used
         const placeholder = options && options.placeholder && i18nRegistry.translate(unescape(options.placeholder));
-        const showGenerateButton = !(
-            finalOptions.readonly || finalOptions.disabled
-        );
+        const finalOptions = Object.assign({}, defaultOptions, options);
+        const showGenerateButton = !finalOptions.readonly && !finalOptions.disabled;
 
         return (
             <div style={{display: 'flex', flexDirection: 'column'}} className={className}>
@@ -124,23 +107,21 @@ export default class MagicTextAreaEditor extends Component<any, any> {
                         placeholder={placeholder}
                         minRows={finalOptions.minRows}
                         expandedRows={finalOptions.expandedRows}
-                        onKeyPress={onKeyPress}
-                        onEnterKey={onEnterKey}
                     />
                 </div>
                 {showGenerateButton ? (
                     <div>
                         <Button
-                            className="generateBtn"
+                            className="neosidekick__editor__generate-button"
                             size="regular"
                             icon={this.state.loading ? 'hourglass' : 'magic'}
                             style="neutral"
                             hoverStyle="clean"
                             disabled={this.state.loading}
-                            onClick={async () => await this.fetch(finalOptions.module, finalOptions.arguments ?? {})}
+                            onClick={() => this.fetch(finalOptions.module, finalOptions.arguments ?? {})}
                         >
                             {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generateWithSidekick')}&nbsp;
-                            {this.getIcon(this.state.loading)}
+                            {this.renderIcon(this.state.loading)}
                         </Button>
                     </div>
                 ) : null}

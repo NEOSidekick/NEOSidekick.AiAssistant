@@ -19,6 +19,7 @@ export interface ServerStreamMessage {
             propertyName?: string;
             value?: string;
             isFinished?: boolean;
+            message?: string; // error case
         };
     }
 }

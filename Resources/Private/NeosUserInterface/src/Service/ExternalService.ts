@@ -19,10 +19,10 @@ export class ExternalService {
 
     generate = async (module: string, language: string, user_input: object = {}) => {
         const jsonData = await this.fetch(`/api/v1/chat?language=${language}`, {
-            method: "POST", // or 'PUT'
+            method: 'POST', // or 'PUT'
             body: JSON.stringify({
                 module,
-                platform: "neos",
+                platform: 'neos',
                 user_input,
             })
         })

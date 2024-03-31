@@ -58,7 +58,7 @@ export default class AssetListItem extends PureComponent {
         const {asset, update, setGenerating} = this.props
         setGenerating(true)
         const externalService = ExternalService.getInstance()
-        const response = await externalService.generate('alt_tag_generator', 'de', [
+        const response = await externalService.generate('image_alt_text', 'de', [
             {
                 identifier: 'url',
                 value: [

@@ -87,7 +87,7 @@ function* addItemSaga({ payload: item }: PayloadAction<BackendAssetModuleResultD
     const externalService = ExternalService.getInstance()
     const translationService = TranslationService.getInstance()
     try {
-        const response = yield externalService.generate('alt_tag_generator', language, [
+        const response = yield externalService.generate('image_alt_text', language, [
             {
                 identifier: 'url',
                 value: [

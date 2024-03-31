@@ -9,6 +9,7 @@ Neos:
           NEOSidekick.AiAssistant:
             - 'Main'
             - 'Error'
+            - 'AiModal'
             - 'AssetModule'
     Ui:
       resources:

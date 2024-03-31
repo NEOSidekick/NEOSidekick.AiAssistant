@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="modify-text-title" xml:space="preserve">
+                <source>Revise text</source>
+                <target xml:lang="de" state="translated">Text überarbeiten</target>
+            </trans-unit>
+            <trans-unit id="create-text-title" xml:space="preserve">
+                <source>Create text</source>
+                <target xml:lang="de" state="translated">Text erstellen</target>
+            </trans-unit>
+            <trans-unit id="apply-modify-text" xml:space="preserve">
+                <source>Use text</source>
+                <target xml:lang="de" state="translated">Text übernehmen</target>
+            </trans-unit>
+            <trans-unit id="apply-create-text" xml:space="preserve">
+                <source>Insert text</source>
+                <target xml:lang="de" state="translated">Text einfügen</target>
+            </trans-unit>
+            <trans-unit id="apply-modify-text" xml:space="preserve">
+                <source>Use text</source>
+                <target xml:lang="de" state="translated">Text übernehmen</target>
+            </trans-unit>
+            <trans-unit id="configured-button" xml:space="preserve">
+                <source>Configured instruction</source>
+                <target xml:lang="de" state="translated">Konfigurierte Anweisung</target>
+            </trans-unit>
+            <trans-unit id="intro-button" xml:space="preserve">
+                <source>Introduction</source>
+                <target xml:lang="de" state="translated">Einleitung</target>
+            </trans-unit>
+            <trans-unit id="page-conclusion-button" xml:space="preserve">
+                <source>Page Conclusion</source>
+                <target xml:lang="de" state="translated">Seitenfazit</target>
+            </trans-unit>
+            <trans-unit id="rephrase-button" xml:space="preserve">
+                <source>Rephrase</source>
+                <target xml:lang="de" state="translated">Umformulieren</target>
+            </trans-unit>
+            <trans-unit id="longer-button-short" xml:space="preserve">
+                <source>Longer</source>
+                <target xml:lang="de" state="translated">Länger</target>
+            </trans-unit>
+            <trans-unit id="longer-button" xml:space="preserve">
+                <source>Make it longer</source>
+                <target xml:lang="de" state="translated">Mach es länger</target>
+            </trans-unit>
+            <trans-unit id="shorter-button-short" xml:space="preserve">
+                <source>Shorter</source>
+                <target xml:lang="de" state="translated">Kürzer</target>
+            </trans-unit>
+            <trans-unit id="shorter-button" xml:space="preserve">
+                <source>Make it shorter</source>
+                <target xml:lang="de" state="translated">Mach es kürzer</target>
+            </trans-unit>
+            <trans-unit id="fix-text-button" xml:space="preserve">
+                <source>Fix spelling &amp; grammar</source>
+                <target xml:lang="de" state="translated">Rechtschreibung &amp; Grammatik</target>
+            </trans-unit>
+            <trans-unit id="change-tone" xml:space="preserve">
+                <source>Change tone</source>
+                <target xml:lang="de" state="translated">Schreibstil ändern</target>
+            </trans-unit>
+            <trans-unit id="selected-text" xml:space="preserve">
+                <source>Selected Text</source>
+                <target xml:lang="de" state="translated">Ausgewählter Text</target>
+            </trans-unit>
+            <trans-unit id="new-text" xml:space="preserve">
+                <source>New Text</source>
+                <target xml:lang="de" state="translated">Neuer Text</target>
+            </trans-unit>
+            <trans-unit id="custom-prompt-modify-placeholder" xml:space="preserve">
+                <source>How should the text be changed?</source>
+                <target xml:lang="de" state="translated">Wie soll der Text geändert werden?</target>
+            </trans-unit>
+            <trans-unit id="custom-prompt-create-placeholder" xml:space="preserve">
+                <source>Which text should I write?</source>
+                <target xml:lang="de" state="translated">Welchen Text soll ich schreiben?</target>
+            </trans-unit>
+            <trans-unit id="disclaimer" xml:space="preserve">
+                <source>GenAI models can make mistakes. Check important information.</source>
+                <target xml:lang="de" state="translated">GenAI-Modelle können Fehler machen. Überprüfen Sie wichtige Informationen.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

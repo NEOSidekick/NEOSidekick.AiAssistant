@@ -29,6 +29,9 @@
             <trans-unit id="1696264259260">
                 <source>Please do not use options.sidekick.onCreate.module anymore. Read the docs to find out about the new configuration.</source>
             </trans-unit>
+            <trans-unit id="1696264259270">
+                <source>Please write a few words about how to create the text.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

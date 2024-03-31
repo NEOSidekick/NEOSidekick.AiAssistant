@@ -1,5 +1,4 @@
-import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
-import {Node, NodeType} from '@neos-project/neos-ts-interfaces';
+import {GlobalRegistry, Node, NodeType} from '@neos-project/neos-ts-interfaces';
 // @ts-ignore
 import {Store} from 'react-redux'
 import backend from '@neos-project/neos-ui-backend-connector';
@@ -8,54 +7,55 @@ import {actions, selectors} from '@neos-project/neos-ui-redux-store';
 import {produce} from 'immer';
 // @ts-ignore
 import mapValues from 'lodash.mapvalues';
+import {ApiService} from "./ApiService";
 
-export const createContentService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store): ContentService => {
+export const createContentService = (globalRegistry: GlobalRegistry, store: Store): ContentService => {
     return new ContentService(globalRegistry, store);
 }
 
 export class ContentService {
-    private globalRegistry: SynchronousMetaRegistry<any>;
+    private globalRegistry: GlobalRegistry;
     private store: Store;
+    private guestFrameContentDocument: Document | null = null;
     public nodeTypesRegistry;
-    public externalService;
+    public externalService: ApiService;
 
-
-    constructor(globalRegistry: SynchronousMetaRegistry<any>, store: Store) {
+    constructor(globalRegistry: GlobalRegistry, store: Store) {
         this.globalRegistry = globalRegistry;
         this.store = store;
         this.nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository');
+        // @ts-ignore
         this.externalService = globalRegistry.get('NEOSidekick.AiAssistant').get('externalService');
     }
 
+    getGuestFrameContentDocument = (): Document | null => {
+        const guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
+        this.guestFrameContentDocument = guestFrame?.contentDocument;
+        return this.guestFrameContentDocument;
+    }
+
     getGuestFrameDocumentTitle = (): string => {
-        const guestFrame = document.getElementsByName('neos-content-main')[0];
-        // @ts-ignore
-        const guestFrameDocument = guestFrame?.contentDocument;
-        return guestFrameDocument?.title
+        return <string>this.getGuestFrameContentDocument()?.title;
     }
 
     getGuestFrameDocumentHtml = (): string => {
-        const guestFrame = document.getElementsByName('neos-content-main')[0];
-        // @ts-ignore
-        const guestFrameDocument = guestFrame?.contentDocument;
-        return guestFrameDocument?.body?.innerHTML;
+        return <string>this.getGuestFrameContentDocument()?.body?.innerHTML;
     }
 
     getCurrentDocumentNode = (): Node => {
-        const state = this.store.getState()
-        const currentDocumentNodePath = state?.cr?.nodes?.documentNode
-        return state?.cr?.nodes?.byContextPath[currentDocumentNodePath]
+        const state = this.store.getState();
+        return selectors.CR.Nodes.documentNodeSelector(state);
     }
 
     getCurrentDocumentParentNode = (): Node => {
-        const state = this.store.getState()
-        const currentDocumentNode = this.getCurrentDocumentNode()
-        return state?.cr?.nodes?.byContextPath[currentDocumentNode.parent]
+        const state = this.store.getState();
+        const node = this.getCurrentDocumentNode();
+        return selectors.CR.Nodes.nodeByContextPath(state)(node.parent);
     }
 
     getCurrentDocumentNodeType = (): NodeType => {
-        const currentDocumentNode = this.getCurrentDocumentNode()
-        return this.globalRegistry.get('@neos-project/neos-ui-contentrepository').get(currentDocumentNode?.nodeType)
+        const currentDocumentNode = this.getCurrentDocumentNode();
+        return this.globalRegistry.get('@neos-project/neos-ui-contentrepository').get(currentDocumentNode?.nodeType);
     }
 
     getCurrentDocumentTargetAudience = async (): Promise<string> => {

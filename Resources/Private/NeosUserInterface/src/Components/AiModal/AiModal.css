@@ -1,0 +1,68 @@
+
+.primaryColumn {
+  overflow-y: auto;
+  width: 100%;
+  transition: var(--transition-Default) ease width;
+  padding: var(--spacing-Full);
+  flex-grow: 0;
+  flex-shrink: 0;
+
+  .expanded & {
+    width: calc(var(--size-SidebarWidth) + 2 * var(--spacing-Full));
+  }
+}
+
+.promptRow {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.promptRow__button {
+  height: auto;
+}
+
+.quickGenerationButtons {
+  display: flex;
+  gap: 0.5rem;
+  padding-bottom: 1.5rem;
+}
+
+.quickGenerationButtons__selectWrapper {
+  flex: 1;
+}
+.quickGenerationButtons__select {
+  /* like style="lighter" */
+  background-color: #3f3f3f;
+}
+
+.originalText {
+  pointer-events: none;
+  border-bottom: 2px solid #3f3f3f;
+  padding-bottom: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.result__notice {
+  display: block;
+  padding-top: 10px;
+  color: #999999;
+}
+
+.button__paddingNone {
+  padding: 0;
+}
+
+.icon--space-right {
+  margin-right: 5px;
+}
+.icon--space-right-large {
+  margin-right: 10px;
+}
+
+@keyframes pulse {
+  50% {
+    opacity: .5;
+  }
+}

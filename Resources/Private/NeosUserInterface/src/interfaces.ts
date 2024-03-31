@@ -15,6 +15,7 @@ export interface ServerStreamMessage {
     data : {
         eventName: 'write-content' | 'stopped-generation' | 'error';
         data: {
+            modalTarget?: boolean
             nodePath?: string;
             propertyName?: string;
             value?: string;

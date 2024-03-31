@@ -3,11 +3,16 @@ export const createIFrameApiService = (): IFrameApiService => {
     return new IFrameApiService();
 }
 
+interface ModuleCall {
+    data: object;
+    onStarted?: () => void;
+}
+
 export class IFrameApiService {
     private isStreaming: boolean = false;
     private unsyncedWebContextIsNewPage?: boolean;
     private unsyncedWebContextData?: object;
-    private callModuleQueue: Array<object> = [];
+    private callModuleQueue: Array<ModuleCall> = [];
 
     // the function calling this, must reset isStreaming after the call is done
     callModule = (data: object, onStarted?: () => void): void => {
@@ -81,17 +86,21 @@ export class IFrameApiService {
         }
     }
 
-    private sendMessage = (message: object, onSend?: Function): void => {
+    private sendMessage = (message: object, onSend?: Function, retiesCount: number = 0): void => {
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {
-            console.log('loaded, sending message to frame', message);
+            console.log('Sending message to frame', message);
             assistantFrame.contentWindow?.postMessage(message, '*');
 
             if (onSend) {
                 onSend();
             }
         } else {
-            console.log('not loaded, waiting...');
+            if (retiesCount > 20) {
+                alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');
+                return;
+            }
+            retiesCount++;
             setTimeout(() => this.sendMessage(message, onSend), 250);
         }
     }

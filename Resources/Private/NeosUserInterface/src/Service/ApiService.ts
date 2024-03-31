@@ -1,10 +1,10 @@
 import AiAssistantError from "../AiAssistantError";
 import {SidekickFrontendConfiguration} from "../interfaces";
-export const createExternalService = (configuration: SidekickFrontendConfiguration): ExternalService => {
-    return new ExternalService(configuration.apiDomain, configuration.apiKey);
+export const createApiService = (configuration: SidekickFrontendConfiguration): ApiService => {
+    return new ApiService(configuration.apiDomain, configuration.apiKey);
 }
 
-export class ExternalService {
+export class ApiService {
     private readonly apiDomain: string = ''
     private readonly apiKey: string = ''
 

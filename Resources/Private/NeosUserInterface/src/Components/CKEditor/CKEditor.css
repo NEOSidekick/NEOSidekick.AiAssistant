@@ -1,0 +1,40 @@
+.neosidekick__ck-editor {
+  position: relative;
+  background: #141414;
+}
+
+/* show lists in default style */
+.neosidekick__ck-editor ol,
+.neosidekick__ck-editor ul {
+  padding-inline-start: 20px;
+}
+.neosidekick__ck-editor li {
+  display: list-item;
+}
+
+/* keep the editor small */
+.neosidekick__ck-editor .ck-content {
+  padding: 10px 14px;
+}
+.neosidekick__ck-editor .ck-content p:first-child {
+  margin-top: 0;
+}
+.neosidekick__ck-editor .ck-content p:last-child {
+  margin-bottom: 0;
+}
+
+
+.neosidekick__ck-editor--disabled [class*='_toolBar__wrap'] {
+  display: none;
+}
+.neosidekick__ck-editor--disabled .ck-content {
+  color: #999999;
+  background: #323232;
+}
+.neosidekick__ck-editor--disabled:after {
+  /* we cant get access to the editor during loading, to do editor.enableReadOnlyMode() */
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: auto;
+}

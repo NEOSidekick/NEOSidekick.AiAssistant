@@ -78,7 +78,7 @@ export default class RegenerateButton extends PureComponent<RegenerateButtonProp
         } = this.props;
 
         return (this.state.show ? <Button disabled={!this.state.enabled} style="transparent" hoverStyle="brand" onClick={this.onClick} isActive={Boolean(this.props.isActive)} title={i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generate')}>
-            <Icon icon="magic" size="" fixedWidth padded="right" />
+            <Icon icon="magic" fixedWidth padded="right" />
             {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generate')}
         </Button> : '');
     }

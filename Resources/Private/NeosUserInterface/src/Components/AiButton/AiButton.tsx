@@ -59,7 +59,6 @@ export default class AiButton extends PureComponent<AiButtonProps> {
                     onClick={this.handleOpen}
                     title={i18nRegistry.translate('NEOSidekick.AiAssistant:Main:title', 'Mit AI bearbeiten')}>
                     AI
-                    <Icon icon="magic" fixedWidth padded="left" />
                 </Button>
             </div>
         );

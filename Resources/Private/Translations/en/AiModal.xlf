@@ -6,7 +6,10 @@
                 <source>Revise text</source>
             </trans-unit>
             <trans-unit id="create-text-title" xml:space="preserve">
-                <source>Create text</source>
+                <source>Generate text with AI</source>
+            </trans-unit>
+            <trans-unit id="regenerate-text" xml:space="preserve">
+                <source>Regenerate</source>
             </trans-unit>
             <trans-unit id="apply-modify-text" xml:space="preserve">
                 <source>Use text</source>
@@ -42,7 +45,10 @@
                 <source>Make it shorter</source>
             </trans-unit>
             <trans-unit id="fix-text-button" xml:space="preserve">
-                <source>Fix spelling &amp; grammar</source>
+                <source>Fix spelling</source>
+            </trans-unit>
+            <trans-unit id="custom-prompt-button" xml:space="preserve">
+                <source>Custom prompt</source>
             </trans-unit>
             <trans-unit id="change-tone" xml:space="preserve">
                 <source>Change tone</source>
@@ -57,7 +63,7 @@
                 <source>How should the text be changed?</source>
             </trans-unit>
             <trans-unit id="custom-prompt-create-placeholder" xml:space="preserve">
-                <source>Which text should I write?</source>
+                <source>Briefly describe what text you want and its length</source>
             </trans-unit>
             <trans-unit id="disclaimer" xml:space="preserve">
                 <source>GenAI models can make mistakes. Check important information.</source>

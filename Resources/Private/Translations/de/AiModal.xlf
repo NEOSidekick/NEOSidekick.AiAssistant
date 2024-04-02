@@ -7,8 +7,12 @@
                 <target xml:lang="de" state="translated">Text überarbeiten</target>
             </trans-unit>
             <trans-unit id="create-text-title" xml:space="preserve">
-                <source>Create text</source>
-                <target xml:lang="de" state="translated">Text erstellen</target>
+                <source>Generate text with AI</source>
+                <target xml:lang="de" state="translated">Text mit AI generieren</target>
+            </trans-unit>
+            <trans-unit id="regenerate-text" xml:space="preserve">
+                <source>Regenerate</source>
+                <target xml:lang="de" state="translated">Neu generieren</target>
             </trans-unit>
             <trans-unit id="apply-modify-text" xml:space="preserve">
                 <source>Use text</source>
@@ -55,8 +59,12 @@
                 <target xml:lang="de" state="translated">Mach es kürzer</target>
             </trans-unit>
             <trans-unit id="fix-text-button" xml:space="preserve">
-                <source>Fix spelling &amp; grammar</source>
-                <target xml:lang="de" state="translated">Rechtschreibung &amp; Grammatik</target>
+                <source>Fix spelling</source>
+                <target xml:lang="de" state="translated">Rechtschreibung</target>
+            </trans-unit>
+            <trans-unit id="custom-prompt-button" xml:space="preserve">
+                <source>Custom prompt</source>
+                <target xml:lang="de" state="translated">Eigene Anweisung</target>
             </trans-unit>
             <trans-unit id="change-tone" xml:space="preserve">
                 <source>Change tone</source>
@@ -75,8 +83,8 @@
                 <target xml:lang="de" state="translated">Wie soll der Text geändert werden?</target>
             </trans-unit>
             <trans-unit id="custom-prompt-create-placeholder" xml:space="preserve">
-                <source>Which text should I write?</source>
-                <target xml:lang="de" state="translated">Welchen Text soll ich schreiben?</target>
+                <source>Briefly describe what text you want and its length</source>
+                <target xml:lang="de" state="translated">Beschreibe kurz, welchen Text du in welcher Länge generieren möchtest</target>
             </trans-unit>
             <trans-unit id="disclaimer" xml:space="preserve">
                 <source>GenAI models can make mistakes. Check important information.</source>

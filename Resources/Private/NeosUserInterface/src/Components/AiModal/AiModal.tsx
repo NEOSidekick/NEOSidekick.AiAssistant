@@ -37,10 +37,13 @@ interface AiModalProps {
 }
 
 interface AiModalState {
+    customPromptIsVisible: boolean;
     customPrompt: string;
     writingStyles: Array<{value: string, label: string}>;
     generatedText: string;
     generationState: 'empty' | 'loading' | 'finished';
+    generationModificationType?: string;
+    generationWritingStyle?: string;
 }
 
 @neos(globalRegistry => ({
@@ -89,6 +92,7 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
     constructor(props: AiModalProps) {
         super(props);
         this.state = {
+            customPromptIsVisible: false,
             customPrompt: '',
             writingStyles: [{value: '', label: 'Loading...'}],
             generatedText: '',
@@ -172,9 +176,12 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
         // reset on open
         if (!prevProps.isOpen && this.props.isOpen) {
             this.setState({
+                customPromptIsVisible: false,
                 customPrompt: '',
                 generatedText: '',
                 generationState: 'empty',
+                generationModificationType: undefined,
+                generationWritingStyle: undefined,
             });
         }
     }
@@ -186,8 +193,33 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
     renderTitle() {
         return (
             <div>
-                <Icon icon="magic" className="icon--space-right-large"/>
-                {this.props.selectedText ? <I18n id="NEOSidekick.AiAssistant:AiModal:modify-text-title" fallback="Revise text"/> : <I18n id="NEOSidekick.AiAssistant:AiModal:create-text-title" fallback="Create text"/>} (Beta)
+                <svg className="sidekick-icon" enable-background="new 0 0 245 245" viewBox="0 0 245 245">
+                    <path d="m72.6 75.3 5.3-2.6m-18.5-30.7" fill="#fff"/>
+                    <circle cx="64.7" cy="50.5" fill="#fff" r="9.4"/>
+                    <path d="m68 59.1 7.5 15.2" fill="none" stroke="#fff" stroke-miterlimit="10" stroke-width="4.9606"/>
+                    <path d="m170.1 72.7 5.3 2.6m13.2-33.3" fill="#fff"/>
+                    <circle cx="183.4" cy="50.5" fill="#fff" r="9.4"/>
+                    <path d="m180.1 59.1-7.5 15.2" fill="none" stroke="#fff" stroke-miterlimit="10"
+                          stroke-width="4.9606"/>
+                    <path
+                        d="m123.6 60c38.1 0 69 31 69 69s-31 69-69 69-69-31-69-69 31-69 69-69m0-8.5c-42.8 0-77.5 34.7-77.5 77.5s34.7 77.5 77.5 77.5 77.5-34.7 77.5-77.5-34.6-77.5-77.5-77.5z"
+                        fill="#fff"/>
+                    <circle cx="97" cy="123.5" fill="#fff" r="9.1"/>
+                    <g fill="none" stroke="#fff" stroke-miterlimit="10">
+                        <path
+                            d="m164.2 137.9h-80c-7.8 0-14.1-6.3-14.1-14.1v-.3c0-7.8 6.3-14.1 14.1-14.1h80c7.8 0 14.1 6.3 14.1 14.1v.3c0 7.8-6.4 14.1-14.1 14.1z"
+                            stroke-width="9.0714"/>
+                        <path d="m52.4 153.9h-17.5c-4.1 0-7.4-3.2-7.4-7.2v-34.2c0-3.9 3.4-7.2 7.4-7.2h17.5"
+                              stroke-width="8.5039"/>
+                        <path d="m193.1 153.9h17.5c4.1 0 7.4-3.2 7.4-7.2v-34.2c0-3.9-3.4-7.2-7.4-7.2h-17.5"
+                              stroke-width="8.5039"/>
+                        <path d="m104.1 165.1s18.1 18.1 39 .5" stroke-linecap="round" stroke-width="8.5039"/>
+                    </g>
+                </svg>
+                {this.props.selectedText ?
+                    <I18n id="NEOSidekick.AiAssistant:AiModal:modify-text-title" fallback="Revise text"/> :
+                    <I18n id="NEOSidekick.AiAssistant:AiModal:create-text-title" fallback="Generate text with AI"/>
+                } (Beta)
             </div>
         )
     }
@@ -204,6 +236,21 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
         );
     }
 
+    renderRegenerateAction() {
+        if (this.state.generationState === 'finished') {
+            return (
+                <Button
+                    key="regenerate"
+                    style="lighter"
+                    hoverStyle="warn"
+                    onClick={this.handleRegenerate}>
+                    <I18n id="NEOSidekick.AiAssistant:AiModal:regenerate-text" fallback="Regenerate"/>
+                </Button>
+            );
+        }
+        return '';
+    }
+
     renderSaveAction() {
         if (this.state.generationState === 'finished') {
             return (
@@ -212,7 +259,9 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                     style="success"
                     hoverStyle="success"
                     onClick={this.handleApply}>
-                    {this.props.selectedText ? <I18n id="NEOSidekick.AiAssistant:AiModal:apply-modify-text" fallback="Use text"/> : <I18n id="NEOSidekick.AiAssistant:AiModal:apply-create-text" fallback="Insert text"/>}
+                    {this.props.selectedText ?
+                        <I18n id="NEOSidekick.AiAssistant:AiModal:apply-modify-text" fallback="Use text"/> :
+                        <I18n id="NEOSidekick.AiAssistant:AiModal:apply-create-text" fallback="Insert text"/>}
                 </Button>
             );
         }
@@ -288,21 +337,28 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                     hoverStyle="brand"
                     onClick={() => this.handleGenerate('longer')}>
                     <Icon icon="expand-alt" className="icon--space-right"/>
-                    <I18n id="NEOSidekick.AiAssistant:AiModal:longer-button" fallback="Make it longer"/>
+                    <I18n id="NEOSidekick.AiAssistant:AiModal:longer-button-short" fallback="Longer"/>
                 </Button>
                 <Button
                     style="lighter"
                     hoverStyle="brand"
                     onClick={() => this.handleGenerate('shorter')}>
                     <Icon icon="compress-alt" className="icon--space-right"/>
-                    <I18n id="NEOSidekick.AiAssistant:AiModal:shorter-button" fallback="Make it shorter"/>
+                    <I18n id="NEOSidekick.AiAssistant:AiModal:shorter-button-short" fallback="Shorter"/>
                 </Button>
                 <Button
                     style="lighter"
                     hoverStyle="brand"
                     onClick={() => this.handleGenerate('fix_spelling')}>
                     <Icon icon="spell-check" className="icon--space-right"/>
-                    <I18n id="NEOSidekick.AiAssistant:AiModal:fix-text-button" fallback="Fix spelling & grammar"/>
+                    <I18n id="NEOSidekick.AiAssistant:AiModal:fix-text-button" fallback="Fix spelling"/>
+                </Button>
+                <Button
+                    style={this.state.customPromptIsVisible ? 'brand' : 'lighter'}
+                    hoverStyle="brand"
+                    onClick={() => this.setState({customPromptIsVisible: !this.state.customPromptIsVisible})}>
+                    <Icon icon="pen-fancy" className="icon--space-right"/>
+                    <I18n id="NEOSidekick.AiAssistant:AiModal:custom-prompt-button" fallback="Etwas anderes"/>
                 </Button>
                 <div className="quickGenerationButtons__selectWrapper">
                     <SelectBox
@@ -316,6 +372,10 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
     }
 
     handleGenerate = async (modificationType: string, writingStyle = 'default'): Promise<void> => {
+        this.setState({generationModificationType: modificationType, generationWritingStyle: writingStyle});
+        if (modificationType !== 'custom') {
+            this.setState({customPromptIsVisible: false});
+        }
         if (this.state.generationState === 'loading') {
             this.props.iFrameApiService.cancelCallModule();
         }
@@ -392,6 +452,11 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
         this.props.iFrameApiService.callModule(data);
     }
 
+    handleRegenerate = async (): Promise<void> => {
+        // @ts-ignore
+        return this.handleGenerate(this.state.generationModificationType, this.state.generationWritingStyle || 'default');
+    }
+
     render() {
         const {selectedText, i18nRegistry} = this.props;
         const {customPrompt, generatedText, generationState} = this.state;
@@ -399,7 +464,7 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
         editorOptions.sidekickModifyButton = false;
         return (
             <Dialog
-                actions={[this.renderCancelAction(), this.renderSaveAction()]}
+                actions={[this.renderCancelAction(), this.renderRegenerateAction(), this.renderSaveAction()]}
                 title={this.renderTitle()}
                 onRequestClose={this.handleCancel}
                 isOpen={this.props.isOpen}
@@ -414,26 +479,29 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                             disabled={true}
                         />
                     </div> : ''}
-                    <div className="promptRow">
-                        <TextArea
-                            autoFocus
-                            id="neosidekickAiModifyPromptTextarea"
-                            placeholder={this.hasSelectedText() ? i18nRegistry.translate('NEOSidekick.AiAssistant:AiModal:custom-prompt-modify-placeholder', 'How should the text be changed?') : i18nRegistry.translate('NEOSidekick.AiAssistant:AiModal:custom-prompt-create-placeholder', 'Which text should I write?')}
-                            onChange={(value: string) => this.setState({customPrompt: value})}
-                            minRows={2}
-                            expandedRows={2}
-                        />
-                        <Button
-                            className="promptRow__button"
-                            disabled={!customPrompt}
-                            style={customPrompt && generationState == 'empty'? 'success' : 'lighter'}
-                            hoverStyle="success"
-                            onClick={() => this.handleGenerate('custom')}>
-                            <Icon icon="magic" className="icon--space-right"/>
-                            <I18n id="NEOSidekick.AiAssistant:Main:generate" fallback="Generate"/>
-                        </Button>
-                    </div>
-                    {this.hasSelectedText() ? this.renderEditButtons() : this.renderCreateButtons()}
+                    {this.hasSelectedText() ? this.renderEditButtons() : ''}
+                    {(!this.hasSelectedText() || this.state.customPromptIsVisible) ? (
+                        <div className="promptRow">
+                            <TextArea
+                                autoFocus
+                                id="neosidekickAiModifyPromptTextarea"
+                                placeholder={this.hasSelectedText() ? i18nRegistry.translate('NEOSidekick.AiAssistant:AiModal:custom-prompt-modify-placeholder', 'How should the text be changed?') : i18nRegistry.translate('NEOSidekick.AiAssistant:AiModal:custom-prompt-create-placeholder', 'Which text should I write?')}
+                                onChange={(value: string) => this.setState({customPrompt: value})}
+                                minRows={2}
+                                expandedRows={2}
+                            />
+                            <Button
+                                className="promptRow__button"
+                                disabled={!customPrompt}
+                                style={customPrompt && generationState == 'empty'? 'success' : 'lighter'}
+                                hoverStyle="success"
+                                onClick={() => this.handleGenerate('custom')}>
+                                <Icon icon="magic" className="icon--space-right"/>
+                                <I18n id="NEOSidekick.AiAssistant:Main:generate" fallback="Generate"/>
+                            </Button>
+                        </div>
+                    ) : ''}
+                    {this.hasSelectedText() ? '' : this.renderCreateButtons()}
                     {generationState === 'empty' ? '' : <div className="result">
                         <Label><I18n id="NEOSidekick.AiAssistant:AiModal:new-text" fallback="New Text"/>:</Label>
                         <CKEditor

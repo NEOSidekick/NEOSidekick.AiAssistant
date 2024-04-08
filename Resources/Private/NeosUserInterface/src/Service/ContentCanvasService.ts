@@ -123,7 +123,7 @@ export class ContentCanvasService {
     }
 
     private getPropertyInlineField = (nodePath: string, propertyName: string) => {
-        // editors are not globally registered, no we need a hacky dom query
+        // editors are not globally registered, so we need a hacky dom query
         const guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
         const guestFrameDocument = guestFrame?.contentDocument;
         return guestFrameDocument?.querySelector(`[data-__neos-editable-node-contextpath="${nodePath}"][data-__neos-property="${propertyName}"]`) || undefined;

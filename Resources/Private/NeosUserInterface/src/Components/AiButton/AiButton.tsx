@@ -9,7 +9,7 @@ import {selectors} from "@neos-project/neos-ui-redux-store";
 import "./AiButton.css";
 import {ContentService} from "../../Service/ContentService";
 import {ContentCanvasService} from "../../Service/ContentCanvasService";
-import {I18nRegistry} from "@neos-project/neos-ts-interfaces";
+import {GlobalRegistry, I18nRegistry} from "@neos-project/neos-ts-interfaces";
 
 interface AiButtonProps {
     contentService: ContentService;
@@ -20,7 +20,7 @@ interface AiButtonProps {
     currentlyEditedPropertyName: string;
 }
 
-@neos((globalRegistry: any) => ({
+@neos((globalRegistry: GlobalRegistry) => ({
     contentService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentService'),
     contentCanvasService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentCanvasService'),
     i18nRegistry: globalRegistry.get('i18n'),

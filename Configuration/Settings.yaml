@@ -4,6 +4,9 @@ NEOSidekick:
     developmentBuild: false
     defaultLanguage: 'en'
     chatSidebarEnabled: true
+    modifyTextModal:
+      # If set to true, the custom prompt will be focused when the modal opens
+      preferCustomPrompt: false
     altTextGeneratorModule:
       # Defines whether only asset that are used in content should be processed, null let's the user choose
       # Allowed: true, false, null

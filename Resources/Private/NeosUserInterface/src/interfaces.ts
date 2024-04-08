@@ -8,6 +8,7 @@ export interface SidekickFrontendConfiguration {
     referrer: string;
     defaultLanguage: string;
     chatSidebarEnabled: boolean;
+    modifyTextModalPreferCustomPrompt: boolean;
     userInterfaceLanguage: string;
 }
 

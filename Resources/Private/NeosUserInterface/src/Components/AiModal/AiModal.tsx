@@ -92,7 +92,7 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
     constructor(props: AiModalProps) {
         super(props);
         this.state = {
-            customPromptIsVisible: false,
+            customPromptIsVisible: this.props.configuration.modifyTextModalPreferCustomPrompt,
             customPrompt: '',
             writingStyles: [{value: '', label: 'Loading...'}],
             generatedText: '',
@@ -176,7 +176,7 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
         // reset on open
         if (!prevProps.isOpen && this.props.isOpen) {
             this.setState({
-                customPromptIsVisible: false,
+                customPromptIsVisible: this.props.configuration.modifyTextModalPreferCustomPrompt,
                 customPrompt: '',
                 generatedText: '',
                 generationState: 'empty',

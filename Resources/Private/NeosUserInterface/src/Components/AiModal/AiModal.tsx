@@ -276,7 +276,8 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
     handleApply = () => {
         this.props.applyModal();
         const {focusedNodePath, currentlyEditedPropertyName} = this.props;
-        this.props.contentCanvasService.insertTextIntoInlineEditor(focusedNodePath, currentlyEditedPropertyName, this.state.generatedText);
+        const endsWithSpace = this.props.selectedText.endsWith(' ') || this.props.selectedText.endsWith('&nbsp;');
+        this.props.contentCanvasService.insertTextIntoInlineEditor(focusedNodePath, currentlyEditedPropertyName, this.state.generatedText, endsWithSpace);
         this.setState({generatedText: '', generationState: 'empty'});
     }
 

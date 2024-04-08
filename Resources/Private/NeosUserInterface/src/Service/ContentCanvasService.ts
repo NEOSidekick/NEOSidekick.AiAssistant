@@ -52,10 +52,18 @@ export class ContentCanvasService {
         return editor?.data.stringify(editor.model.getSelectedContent(editor.model.document.selection));
     }
 
-    insertTextIntoInlineEditor = (nodePath: string, propertyName: string, htmlText: string): void => {
+    insertTextIntoInlineEditor = (nodePath: string, propertyName: string, htmlText: string, endsWithSpace: boolean): void => {
         const inlineField = this.getPropertyInlineField(nodePath, propertyName);
         const editor = inlineField?.ckeditorInstance;
         const range = editor.model.document.selection.getFirstRange();
+
+        if (endsWithSpace) {
+            let closingBracketsPosition = htmlText.lastIndexOf('</');
+            if ((closingBracketsPosition + 10) < htmlText.length) { // position seems wrong
+                closingBracketsPosition = htmlText.length;
+            }
+            htmlText = htmlText.substring(0, closingBracketsPosition) + '&nbsp;' + htmlText.substring(closingBracketsPosition);
+        }
 
         // see https://ckeditor.com/docs/ckeditor5/latest/api/module_engine_model_model-Model.html#function-insertContent
         editor.model.change(writer => {

@@ -8,6 +8,7 @@ export interface SidekickFrontendConfiguration {
     referrer: string;
     defaultLanguage: string;
     chatSidebarEnabled: boolean;
+    modifyTextModalPreferCustomPrompt: boolean;
     userInterfaceLanguage: string;
 }
 
@@ -15,6 +16,7 @@ export interface ServerStreamMessage {
     data : {
         eventName: 'write-content' | 'stopped-generation' | 'error';
         data: {
+            modalTarget?: boolean
             nodePath?: string;
             propertyName?: string;
             value?: string;

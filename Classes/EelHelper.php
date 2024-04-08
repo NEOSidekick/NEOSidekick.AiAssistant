@@ -119,6 +119,11 @@ class EelHelper implements ProtectedContextAwareInterface
         return $this->settings['chatSidebarEnabled'] ?? false;
     }
 
+    public function modifyTextModalPreferCustomPrompt(): bool
+    {
+        return $this->settings['modifyTextModal']['preferCustomPrompt'] ?? false;
+    }
+
     public function altTextGeneratorModuleConfiguration(): ?array
     {
         return $this->settings['altTextGeneratorModule'] ?? null;

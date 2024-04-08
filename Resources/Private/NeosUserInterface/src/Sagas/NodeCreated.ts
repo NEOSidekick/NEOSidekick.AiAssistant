@@ -1,7 +1,7 @@
 import {takeEvery} from 'redux-saga/effects';
 import {actionTypes, selectors} from '@neos-project/neos-ui-redux-store';
 import {ContentService} from '../Service/ContentService'
-import {ExternalService} from "../Service/ExternalService";
+import {ApiService} from "../Service/ApiService";
 import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
 import {Store} from "react-redux";
 

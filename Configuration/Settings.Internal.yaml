@@ -9,6 +9,7 @@ Neos:
           NEOSidekick.AiAssistant:
             - 'Main'
             - 'Error'
+            - 'AiModal'
             - 'AssetModule'
     Ui:
       resources:
@@ -31,6 +32,7 @@ Neos:
           referrer: '${NEOSidekick.AiAssistant.referrer()}'
           defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
           chatSidebarEnabled: '${NEOSidekick.AiAssistant.chatSidebarEnabled()}'
+          modifyTextModalPreferCustomPrompt: '${NEOSidekick.AiAssistant.modifyTextModalPreferCustomPrompt()}'
           altTextGeneratorModule: '${NEOSidekick.AiAssistant.altTextGeneratorModuleConfiguration()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
     modules:

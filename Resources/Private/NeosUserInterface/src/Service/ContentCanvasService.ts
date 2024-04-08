@@ -40,6 +40,41 @@ export class ContentCanvasService {
         }
     }
 
+    getEditorContent = (nodePath: string, propertyName: string): string => {
+        const inlineField = this.getPropertyInlineField(nodePath, propertyName);
+        const editor = inlineField?.ckeditorInstance;
+        return editor?.getData();
+    }
+
+    getSelectedContent = (nodePath: string, propertyName: string): string => {
+        const inlineField = this.getPropertyInlineField(nodePath, propertyName);
+        const editor = inlineField?.ckeditorInstance;
+        return editor?.data.stringify(editor.model.getSelectedContent(editor.model.document.selection));
+    }
+
+    insertTextIntoInlineEditor = (nodePath: string, propertyName: string, htmlText: string, endsWithSpace: boolean): void => {
+        const inlineField = this.getPropertyInlineField(nodePath, propertyName);
+        const editor = inlineField?.ckeditorInstance;
+        const range = editor.model.document.selection.getFirstRange();
+
+        if (endsWithSpace) {
+            let closingBracketsPosition = htmlText.lastIndexOf('</');
+            if ((closingBracketsPosition + 10) < htmlText.length) { // position seems wrong
+                closingBracketsPosition = htmlText.length;
+            }
+            htmlText = htmlText.substring(0, closingBracketsPosition) + '&nbsp;' + htmlText.substring(closingBracketsPosition);
+        }
+
+        // see https://ckeditor.com/docs/ckeditor5/latest/api/module_engine_model_model-Model.html#function-insertContent
+        editor.model.change(writer => {
+            const viewFragment = editor.data.processor.toView(htmlText);
+            const modelFragment = editor.data.toModel(viewFragment);
+            const newRange = editor.model.insertContent(modelFragment, range);
+            editor.editing.view.focus();
+            writer.setSelection(newRange);
+        });
+    }
+
     private unsetCurrentlyHandledNodePath(): void {
         this.currentlyHandledNodePath = null;
     }
@@ -49,9 +84,9 @@ export class ContentCanvasService {
             case 'write-content':
                 const {nodePath, propertyName, value, isFinished} = message?.data?.data;
                 // Make sure the handledNodePath is set while we alter the content
-                if (nodePath) { // is this a message for the content canvas?
+                if (nodePath && propertyName) { // is this a message for the content canvas?
                     console.info(nodePath + ': ' + value);
-                    this.setPropertyValue(nodePath, propertyName, value, isFinished);
+                    this.setPropertyValue(nodePath, propertyName, value || '', isFinished || false);
                     if (isFinished) {
                         this.handleStreamingFinished();
                     }
@@ -87,10 +122,15 @@ export class ContentCanvasService {
         }
     }
 
-    private setPropertyValue = (nodePath: string, propertyName: string, propertyValue: string, isFinished: string): void => {
+    private getPropertyInlineField = (nodePath: string, propertyName: string) => {
+        // editors are not globally registered, no we need a hacky dom query
         const guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
         const guestFrameDocument = guestFrame?.contentDocument;
-        const inlineField = guestFrameDocument?.querySelector(`[data-__neos-editable-node-contextpath="${nodePath}"][data-__neos-property="${propertyName}"]`);
+        return guestFrameDocument?.querySelector(`[data-__neos-editable-node-contextpath="${nodePath}"][data-__neos-property="${propertyName}"]`) || undefined;
+    }
+
+    private setPropertyValue = (nodePath: string, propertyName: string, propertyValue: string, isFinished: boolean): void => {
+        const inlineField = this.getPropertyInlineField(nodePath, propertyName);
         if (!inlineField && isFinished) { // can initially be undefined, on a new page with onCreate generation
             const errorMessage = 'Could not find inline field for nodePath: ' + nodePath + ' and propertyName: ' + propertyName;
             this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + errorMessage, 'error', errorMessage);

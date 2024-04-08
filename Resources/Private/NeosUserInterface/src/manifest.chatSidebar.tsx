@@ -1,7 +1,7 @@
 import React from "react";
 import {Headline, IconButton} from "@neos-project/react-ui-components";
 import {GlobalRegistry} from "@neos-project/neos-ts-interfaces";
-import SidekickIFrame from "./Components/SidekickIFrame";
+import SidekickIFrame from "./Components/SidekickIFrame/SidekickIFrame";
 import {SidekickFrontendConfiguration} from "./interfaces";
 
 export default (globalRegistry: GlobalRegistry, configuration: SidekickFrontendConfiguration) => {
@@ -24,7 +24,7 @@ export default (globalRegistry: GlobalRegistry, configuration: SidekickFrontendC
         // @ts-ignore
         const state = localStorage.getItem('NEOSidekick') ? JSON.parse(localStorage.getItem('NEOSidekick')) : { open: true, fullscreen: false };
         const [isOpen, setOpen] = React.useState(state?.open);
-        const setOpenAndPersistState = (open) => {
+        const setOpenAndPersistState = (open: boolean) => {
             setOpen(open);
             state.open = open;
             localStorage.setItem('NEOSidekick', JSON.stringify(state));

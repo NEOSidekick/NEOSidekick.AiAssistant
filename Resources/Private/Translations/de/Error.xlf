@@ -38,6 +38,10 @@
                 <source>Please do not use options.sidekick.onCreate.module anymore. Read the docs to find out about the new configuration.</source>
                 <target xml:lang="de" state="translated">Bitte verwende nicht mehr die Konfiguration options.sidekick.onCreate.module. Sieh dir die neue Syntax in der Dokumentation an.</target>
             </trans-unit>
+            <trans-unit id="1696264259270">
+                <source>Please write a few words about how to create the text.</source>
+                <target>Bitte beschreibe, was als neuer Text erstellt werden soll.</target>
+            </trans-unit>
             <trans-unit id="1709650151037">
                 <source>An error occurred while fetching the assets</source>
                 <target>Es ist ein Fehler beim Abrufen der Bilder aufgetreten</target>

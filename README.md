@@ -99,3 +99,7 @@ Image alternative texts are essential for SEO and accessibility. With good image
 [Read the tutorial](https://neosidekick.com/en/product/features/image-description-generator) on how create dozens of image descriptions in no time.
 
 ![Alternative-Text-Generator.png](docs%2FAlternative-Text-Generator.png)
+
+# License
+
+You can use it for free with our [free and paid plans](https://neosidekick.com/preise). You are not allowed to modify, reuse or resell this code. For additional feature wishes, write us an email to [support@neosidekick.com](mailto:support@neosidekick.com).

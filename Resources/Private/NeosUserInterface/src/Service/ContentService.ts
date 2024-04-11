@@ -123,6 +123,10 @@ export class ContentService {
             return this.processObjectWithClientEval(value, node, parentNode)
         }
 
+        if (typeof value === 'boolean') {
+            return value;
+        }
+
         if (value === null) {
             return null;
         }
@@ -226,8 +230,11 @@ export class ContentService {
                 return;
             }
 
-            if (isOnCreate && propertyConfiguration?.options?.sidekick?.onCreate !== true) {
-                return;
+            if (isOnCreate && propertyConfiguration?.options?.sidekick?.onCreate) {
+                const onCreate = await this.processValueWithClientEval(propertyConfiguration?.options?.sidekick?.onCreate, node, parentNode)
+                if (!onCreate) {
+                    return;
+                }
             }
 
             if (!propertyConfiguration?.ui?.inlineEditable) {

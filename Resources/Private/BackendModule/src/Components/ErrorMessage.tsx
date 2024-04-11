@@ -1,11 +1,7 @@
 import React from "react";
 import {connect} from "react-redux";
 import PropTypes from "prop-types";
-import {AssetListItem} from "./index";
 import StateInterface from "../Store/StateInterface";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faSpinner} from "@fortawesome/free-solid-svg-icons";
-import BackendAssetModuleResultDtoInterface from "../Model/BackendAssetModuleResultDtoInterface";
 import PureComponent from "./PureComponent";
 
 @connect((state: StateInterface) => ({

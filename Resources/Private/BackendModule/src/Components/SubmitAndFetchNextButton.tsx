@@ -21,7 +21,7 @@ import PropTypes from "prop-types";
     isPersisting: hasPersistingItem(state),
     hasItems: Object.keys(getItems(state) || {}).length > 0,
     hasItemWithoutPropertyValue: hasItemWithoutPropertyValue(state)
-}), (dispatch, ownProps) => ({
+}), (dispatch) => ({
     saveAllAndFetchNext: () => dispatch(saveAllAndFetchNext())
 }))
 export default class SubmitAndFetchNextButton extends PureComponent {
@@ -42,7 +42,7 @@ export default class SubmitAndFetchNextButton extends PureComponent {
                 className={'neos-button neos-button-success'}
                 disabled={isPersisting || isLoading || isGenerating || hasItemWithoutPropertyValue}>
                 {isPersisting ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : null}
-                {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:saveAndNextPage', 'Save all and next page')}
+                {this.translationService.translate('NEOSidekick.AiAssistant:Module:saveAndNextPage', 'Save all and next page')}
             </button> : null);
     }
 }

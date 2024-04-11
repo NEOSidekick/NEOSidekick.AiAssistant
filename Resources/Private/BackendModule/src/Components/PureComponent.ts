@@ -1,4 +1,4 @@
-import React, {PureComponent as OriginalPureComponent} from "react";
+import {PureComponent as OriginalPureComponent} from "react";
 import TranslationService from "../Service/TranslationService";
 export default abstract class PureComponent extends OriginalPureComponent {
     protected readonly translationService: TranslationService;

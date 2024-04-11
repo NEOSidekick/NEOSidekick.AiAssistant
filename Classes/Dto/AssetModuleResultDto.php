@@ -2,13 +2,14 @@
 
 namespace NEOSidekick\AiAssistant\Dto;
 
+use JsonSerializable;
 use Neos\Flow\Annotations as Flow;
 
 /**
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class AssetModuleResultDto
+final class AssetModuleResultDto implements JsonSerializable
 {
     /**
      * @var string
@@ -17,7 +18,7 @@ final class AssetModuleResultDto
     /**
      * @var string
      */
-    protected string $assetIdentifier;
+    protected string $identifier;
     /**
      * @var string
      */
@@ -36,7 +37,8 @@ final class AssetModuleResultDto
     protected string $propertyValue;
 
     /**
-     * @param string $assetIdentifier
+     * @param string $filename
+     * @param string $identifier
      * @param string $thumbnailUri
      * @param string $fullsizeUri
      * @param string $propertyName
@@ -44,14 +46,14 @@ final class AssetModuleResultDto
      */
     public function __construct(
         string $filename,
-        string $assetIdentifier,
+        string $identifier,
         string $thumbnailUri,
         string $fullsizeUri,
         string $propertyName,
         string $propertyValue
     ) {
         $this->filename = $filename;
-        $this->assetIdentifier = $assetIdentifier;
+        $this->identifier = $identifier;
         $this->thumbnailUri = $thumbnailUri;
         $this->fullsizeUri = $fullsizeUri;
         $this->propertyName = $propertyName;
@@ -63,9 +65,9 @@ final class AssetModuleResultDto
         return $this->filename;
     }
 
-    public function getAssetIdentifier(): string
+    public function getIdentifier(): string
     {
-        return $this->assetIdentifier;
+        return $this->identifier;
     }
 
     public function getThumbnailUri(): string
@@ -92,11 +94,23 @@ final class AssetModuleResultDto
     {
         return new self(
             $array['filename'],
-            $array['assetIdentifier'],
+            $array['identifier'],
             $array['thumbnailUri'],
             $array['fullsizeUri'],
             $array['propertyName'],
             $array['propertyValue']
         );
+    }
+
+    public function jsonSerialize(): array
+    {
+        return [
+            'identifier' => $this->identifier,
+            'filename' => $this->filename,
+            'thumbnailUri' => $this->thumbnailUri,
+            'fullsizeUri' => $this->fullsizeUri,
+            'propertyName' => $this->propertyName,
+            'propertyValue' => $this->propertyValue
+        ];
     }
 }

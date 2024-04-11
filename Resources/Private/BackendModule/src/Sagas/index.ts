@@ -1,6 +1,6 @@
 import { all, fork } from "redux-saga/effects";
 import {
-    watchAddItem,
+    watchAddItem, watchGenerateItem,
     watchPersistOneItem,
     watchSaveAllAndFetchNext,
     watchSetPersisted,
@@ -13,7 +13,8 @@ const rootSaga = function* () {
         fork(watchSaveAllAndFetchNext),
         fork(watchAddItem),
         fork(watchPersistOneItem),
-        fork(watchSetPersisted)
+        fork(watchSetPersisted),
+        fork(watchGenerateItem)
     ]);
 };
 

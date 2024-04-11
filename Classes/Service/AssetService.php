@@ -2,16 +2,15 @@
 
 namespace NEOSidekick\AiAssistant\Service;
 
-use Doctrine\ORM\Internal\Hydration\HydrationException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Asset;
-use Neos\Media\Domain\Model\AssetInterface;
 use Neos\Media\Domain\Model\Image;
 use Neos\Media\Domain\Repository\AssetRepository;
 use Neos\Utility\Exception\PropertyNotAccessibleException;
 use Neos\Utility\ObjectAccess;
 use NEOSidekick\AiAssistant\Dto\AssetModuleConfigurationDto;
 use NEOSidekick\AiAssistant\Dto\AssetModuleResultDto;
+use NEOSidekick\AiAssistant\Dto\ResultCollectionDto;
 use NEOSidekick\AiAssistant\Factory\AssetModuleResultDtoFactory;
 
 /**"
@@ -34,15 +33,22 @@ class AssetService
     /**
      * @param AssetModuleConfigurationDto $configurationDto
      *
-     * @return array<AssetInterface>
+     * @return ResultCollectionDto
      */
-    public function getAssetsThatNeedProcessing(AssetModuleConfigurationDto $configurationDto): array
+    public function getAssetsThatNeedProcessing(AssetModuleConfigurationDto $configurationDto): ResultCollectionDto
     {
         $assetsIterator = $this->assetRepository->findAllIterator();
         $assetsThatNeedProcessing = [];
-        $i = 0;
+        $assetsThatNeedProcessingCount = 0;
+        $iteratedItems = 0;
+
         foreach ($this->assetRepository->iterate($assetsIterator) as $currentAsset) {
-            if ($i >= $configurationDto->getLimit()) {
+            $iteratedItems++;
+            if ($iteratedItems <= $configurationDto->getFirstResult()) {
+                continue;
+            }
+
+            if ($assetsThatNeedProcessingCount >= $configurationDto->getLimit()) {
                 break;
             }
             if (!$currentAsset instanceof Image) {
@@ -64,9 +70,12 @@ class AssetService
                 $currentAsset,
                 $configurationDto
             );
-            $i++;
+            $assetsThatNeedProcessingCount++;
         }
-        return $assetsThatNeedProcessing;
+        return new ResultCollectionDto(
+            $assetsThatNeedProcessing,
+            $configurationDto->getFirstResult() + $assetsThatNeedProcessingCount
+        );
     }
 
     /**
@@ -89,7 +98,7 @@ class AssetService
     public function updateAsset(AssetModuleResultDto $resultDto): void
     {
         /** @var Asset $asset */
-        $asset = $this->assetRepository->findByIdentifier($resultDto->getAssetIdentifier());
+        $asset = $this->assetRepository->findByIdentifier($resultDto->getIdentifier());
 
         if ($asset) {
             ObjectAccess::setProperty($asset, $resultDto->getPropertyName(), $resultDto->getPropertyValue());

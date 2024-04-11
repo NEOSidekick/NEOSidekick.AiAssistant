@@ -10,7 +10,9 @@ Neos:
             - 'Main'
             - 'Error'
             - 'AiModal'
+            - 'Module'
             - 'AssetModule'
+            - 'FocusKeywordModule'
             - 'Editors/*'
     Ui:
       resources:
@@ -37,12 +39,29 @@ Neos:
           altTextGeneratorModule: '${NEOSidekick.AiAssistant.altTextGeneratorModuleConfiguration()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
     modules:
-      management:
+      ai-assistant:
+        label: 'NEOSidekick.AiAssistant:Module:label'
+        controller: 'NEOSidekick\AiAssistant\Controller\OverviewModuleController'
+        description: 'NEOSidekick.AiAssistant:Module:description'
+        icon: fas fa-magic
+        mainStylesheet: 'Lite'
+        privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
         submodules:
-          neosidekickAiassistantAssets:
+          alternate-text-generator:
             label: 'NEOSidekick.AiAssistant:AssetModule:label'
-            icon: 'fas fa-magic'
+            description: 'NEOSidekick.AiAssistant:AssetModule:description'
+            icon: 'fas fa-images'
             controller: 'NEOSidekick\AiAssistant\Controller\AssetModuleController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
+            additionalResources:
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+          focus-keyword-generator:
+            label: 'NEOSidekick.AiAssistant:FocusKeywordModule:label'
+            description: 'NEOSidekick.AiAssistant:FocusKeywordModule:description'
+            icon: 'fas fa-search'
+            controller: 'NEOSidekick\AiAssistant\Controller\FocusKeywordModuleController'
             privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
             mainStylesheet: Lite
             additionalResources:

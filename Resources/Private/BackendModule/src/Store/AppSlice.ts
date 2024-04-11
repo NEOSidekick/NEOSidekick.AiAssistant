@@ -1,7 +1,6 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
-import AssetDtoInterface from "../Model/AssetDtoInterface";
-import BackendAssetModuleResultDtoInterface from "../Model/BackendAssetModuleResultDtoInterface";
-import {string} from "prop-types";
+import {ModuleItem} from "../Model/ModuleItem";
+import {StatefulModuleItem} from "../Model/StatefulModuleItem";
 
 export const AppSlice = createSlice({
     name: 'app',
@@ -14,7 +13,8 @@ export const AppSlice = createSlice({
         items: {},
         hasError: false,
         errorMessage: null,
-        backendMessage: null
+        backendMessage: null,
+        availableNodeTypeFilters: null
     },
     selectors: {
         isAppStarted: (state) => {
@@ -31,26 +31,26 @@ export const AppSlice = createSlice({
         },
         hasGeneratingItem: (state) => {
             return Object.keys(state.items).reduce((accumulator, key) => {
-                const asset: AssetDtoInterface = state.items[key];
-                return asset.generating || accumulator
+                const item: StatefulModuleItem = state.items[key];
+                return item.generating || accumulator
             }, false)
         },
         hasPersistingItem: (state) => {
             return Object.keys(state.items).reduce((accumulator, key) => {
-                const asset: AssetDtoInterface = state.items[key];
-                return asset.persisting || accumulator
+                const item: StatefulModuleItem = state.items[key];
+                return item.persisting || accumulator
             }, false)
         },
         hasItemWithoutPropertyValue: (state) => {
             return Object.keys(state.items).reduce((accumulator, key) => {
-                const asset: AssetDtoInterface = state.items[key];
-                return asset.propertyValue === '' || accumulator
+                const item: StatefulModuleItem = state.items[key];
+                return item.propertyValue === '' || accumulator
             }, false)
         },
         hasUnpersistedItem: (state) => {
             return Object.keys(state.items).reduce((accumulator, key) => {
-                const asset: AssetDtoInterface = state.items[key];
-                return !asset.persisted || accumulator
+                const item: StatefulModuleItem = state.items[key];
+                return !item.persisted || accumulator
             }, false)
         },
     },
@@ -69,46 +69,47 @@ export const AppSlice = createSlice({
                 ...action.payload.moduleConfiguration
             }
         }),
-        addItem: ((state, { payload: item }: PayloadAction<BackendAssetModuleResultDtoInterface>) => {
-            state.items[item.assetIdentifier] = {
+        addItem: ((state, { payload: item }: PayloadAction<ModuleItem>) => {
+            state.items[item.identifier] = {
                 ...item,
                 persisted: false,
                 persisting: false,
                 generating: false
             }
         }),
+        generateItem: (() => {}),
         resetItems: ((state) => {
             state.items = {}
         }),
         replaceItems: ((state, action) => {
             state.items = {}
-            action.payload.forEach((asset: AssetDtoInterface) => {
-                state.items[asset.assetIdentifier] = {
-                    ...asset,
+            action.payload.forEach((item: ModuleItem) => {
+                state.items[item.identifier] = {
+                    ...item,
                     persisted: false,
                     persisting: false,
                     generating: false
                 }
             })
         }),
-        updateItemPropertyValue: ((state, action) => {
-            const {identifier, propertyValue} = action.payload
-            const asset: AssetDtoInterface = state.items[identifier]
-            asset.propertyValue = propertyValue
+        updateItemProperty: ((state, action) => {
+            const {identifier, propertyName, propertyValue} = action.payload
+            const item: StatefulModuleItem = state.items[identifier]
+            item[propertyName] = propertyValue
         }),
         setItemPersisted: ((state, action) => {
-            const asset: AssetDtoInterface = state.items[action.payload.identifier]
-            asset.persisted = action.payload.persisted
+            const item: StatefulModuleItem = state.items[action.payload.identifier]
+            item.persisted = action.payload.persisted
         }),
         setItemGenerating: ((state, action) => {
-            const asset: AssetDtoInterface = state.items[action.payload.identifier]
-            asset.generating = action.payload.generating
+            const item: StatefulModuleItem = state.items[action.payload.identifier]
+            item.generating = action.payload.generating
         }),
         setItemPersisting: ((state, action) => {
-            const asset: AssetDtoInterface = state.items[action.payload.identifier]
-            asset.persisting = action.payload.persisting
+            const item: StatefulModuleItem = state.items[action.payload.identifier]
+            item.persisting = action.payload.persisting
         }),
-        persistOneItem: ((state, action) => {}),
+        persistOneItem: (() => {}),
         setErrorMessage: ((state, action) => {
             state.hasError = true
             state.errorMessage = action.payload
@@ -119,6 +120,7 @@ export const AppSlice = createSlice({
     },
 })
 
+// noinspection JSUnusedGlobalSymbols
 export const {
     startModule,
     saveAllAndFetchNext,
@@ -126,11 +128,12 @@ export const {
     setLoading,
     setModuleConfiguration,
     replaceItems,
-    updateItemPropertyValue,
+    updateItemProperty,
     setItemPersisted,
     setItemPersisting,
     setItemGenerating,
     addItem,
+    generateItem,
     resetItems,
     persistOneItem,
     setErrorMessage,

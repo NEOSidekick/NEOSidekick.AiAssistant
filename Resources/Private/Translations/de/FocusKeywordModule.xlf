@@ -1,0 +1,79 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="label">
+                <source>Focus-Keyword Generator</source>
+                <target xml:lang="de">Fokus-Keywords generieren</target>
+            </trans-unit>
+            <trans-unit id="intro">
+                <source>TBD</source>
+                <target>Mit diesem Tool kannst du pro Seite ein Fokus-Keyword setzen. Das ist der erste Schritt um suchmaschienenoptimierte Seitentitel und Metabeschreibungen zu erstellen.</target>
+            </trans-unit>
+            <trans-unit id="description">
+                <source>TBD</source>
+                <target>Mit diesem Tool kannst du pro Seite ein Fokus-Keyword setzen. Das ist der erste Schritt um suchmaschienenoptimierte Seitentitel und Metabeschreibungen zu erstellen.</target>
+            </trans-unit>
+            <trans-unit id="error.configuration">
+                <source>This module is not configured correctly. Please consult the documentation!</source>
+                <target xml:lang="de">Dieses Modul ist nicht korrekt konfiguriert. Bitte konsultiere die Dokumentation!</target>
+            </trans-unit>
+            <trans-unit id="error.noApiKey">
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+                <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
+            </trans-unit>
+            <trans-unit id="configuration.nodeTypeFilter.label">
+                <source>Restrict to page type</source>
+                <target>Auf Seitentyp einschränken</target>
+            </trans-unit>
+            <trans-unit id="configuration.nodeTypeFilter.all">
+                <source>No filter</source>
+                <target>Ohne</target>
+            </trans-unit>
+            <trans-unit id="configuration.limit.label">
+                <source>Number of generations per page</source>
+                <target xml:lang="de">Anzahl der Generierungen pro Seite</target>
+            </trans-unit>
+            <trans-unit id="configuration.workspace.label">
+                <source>Workspace</source>
+                <target>Arbeitsbereich</target>
+            </trans-unit>
+            <trans-unit id="configuration.mode.label">
+                <source>Selection of pages</source>
+                <target>Auswahl der Seiten</target>
+            </trans-unit>
+            <trans-unit id="configuration.mode.only-empty">
+                <source>Only empty focus keywords</source>
+                <target>Nur leere Fokus-Keywords</target>
+            </trans-unit>
+            <trans-unit id="configuration.mode.only-existing">
+                <source>Only existing focus keywords</source>
+                <target>Nur bestehende Fokus-Keywords</target>
+            </trans-unit>
+            <trans-unit id="configuration.mode.both">
+                <source>All</source>
+                <target>Alle</target>
+            </trans-unit>
+            <trans-unit id="configuration.generateEmptyFocusKeywords.label">
+                <source>Generate empty focus keywords automatically</source>
+                <target>Leere Fokus-Keywords automatisch generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.regenerateExistingFocusKeywords.label">
+                <source>Regenerate existing focus keywords automatically</source>
+                <target>Bestehende Fokus-Keywords automatisch neu generieren</target>
+            </trans-unit>
+            <trans-unit id="listItem.label">
+                <source>Page »{0}«</source>
+                <target>Seite »{0}«</target>
+            </trans-unit>
+            <trans-unit id="listItem.notice">
+                <source>Our page content analysis points to the focus keyword "{0}". If this does not fit at all, customising the text for SEO could be helpful.</source>
+                <target>Unsere Seiten-Inhaltsanalyse deutet auf das Fokus-Keyword "{0}" hin. Falls dies gar nicht passt, könnte ein Anpassen des Textes für SEO hilfreich sein.</target>
+            </trans-unit>
+            <trans-unit id="listItem.checkSearchVolume">
+                <source>Check search volume:</source>
+                <target>Suchvolumen prüfen:</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

@@ -23,6 +23,10 @@ final class AssetModuleConfigurationDto
      */
     protected int $limit;
     /**
+     * @var int
+     */
+    protected int $firstResult;
+    /**
      * @var string
      */
     protected string $language;
@@ -33,12 +37,13 @@ final class AssetModuleConfigurationDto
      * @param int    $limit
      * @param string $language
      */
-    public function __construct(bool $onlyAssetsInUse, string $propertyName, int $limit = 10, string $language = 'en')
+    public function __construct(bool $onlyAssetsInUse, string $propertyName, int $limit = 10, string $language = 'en', int $firstResult = 0)
     {
         $this->onlyAssetsInUse = $onlyAssetsInUse;
         $this->propertyName = $propertyName;
         $this->limit = $limit;
         $this->language = $language;
+        $this->firstResult = $firstResult;
     }
 
     public function isOnlyAssetsInUse(): bool
@@ -57,5 +62,15 @@ final class AssetModuleConfigurationDto
     public function getLimit(): int
     {
         return $this->limit;
+    }
+
+    public function getFirstResult(): int
+    {
+        return $this->firstResult;
+    }
+
+    public function getLanguage(): string
+    {
+        return $this->language;
     }
 }

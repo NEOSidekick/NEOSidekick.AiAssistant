@@ -34,6 +34,7 @@
   },
   "devDependencies": {
     "immer": "^10.0.3",
-    "lodash.mapvalues": "^4.6.0"
+    "lodash.mapvalues": "^4.6.0",
+    "@types/react-dom": "^18.2.24"
   }
 }

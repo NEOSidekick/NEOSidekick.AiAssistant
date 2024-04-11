@@ -1,9 +1,9 @@
 import Root from "./Root";
-import AssetList from "./AssetList";
+import ItemsList from "./ItemsList";
 import AssetListItem from "./AssetListItem";
 
 export {
     Root,
     AssetListItem,
-    AssetList
+    ItemsList
 }

@@ -1,4 +1,4 @@
-export default interface AssetModuleConfigurationInterface {
+export interface AssetModuleConfiguration {
     onlyAssetsInUse: OnlyAssetsInUse
     propertyName: AssetPropertyName
     limit: number,

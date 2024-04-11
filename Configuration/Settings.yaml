@@ -19,3 +19,25 @@ NEOSidekick:
       limit: 10
       # The language to write the text in, see allowed language keys in README
       language: null
+    focusKeywordGeneratorModule:
+      # The workspace name where the nodes are taken from and saved to
+      # Allowed: null, live, ... (any other workspace name)
+      workspace: null
+      # The mode how nodes should be filtered based on the focusKeyword property
+      # Allowed:
+      #  - only-empty: Only nodes with an empty focusKeyword property are shown
+      #  - only-existing: Only nodes with a non-empty focusKeyword property are shown
+      #  - both: Both nodes with an empty and  non-empty focusKeyword property are shown
+      mode: null
+      # Defines whether to automatically start the AI generation of empty focusKeyword property values
+      # Allows: null, true, false
+      generateEmptyFocusKeywords: null
+      # Defines whether to automatically start the AI re-generation of non-empty focusKeyword property values
+      # Allows: null, true, false
+      regenerateExistingFocusKeywords: null
+      # Restrict the node selection to a specific document node type
+      # BEWARE: the node type needs to inherit from NEOSidekick.AiAssistant:Mixin.AiPageBriefing
+      nodeTypeFilter: null
+      # Predefines how many images should be processed per page, to avoid generate too many in parallel
+      # Allowed: 5, 10, 15, 20, 25
+      limit: 10

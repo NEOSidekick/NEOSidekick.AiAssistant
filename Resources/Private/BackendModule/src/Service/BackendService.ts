@@ -1,6 +1,7 @@
-import EndpointsInterface from "../Model/EndpointsInterface";
-import BackendAssetModuleResultDtoInterface from "../Model/BackendAssetModuleResultDtoInterface";
+import {Endpoints} from "../Model/Endpoints";
 import AiAssistantError from "./AiAssistantError";
+import {isNull, omitBy} from "lodash"
+import {ModuleConfiguration} from "../Model/ModuleConfiguration";
 
 export default class BackendService {
     private static instance: BackendService | null = null;
@@ -13,37 +14,45 @@ export default class BackendService {
         return BackendService.instance
     }
 
-    public configure(endpoints: EndpointsInterface, csrfToken: string) {
+    public configure(endpoints: Endpoints, csrfToken: string) {
         this.endpoints = endpoints
         this.csrfToken = csrfToken
     }
 
-    public *getAssetsThatNeedProcessing(configuration: BackendAssetModuleResultDtoInterface)
+    public *getItemsThatNeedProcessing(configuration: ModuleConfiguration)
     {
         const params = new URLSearchParams()
-        Object.keys(configuration).map(key => params.append(`configuration[${key}]`, configuration[key]))
-        const response = yield fetch(this.endpoints.getAssets + '?' + params.toString(), {
+        Object.keys(omitBy(configuration || {}, isNull)).map(key => params.append(`configuration[${key}]`, configuration[key]))
+        const response = yield fetch(this.endpoints.get + '?' + params.toString(), {
             credentials: 'include'
         });
         if (response.status < 200 || response.status >= 400) {
-            throw new AiAssistantError('An error occurred while fetching the assets', '1709650151037')
+            throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037')
         }
         return yield response.json()
     }
 
-    public async persistAssets(assets: object[])
+    public async persistItems(items: object[])
     {
-        const response = await fetch(this.endpoints.updateAssets, {
+        const response = await fetch(this.endpoints.update, {
             method: 'POST',
             headers: {
                 'X-Flow-Csrftoken': this.csrfToken,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({resultDtos: assets})
+            body: JSON.stringify({resultDtos: items})
         })
         if (response.status < 200 || response.status >= 400) {
-            throw new AiAssistantError('An error occurred while persisting an asset', '1709648035592')
+            throw new AiAssistantError('An error occurred while persisting items', '1709648035592')
         }
+        return await response.json()
+    }
+
+    public async getNodeTypeSchema()
+    {
+        const response = await fetch(this.endpoints.nodeTypeSchema, {
+            credentials: 'include'
+        })
         return await response.json()
     }
 

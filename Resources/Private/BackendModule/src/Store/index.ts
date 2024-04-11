@@ -1,6 +1,5 @@
 import createSagaMiddleware from "@redux-saga/core";
-import { configureStore } from "@reduxjs/toolkit";
-import AssetsReducer from "./AssetsSlice";
+import {configureStore} from "@reduxjs/toolkit";
 import AppReducer from "./AppSlice"
 import rootSaga from "../Sagas";
 

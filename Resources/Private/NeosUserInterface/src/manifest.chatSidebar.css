@@ -1,6 +1,10 @@
 /**
  * Place the sidekick iframe on the right side of the screen
  */
+body {
+  --neosidekick-sidebar-width: 0px;
+}
+
 .neosidekick_appWrapper {
   --neosidekick-sidebar-width: 40px;
   display: grid;

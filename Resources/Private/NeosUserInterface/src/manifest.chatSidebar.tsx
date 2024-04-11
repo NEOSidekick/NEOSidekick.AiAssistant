@@ -9,14 +9,7 @@ export default (globalRegistry: GlobalRegistry, configuration: SidekickFrontendC
     const App = containerRegistry.get('App');
 
     if (!configuration.chatSidebarEnabled) {
-        containerRegistry.set('App', (props: Record<string, unknown>) => {
-            return (
-                <div>
-                    <App {...props} />
-                    <SidekickIFrame className="neosidekick__frame--hidden"/>
-                </div>
-            )
-        });
+        containerRegistry.set('Modals/SidekickIFrame', () => <SidekickIFrame className="neosidekick__frame--hidden"/>);
         return;
     }
 

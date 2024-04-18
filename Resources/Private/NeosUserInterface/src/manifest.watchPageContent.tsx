@@ -22,7 +22,6 @@ export default (globalRegistry: object, store: Store, iFrameApiService: IFrameAp
             if (action.type === actionTypes.UI.ContentCanvas.SET_SRC) {
                 requiredChangedEvent = true;
             }
-            yield delay(500)
 
             const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository')
             const state = store.getState();

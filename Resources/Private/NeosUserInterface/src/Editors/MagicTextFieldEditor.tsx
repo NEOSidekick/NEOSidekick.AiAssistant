@@ -1,4 +1,4 @@
-import React, {Component} from 'react';
+import React, {PureComponent} from 'react';
 import {connect} from 'react-redux';
 import PropTypes from 'prop-types';
 import {neos} from '@neos-project/neos-ui-decorators';
@@ -30,7 +30,7 @@ const defaultOptions = {
 }, {
     addFlashMessage: actions.UI.FlashMessages.add
 })
-export default class MagicTextFieldEditor extends Component<any, any> {
+export default class MagicTextFieldEditor extends PureComponent<any, any> {
     static propTypes = {
         // matches TextField
         className: PropTypes.string,
@@ -100,7 +100,8 @@ export default class MagicTextFieldEditor extends Component<any, any> {
                 <div>
                     <TextInput
                         id={id}
-                        value={value}
+                        autoFocus={finalOptions.autoFocus}
+                        value={value === null ? '' : value}
                         onChange={commit}
                         disabled={finalOptions.disabled || this.state.loading}
                         maxLength={finalOptions.maxlength}

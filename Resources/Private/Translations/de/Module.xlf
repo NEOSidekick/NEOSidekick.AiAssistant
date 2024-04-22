@@ -42,6 +42,10 @@
                 <source>Generating...</source>
                 <target xml:lang="de">Wird generiert...</target>
             </trans-unit>
+            <trans-unit id="generate" xml:space="preserve">
+                <source>Generate</source>
+                <target xml:lang="de" state="translated">Generieren</target>
+            </trans-unit>
             <trans-unit id="loading">
                 <source>Loading...</source>
                 <target xml:lang="de">Lade...</target>

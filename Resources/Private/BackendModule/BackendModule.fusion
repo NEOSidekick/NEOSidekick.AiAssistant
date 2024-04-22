@@ -13,7 +13,6 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
         workspaces.@process.json = ${Json.stringify(value)}
         endpoints = Neos.Fusion:DataStructure {
             overview = Sitegeist.FusionLinkPrototypes:ModuleUri {
-                module = 'ai-assistant'
                 action = 'index'
                 absolute = true
             }

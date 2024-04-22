@@ -1,10 +1,11 @@
-import PureComponent from "./PureComponent";
+import PureComponent from "../PureComponent";
 import {connect} from "react-redux";
-import StateInterface from "../Store/StateInterface";
+import StateInterface from "../../Store/StateInterface";
 import React from "react";
-import AssetModuleConfigurationForm from "./AssetModuleConfigurationForm";
+import AssetModuleConfigurationForm from "../AssetModuleConfigurationForm";
 import PropTypes from "prop-types";
-import FocusKeywordModuleConfigurationForm from "./FocusKeywordModuleConfigurationForm";
+import FocusKeywordModuleConfigurationForm from "../FocusKeywordModuleConfigurationForm";
+import StartModuleButton from "../StartModuleButton";
 
 @connect((state: StateInterface) => ({
     started: state.app.started,
@@ -12,7 +13,7 @@ import FocusKeywordModuleConfigurationForm from "./FocusKeywordModuleConfigurati
     hasError: state.app.hasError,
     backendMessage: state.app.backendMessage
 }))
-export default class ConfigurationForm extends PureComponent {
+export default class ConfigurationView extends PureComponent {
     static propTypes = {
         started: PropTypes.bool,
         hasError: PropTypes.bool,
@@ -40,13 +41,16 @@ export default class ConfigurationForm extends PureComponent {
     }
 
     render() {
-        const {started, hasError, backendMessage} = this.props;
-        return ((!started && !hasError) ?
-                <div style={{marginBottom: '1rem', maxWidth: '600px'}}>
-                    {this.renderScopedIntro()}
-                    <div style={{marginBottom: '1.5rem'}} dangerouslySetInnerHTML={{__html: backendMessage}}/>
-                    {this.renderScopedConfigurationForm()}
-                </div> : null
+        const {backendMessage} = this.props;
+        return (
+            <div className={'neos-content neos-indented neos-fluid-container'}>
+                {this.renderScopedIntro()}
+                <div style={{marginBottom: '1.5rem'}} dangerouslySetInnerHTML={{__html: backendMessage}}/>
+                {this.renderScopedConfigurationForm()}
+                <div className={'neos-footer'}>
+                    <StartModuleButton/>
+                </div>
+            </div>
         )
     }
 }

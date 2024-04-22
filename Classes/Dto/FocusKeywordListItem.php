@@ -2,14 +2,14 @@
 
 namespace NEOSidekick\AiAssistant\Dto;
 
+use JsonSerializable;
 use Neos\Flow\Annotations as Flow;
-use Neos\Utility\ObjectAccess;
 
 /**
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class FocusKeywordModuleResultDto implements \JsonSerializable
+final class FocusKeywordListItem implements JsonSerializable
 {
     /**
      * @var string
@@ -32,9 +32,9 @@ final class FocusKeywordModuleResultDto implements \JsonSerializable
     protected string $pageTitle;
 
     /**
-     * @var string
+     * @var array
      */
-    protected string $focusKeyword;
+    protected array $properties;
 
     /**
      * @var string
@@ -46,16 +46,16 @@ final class FocusKeywordModuleResultDto implements \JsonSerializable
      * @param string $nodeContextPath
      * @param string $publicUri
      * @param string $pageTitle
-     * @param string $focusKeyword
+     * @param array $properties
      * @param string $language
      */
-    public function __construct(string $identifier, string $nodeContextPath, string $publicUri, string $pageTitle, string $focusKeyword, string $language)
+    public function __construct(string $identifier, string $nodeContextPath, string $publicUri, string $pageTitle, array $properties, string $language)
     {
         $this->identifier = $identifier;
         $this->nodeContextPath = $nodeContextPath;
         $this->publicUri = $publicUri;
         $this->pageTitle = $pageTitle;
-        $this->focusKeyword = $focusKeyword;
+        $this->properties = $properties;
         $this->language = $language;
     }
 
@@ -79,9 +79,9 @@ final class FocusKeywordModuleResultDto implements \JsonSerializable
         return $this->pageTitle;
     }
 
-    public function getFocusKeyword(): string
+    public function getProperties(): array
     {
-        return $this->focusKeyword;
+        return $this->properties;
     }
 
     public function getLanguage(): string
@@ -95,7 +95,7 @@ final class FocusKeywordModuleResultDto implements \JsonSerializable
      *     nodeContextPath: string,
      *     publicUri: string,
      *     pageTitle: string,
-     *     focusKeyword: string,
+     *     properties: array,
      *     language: string
      * } $array
      *
@@ -108,7 +108,7 @@ final class FocusKeywordModuleResultDto implements \JsonSerializable
             $array['nodeContextPath'],
             $array['publicUri'],
             $array['pageTitle'],
-            $array['focusKeyword'],
+            $array['properties'],
             $array['language']
         );
     }
@@ -120,8 +120,9 @@ final class FocusKeywordModuleResultDto implements \JsonSerializable
             'nodeContextPath' => $this->nodeContextPath,
             'publicUri' => $this->publicUri,
             'pageTitle' => $this->pageTitle,
-            'focusKeyword' => $this->focusKeyword,
-            'language' => $this->language
+            'properties' => $this->properties,
+            'language' => $this->language,
+            'type' => 'DocumentNode'
         ];
     }
 }

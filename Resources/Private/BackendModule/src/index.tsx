@@ -1,5 +1,5 @@
 import React from 'react';
-import {Root} from './Components'
+import RootView from './Components/Views/RootView'
 import createStore from "./Store";
 import {createRoot} from 'react-dom/client';
 import {Endpoints} from "./Model/Endpoints";
@@ -8,6 +8,9 @@ import TranslationService from "./Service/TranslationService";
 import {ExternalService} from "./Service/ExternalService";
 import {isNull, omitBy} from "lodash"
 import defaultModuleConfiguration from "./Util/defaultModuleConfiguration";
+import {AppState} from "./Enums/AppState";
+import {ListState} from "./Enums/ListState";
+import {Provider} from "react-redux";
 
 document.addEventListener('DOMContentLoaded', async() => {
     const endpoints: Endpoints = window['_NEOSIDEKICK_AIASSISTANT_endpoints']
@@ -83,6 +86,8 @@ document.addEventListener('DOMContentLoaded', async() => {
             moduleConfiguration,
             initialModuleConfiguration,
             scope,
+            appState: AppState.Configure,
+            listState: ListState.Loading,
             loading: true,
             started: false,
             busy: false,
@@ -93,6 +98,8 @@ document.addEventListener('DOMContentLoaded', async() => {
     })
 
     root.render(
-        <Root store={store} endpoints={endpoints} />
+        <Provider store={store}>
+            <RootView endpoints={endpoints} />
+        </Provider>
     )
 })

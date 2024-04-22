@@ -8,7 +8,7 @@ use Neos\Flow\Security\Context;
 use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Service\UserService;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordModuleConfigurationDto;
+use NEOSidekick\AiAssistant\Dto\FocusKeywordFilters;
 
 class FocusKeywordModuleController extends AbstractModuleController
 {

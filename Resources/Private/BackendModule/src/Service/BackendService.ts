@@ -19,20 +19,21 @@ export default class BackendService {
         this.csrfToken = csrfToken
     }
 
-    public *getItemsThatNeedProcessing(configuration: ModuleConfiguration)
+    public async getItems(configuration: ModuleConfiguration)
     {
         const params = new URLSearchParams()
         Object.keys(omitBy(configuration || {}, isNull)).map(key => params.append(`configuration[${key}]`, configuration[key]))
-        const response = yield fetch(this.endpoints.get + '?' + params.toString(), {
+        const response = await fetch(this.endpoints.get + '?' + params.toString(), {
             credentials: 'include'
         });
         if (response.status < 200 || response.status >= 400) {
             throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037')
         }
-        return yield response.json()
+        const responseBodyAsJson = await response.json()
+        return responseBodyAsJson.items
     }
 
-    public async persistItems(items: object[])
+    public async persistItems(updateItems: object[])
     {
         const response = await fetch(this.endpoints.update, {
             method: 'POST',
@@ -40,7 +41,7 @@ export default class BackendService {
                 'X-Flow-Csrftoken': this.csrfToken,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({resultDtos: items})
+            body: JSON.stringify({updateItems})
         })
         if (response.status < 200 || response.status >= 400) {
             throw new AiAssistantError('An error occurred while persisting items', '1709648035592')

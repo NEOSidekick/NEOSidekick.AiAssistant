@@ -1,5 +1,5 @@
+import {ListItemState} from "../Enums/ListItemState";
+
 export interface ItemState {
-    persisted: boolean
-    persisting: boolean
-    generating: boolean
+    state: ListItemState
 }

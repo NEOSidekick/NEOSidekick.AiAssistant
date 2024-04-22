@@ -35,7 +35,7 @@ class AssetModuleConfigurationDtoFactory
         return new AssetModuleConfigurationDto(
             $this->settings['queryOnlyAssetsInUse'],
             $this->settings['propertyName'],
-            $this->settings['pageSize'] ?: 10
+            0, $this->settings['pageSize'] ?: 10
         );
     }
 }

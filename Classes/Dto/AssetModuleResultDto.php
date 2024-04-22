@@ -110,7 +110,8 @@ final class AssetModuleResultDto implements JsonSerializable
             'thumbnailUri' => $this->thumbnailUri,
             'fullsizeUri' => $this->fullsizeUri,
             'propertyName' => $this->propertyName,
-            'propertyValue' => $this->propertyValue
+            'propertyValue' => $this->propertyValue,
+            'type' => 'Asset'
         ];
     }
 }

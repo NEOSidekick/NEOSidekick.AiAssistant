@@ -6,6 +6,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Internal\Hydration\IterableResult;
 use Doctrine\ORM\QueryBuilder;
 use Generator;
+use InvalidArgumentException;
 use Neos\ContentRepository\Domain\Model\Node;
 use Neos\ContentRepository\Domain\Model\NodeData;
 use Neos\ContentRepository\Domain\Model\NodeType;
@@ -16,10 +17,11 @@ use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Neos\Controller\CreateContentContextTrait;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordModuleConfigurationDto;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordModuleResultDto;
-use NEOSidekick\AiAssistant\Dto\ResultCollectionDto;
-use NEOSidekick\AiAssistant\Factory\FocusKeywordModuleResultDtoFactory;
+use NEOSidekick\AiAssistant\Dto\FocusKeywordFilters;
+use NEOSidekick\AiAssistant\Dto\FocusKeywordListItem;
+use NEOSidekick\AiAssistant\Dto\FocusKeywordUpdateItem;
+use NEOSidekick\AiAssistant\Dto\PaginatedCollection;
+use NEOSidekick\AiAssistant\Factory\FocusKeywordListItemFactory;
 
 class NodeService
 {
@@ -41,9 +43,9 @@ class NodeService
 
     /**
      * @Flow\Inject
-     * @var FocusKeywordModuleResultDtoFactory
+     * @var FocusKeywordListItemFactory
      */
-    protected $focusKeywordModuleResultDtoFactory;
+    protected $focusKeywordListItemFactory;
 
     /**
      * @Flow\Inject
@@ -51,93 +53,86 @@ class NodeService
      */
     protected $nodeTypeManager;
 
-    public function getNodesThatNeedProcessing(FocusKeywordModuleConfigurationDto $configurationDto, ControllerContext $controllerContext): ResultCollectionDto
+    /**
+     * @param FocusKeywordFilters $configurationDto
+     * @param ControllerContext   $controllerContext
+     *
+     * @return PaginatedCollection<FocusKeywordListItem>
+     */
+    public function find(FocusKeywordFilters $configurationDto, ControllerContext $controllerContext): PaginatedCollection
     {
         $workspace = $this->workspaceRepository->findByIdentifier($configurationDto->getWorkspace());
 
         if (!$workspace) {
-            // throw
+            throw new InvalidArgumentException('The given workspace does not exist in the database. Please reload the page.', 1713440899886);
         }
 
         $workspaceChain = array_merge([$workspace], array_values($workspace->getBaseWorkspaces()));
         $queryBuilder = $this->createQueryBuilder($workspaceChain);
         $queryBuilder->andWhere('n.nodeType IN (:includeNodeTypes)');
         $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($configurationDto));
-        $iterator = $queryBuilder->getQuery()->iterate();
-
-        $nodeDatasThatNeedProcessing = [];
-        $nodeDatasThatNeedProcessingCount = 0;
-        $iteratedItems = 0;
-
-        /** @var NodeData $nodeData */
-        foreach ($this->iterate($iterator) as $nodeData) {
-            $iteratedItems++;
-            if ($iteratedItems <= $configurationDto->getFirstResult()) {
-                continue;
-            }
-
-            if ($nodeDatasThatNeedProcessingCount >= $configurationDto->getLimit()) {
-                break;
-            }
-
+        $items = $queryBuilder->getQuery()->getResult();
+        $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
+        $itemsWhereFocusKeywordValueMatchesConfiguration = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($configurationDto) {
             $currentFocusKeywordPropertyValue = $nodeData->hasProperty('focusKeyword') ? $nodeData->getProperty('focusKeyword') : null;
-            if (!self::matchFocusKeywordProperty($currentFocusKeywordPropertyValue, $configurationDto)) {
-                continue;
-            }
+            return self::focusKeywordValueMatchesConfiguration($currentFocusKeywordPropertyValue, $configurationDto);
+        });
 
-            $nodeDatasThatNeedProcessing[] = $nodeData;
-            $nodeDatasThatNeedProcessingCount++;
-        }
-
-        $nodeDatasThatNeedProcessing = $this->reduceNodeVariantsByWorkspaces($nodeDatasThatNeedProcessing, $workspaceChain);
-
-        $nodesThatNeedProcessing = [];
-        foreach (array_slice($nodeDatasThatNeedProcessing, $configurationDto->getFirstResult(), $configurationDto->getLimit()) as $nodeData) {
+        $itemsThatNeedProcessing = [];
+        foreach ($itemsWhereFocusKeywordValueMatchesConfiguration as $nodeData) {
             $context = $this->createContentContext($configurationDto->getWorkspace(), $nodeData->getDimensionValues());
             $node = new Node($nodeData, $context);
-            $nodesThatNeedProcessing[] = $this->focusKeywordModuleResultDtoFactory->createFromNode($node, $controllerContext);
+            $itemsThatNeedProcessing[] = $this->focusKeywordListItemFactory->createFromNode($node, $controllerContext);
         }
 
-        return new ResultCollectionDto(
-            $nodesThatNeedProcessing,
-            $configurationDto->getFirstResult() + sizeof($nodesThatNeedProcessing)
+        return new PaginatedCollection(
+            $itemsThatNeedProcessing,
+0
         );
     }
 
     /**
-     * @param array<FocusKeywordModuleResultDto> $resultDtos
+     * @param array<FocusKeywordUpdateItem> $itemsToUpdate
      *
      * @return void
      */
-    public function updateFocusKeywordOnNodes(array $resultDtos): void
+    public function updatePropertiesOnNodes(array $itemsToUpdate): void
     {
-        foreach($resultDtos as $resultDto) {
+        foreach($itemsToUpdate as $updateItem) {
             /** @var array{nodePath: string, workspaceName: string, dimensions: array} $contextPathSegments */
-            $contextPathSegments = NodePaths::explodeContextPath($resultDto->getNodeContextPath());
+            $contextPathSegments = NodePaths::explodeContextPath($updateItem->getNodeContextPath());
             $context = $this->createContentContext($contextPathSegments['workspaceName'],
                 $contextPathSegments['dimensions']);
             $node = $context->getNode($contextPathSegments['nodePath']);
-            $node->setProperty('focusKeyword', $resultDto->getFocusKeyword());
+            foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
+                $node->setProperty($propertyName, $propertyValue);
+            }
         }
     }
 
-    protected static function matchFocusKeywordProperty(mixed $value, FocusKeywordModuleConfigurationDto $configurationDto): bool
+    /**
+     * @param mixed               $value
+     * @param FocusKeywordFilters $configurationDto
+     *
+     * @return bool
+     */
+    protected static function focusKeywordValueMatchesConfiguration(mixed $value, FocusKeywordFilters $configurationDto): bool
     {
-        if ($configurationDto->getMode() === 'both') {
-            return true;
-        }
-
-        if ($configurationDto->getMode() === 'only-empty' && empty($value)) {
-            return true;
-        }
-
-        if ($configurationDto->getMode() === 'only-existing' && !empty($value)) {
-            return true;
-        }
-
-        return false;
+        return match ($configurationDto->getMode()) {
+            'both' => true,
+            'only-empty' => empty($value),
+            'only-existing' => !empty($value),
+            default => false,
+        };
     }
 
+    /**
+     * @copyright Taken from and adapted: \Neos\Flow\Persistence\Doctrine\Repository::iterate()
+     *
+     * @param IterableResult $iterator
+     *
+     * @return Generator
+     */
     protected function iterate(IterableResult $iterator): Generator
     {
         foreach ($iterator as $object) {
@@ -151,11 +146,11 @@ class NodeService
      * that are either a document node type OR match the filtered
      * document node type, but also have our mixin as a super-type.
      *
-     * @param FocusKeywordModuleConfigurationDto $configurationDto
+     * @param FocusKeywordFilters $configurationDto
      *
      * @return array<string>
      */
-    protected function getNodeTypeFilter(FocusKeywordModuleConfigurationDto $configurationDto): array
+    protected function getNodeTypeFilter(FocusKeywordFilters $configurationDto): array
     {
         $documentNodeTypeFilter = $configurationDto->getNodeTypeFilter() ?? 'Neos.Neos:Document';
         $mixinSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes(self::MIXIN_NODE_TYPE, false);
@@ -165,6 +160,7 @@ class NodeService
     }
 
     /**
+     * @copyright Taken from and adapted: \Neos\ContentRepository\Domain\Repository\NodeDataRepository::createQueryBuilder()
      *
      * @param array $workspaces
      * @return QueryBuilder
@@ -186,6 +182,8 @@ class NodeService
     }
 
     /**
+     * @copyright Taken from and adapted: \Neos\ContentRepository\Domain\Repository\NodeDataRepository::reduceNodeVariantsByWorkspacesAndDimensions
+     *
      * @param array<NodeData> $nodes
      * @param array<Workspace> $workspaces
      *

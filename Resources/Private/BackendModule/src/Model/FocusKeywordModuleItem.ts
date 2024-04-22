@@ -1,14 +1,16 @@
 import {ItemState} from "./ItemState";
+import {PropertyInterface} from "./PropertiesCollection";
 
 export interface FocusKeywordModuleItem {
+    type: string,
     identifier: string,
     nodeContextPath: string,
     publicUri: string,
     pageTitle: string,
-    focusKeyword: string,
+    properties: {
+        [key: string]: PropertyInterface
+    },
     language: string
 }
 
-export interface StatefulFocusKeywordModuleItem extends FocusKeywordModuleItem, ItemState {
-    pageContent: string
-}
+export interface StatefulFocusKeywordModuleItem extends FocusKeywordModuleItem, ItemState {}

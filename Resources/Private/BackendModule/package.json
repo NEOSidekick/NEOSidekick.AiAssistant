@@ -7,7 +7,11 @@
     "watch": "node build.js --watch"
   },
   "keywords": [],
-  "author": "",
+  "author": {
+    "name": "Felix Gradinaru (Code Q)",
+    "email": "fg@codeq.at",
+    "url": "https://github.com/NEOSidekick"
+  },
   "license": "ISC",
   "peerDependencies": {
   },

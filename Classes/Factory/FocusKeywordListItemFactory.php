@@ -9,12 +9,12 @@ use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Neos\Service\LinkingService;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordModuleResultDto;
+use NEOSidekick\AiAssistant\Dto\FocusKeywordListItem;
 
 /**
  * @Flow\Scope("singleton")
  */
-class FocusKeywordModuleResultDtoFactory
+class FocusKeywordListItemFactory
 {
     /**
      * @Flow\Inject
@@ -22,19 +22,19 @@ class FocusKeywordModuleResultDtoFactory
      */
     protected $nodeLinkingService;
 
-    public function createFromNode(Node $node, ControllerContext $controllerContext): FocusKeywordModuleResultDto
+    public function createFromNode(Node $node, ControllerContext $controllerContext): FocusKeywordListItem
     {
         try {
             $publicUri = $this->nodeLinkingService->createNodeUri($controllerContext, $node, null, 'html', true);
         } catch (Exception|MissingActionNameException|IllegalObjectTypeException|\Neos\Flow\Property\Exception|\Neos\Flow\Security\Exception|\Neos\Neos\Exception $e) {
             $publicUri = '';
         }
-        return new FocusKeywordModuleResultDto(
+        return new FocusKeywordListItem(
             sprintf('%s-%s', $node->getNodeData()->getIdentifier(), $node->getNodeData()->getDimensionsHash()),
             $node->getContextPath(),
             $publicUri,
             $node->hasProperty('title') ? $node->getProperty('title') : '',
-            $node->hasProperty('focusKeyword') ? $node->getProperty('focusKeyword') : '',
+            ['focusKeyword' => $node->hasProperty('focusKeyword') ? $node->getProperty('focusKeyword') : ''],
             // todo move "language" to the configuration later
             $node->getNodeData()->getDimensionValues()['language'][0]
         );

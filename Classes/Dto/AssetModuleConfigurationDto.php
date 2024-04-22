@@ -34,10 +34,16 @@ final class AssetModuleConfigurationDto
     /**
      * @param bool   $onlyAssetsInUse
      * @param string $propertyName
-     * @param int    $limit
      * @param string $language
+     * @param int    $limit
      */
-    public function __construct(bool $onlyAssetsInUse, string $propertyName, int $limit = 10, string $language = 'en', int $firstResult = 0)
+    public function __construct(
+        bool $onlyAssetsInUse,
+        string $propertyName,
+        int $firstResult = 0,
+        int $limit = 10,
+        string $language = 'en'
+    )
     {
         $this->onlyAssetsInUse = $onlyAssetsInUse;
         $this->propertyName = $propertyName;

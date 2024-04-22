@@ -8,10 +8,9 @@ import {
     hasUnpersistedItem,
     isAppStarted,
     resetItems,
+    setAppState,
     setErrorMessage,
-    setItemGenerating,
-    setItemPersisted,
-    setItemPersisting,
+    setItemState,
     setLoading,
     setModuleConfiguration,
     setStarted,
@@ -26,71 +25,21 @@ import {ModuleItem} from "../Model/ModuleItem";
 import {StatefulModuleItem} from "../Model/StatefulModuleItem";
 import {ResultCollection} from "../Model/ResultCollection";
 import {ModuleConfiguration} from "../Model/ModuleConfiguration";
-
-function* startModuleSaga() {
-    const isStarted = yield select(isAppStarted)
-
-    if (isStarted) {
-        return
-    }
-
-    yield fetchNewPage()
-}
-
-function* fetchNewPage() {
-    yield put(setStarted(true))
-    yield put(setLoading({loading: true}))
-    const configuration = yield select(getModuleConfiguration)
-    const backend: BackendService = BackendService.getInstance()
-    try {
-        const response: ResultCollection = yield backend.getItemsThatNeedProcessing(configuration)
-        yield put(resetItems())
-        yield put(setModuleConfiguration({ moduleConfiguration: { firstResult: response.nextFirstResult }}))
-        for (let item of response.items) {
-            yield put(addItem(item))
-        }
-        yield put(setLoading({loading: false}))
-    } catch (e) {
-        if (e instanceof AiAssistantError) {
-            const translationService = TranslationService.getInstance()
-            yield put(setErrorMessage(translationService.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage})))
-        }
-        yield put(setLoading({loading: false}))
-    }
-}
-
-export function* watchStartModule() {
-    yield takeLatest('app/startModule', startModuleSaga)
-}
+import {ListItemState} from "../Enums/ListItemState";
+import {AppState} from "../Enums/AppState";
 
 function* saveAllAndFetchNextSaga() {
     const items: StatefulModuleItem[] = yield select(getItems)
-    const persistableItems: ModuleItem[] = Object.keys(items).map((key: string): ModuleItem => {
-        const item: ModuleItem = items[key]
-        return {
-            identifier: item.identifier,
-            // Asset
-            filename: item.filename,
-            thumbnailUri: item.thumbnailUri,
-            fullsizeUri: item.fullsizeUri,
-            propertyName: item.propertyName,
-            propertyValue: item.propertyValue,
-            // Focus Keyword
-            pageTitle: item.pageTitle,
-            publicUri: item.publicUri,
-            nodeContextPath: item.nodeContextPath,
-            focusKeyword: item.focusKeyword,
-            language: item.language
-        }
-    }).filter(filterItemsFromBackend)
+    const persistableItems = Object.values(items).filter(filterItemsFromBackend)
 
     if (persistableItems.length > 0) {
         for (let persistableItem of persistableItems) {
-            yield put(setItemPersisting({ identifier: persistableItem.identifier, persisting: true }))
+            yield put(setItemState({ identifier: persistableItem.identifier, state: ListItemState.Persisting }))
         }
 
         yield BackendService.getInstance().persistItems(persistableItems)
         yield fetchNewPage()
+        // todo catch persisting error here?
     }
 }
 
@@ -107,7 +56,7 @@ export function* watchSaveAllAndFetchNext() {
 }
 
 function* generateItemSaga({ payload: item }: PayloadAction<StatefulModuleItem>) {
-    yield put(setItemGenerating({ identifier: item.identifier, generating: true }))
+    yield put(setItemState({ identifier: item.identifier, state: ListItemState.Generating }))
     const language = yield getLanguageDependingOnScope(item)
     const externalService = ExternalService.getInstance()
     const translationService = TranslationService.getInstance()
@@ -119,14 +68,15 @@ function* generateItemSaga({ payload: item }: PayloadAction<StatefulModuleItem>)
             const propertyValue = yield externalService.generate(sidekickConfiguration.module, language, sidekickConfiguration.userInput)
             console.log(propertyValue)
             yield put(updateItemProperty({ identifier: item.identifier, propertyName, propertyValue }))
+            yield put(setItemState({ identifier: item.identifier, state: ListItemState.Generated }))
         } catch (e) {
             if (e instanceof AiAssistantError) {
                 yield put(setErrorMessage(translationService.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage})))
             }
+            yield put(setItemState({ identifier: item.identifier, state: ListItemState.GeneratingError }))
             // todo catch other errors with a more generic message?
         }
     })
-    yield put(setItemGenerating({ identifier: item.identifier, generating: false }))
 }
 
 function *autogenerateItemSaga(action: PayloadAction<StatefulModuleItem>) {
@@ -212,20 +162,19 @@ export function* watchGenerateItem() {
 }
 
 
-function* persistOneItemSaga({ payload: id}: PayloadAction<string>) {
+function* persistOneItemSaga({ payload: id }: PayloadAction<string>) {
     const item = yield select(state => getItem(state, id))
-    yield put(setItemPersisting({ identifier: item.identifier, persisting: true}))
+    yield put(setItemState({ identifier: item.identifier, state: ListItemState.Persisting }))
     const backend = BackendService.getInstance()
     try {
         yield backend.persistItems([item])
-        yield put(setItemPersisted({identifier: item.identifier, persisted: true}))
-        yield put(setItemPersisting({identifier: item.identifier, persisting: false}))
+        yield put(setItemState({ identifier: item.identifier, state: ListItemState.Persisted }))
     } catch (e) {
         if (e instanceof AiAssistantError) {
             const translationService = TranslationService.getInstance()
             yield put(setErrorMessage(translationService.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage})))
         }
-        yield put(setItemPersisting({identifier: item.identifier, persisting: false}))
+        yield put(setItemState({ identifier: item.identifier, state: ListItemState.PersistingError }))
     }
 }
 
@@ -240,6 +189,6 @@ function* fetchNewPageAfterLastItemIsPersistedSaga(){
     }
 }
 
-export function* watchSetPersisted() {
-    yield takeLatest('app/setItemPersisted', fetchNewPageAfterLastItemIsPersistedSaga)
+export function* watchSetItemState() {
+    yield takeLatest('app/setItemState', fetchNewPageAfterLastItemIsPersistedSaga)
 }

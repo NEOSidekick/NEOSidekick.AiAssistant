@@ -7,13 +7,11 @@ namespace NEOSidekick\AiAssistant\Controller;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
-use Neos\Flow\Mvc\Exception\NoSuchArgumentException;
-use Neos\Flow\Mvc\View\JsonView;
 use Neos\Flow\Property\PropertyMappingConfiguration;
 use NEOSidekick\AiAssistant\Dto\AssetModuleConfigurationDto;
 use NEOSidekick\AiAssistant\Dto\AssetModuleResultDto;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordModuleConfigurationDto;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordModuleResultDto;
+use NEOSidekick\AiAssistant\Dto\FocusKeywordFilters;
+use NEOSidekick\AiAssistant\Dto\FocusKeywordUpdateItem;
 use NEOSidekick\AiAssistant\Service\AssetService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 
@@ -24,61 +22,62 @@ class BackendServiceController extends ActionController
      * @var AssetService
      */
     protected $assetService;
+
     /**
      * @Flow\Inject
      * @var NodeService
      */
     protected $nodeService;
+
+    /**
+     * @var string[]
+     */
     protected $supportedMediaTypes = ['application/json'];
 
-    public function initializeAction()
+    public function initializeAction(): void
     {
         $this->response->setContentType('application/json');
     }
 
     public function initializeIndexAction(): void
     {
-        try {
-            $propertyMappingConfiguration = $this->arguments->getArgument('configuration')
-                ->getPropertyMappingConfiguration()
-                ->allowProperties('propertyName', 'onlyAssetsInUse', 'limit', 'language', 'firstResult');
-        } catch (NoSuchArgumentException) {
-            // This cannot happen, otherwise we have a broken
-            // request anyway
-        }
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('configuration')
+            ->getPropertyMappingConfiguration()
+            ->skipUnknownProperties()
+            ->allowProperties(
+                'propertyName',
+                'onlyAssetsInUse',
+                'firstResult',
+                'limit',
+                'language');
     }
 
     /**
-     * @return void
+     * @param AssetModuleConfigurationDto $configuration
+     *
+     * @return string
      */
-    public function indexAction(AssetModuleConfigurationDto $configuration = null): string
+    public function indexAction(AssetModuleConfigurationDto $configuration): string
     {
-        if (!$configuration) {
-            $configuration = new AssetModuleConfigurationDto(false, 'title', 5, 'en');
-        }
         $resultCollection = $this->assetService->getAssetsThatNeedProcessing($configuration);
         return json_encode($resultCollection);
     }
 
     public function initializeUpdateAction(): void
     {
-        try {
-            $propertyMappingConfiguration =
-                $this->arguments->getArgument('resultDtos')->getPropertyMappingConfiguration();
-            $propertyMappingConfiguration
-                ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
-                ->skipProperties('generating', 'persisting', 'persisted')
-                ->allowAllProperties();
-        } catch (NoSuchArgumentException $e) {
-            // This cannot happen, otherwise we have a broken
-            // request anyway
-        }
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('resultDtos')
+            ->getPropertyMappingConfiguration()
+            ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
+            ->skipUnknownProperties()
+            ->allowAllProperties();
     }
 
     /**
      * @param array<AssetModuleResultDto> $resultDtos
      *
-     * @return void
+     * @return string
      */
     public function updateAction(array $resultDtos): string
     {
@@ -88,56 +87,51 @@ class BackendServiceController extends ActionController
 
     public function initializeGetFocusKeywordNodesAction(): void
     {
-        try {
-            $propertyMappingConfiguration = $this->arguments->getArgument('configuration')
-                ->getPropertyMappingConfiguration();
-            $propertyMappingConfiguration->allowProperties('workspace');
-            $propertyMappingConfiguration->allowProperties('generateEmptyFocusKeywords');
-            $propertyMappingConfiguration->allowProperties('regenerateExistingFocusKeywords');
-            $propertyMappingConfiguration->allowProperties('nodeTypeFilter');
-            $propertyMappingConfiguration->allowProperties('limit');
-        } catch (NoSuchArgumentException) {
-            // This cannot happen, otherwise we have a broken
-            // request anyway
-        }
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('configuration')
+            ->getPropertyMappingConfiguration()
+            ->skipUnknownProperties()
+            ->allowProperties(
+                'workspace',
+                'generateEmptyFocusKeywords',
+                'regenerateExistingFocusKeywords',
+                'nodeTypeFilter',
+                'firstResult',
+                'limit'
+            );
     }
 
     /**
-     * @param FocusKeywordModuleConfigurationDto $configuration
+     * @param FocusKeywordFilters $configuration
      *
      * @return string|bool
      */
-    public function getFocusKeywordNodesAction(FocusKeywordModuleConfigurationDto $configuration): string|bool
+    public function getFocusKeywordNodesAction(FocusKeywordFilters $configuration): string|bool
     {
-        $resultCollection = $this->nodeService->getNodesThatNeedProcessing($configuration, $this->controllerContext);
+        $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
         return json_encode($resultCollection);
     }
 
     public function initializeUpdateFocusKeywordNodesAction(): void
     {
-        try {
-            $propertyMappingConfiguration =
-                $this->arguments->getArgument('resultDtos')->getPropertyMappingConfiguration();
-            $propertyMappingConfiguration
-                ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
-                ->skipProperties('generating', 'persisting', 'persisted')
-                ->allowAllProperties();
-        } catch (NoSuchArgumentException $e) {
-            // This cannot happen, otherwise we have a broken
-            // request anyway
-        }
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('updateItems')
+            ->getPropertyMappingConfiguration()
+            ->skipUnknownProperties()
+            ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
+            ->allowAllProperties();
     }
 
     /**
      * @Flow\SkipCsrfProtection
      *
-     * @param array<FocusKeywordModuleResultDto> $resultDtos
+     * @param array<FocusKeywordUpdateItem> $updateItems
      *
      * @return string
      */
-    public function updateFocusKeywordNodesAction(array $resultDtos): string
+    public function updateFocusKeywordNodesAction(array $updateItems): string
     {
-        $this->nodeService->updateFocusKeywordOnNodes($resultDtos);
-        return json_encode(array_map(fn (FocusKeywordModuleResultDto $item) => $item->jsonSerialize(), $resultDtos));
+        $this->nodeService->updatePropertiesOnNodes($updateItems);
+        return json_encode(array_map(fn (FocusKeywordUpdateItem $item) => $item->jsonSerialize(), $updateItems));
     }
 }

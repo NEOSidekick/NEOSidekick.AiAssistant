@@ -1,24 +1,25 @@
 import {createSlice, PayloadAction} from "@reduxjs/toolkit";
 import {ModuleItem} from "../Model/ModuleItem";
 import {StatefulModuleItem} from "../Model/StatefulModuleItem";
+import {ListItemState} from "../Enums/ListItemState";
+import {AppState} from "../Enums/AppState";
+import {ListState} from "../Enums/ListState";
 
 export const AppSlice = createSlice({
     name: 'app',
     initialState: {
         moduleConfiguration: {},
         initialModuleConfiguration: {},
-        loading: true,
-        started: false,
-        busy: false,
+        appState: AppState.Configure,
+        listState: ListState.Loading,
         items: {},
-        hasError: false,
         errorMessage: null,
         backendMessage: null,
         availableNodeTypeFilters: null
     },
     selectors: {
         isAppStarted: (state) => {
-            return state.started
+            return state.state === AppState.Edit
         },
         getModuleConfiguration: (state) => {
             return state.moduleConfiguration
@@ -32,13 +33,13 @@ export const AppSlice = createSlice({
         hasGeneratingItem: (state) => {
             return Object.keys(state.items).reduce((accumulator, key) => {
                 const item: StatefulModuleItem = state.items[key];
-                return item.generating || accumulator
+                return item.state === ListItemState.Generating || accumulator
             }, false)
         },
         hasPersistingItem: (state) => {
             return Object.keys(state.items).reduce((accumulator, key) => {
                 const item: StatefulModuleItem = state.items[key];
-                return item.persisting || accumulator
+                return item.state === ListItemState.Persisting || accumulator
             }, false)
         },
         hasItemWithoutPropertyValue: (state) => {
@@ -50,18 +51,21 @@ export const AppSlice = createSlice({
         hasUnpersistedItem: (state) => {
             return Object.keys(state.items).reduce((accumulator, key) => {
                 const item: StatefulModuleItem = state.items[key];
-                return !item.persisted || accumulator
+                return item.state !== ListItemState.Persisted || accumulator
             }, false)
         },
     },
     reducers: {
-        startModule: (() => {}),
-        saveAllAndFetchNext: (() => {}),
-        setStarted: ((state, { payload }) => {
-            state.started = payload
+        startModule: (() => {
+            console.log('start module')
         }),
-        setLoading: ((state, action) => {
-            state.loading = action.payload.loading
+        saveAllAndFetchNext: (() => {}),
+        setAppState: ((state, { payload: appState }: { payload: AppState }) => {
+            console.log(appState)
+            state.appState = appState
+        }),
+        setListState: ((state, { payload: listState }: { payload: ListState }) => {
+            state.listState = listState
         }),
         setModuleConfiguration: ((state, action) => {
             state.moduleConfiguration = {
@@ -72,9 +76,7 @@ export const AppSlice = createSlice({
         addItem: ((state, { payload: item }: PayloadAction<ModuleItem>) => {
             state.items[item.identifier] = {
                 ...item,
-                persisted: false,
-                persisting: false,
-                generating: false
+                state: ListItemState.Initial
             }
         }),
         generateItem: (() => {}),
@@ -86,9 +88,7 @@ export const AppSlice = createSlice({
             action.payload.forEach((item: ModuleItem) => {
                 state.items[item.identifier] = {
                     ...item,
-                    persisted: false,
-                    persisting: false,
-                    generating: false
+                    state: ListItemState.Initial
                 }
             })
         }),
@@ -99,15 +99,13 @@ export const AppSlice = createSlice({
         }),
         setItemPersisted: ((state, action) => {
             const item: StatefulModuleItem = state.items[action.payload.identifier]
-            item.persisted = action.payload.persisted
+            if (action.payload.persisted) {
+                item.state = ListItemState.Persisted
+            }
         }),
-        setItemGenerating: ((state, action) => {
+        setItemState: ((state, action) => {
             const item: StatefulModuleItem = state.items[action.payload.identifier]
-            item.generating = action.payload.generating
-        }),
-        setItemPersisting: ((state, action) => {
-            const item: StatefulModuleItem = state.items[action.payload.identifier]
-            item.persisting = action.payload.persisting
+            item.state = action.payload.state
         }),
         persistOneItem: (() => {}),
         setErrorMessage: ((state, action) => {
@@ -124,14 +122,13 @@ export const AppSlice = createSlice({
 export const {
     startModule,
     saveAllAndFetchNext,
-    setStarted,
-    setLoading,
+    setAppState,
+    setListState,
     setModuleConfiguration,
     replaceItems,
     updateItemProperty,
     setItemPersisted,
-    setItemPersisting,
-    setItemGenerating,
+    setItemState,
     addItem,
     generateItem,
     resetItems,

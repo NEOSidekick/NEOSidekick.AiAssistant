@@ -52,7 +52,7 @@ export default class AssetListItem extends PureComponent {
         return !(item.persisted || item.generating || item.persisting || item.propertyValue === '');
     }
 
-    saveButtonLabel() {
+    renderSaveButtonLabel() {
         const { item } = this.props;
         if (item.persisting) {
             return (
@@ -97,7 +97,7 @@ export default class AssetListItem extends PureComponent {
                                 className={'neos-span12'}
                                 value={item.propertyValue}
                                 rows={5}
-                                onChange={this.handleChange.bind(this)}
+                                onChange={(e) => this.handleChange(e)}
                                 disabled={!this.canChangeValue()} />
                         </div>
                     </div>
@@ -106,14 +106,14 @@ export default class AssetListItem extends PureComponent {
                             className={'neos-button neos-button-danger'}
                             style={{marginRight: '8px'}}
                             disabled={!this.canDiscard()}
-                            onClick={this.discard.bind(this)}>
+                            onClick={() => this.discard()}>
                             {this.translationService.translate('NEOSidekick.AiAssistant:Module:discard', 'Discard')}
                         </button>
                         <button
                             className={'neos-button neos-button-success'}
                             style={{marginRight: '8px'}}
                             disabled={!this.canPersist()}
-                            onClick={persist}>{this.saveButtonLabel()}
+                            onClick={persist}>{this.renderSaveButtonLabel()}
                         </button>
                         {item.generating ? <span>
                             <FontAwesomeIcon icon={faSpinner} spin={true}/> {this.translationService.translate('NEOSidekick.AiAssistant:Module:generating', 'Generating...')}

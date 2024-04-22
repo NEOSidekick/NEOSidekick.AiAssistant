@@ -1,5 +1,7 @@
 import {ModuleConfiguration} from "../Model/ModuleConfiguration";
 import {StatefulModuleItem} from "../Model/StatefulModuleItem";
+import {AppState} from "../Enums/AppState";
+import {ListState} from "../Enums/ListState";
 
 export default interface StateInterface {
     app: {
@@ -18,5 +20,7 @@ export default interface StateInterface {
         errorMessage: string|null,
         backendMessage: string|null,
         availableNodeTypeFilters?: string[]
+        appState: AppState,
+        listState: ListState
     }
 }

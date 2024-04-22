@@ -3,17 +3,15 @@ import {
     watchAddItem, watchGenerateItem,
     watchPersistOneItem,
     watchSaveAllAndFetchNext,
-    watchSetPersisted,
-    watchStartModule
+    watchSetItemState,
 } from "./AppSaga";
 
 const rootSaga = function* () {
     yield all([
-        fork(watchStartModule),
         fork(watchSaveAllAndFetchNext),
         fork(watchAddItem),
         fork(watchPersistOneItem),
-        fork(watchSetPersisted),
+        fork(watchSetItemState),
         fork(watchGenerateItem)
     ]);
 };

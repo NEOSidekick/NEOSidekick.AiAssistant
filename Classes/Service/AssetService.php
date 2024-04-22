@@ -10,7 +10,7 @@ use Neos\Utility\Exception\PropertyNotAccessibleException;
 use Neos\Utility\ObjectAccess;
 use NEOSidekick\AiAssistant\Dto\AssetModuleConfigurationDto;
 use NEOSidekick\AiAssistant\Dto\AssetModuleResultDto;
-use NEOSidekick\AiAssistant\Dto\ResultCollectionDto;
+use NEOSidekick\AiAssistant\Dto\PaginatedCollection;
 use NEOSidekick\AiAssistant\Factory\AssetModuleResultDtoFactory;
 
 /**"
@@ -33,9 +33,9 @@ class AssetService
     /**
      * @param AssetModuleConfigurationDto $configurationDto
      *
-     * @return ResultCollectionDto
+     * @return PaginatedCollection
      */
-    public function getAssetsThatNeedProcessing(AssetModuleConfigurationDto $configurationDto): ResultCollectionDto
+    public function getAssetsThatNeedProcessing(AssetModuleConfigurationDto $configurationDto): PaginatedCollection
     {
         $assetsIterator = $this->assetRepository->findAllIterator();
         $assetsThatNeedProcessing = [];
@@ -72,7 +72,7 @@ class AssetService
             );
             $assetsThatNeedProcessingCount++;
         }
-        return new ResultCollectionDto(
+        return new PaginatedCollection(
             $assetsThatNeedProcessing,
             $configurationDto->getFirstResult() + $assetsThatNeedProcessingCount
         );

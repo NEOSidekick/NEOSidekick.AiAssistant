@@ -8,9 +8,8 @@ use Neos\Flow\Annotations as Flow;
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class FocusKeywordModuleConfigurationDto
+final class FocusKeywordFilters
 {
-    private const DEFAULT_LIMIT = 5;
     /**
      * @var string
      */
@@ -38,42 +37,24 @@ final class FocusKeywordModuleConfigurationDto
     protected ?string $nodeTypeFilter = null;
 
     /**
-     * @var int
-     */
-    protected int $limit = self::DEFAULT_LIMIT;
-
-    /**
-     * Defines how many items to skip before returning items
-     *
-     * @var int
-     */
-    protected int $firstResult = 0;
-
-    /**
      * @param string      $workspace
      * @param string      $mode
      * @param bool        $generateEmptyFocusKeywords
      * @param bool        $regenerateExistingFocusKeywords
      * @param string|null $nodeTypeFilter
-     * @param int         $limit
-     * @param int         $firstResult
      */
     public function __construct(
         string $workspace,
         string $mode,
         bool $generateEmptyFocusKeywords,
         bool $regenerateExistingFocusKeywords,
-        ?string $nodeTypeFilter,
-        int $limit,
-        int $firstResult
+        ?string $nodeTypeFilter
     ) {
         $this->workspace = $workspace;
         $this->mode = $mode;
         $this->generateEmptyFocusKeywords = $generateEmptyFocusKeywords;
         $this->regenerateExistingFocusKeywords = $regenerateExistingFocusKeywords;
         $this->nodeTypeFilter = $nodeTypeFilter;
-        $this->limit = $limit;
-        $this->firstResult = $firstResult;
     }
 
     public function getWorkspace(): string
@@ -101,25 +82,13 @@ final class FocusKeywordModuleConfigurationDto
         return $this->nodeTypeFilter;
     }
 
-    public function getLimit(): int
-    {
-        return $this->limit;
-    }
-
-    public function getFirstResult(): int
-    {
-        return $this->firstResult;
-    }
-
     /**
      * @param array{
      *     workspace: string,
      *     mode: string,
      *     generateEmptyFocusKeywords: bool,
      *     regenerateExistingFocusKeywords: bool,
-     *     nodeTypeFilter: string|null,
-     *     limit: int,
-     *     firstResult: int
+     *     nodeTypeFilter: string|null
      * } $array
      *
      * @return self
@@ -131,9 +100,7 @@ final class FocusKeywordModuleConfigurationDto
             $array['mode'],
             $array['generateEmptyFocusKeywords'] ?? false,
             $array['regenerateExistingFocusKeywords'] ?? false,
-            $array['nodeTypeFilter'] ?? null,
-            $array['limit'] ?? self::DEFAULT_LIMIT,
-            $array['firstResult'] ?? 0
+            $array['nodeTypeFilter'] ?? null
         );
     }
 }

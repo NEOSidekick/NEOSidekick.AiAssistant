@@ -6,15 +6,19 @@ use JsonSerializable;
 use Neos\Flow\Annotations as Flow;
 
 /**
+ * @psalm-template TKey of array-key
+ * @psalm-template T
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class ResultCollectionDto implements JsonSerializable
+final class PaginatedCollection implements JsonSerializable
 {
     /**
      * @var array
+     * @psalm-var array<TKey,T>
      */
     protected array $items;
+
     /**
      * @var int
      */
@@ -22,6 +26,7 @@ final class ResultCollectionDto implements JsonSerializable
 
     /**
      * @param array $items
+     * @psalm-param array<TKey,T> $items
      * @param int   $nextFirstResult
      */
     public function __construct(array $items, int $nextFirstResult)
@@ -30,6 +35,10 @@ final class ResultCollectionDto implements JsonSerializable
         $this->nextFirstResult = $nextFirstResult;
     }
 
+    /**
+     * @return array
+     * @psalm-return array<TKey,T>
+     */
     public function getItems(): array
     {
         return $this->items;

@@ -1,5 +1,5 @@
 export enum AppState {
-    Configure,
-    Edit,
-    Error
+    Configure = 'configure',
+    Edit = 'edit',
+    Error = 'error'
 }

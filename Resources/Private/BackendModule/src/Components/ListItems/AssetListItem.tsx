@@ -1,21 +1,16 @@
 import React from "react";
 import PropTypes from "prop-types";
-import {connect} from "react-redux";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheck, faSpinner} from "@fortawesome/free-solid-svg-icons"
-import {
-    persistOneItem,
-    updateItemProperty
-} from "../../Store/AppSlice";
 import PureComponent from "../PureComponent";
-@connect(null, (dispatch, ownProps) => ({
-    update(propertyValue: string) {
-        dispatch(updateItemProperty({ identifier: ownProps.item.identifier, propertyValue }))
-    },
-    persist() {
-        dispatch(persistOneItem(ownProps.item.identifier))
-    }
-}))
+// @connect(null, (dispatch, ownProps) => ({
+//     update(propertyValue: string) {
+//         dispatch(updateItemProperty({ identifier: ownProps.item.identifier, propertyValue }))
+//     },
+//     persist() {
+//         dispatch(persistOneItem(ownProps.item.identifier))
+//     }
+// }))
 export default class AssetListItem extends PureComponent {
     static propTypes = {
         item: PropTypes.object.isRequired,

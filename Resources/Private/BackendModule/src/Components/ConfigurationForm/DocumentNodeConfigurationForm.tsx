@@ -1,46 +1,29 @@
 import PureComponent from "../PureComponent";
-import {connect} from "react-redux";
-import StateInterface from "../../Store/StateInterface";
-import {setModuleConfiguration} from "../../Store/AppSlice";
 import LimitField from "./LimitField";
 import React from "react";
 import {enumKeys} from "../../Util";
-import {FocusKeywordModuleConfiguration, FocusKeywordModuleMode} from "../../Model/FocusKeywordModuleConfiguration";
-import PropTypes from "prop-types";
+import {FocusKeywordModuleMode} from "../../Model/FocusKeywordModuleConfiguration";
 import BackendMessage from "../BackendMessage";
 import StartModuleButton from "../StartModuleButton";
+import AppContext from "../../AppContext";
 
-@connect((state: StateInterface) => ({
-    configuration: state.app.moduleConfiguration,
-    initialConfiguration: state.app.initialModuleConfiguration,
-    availableNodeTypeFilters: state.app.availableNodeTypeFilters
-}), (dispatch) => ({
-    updateConfiguration(moduleConfiguration: FocusKeywordModuleConfiguration) {
-        dispatch(setModuleConfiguration({moduleConfiguration}))
-    }
-}))
 export default class DocumentNodeConfigurationForm extends PureComponent {
-    static propTypes = {
-        configuration: PropTypes.object,
-        initialConfiguration: PropTypes.object,
-        availableNodeTypeFilters: PropTypes.object
-    }
+    static contextType = AppContext
 
     private renderNodeTypeFilterField() {
-        const {configuration, initialConfiguration, updateConfiguration, availableNodeTypeFilters} = this.props;
-        return (initialConfiguration?.nodeTypeFilter == null ?
+        return (this.context.initialAppConfiguration?.nodeTypeFilter == null ?
             <div className={'neos-control-group'}>
                 <label className={'neos-control-label'}>
                     {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.nodeTypeFilter.label', 'Restrict to page type')}
                 </label>
                 <div className={'neos-controls'}>
                     <select
-                        value={configuration.nodeTypeFilter}
-                        onChange={e => updateConfiguration({nodeTypeFilter: e.target.value})}>
+                        value={this.context.appConfiguration.nodeTypeFilter}
+                        onChange={e => this.context.updateAppConfiguration({nodeTypeFilter: e.target.value})}>
                         <option value={null}>{this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.nodeTypeFilter.all', 'All page types')}</option>
-                        {Object.keys(availableNodeTypeFilters).map(nodeType =>
+                        {Object.keys(this.context.availableNodeTypeFilters).map(nodeType =>
                             <option value={nodeType}>
-                                {availableNodeTypeFilters[nodeType]}
+                                {this.context.availableNodeTypeFilters[nodeType]}
                             </option>
                         )}
                     </select>
@@ -50,17 +33,16 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
     }
 
     private renderWorkspaceField() {
-        const {configuration, initialConfiguration, updateConfiguration} = this.props;
         const availableWorkspaces = window['_NEOSIDEKICK_AIASSISTANT_workspaces']
-        return (initialConfiguration?.workspace == null ?
+        return (this.context.initialAppConfiguration?.workspace == null ?
             <div className={'neos-control-group'}>
                 <label className={'neos-control-label'}>
                     {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.workspace.label', 'Workspace')}
                 </label>
                 <div className={'neos-controls'}>
                     <select
-                        value={configuration.workspace}
-                        onChange={e => updateConfiguration({workspace: e.target.value})}>
+                        value={this.context.appConfiguration.workspace}
+                        onChange={e => this.context.updateAppConfiguration({workspace: e.target.value})}>
                         {Object.keys(availableWorkspaces).map(workspaceIdentifier =>
                             <option value={availableWorkspaces[workspaceIdentifier].name}>
                                 {availableWorkspaces[workspaceIdentifier].title || availableWorkspaces[workspaceIdentifier].name}
@@ -73,16 +55,15 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
     }
 
     private renderModeField() {
-        const {configuration, initialConfiguration, updateConfiguration} = this.props;
-        return (initialConfiguration?.mode == null ?
+        return (this.context.initialAppConfiguration?.mode == null ?
             <div className={'neos-control-group'}>
                 <label className={'neos-control-label'}>
                     {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.mode.label', 'Selection of pages')}
                 </label>
                 <div className={'neos-controls'}>
                     <select
-                        value={configuration.mode}
-                        onChange={e => updateConfiguration({mode: e.target.value})}>
+                        value={this.context.appConfiguration.mode}
+                        onChange={e => this.context.updateAppConfiguration({mode: e.target.value})}>
                         {enumKeys(FocusKeywordModuleMode).map(mode =>
                             <option value={mode}>
                                 {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.mode.' + mode, mode)}
@@ -96,14 +77,13 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
 
     private renderGenerateEmptyFocusKeywordsField()
     {
-        const {configuration, initialConfiguration, updateConfiguration} = this.props;
-        return (initialConfiguration?.generateEmptyFocusKeywords == null ?
+        return (this.context.initialAppConfiguration?.generateEmptyFocusKeywords == null ?
             <div className={'neos-control-group'}>
                 <label className="neos-checkbox">
                     <input
                         type="checkbox"
-                        onChange={e => updateConfiguration({generateEmptyFocusKeywords: e.target.checked})}
-                        checked={configuration.generateEmptyFocusKeywords}
+                        onChange={e => this.context.updateAppConfiguration({generateEmptyFocusKeywords: e.target.checked})}
+                        checked={this.context.appConfiguration.generateEmptyFocusKeywords}
                         value="1" />
                     <span></span>
                     {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.generateEmptyFocusKeywords.label', 'Generate empty focus keywords automatically')}
@@ -114,14 +94,13 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
 
     private renderRegenerateExistingFocusKeywordsField()
     {
-        const {configuration, initialConfiguration, updateConfiguration} = this.props;
-        return (initialConfiguration?.regenerateExistingFocusKeywords == null ?
+        return (this.context.initialAppConfiguration?.regenerateExistingFocusKeywords == null ?
                 <div className={'neos-control-group'}>
                     <label className="neos-checkbox">
                         <input
                             type="checkbox"
-                            onChange={e => updateConfiguration({regenerateExistingFocusKeywords: e.target.checked})}
-                            checked={configuration.regenerateExistingFocusKeywords}
+                            onChange={e => this.context.updateAppConfiguration({regenerateExistingFocusKeywords: e.target.checked})}
+                            checked={this.context.appConfiguration.regenerateExistingFocusKeywords}
                             value="1" />
                         <span></span>
                         {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.regenerateExistingFocusKeywords.label', 'Regenerate existing focus keywords automatically')}
@@ -131,7 +110,6 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
     }
 
     render() {
-        const {configuration, updateConfiguration} = this.props;
         return (
             <div className={'neos-content neos-indented neos-fluid-container'}>
                 <p style={{marginBottom: '1rem'}} dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:intro', '')}}/>
@@ -142,7 +120,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
                 {this.renderWorkspaceField()}
                 {this.renderModeField()}
                 {this.renderNodeTypeFilterField()}
-                <LimitField configuration={configuration} updateConfiguration={updateConfiguration}/>
+                <LimitField configuration={this.context.appConfiguration} updateConfiguration={this.context.updateAppConfiguration}/>
                 <br/>
                 <br/>
                 <h2>Aktionen:</h2>

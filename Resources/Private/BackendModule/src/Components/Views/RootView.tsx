@@ -1,32 +1,82 @@
 import React from "react";
-import PropTypes from "prop-types";
-import {connect} from "react-redux";
 import PureComponent from "../PureComponent";
 import ErrorView from "./ErrorView";
 import ConfigurationView from "./ConfigurationView";
 import {Endpoints} from "../../Model/Endpoints";
 import {AppState} from "../../Enums/AppState";
 import ListView from "./ListView";
-import {setAppState} from "../../Store/AppSlice";
-import StateInterface from "../../Store/StateInterface";
+import {ModuleConfiguration} from "../../Model/ModuleConfiguration";
+import AppContext from "../../AppContext";
 
-@connect((state: StateInterface) => ({
-    appState: state.app.appState
-}), (dispatch) => ({
-    setAppState: (state) => dispatch(setAppState(state)),
-}))
-export default class RootView extends PureComponent {
-    static propTypes = {
-        appState: PropTypes.number,
-        endpoints: PropTypes.object.isRequired
+export default class RootView extends PureComponent<RootViewProps, RootViewState> {
+    constructor(props) {
+        super(props);
+        this.state = {
+            appConfiguration: props.appConfiguration,
+            appState: AppState.Configure,
+            availableNodeTypeFilters: props.availableNodeTypeFilters,
+            initialAppConfiguration: props.initialAppConfiguration,
+            overviewUri: props.overviewUri,
+            scope: props.scope,
+            updateAppConfiguration: (newConfiguration: Partial<ModuleConfiguration>) => this.updateAppConfiguration(newConfiguration),
+            updateAppState: (newState: AppState) => this.updateAppState(newState),
+            updateErrorMessage: (errorMessage: string) => this.setError(errorMessage),
+        }
+    }
+
+    private updateAppState(newState: AppState) {
+        this.setState(state => ({...state, appState: newState}))
+    }
+
+    private updateAppConfiguration(newConfiguration: Partial<ModuleConfiguration>) {
+        this.setState(state => ({
+                ...state,
+                appConfiguration: {
+                    ...state.appConfiguration,
+                    ...newConfiguration
+                }
+            })
+        )
+    }
+
+    private setError(errorMessage: string) {
+        this.updateAppState(AppState.Error)
+        this.setState(state => ({
+            ...state,
+            errorMessage
+        }))
     }
 
     render() {
-        const {appState, endpoints}: {appState: AppState, endpoints: Endpoints} = this.props;
-        return [
-            appState === AppState.Error ? <ErrorView /> : null,
-            appState === AppState.Configure ? <ConfigurationView/> : null,
-            appState === AppState.Edit ? <ListView overviewUri={endpoints.overview}/> : null
-        ]
+        const {endpoints}: {endpoints: Endpoints} = this.props;
+        return (
+            <AppContext.Provider value={this.state}>
+                {this.state.appState === AppState.Error ? <ErrorView /> : null}
+                {this.state.appState === AppState.Configure ? <ConfigurationView/> : null}
+                {this.state.appState === AppState.Edit ? <ListView overviewUri={endpoints.overview}/> : null}
+            </AppContext.Provider>
+        )
     }
+}
+
+export interface RootViewProps {
+    scope: string,
+    endpoints: object,
+    appConfiguration: ModuleConfiguration,
+    initialAppConfiguration: ModuleConfiguration,
+    availableNodeTypeFilters: object,
+    overviewUri: string
+}
+
+export interface RootViewState {
+    appConfiguration: ModuleConfiguration,
+    appState: AppState,
+    availableNodeTypeFilters?: object,
+    errorMessage?: string,
+    initialAppConfiguration: ModuleConfiguration,
+    scope: string,
+    updateAppConfiguration: Function,
+    updateAppState: Function,
+    updateErrorMessage: Function,
+    overviewUri: string
 }

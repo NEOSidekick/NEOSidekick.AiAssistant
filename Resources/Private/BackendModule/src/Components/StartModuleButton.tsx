@@ -1,21 +1,13 @@
 import React from "react";
-import {connect} from "react-redux";
-import PropTypes from "prop-types";
-import {setAppState} from "../Store/AppSlice";
 import PureComponent from "./PureComponent";
 import {AppState} from "../Enums/AppState";
+import AppContext from "../AppContext";
 
-@connect(null, (dispatch) => ({
-    setAppState: (state) => dispatch(setAppState(state)),
-}))
 export default class StartModuleButton extends PureComponent {
-    static propTypes = {
-        setAppState: PropTypes.func
-    }
+    static contextType = AppContext
 
     private startModule() {
-        const {setAppState} = this.props;
-        setAppState(AppState.Edit)
+        this.context.updateAppState(AppState.Edit)
     }
 
     render() {

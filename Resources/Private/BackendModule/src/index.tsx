@@ -1,6 +1,5 @@
 import React from 'react';
 import RootView from './Components/Views/RootView'
-import createStore from "./Store";
 import {createRoot} from 'react-dom/client';
 import {Endpoints} from "./Model/Endpoints";
 import BackendService from "./Service/BackendService";
@@ -8,9 +7,7 @@ import TranslationService from "./Service/TranslationService";
 import {ExternalService} from "./Service/ExternalService";
 import {isNull, omitBy} from "lodash"
 import defaultModuleConfiguration from "./Util/defaultModuleConfiguration";
-import {AppState} from "./Enums/AppState";
-import {ListState} from "./Enums/ListState";
-import {Provider} from "react-redux";
+import {ModuleConfiguration} from "./Model/ModuleConfiguration";
 
 document.addEventListener('DOMContentLoaded', async() => {
     const endpoints: Endpoints = window['_NEOSIDEKICK_AIASSISTANT_endpoints']
@@ -65,27 +62,22 @@ document.addEventListener('DOMContentLoaded', async() => {
     }
 
     // Set default configuration
-    const initialModuleConfiguration = omitBy(configuration[scope] || {}, isNull);
-    const moduleConfiguration = {
+    const initialAppConfiguration = omitBy(configuration[scope] || {}, isNull) as ModuleConfiguration;
+    const appConfiguration = {
         limit: 5,
         language: configuration.defaultLanguage,
         ...defaultModuleConfiguration[scope],
-        ...initialModuleConfiguration
+        ...initialAppConfiguration
     }
-    const store = createStore({
-        app: {
-            moduleConfiguration,
-            initialModuleConfiguration,
-            scope,
-            appState: AppState.Configure,
-            listState: ListState.Loading,
-            availableNodeTypeFilters
-        }
-    })
 
     root.render(
-        <Provider store={store}>
-            <RootView endpoints={endpoints} />
-        </Provider>
+        <RootView
+            scope={scope}
+            endpoints={endpoints}
+            appConfiguration={appConfiguration}
+            initialAppConfiguration={initialAppConfiguration}
+            availableNodeTypeFilters={availableNodeTypeFilters}
+            overviewUri={endpoints.overview}
+        />
     )
 })

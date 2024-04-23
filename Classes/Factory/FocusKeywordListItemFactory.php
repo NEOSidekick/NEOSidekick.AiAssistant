@@ -22,6 +22,12 @@ class FocusKeywordListItemFactory
      */
     protected $nodeLinkingService;
 
+    /**
+     * @Flow\InjectConfiguration(path="languageDimensionName")
+     * @var string
+     */
+    protected string $languageDimensionName;
+
     public function createFromNode(Node $node, ControllerContext $controllerContext): FocusKeywordListItem
     {
         try {
@@ -35,8 +41,8 @@ class FocusKeywordListItemFactory
             $publicUri,
             $node->hasProperty('title') ? $node->getProperty('title') : '',
             ['focusKeyword' => $node->hasProperty('focusKeyword') ? $node->getProperty('focusKeyword') : ''],
-            // todo move "language" to the configuration later
-            $node->getNodeData()->getDimensionValues()['language'][0]
+            // todo inspect [0] syntax... maybe we also need a mapping?
+            $node->getNodeData()->getDimensionValues()[$this->languageDimensionName][0]
         );
     }
 }

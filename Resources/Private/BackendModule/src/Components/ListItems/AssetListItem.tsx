@@ -6,8 +6,8 @@ import {faCheck, faSpinner} from "@fortawesome/free-solid-svg-icons"
 import {
     persistOneItem,
     updateItemProperty
-} from "../Store/AppSlice";
-import PureComponent from "./PureComponent";
+} from "../../Store/AppSlice";
+import PureComponent from "../PureComponent";
 @connect(null, (dispatch, ownProps) => ({
     update(propertyValue: string) {
         dispatch(updateItemProperty({ identifier: ownProps.item.identifier, propertyValue }))

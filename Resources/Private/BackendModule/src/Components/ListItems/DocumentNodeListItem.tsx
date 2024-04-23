@@ -1,14 +1,14 @@
-import PureComponent from "./PureComponent";
+import PureComponent from "../PureComponent";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheck, faExternalLinkAlt, faSpinner} from "@fortawesome/free-solid-svg-icons";
 import React, {RefObject} from "react";
-import {ListItemState} from "../Enums/ListItemState";
-import {PropertyState} from "../Model/PropertiesCollection";
+import {ListItemState} from "../../Enums/ListItemState";
+import {PropertyState} from "../../Model/PropertiesCollection";
 import {Draft, produce} from "immer";
-import {StatefulModuleItem} from "../Model/StatefulModuleItem";
-import TextareaEditor from "./Editor/TextareaEditor";
+import {StatefulModuleItem} from "../../Model/StatefulModuleItem";
+import TextareaEditor from "../Editor/TextareaEditor";
 
-export default class NodeListItem extends PureComponent<NodeListItemProps, NodeListItemState> {
+export default class DocumentNodeListItem extends PureComponent<NodeListItemProps, NodeListItemState> {
     private readonly iframeRef: RefObject<any>;
 
     constructor(props) {
@@ -113,8 +113,8 @@ export default class NodeListItem extends PureComponent<NodeListItemProps, NodeL
     }
 
     render() {
-        const { item, persist, generate } = this.props;
-        const ahrefsLink = `https://app.ahrefs.com/keywords-explorer/google/${item.language.toLowerCase().replace('en', 'uk')}/overview?keyword=${item.focusKeyword}`
+        const { item } = this.props;
+        const ahrefsLink = `https://app.ahrefs.com/keywords-explorer/google/${item.language.toLowerCase().replace('en', 'uk')}/overview?keyword=${item.properties.focusKeyword.currentValue}`
         const googleLink = `https://ads.google.com/aw/keywordplanner/plan/keywords/historical`
         // todo refactor
         const sidekickConfiguration = {
@@ -141,14 +141,14 @@ export default class NodeListItem extends PureComponent<NodeListItemProps, NodeL
                         </a>
                     </p>
                     <br />
-                    {item.state === ListItemState.Generated ?
-                        <div>
-                            <p style={{padding: '1rem', background: 'gray'}}>
-                                {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:listItem.notice', `Our page content analysis points to the focus keyword "${item.focusKeyword}". If this does not fit at all, customising the text for SEO could be helpful.`, {0: item.focusKeyword})}
-                            </p>
-                            <br/>
-                        </div> : null
-                    }
+                    {/*{item.state === ListItemState.Generated ?*/}
+                    {/*    <div>*/}
+                    {/*        <p style={{padding: '1rem', background: 'gray'}}>*/}
+                    {/*            {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:listItem.notice', `Our page content analysis points to the focus keyword "${item.focusKeyword}". If this does not fit at all, customising the text for SEO could be helpful.`, {0: item.focusKeyword})}*/}
+                    {/*        </p>*/}
+                    {/*        <br/>*/}
+                    {/*    </div> : null*/}
+                    {/*}*/}
                     <TextareaEditor
                         label={'Focus-Keyword'}
                         disabled={!this.canChangeValue()}

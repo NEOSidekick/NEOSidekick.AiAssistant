@@ -9,7 +9,7 @@ import {ModuleItem} from "../../Model/ModuleItem";
 import {ListState} from "../../Enums/ListState";
 import {ListItemState} from "../../Enums/ListItemState";
 import {PropertyState} from "../../Model/PropertiesCollection";
-import ListItem from "../ListItem";
+import ListItem from "../ListItems/ListItem";
 import {Draft, produce} from "immer";
 import PureComponent from "../PureComponent";
 import {ModuleConfiguration} from "../../Model/ModuleConfiguration";
@@ -32,7 +32,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
     }
 
     private async fetchItems() {
-        const {configuration, setItems, resetItems} = this.props;
+        const {configuration} = this.props;
         const backend: BackendService = BackendService.getInstance()
         try {
             const items: ModuleItem[] = await backend.getItems(configuration)
@@ -41,7 +41,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 processedItems[item.identifier] = this.postprocessListItem(item)
             }
             const sortedItems = Object.fromEntries(Object.entries(processedItems).sort())
-            this.setState({items: sortedItems, currentState: (Object.values(processedItems).length > 0 ? ListState.Result : ListState.Empty)})
+            this.setState(state => ({...state, items: sortedItems, currentState: (Object.values(processedItems).length > 0 ? ListState.Result : ListState.Empty)}))
         } catch (e) {
             // TODO set app state to Error
             // TODO set app error message

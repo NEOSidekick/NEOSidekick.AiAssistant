@@ -1,12 +1,14 @@
-import PureComponent from "./PureComponent";
+import PureComponent from "../PureComponent";
 import {connect} from "react-redux";
-import StateInterface from "../Store/StateInterface";
-import {setModuleConfiguration} from "../Store/AppSlice";
-import LimitField from "./ConfigurationForm/LimitField";
+import StateInterface from "../../Store/StateInterface";
+import {setModuleConfiguration} from "../../Store/AppSlice";
+import LimitField from "./LimitField";
 import React from "react";
-import {enumKeys} from "../Util";
-import {FocusKeywordModuleConfiguration, FocusKeywordModuleMode} from "../Model/FocusKeywordModuleConfiguration";
+import {enumKeys} from "../../Util";
+import {FocusKeywordModuleConfiguration, FocusKeywordModuleMode} from "../../Model/FocusKeywordModuleConfiguration";
 import PropTypes from "prop-types";
+import BackendMessage from "../BackendMessage";
+import StartModuleButton from "../StartModuleButton";
 
 @connect((state: StateInterface) => ({
     configuration: state.app.moduleConfiguration,
@@ -17,7 +19,7 @@ import PropTypes from "prop-types";
         dispatch(setModuleConfiguration({moduleConfiguration}))
     }
 }))
-export default class FocusKeywordModuleConfigurationForm extends PureComponent {
+export default class DocumentNodeConfigurationForm extends PureComponent {
     static propTypes = {
         configuration: PropTypes.object,
         initialConfiguration: PropTypes.object,
@@ -131,19 +133,25 @@ export default class FocusKeywordModuleConfigurationForm extends PureComponent {
     render() {
         const {configuration, updateConfiguration} = this.props;
         return (
-            <div>
+            <div className={'neos-content neos-indented neos-fluid-container'}>
+                <p style={{marginBottom: '1rem'}} dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:intro', '')}}/>
+                <BackendMessage identifier="focus-keyword"/>
+
                 <h2>Auswahl-Filter:</h2>
-                <br />
+                <br/>
                 {this.renderWorkspaceField()}
                 {this.renderModeField()}
                 {this.renderNodeTypeFilterField()}
-                <LimitField configuration={configuration} updateConfiguration={updateConfiguration} />
-                <br />
-                <br />
+                <LimitField configuration={configuration} updateConfiguration={updateConfiguration}/>
+                <br/>
+                <br/>
                 <h2>Aktionen:</h2>
-                <br />
+                <br/>
                 {this.renderGenerateEmptyFocusKeywordsField()}
                 {this.renderRegenerateExistingFocusKeywordsField()}
+                <div className={'neos-footer'}>
+                    <StartModuleButton/>
+                </div>
             </div>
         )
     }

@@ -18,9 +18,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use NEOSidekick\AiAssistant\Dto\FocusKeywordFilters;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordListItem;
 use NEOSidekick\AiAssistant\Dto\FocusKeywordUpdateItem;
-use NEOSidekick\AiAssistant\Dto\PaginatedCollection;
 use NEOSidekick\AiAssistant\Factory\FocusKeywordListItemFactory;
 
 class NodeService
@@ -57,9 +55,9 @@ class NodeService
      * @param FocusKeywordFilters $configurationDto
      * @param ControllerContext   $controllerContext
      *
-     * @return PaginatedCollection<FocusKeywordListItem>
+     * @return array
      */
-    public function find(FocusKeywordFilters $configurationDto, ControllerContext $controllerContext): PaginatedCollection
+    public function find(FocusKeywordFilters $configurationDto, ControllerContext $controllerContext): array
     {
         $workspace = $this->workspaceRepository->findByIdentifier($configurationDto->getWorkspace());
 
@@ -85,10 +83,7 @@ class NodeService
             $itemsThatNeedProcessing[] = $this->focusKeywordListItemFactory->createFromNode($node, $controllerContext);
         }
 
-        return new PaginatedCollection(
-            $itemsThatNeedProcessing,
-0
-        );
+        return $itemsThatNeedProcessing;
     }
 
     /**

@@ -4,12 +4,14 @@ import PropTypes from "prop-types";
 import {AssetModuleConfiguration,
     AssetPropertyName, Language,
     OnlyAssetsInUse
-} from "../Model/AssetModuleConfiguration";
-import StateInterface from "../Store/StateInterface";
-import {setModuleConfiguration} from "../Store/AppSlice";
-import PureComponent from "./PureComponent";
-import {enumKeys} from "../Util";
-import LimitField from "./ConfigurationForm/LimitField";
+} from "../../Model/AssetModuleConfiguration";
+import StateInterface from "../../Store/StateInterface";
+import {setModuleConfiguration} from "../../Store/AppSlice";
+import PureComponent from "../PureComponent";
+import {enumKeys} from "../../Util";
+import LimitField from "./LimitField";
+import BackendMessage from "../BackendMessage";
+import StartModuleButton from "../StartModuleButton";
 
 @connect((state: StateInterface) => ({
     configuration: state.app.moduleConfiguration,
@@ -19,7 +21,7 @@ import LimitField from "./ConfigurationForm/LimitField";
         dispatch(setModuleConfiguration({moduleConfiguration}))
     }
 }))
-export default class AssetModuleConfigurationForm extends PureComponent<ConfigurationFormProps> {
+export default class AssetConfigurationForm extends PureComponent<ConfigurationFormProps> {
     static propTypes = {
         configuration: PropTypes.object,
         initialConfiguration: PropTypes.object,
@@ -99,11 +101,17 @@ export default class AssetModuleConfigurationForm extends PureComponent<Configur
     render() {
         const {configuration, updateConfiguration} = this.props;
         return (
-            <div>
+            <div className={'neos-content neos-indented neos-fluid-container'}>
+                <p style={{marginBottom: '1rem'}}
+                   dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:intro', 'With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>')}}/>
+                <BackendMessage identifier="bulk-image-generation"/>
                 {this.renderOnlyInUseField()}
                 {this.renderPropertyNameField()}
-                <LimitField configuration={configuration} updateConfiguration={updateConfiguration} />
+                <LimitField configuration={configuration} updateConfiguration={updateConfiguration}/>
                 {this.renderLanguageField()}
+                <div className={'neos-footer'}>
+                    <StartModuleButton/>
+                </div>
             </div>
         )
     }

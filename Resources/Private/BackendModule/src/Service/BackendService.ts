@@ -29,8 +29,7 @@ export default class BackendService {
         if (response.status < 200 || response.status >= 400) {
             throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037')
         }
-        const responseBodyAsJson = await response.json()
-        return responseBodyAsJson.items
+        return await response.json()
     }
 
     public async persistItems(updateItems: object[])

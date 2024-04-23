@@ -1,3 +1,6 @@
+/*
+ * This file is copied from Neos.Neos.Ui
+ */
 const getTranslationAddress = function (id, packageKey, sourceName) {
     if (id && id.indexOf(':') !== -1) {
         return id.split(':');

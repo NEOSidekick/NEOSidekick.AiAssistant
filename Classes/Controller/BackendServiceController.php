@@ -95,9 +95,7 @@ class BackendServiceController extends ActionController
                 'workspace',
                 'generateEmptyFocusKeywords',
                 'regenerateExistingFocusKeywords',
-                'nodeTypeFilter',
-                'firstResult',
-                'limit'
+                'nodeTypeFilter'
             );
     }
 

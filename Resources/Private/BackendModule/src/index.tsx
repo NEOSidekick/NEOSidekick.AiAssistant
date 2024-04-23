@@ -64,15 +64,6 @@ document.addEventListener('DOMContentLoaded', async() => {
         })
     }
 
-    // Backend Message Identifier
-    let backendMessageIdentifier
-    switch(scope) {
-        case 'altTextGeneratorModule':
-            backendMessageIdentifier = 'bulk-image-generation'; break;
-        case 'focusKeywordGeneratorModule':
-            backendMessageIdentifier = 'focus-keyword'; break;
-    }
-
     // Set default configuration
     const initialModuleConfiguration = omitBy(configuration[scope] || {}, isNull);
     const moduleConfiguration = {
@@ -88,11 +79,6 @@ document.addEventListener('DOMContentLoaded', async() => {
             scope,
             appState: AppState.Configure,
             listState: ListState.Loading,
-            loading: true,
-            started: false,
-            busy: false,
-            items: {},
-            backendMessage: backendMessageIdentifier ? await externalService.getBackendNotification(backendMessageIdentifier) : null,
             availableNodeTypeFilters
         }
     })

@@ -1,8 +1,8 @@
-import PureComponent from "./PureComponent";
+import PureComponent from "../PureComponent";
 import AssetListItem from "./AssetListItem";
-import NodeListItem from "./NodeListItem";
+import DocumentNodeListItem from "./DocumentNodeListItem";
 import React from "react";
-import {StatefulModuleItem} from "../Model/StatefulModuleItem";
+import {StatefulModuleItem} from "../../Model/StatefulModuleItem";
 
 export default class ListItem extends PureComponent<ListItemProps> {
     render() {
@@ -11,7 +11,7 @@ export default class ListItem extends PureComponent<ListItemProps> {
             case 'Asset':
                 return <AssetListItem item={item} updateItem={updateItem} persistItem={persistItem}/>;
             case 'DocumentNode':
-                return <NodeListItem item={item} updateItem={updateItem} persistItem={persistItem}/>
+                return <DocumentNodeListItem item={item} updateItem={updateItem} persistItem={persistItem}/>
         }
         return null;
     }

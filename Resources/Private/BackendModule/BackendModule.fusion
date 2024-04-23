@@ -22,7 +22,8 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
                 action = 'nodeTypeSchema'
                 absolute = true
                 arguments = Neos.Fusion:DataStructure {
-                    # TODO: dirty hack to not have to re-implement neos:backend.configurationCacheVersion VH
+                    # This is taken from Neos.Neos.Ui
+                    # Original comment: dirty hack to not have to re-implement neos:backend.configurationCacheVersion VH
                     version = Neos.Fusion:Template {
                         templatePath = 'resource://Neos.Neos.Ui/Private/Templates/Backend/ConfigurationVersion.html'
                         @process.trim = ${String.trim(value)}
@@ -36,8 +37,8 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
                 absolute = true
                 arguments = Neos.Fusion:DataStructure {
                     locale = ${interfaceLanguage}
-
-                    # TODO: dirty hack to not have to re-implement neos:backend.configurationCacheVersion VH
+                    # This is taken from Neos.Neos.Ui
+                    # Original comment: dirty hack to not have to re-implement neos:backend.configurationCacheVersion VH
                     version = Neos.Fusion:Template {
                         templatePath = 'resource://Neos.Neos.Ui/Private/Templates/Backend/ConfigurationVersion.html'
                         @process.trim = ${String.trim(value)}
@@ -60,9 +61,6 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
             }
             @process.json = ${Json.stringify(value)}
         }
-        // TODO: maybe refactor this and not use prototypes
-        // from Neos.Neos.Ui to avoid polluting the UI configuration
-        // in Neos.Neos.Ui
         frontendConfiguration = Neos.Neos.Ui:RenderConfiguration {
             path = 'frontendConfiguration'
             context.user = ${user}

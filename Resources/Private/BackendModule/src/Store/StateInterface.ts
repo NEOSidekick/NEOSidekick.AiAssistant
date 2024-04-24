@@ -19,7 +19,6 @@ export default interface StateInterface {
         hasError: boolean,
         errorMessage: string|null,
         backendMessage: string|null,
-        availableNodeTypeFilters?: string[]
         appState: AppState,
         listState: ListState
     }

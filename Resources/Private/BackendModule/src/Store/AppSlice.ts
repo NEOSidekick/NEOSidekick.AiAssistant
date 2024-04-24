@@ -12,7 +12,6 @@ export const AppSlice = createSlice({
         initialModuleConfiguration: {},
         appState: AppState.Configure,
         errorMessage: null,
-        availableNodeTypeFilters: null
     },
     selectors: {
         getModuleConfiguration: (state) => {

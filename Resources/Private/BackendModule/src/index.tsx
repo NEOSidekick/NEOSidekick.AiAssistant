@@ -48,19 +48,6 @@ document.addEventListener('DOMContentLoaded', async() => {
     const externalService = ExternalService.getInstance()
     externalService.configure(configuration.apiDomain, configuration.apiKey, configuration.userInterfaceLanguage)
 
-    let availableNodeTypeFilters = null
-    if (scope === 'focusKeywordGeneratorModule') {
-        availableNodeTypeFilters = {}
-        const nodeTypeSchema: Partial<{nodeTypes: object}> = await backend.getNodeTypeSchema()
-        let availableNodeTypes = nodeTypeSchema.nodeTypes
-        Object.keys(availableNodeTypes).map(nodeType => {
-            const nodeTypeDefinition: {superTypes: object, ui: {label: string}} = availableNodeTypes[nodeType]
-            if (nodeTypeDefinition?.superTypes?.hasOwnProperty('NEOSidekick.AiAssistant:Mixin.AiPageBriefing')) {
-                availableNodeTypeFilters[nodeType] = translationService.translate(nodeTypeDefinition.ui.label, nodeTypeDefinition.ui.label)
-            }
-        })
-    }
-
     // Set default configuration
     const initialAppConfiguration = omitBy(configuration[scope] || {}, isNull) as ModuleConfiguration;
     const appConfiguration = {
@@ -76,7 +63,6 @@ document.addEventListener('DOMContentLoaded', async() => {
             endpoints={endpoints}
             appConfiguration={appConfiguration}
             initialAppConfiguration={initialAppConfiguration}
-            availableNodeTypeFilters={availableNodeTypeFilters}
             overviewUri={endpoints.overview}
         />
     )

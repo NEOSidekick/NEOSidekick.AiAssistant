@@ -6,9 +6,29 @@ import {FocusKeywordModuleMode} from "../../Model/FocusKeywordModuleConfiguratio
 import BackendMessage from "../BackendMessage";
 import StartModuleButton from "../StartModuleButton";
 import AppContext from "../../AppContext";
+import BackendService from "../../Service/BackendService";
+import TranslationService from "../../Service/TranslationService";
 
 export default class DocumentNodeConfigurationForm extends PureComponent {
     static contextType = AppContext
+    private state: {availableNodeTypeFilters: object} = {
+        availableNodeTypeFilters: {}
+    };
+
+    async componentDidMount() {
+        const backend = BackendService.getInstance();
+        const translationService = TranslationService.getInstance();
+        const nodeTypeSchema: Partial<{nodeTypes: object}> = await backend.getNodeTypeSchema()
+        const availableNodeTypes = nodeTypeSchema.nodeTypes
+        const availableNodeTypeFilters = {}
+        Object.keys(availableNodeTypes).map(nodeType => {
+            const nodeTypeDefinition: {superTypes: object, ui: {label: string}} = availableNodeTypes[nodeType]
+            if (nodeTypeDefinition?.superTypes?.hasOwnProperty('NEOSidekick.AiAssistant:Mixin.AiPageBriefing')) {
+                availableNodeTypeFilters[nodeType] = translationService.translate(nodeTypeDefinition.ui.label, nodeTypeDefinition.ui.label);
+            }
+        });
+        this.setState({availableNodeTypeFilters})
+    }
 
     private renderNodeTypeFilterField() {
         return (this.context.initialAppConfiguration?.nodeTypeFilter == null ?
@@ -21,9 +41,9 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
                         value={this.context.appConfiguration.nodeTypeFilter}
                         onChange={e => this.context.updateAppConfiguration({nodeTypeFilter: e.target.value})}>
                         <option value={null}>{this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.nodeTypeFilter.all', 'All page types')}</option>
-                        {Object.keys(this.context.availableNodeTypeFilters).map(nodeType =>
+                        {Object.keys(this.state.availableNodeTypeFilters).map(nodeType =>
                             <option value={nodeType}>
-                                {this.context.availableNodeTypeFilters[nodeType]}
+                                {this.state.availableNodeTypeFilters[nodeType]}
                             </option>
                         )}
                     </select>

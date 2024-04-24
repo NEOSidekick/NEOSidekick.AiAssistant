@@ -14,7 +14,6 @@ export default class RootView extends PureComponent<RootViewProps, RootViewState
         this.state = {
             appConfiguration: props.appConfiguration,
             appState: AppState.Configure,
-            availableNodeTypeFilters: props.availableNodeTypeFilters,
             initialAppConfiguration: props.initialAppConfiguration,
             overviewUri: props.overviewUri,
             scope: props.scope,
@@ -64,14 +63,12 @@ export interface RootViewProps {
     endpoints: object,
     appConfiguration: ModuleConfiguration,
     initialAppConfiguration: ModuleConfiguration,
-    availableNodeTypeFilters: object,
     overviewUri: string
 }
 
 export interface RootViewState {
     appConfiguration: ModuleConfiguration,
     appState: AppState,
-    availableNodeTypeFilters?: object,
     errorMessage?: string,
     initialAppConfiguration: ModuleConfiguration,
     scope: string,

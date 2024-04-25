@@ -4,7 +4,7 @@
         <body>
             <trans-unit id="label">
                 <source>Focus-Keyword Generator</source>
-                <target xml:lang="de">Fokus-Keywords generieren</target>
+                <target xml:lang="de">Fokus-Keywords Generator</target>
             </trans-unit>
             <trans-unit id="intro">
                 <source>TBD</source>

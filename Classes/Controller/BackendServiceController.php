@@ -74,7 +74,14 @@ class BackendServiceController extends ActionController
             ->getPropertyMappingConfiguration()
             ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
             ->skipUnknownProperties()
-            ->allowAllProperties();
+            ->allowProperties(
+                'filename',
+                'identifier',
+                'thumbnailUri',
+                'fullsizeUri',
+                'propertyName',
+                'propertyValue'
+            );
     }
 
     /**
@@ -96,8 +103,7 @@ class BackendServiceController extends ActionController
             ->skipUnknownProperties()
             ->allowProperties(
                 'workspace',
-                'generateEmptyFocusKeywords',
-                'regenerateExistingFocusKeywords',
+                'mode',
                 'nodeTypeFilter'
             );
     }
@@ -120,7 +126,10 @@ class BackendServiceController extends ActionController
             ->getPropertyMappingConfiguration()
             ->skipUnknownProperties()
             ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
-            ->allowAllProperties();
+            ->allowProperties(
+                'nodeContextPath',
+                'properties'
+            );
     }
 
     /**

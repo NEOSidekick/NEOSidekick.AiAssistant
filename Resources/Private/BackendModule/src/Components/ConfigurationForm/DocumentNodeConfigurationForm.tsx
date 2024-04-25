@@ -8,6 +8,8 @@ import StartModuleButton from "../StartModuleButton";
 import AppContext from "../../AppContext";
 import BackendService from "../../Service/BackendService";
 import TranslationService from "../../Service/TranslationService";
+import SelectField from "./SelectField";
+import CheckboxField from "./CheckboxField";
 
 export default class DocumentNodeConfigurationForm extends PureComponent {
     static contextType = AppContext
@@ -32,100 +34,69 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
 
     private renderNodeTypeFilterField() {
         return (this.context.initialAppConfiguration?.nodeTypeFilter == null ?
-            <div className={'neos-control-group'}>
-                <label className={'neos-control-label'}>
-                    {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.nodeTypeFilter.label', 'Restrict to page type')}
-                </label>
-                <div className={'neos-controls'}>
-                    <select
-                        value={this.context.appConfiguration.nodeTypeFilter}
-                        onChange={e => this.context.updateAppConfiguration({nodeTypeFilter: e.target.value})}>
-                        <option value={null}>{this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.nodeTypeFilter.all', 'All page types')}</option>
-                        {Object.keys(this.state.availableNodeTypeFilters).map(nodeType =>
-                            <option value={nodeType}>
-                                {this.state.availableNodeTypeFilters[nodeType]}
-                            </option>
-                        )}
-                    </select>
-                </div>
-            </div> : null
+            <SelectField
+                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.nodeTypeFilter.label', 'Restrict to page type')}
+                value={this.context.appConfiguration.nodeTypeFilter}
+                onChange={e => this.context.updateAppConfiguration({nodeTypeFilter: e.target.value})}
+                options={Object.keys(this.state.availableNodeTypeFilters).reduce((acc, nodeType) => {
+                    acc[nodeType] = this.state.availableNodeTypeFilters[nodeType];
+                    return acc;
+                }, {
+                    null: this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.nodeTypeFilter.all', 'All page types')
+                })}
+            />: null
         )
     }
 
     private renderWorkspaceField() {
-        const availableWorkspaces = window['_NEOSIDEKICK_AIASSISTANT_workspaces']
+        // todo dont use window, and refactor this.context.initialAppConfiguration?.workspace
+        const availableWorkspaces = window['_NEOSIDEKICK_AIASSISTANT_workspaces'];
         return (this.context.initialAppConfiguration?.workspace == null ?
-            <div className={'neos-control-group'}>
-                <label className={'neos-control-label'}>
-                    {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.workspace.label', 'Workspace')}
-                </label>
-                <div className={'neos-controls'}>
-                    <select
-                        value={this.context.appConfiguration.workspace}
-                        onChange={e => this.context.updateAppConfiguration({workspace: e.target.value})}>
-                        {Object.keys(availableWorkspaces).map(workspaceIdentifier =>
-                            <option value={availableWorkspaces[workspaceIdentifier].name}>
-                                {availableWorkspaces[workspaceIdentifier].title || availableWorkspaces[workspaceIdentifier].name}
-                            </option>
-                        )}
-                    </select>
-                </div>
-            </div> : null
+            <SelectField
+                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.workspace.label', 'Workspace')}
+                value={this.context.appConfiguration.workspace}
+                onChange={e => this.context.updateAppConfiguration({workspace: e.target.value})}
+                options={Object.keys(availableWorkspaces).reduce((acc, workspaceIdentifier) => {
+                    acc[availableWorkspaces[workspaceIdentifier].name] = availableWorkspaces[workspaceIdentifier].title || availableWorkspaces[workspaceIdentifier].name
+                    return acc
+                }, {})}
+            /> : null
         )
     }
 
     private renderModeField() {
         return (this.context.initialAppConfiguration?.mode == null ?
-            <div className={'neos-control-group'}>
-                <label className={'neos-control-label'}>
-                    {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.mode.label', 'Selection of pages')}
-                </label>
-                <div className={'neos-controls'}>
-                    <select
-                        value={this.context.appConfiguration.mode}
-                        onChange={e => this.context.updateAppConfiguration({mode: e.target.value})}>
-                        {enumKeys(FocusKeywordModuleMode).map(mode =>
-                            <option value={mode}>
-                                {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.mode.' + mode, mode)}
-                            </option>
-                        )}
-                    </select>
-                </div>
-            </div> : null
+            <SelectField
+                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.mode.label', 'Selection of pages')}
+                value={this.context.appConfiguration.mode}
+                onChange={e => this.context.updateAppConfiguration({mode: e.target.value})}
+                options={enumKeys(FocusKeywordModuleMode).reduce((acc, mode) => {
+                    acc[mode] = this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.mode.' + mode, mode);
+                    return acc;
+                }, {})}
+            /> : null
         )
     }
 
     private renderGenerateEmptyFocusKeywordsField()
     {
         return (this.context.initialAppConfiguration?.generateEmptyFocusKeywords == null ?
-            <div className={'neos-control-group'}>
-                <label className="neos-checkbox">
-                    <input
-                        type="checkbox"
-                        onChange={e => this.context.updateAppConfiguration({generateEmptyFocusKeywords: e.target.checked})}
-                        checked={this.context.appConfiguration.generateEmptyFocusKeywords}
-                        value="1" />
-                    <span></span>
-                    {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.generateEmptyFocusKeywords.label', 'Generate empty focus keywords automatically')}
-                </label>
-            </div> : null
+            <CheckboxField
+                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.generateEmptyFocusKeywords.label', 'Generate empty focus keywords automatically')}
+                checked={this.context.appConfiguration.generateEmptyFocusKeywords}
+                onChange={e => this.context.updateAppConfiguration({generateEmptyFocusKeywords: e.target.checked})}
+            /> : null
         )
     }
 
     private renderRegenerateExistingFocusKeywordsField()
     {
         return (this.context.initialAppConfiguration?.regenerateExistingFocusKeywords == null ?
-                <div className={'neos-control-group'}>
-                    <label className="neos-checkbox">
-                        <input
-                            type="checkbox"
-                            onChange={e => this.context.updateAppConfiguration({regenerateExistingFocusKeywords: e.target.checked})}
-                            checked={this.context.appConfiguration.regenerateExistingFocusKeywords}
-                            value="1" />
-                        <span></span>
-                        {this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.regenerateExistingFocusKeywords.label', 'Regenerate existing focus keywords automatically')}
-                    </label>
-                </div> : null
+            <CheckboxField
+                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.regenerateExistingFocusKeywords.label', 'Regenerate existing focus keywords automatically')}
+                checked={this.context.appConfiguration.regenerateExistingFocusKeywords}
+                onChange={e => this.context.updateAppConfiguration({regenerateExistingFocusKeywords: e.target.checked})}
+            /> : null
         )
     }
 
@@ -135,7 +106,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
                 <p style={{marginBottom: '1rem'}} dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:intro', '')}}/>
                 <BackendMessage identifier="focus-keyword"/>
 
-                <h2>Auswahl-Filter:</h2>
+                <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Main:selectionFilter', '')}</h2>
                 <br/>
                 {this.renderWorkspaceField()}
                 {this.renderModeField()}
@@ -143,7 +114,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent {
                 <LimitField configuration={this.context.appConfiguration} updateConfiguration={this.context.updateAppConfiguration}/>
                 <br/>
                 <br/>
-                <h2>Aktionen:</h2>
+                <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Main:actions', '')}</h2>
                 <br/>
                 {this.renderGenerateEmptyFocusKeywordsField()}
                 {this.renderRegenerateExistingFocusKeywordsField()}

@@ -14,6 +14,12 @@
             <trans-unit id="failedToGenerate" xml:space="preserve">
                 <source>Failed to fetch generated text</source>
             </trans-unit>
+            <trans-unit id="selection-filter" xml:space="preserve">
+                <source>Selection filter:</source>
+            </trans-unit>
+            <trans-unit id="actions" xml:space="preserve">
+                <source>Actions:</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

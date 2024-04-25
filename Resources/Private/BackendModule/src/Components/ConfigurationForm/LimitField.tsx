@@ -1,6 +1,7 @@
 import PureComponent from "../PureComponent";
 import PropTypes from "prop-types";
 import React from "react";
+import SelectField from "./SelectField";
 
 export default class LimitField extends PureComponent {
     static propTypes = {
@@ -11,23 +12,19 @@ export default class LimitField extends PureComponent {
     render() {
         const {configuration, updateConfiguration} = this.props;
         return (
-            <div className={'neos-control-group'}>
-                <label className={'neos-control-label'}>
-                    {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.limit.label', 'How many images per page?')}
-                </label>
-                <div className={'neos-controls'}>
-                    <select
-                        value={configuration.limit}
-                        onChange={e => updateConfiguration({limit: e.target.value})}
-                        defaultValue={10}>
-                        <option>5</option>
-                        <option>10</option>
-                        <option>15</option>
-                        <option>20</option>
-                        <option>25</option>
-                    </select>
-                </div>
-            </div>
+            <SelectField
+                label={this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.limit.label', 'How many images per page?')}
+                value={configuration.limit}
+                defaultValue={10}
+                options={{
+                    5: '5',
+                    10: '10',
+                    15: '15',
+                    20: '20',
+                    25: '25',
+                }}
+                onChange={e => updateConfiguration({limit: e.target.value})}
+            />
         )
     }
 }

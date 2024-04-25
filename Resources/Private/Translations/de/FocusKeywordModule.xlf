@@ -27,10 +27,10 @@
                 <target>Auf Seitentyp einschränken</target>
             </trans-unit>
             <trans-unit id="configuration.nodeTypeFilter.all">
-                <source>No filter</source>
-                <target>Ohne</target>
+                <source>All page types</source>
+                <target>Alle Seitentypen</target>
             </trans-unit>
-            <trans-unit id="configuration.limit.label">
+            <trans-unit id="configuration.itemsPerPage.label">
                 <source>Number of generations per page</source>
                 <target xml:lang="de">Anzahl der Generierungen pro Seite</target>
             </trans-unit>

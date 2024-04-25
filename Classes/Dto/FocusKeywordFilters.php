@@ -38,7 +38,7 @@ final class FocusKeywordFilters
     ) {
         $this->workspace = $workspace;
         $this->mode = $mode;
-        $this->nodeTypeFilter = $nodeTypeFilter;
+        $this->nodeTypeFilter = empty($nodeTypeFilter) ? null : $nodeTypeFilter;
     }
 
     public function getWorkspace(): string

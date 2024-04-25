@@ -1,53 +1,50 @@
 import React from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faSpinner} from "@fortawesome/free-solid-svg-icons";
-import {StatefulModuleItem} from "../../Model/StatefulModuleItem";
-import BackendService from "../../Service/BackendService";
-import {ModuleItem} from "../../Model/ModuleItem";
-import {ListState} from "../../Enums/ListState";
-import {ListItemState} from "../../Enums/ListItemState";
-import {PropertyState} from "../../Model/PropertiesCollection";
-import ListItem from "../ListItems/ListItem";
+import {StatefulModuleItem} from "../Model/StatefulModuleItem";
+import BackendService from "../Service/BackendService";
+import {ModuleItem} from "../Model/ModuleItem";
+import {ListState} from "../Enums/ListState";
+import {ListItemState} from "../Enums/ListItemState";
+import {PropertyState} from "../Model/PropertiesCollection";
+import ListItem from "../Components/ListItems/ListItem";
 import {Draft, produce} from "immer";
-import PureComponent from "../PureComponent";
-import AppContext from "../../AppContext";
-import AiAssistantError from "../../Service/AiAssistantError";
+import PureComponent from "../Components/PureComponent";
+import AppContext from "../AppContext";
 
 export default class ListView extends PureComponent<ListViewProps, ListViewState> {
     static contextType = AppContext
-    constructor(props) {
+    constructor(props: ListViewProps) {
         super(props)
         this.state = {
-            currentState: ListState.Loading
+            listState: ListState.Loading,
+            currentPage: 1,
+            itemsPerPage: 10,
         }
     }
 
-    componentDidMount() {
-        this.setState(state => ({
-            ...state,
-            currentPage: 1,
-            itemsPerPage: this.context.appConfiguration.limit
-        }))
-        // noinspection JSIgnoredPromiseFromCall
-        this.fetchItems()
-    }
-
-    private async fetchItems() {
+    async componentDidMount() {
+        this.setState({
+            itemsPerPage: this.context.moduleConfiguration.itemsPerPage
+        })
         const backend: BackendService = BackendService.getInstance()
         try {
-            const items: ModuleItem[] = await backend.getItems(this.context.appConfiguration)
-            const processedItems = {};
-            for (let item: ModuleItem of items) {
-                processedItems[item.identifier] = this.postprocessListItem(item)
-            }
-            const sortedItems = Object.fromEntries(Object.entries(processedItems).sort())
-            this.setState(state => ({...state, items: sortedItems, currentState: (Object.values(processedItems).length > 0 ? ListState.Result : ListState.Empty)}))
+            const items: ModuleItem[] = await backend.getItems(this.context.moduleConfiguration)
+            const processedItems = items.reduce((accumulator, item) => {
+                accumulator[item.identifier] = this.postprocessListItem(item);
+                return accumulator;
+            }, {});
+            const sortedItems = Object.fromEntries(Object.entries(processedItems).sort());
+            this.setState({
+                items: sortedItems as ListViewItems,
+                listState: (Object.values(sortedItems).length > 0 ? ListState.Result : ListState.Empty)
+            });
         } catch (e) {
-            this.context.setError(this.translationService.fromError(e));
+            this.context.setAppStateToError(this.translationService.fromError(e));
         }
     }
 
-    private postprocessListItem(item: object): object {
+    private postprocessListItem(item: ModuleItem): StatefulModuleItem {
         return {
             ...item,
             state: ListItemState.Initial,
@@ -68,7 +65,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         return (
             <span>
                 <FontAwesomeIcon icon={faSpinner} spin={true}/>&nbsp;
-                {this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:loading', 'Loading...')}
+                {this.translationService.translate('NEOSidekick.AiAssistant:Main:loading', 'Loading...')}
             </span>
         )
     }
@@ -82,7 +79,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 fontSize: '14px',
                 lineHeight: 1.4,
                 marginTop: '18px',
-                display: 'inline-block'
+                display: 'inline-block',
+                width: '100%',
+                maxWidth: '80ch',
             }}>
                 {this.translationService.translate('NEOSidekick.AiAssistant:Module:listEmpty', 'There are no items that match the filter!')}
             </span>
@@ -158,17 +157,18 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         }))
         window.scrollTo(0, 0)
     }
+
     render() {
         return (
             <div className={'neos-content neos-indented neos-fluid-container'}>
-                {this.state.currentState === ListState.Loading ? this.renderLoadingIndicator() : null}
-                {this.state.currentState === ListState.Empty ? this.renderEmptyListIndicator() : null}
-                {this.state.currentState === ListState.Result ? this.renderList() : null}
+                {this.state.listState === ListState.Loading ? this.renderLoadingIndicator() : null}
+                {this.state.listState === ListState.Empty ? this.renderEmptyListIndicator() : null}
+                {this.state.listState === ListState.Result ? this.renderList() : null}
                 <div className={'neos-footer'}>
-                    <a className={'neos-button neos-button-secondary'} href={this.context.overviewUri}>
+                    <a className={'neos-button neos-button-secondary'} href={this.context.endpoints.overview}>
                         {this.translationService.translate('NEOSidekick.AiAssistant:Module:returnToOverview', 'Return to overview')}
                     </a>
-                    {this.state.currentState === ListState.Result ? <button
+                    {this.state.listState === ListState.Result ? <button
                         onClick={() => this.saveCurrentItemsAndNextPage()}
                         className={'neos-button neos-button-success'}
                         disabled={!this.allowSaving()}>
@@ -184,10 +184,12 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
 export interface ListViewProps {}
 
 export interface ListViewState {
-    currentState: ListState,
-    items?: {
-        [key: string]: StatefulModuleItem
-    },
+    listState: ListState,
+    items?: ListViewItems,
     itemsPerPage?: number,
     currentPage?: number
+}
+
+export interface ListViewItems {
+    [key: string]: StatefulModuleItem
 }

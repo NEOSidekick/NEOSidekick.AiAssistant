@@ -6,9 +6,17 @@
                 <source>NEOSidekick AI-Assistant</source>
                 <target xml:lang="de">NEOSidekick AI-Assistent</target>
             </trans-unit>
+            <trans-unit id="selectionFilter" xml:space="preserve">
+                <source>Selection filter</source>
+                <target xml:lang="de">Auswahl-Filter</target>
+            </trans-unit>
+            <trans-unit id="actions" xml:space="preserve">
+                <source>Actions</source>
+                <target xml:lang="de">Aktionen</target>
+            </trans-unit>
             <trans-unit id="listEmpty">
                 <source>There are no items that match the filter!</source>
-                <target xml:lang="de">Es gibt keine Ergebnisse die dem Filter entsprechen!</target>
+                <target xml:lang="de">Es gibt keine Ergebnisse, die den Filtern entsprechen!</target>
             </trans-unit>
             <trans-unit id="error.configuration">
                 <source>This module is not configured correctly. Please consult the documentation!</source>
@@ -34,7 +42,7 @@
                 <source>Saved</source>
                 <target xml:lang="de">Gespeichert</target>
             </trans-unit>
-            <trans-unit id="persistng">
+            <trans-unit id="persisting">
                 <source>Saving...</source>
                 <target xml:lang="de">Speichert...</target>
             </trans-unit>
@@ -45,10 +53,6 @@
             <trans-unit id="generate" xml:space="preserve">
                 <source>Generate</source>
                 <target xml:lang="de" state="translated">Generieren</target>
-            </trans-unit>
-            <trans-unit id="loading">
-                <source>Loading...</source>
-                <target xml:lang="de">Lade...</target>
             </trans-unit>
             <trans-unit id="startModule">
                 <source>Start generation</source>

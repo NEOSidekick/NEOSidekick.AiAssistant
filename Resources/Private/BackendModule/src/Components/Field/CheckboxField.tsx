@@ -1,5 +1,4 @@
 import PureComponent from "../PureComponent";
-import PropTypes from "prop-types";
 import React, { ChangeEvent } from "react";
 
 interface CheckboxFieldProps {

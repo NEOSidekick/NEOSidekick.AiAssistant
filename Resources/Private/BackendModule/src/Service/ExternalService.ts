@@ -28,7 +28,7 @@ export class ExternalService {
     }
 
     generate = async (module: string, language: string, user_input: object = {}) => {
-        if (!this.apiKey) {
+        if (!this.hasApiKey()) {
             throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
         }
 

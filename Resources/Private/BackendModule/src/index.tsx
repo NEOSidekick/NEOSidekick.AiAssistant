@@ -1,69 +1,58 @@
 import React from 'react';
-import RootView from './Components/Views/RootView'
+import RootView from './Views/RootView'
 import {createRoot} from 'react-dom/client';
 import {Endpoints} from "./Model/Endpoints";
 import BackendService from "./Service/BackendService";
 import TranslationService from "./Service/TranslationService";
 import {ExternalService} from "./Service/ExternalService";
-import {isNull, omitBy} from "lodash"
-import defaultModuleConfiguration from "./Util/defaultModuleConfiguration";
 import {ModuleConfiguration} from "./Model/ModuleConfiguration";
+import ErrorMessage from "./Components/ErrorMessage";
+import Workspaces from "./Model/Workspaces";
 
 document.addEventListener('DOMContentLoaded', async() => {
+    const csrfToken = window['_NEOSIDEKICK_AIASSISTANT_csrfToken'];
     const endpoints: Endpoints = window['_NEOSIDEKICK_AIASSISTANT_endpoints']
-    const configuration: {
+    const frontendConfiguration: {
         apiDomain: string,
         apiKey: string,
         defaultLanguage: string,
-        altTextGeneratorModule: object|null,
         userInterfaceLanguage: string
-    } = window['_NEOSIDEKICK_AIASSISTANT_configuration']
-
-    const appContainer = document.getElementById('appContainer');
-    const scope = appContainer.dataset.scope;
+    } = window['_NEOSIDEKICK_AIASSISTANT_frontendConfiguration'];
+    const moduleConfiguration = window['_NEOSIDEKICK_AIASSISTANT_moduleConfiguration'] as ModuleConfiguration;
+    const workspaces = window['_NEOSIDEKICK_AIASSISTANT_workspaces'] as Workspaces;
 
     const backend = BackendService.getInstance()
-    backend.configure(endpoints, appContainer.dataset.csrfToken)
+    backend.configure(endpoints, csrfToken)
 
-    const translationService = TranslationService.getInstance()
-    const translations = await backend.getTranslations()
-    translationService.configure(translations)
+    const translationService = TranslationService.getInstance();
+    const translations = await backend.getTranslations();
+    translationService.configure(translations);
 
+    const appContainer = document.getElementById('appContainer');
     const root = createRoot(appContainer)
 
-    if (!endpoints || !configuration) {
+    if (!csrfToken || !endpoints || !frontendConfiguration || !moduleConfiguration || !workspaces) {
         root.render(
-            <p dangerouslySetInnerHTML={{ __html: translationService.translate('NEOSidekick.AiAssistant:AssetModule:error.configuration', 'This module is not configured correctly. Please consult the documentation!') }} />
+            <ErrorMessage message={translationService.translate('NEOSidekick.AiAssistant:Module:error.configuration', 'This module is not configured correctly. Please consult the documentation!')} />
         )
         return
     }
 
-    if (!configuration.apiKey) {
+    if (!frontendConfiguration.apiKey) {
         root.render(
-            <p dangerouslySetInnerHTML={{ __html: translationService.translate('NEOSidekick.AiAssistant:AssetModule:error.noApiKey', 'This feature is not available in the free version!') }} />
+            <ErrorMessage message={translationService.translate('NEOSidekick.AiAssistant:Module:error.noApiKey', 'This feature is not available in the free version!')} />
         )
         return
     }
 
     const externalService = ExternalService.getInstance()
-    externalService.configure(configuration.apiDomain, configuration.apiKey, configuration.userInterfaceLanguage)
-
-    // Set default configuration
-    const initialAppConfiguration = omitBy(configuration[scope] || {}, isNull) as ModuleConfiguration;
-    const appConfiguration = {
-        limit: 5,
-        language: configuration.defaultLanguage,
-        ...defaultModuleConfiguration[scope],
-        ...initialAppConfiguration
-    }
+    externalService.configure(frontendConfiguration.apiDomain, frontendConfiguration.apiKey, frontendConfiguration.userInterfaceLanguage)
 
     root.render(
         <RootView
-            scope={scope}
             endpoints={endpoints}
-            appConfiguration={appConfiguration}
-            initialAppConfiguration={initialAppConfiguration}
-            overviewUri={endpoints.overview}
+            moduleConfiguration={moduleConfiguration}
+            workspaces={workspaces}
         />
     )
 })

@@ -18,13 +18,9 @@
                 <source>Failed to fetch generated text</source>
                 <target xml:lang="de" state="translated">Der Text konnte nicht generiert werden</target>
             </trans-unit>
-            <trans-unit id="selectionFilter" xml:space="preserve">
-                <source>Selection filter:</source>
-                <target xml:lang="de">Auswahl-Filter:</target>
-            </trans-unit>
-            <trans-unit id="actions" xml:space="preserve">
-                <source>Actions:</source>
-                <target xml:lang="de">Aktionen:</target>
+            <trans-unit id="loading">
+                <source>Loading...</source>
+                <target xml:lang="de">Lade...</target>
             </trans-unit>
         </body>
     </file>

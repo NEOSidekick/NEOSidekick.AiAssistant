@@ -1,16 +1,9 @@
 prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Component) {
-    scope = null
     getAction = null
     updateAction = null
-
-    # internal api
-    personalWorkspace = ${Neos.Ui.Workspace.getPersonalWorkspace()}
-    allowedTargetWorkspaces = ${Neos.Ui.Workspace.getAllowedTargetWorkspaces()}
+    moduleConfiguration = null
 
     renderer = Neos.Fusion:Component {
-        scope = ${props.scope}
-        workspaces = ${Array.set(props.allowedTargetWorkspaces, props.personalWorkspace.name, props.personalWorkspace)}
-        workspaces.@process.json = ${Json.stringify(value)}
         endpoints = Neos.Fusion:DataStructure {
             overview = Sitegeist.FusionLinkPrototypes:ModuleUri {
                 action = 'index'
@@ -67,12 +60,21 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
             @process.subset = ${value['NEOSidekick.AiAssistant']}
             @process.json = ${Json.stringify(value)}
         }
+        workspaces = Neos.Fusion:Value {
+            personalWorkspace = ${Neos.Ui.Workspace.getPersonalWorkspace()}
+            allowedTargetWorkspaces = ${Neos.Ui.Workspace.getAllowedTargetWorkspaces()}
+            value = ${Array.set(this.allowedTargetWorkspaces, this.personalWorkspace.name, this.personalWorkspace)}
+            @process.json = ${Json.stringify(value)}
+        }
+        moduleConfiguration = ${props.moduleConfiguration}
 
         renderer = afx`
-            <script>{'_NEOSIDEKICK_AIASSISTANT_workspaces = ' + props.workspaces}</script>
+            <script>{'_NEOSIDEKICK_AIASSISTANT_csrfToken = ' + Json.stringify(csrfToken)}</script>
             <script>{'_NEOSIDEKICK_AIASSISTANT_endpoints = ' + props.endpoints}</script>
-            <script>{'_NEOSIDEKICK_AIASSISTANT_configuration = ' + props.frontendConfiguration}</script>
-            <div id="appContainer" data-scope={props.scope} data-csrf-token={csrfToken}></div>
+            <script>{'_NEOSIDEKICK_AIASSISTANT_frontendConfiguration = ' + props.frontendConfiguration}</script>
+            <script>{'_NEOSIDEKICK_AIASSISTANT_moduleConfiguration = ' + Json.stringify(props.moduleConfiguration)}</script>
+            <script>{'_NEOSIDEKICK_AIASSISTANT_workspaces = ' + props.workspaces}</script>
+            <div id="appContainer"></div>
         `
     }
 

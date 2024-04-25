@@ -1,14 +1,15 @@
-export interface FocusKeywordModuleConfiguration {
+import {ModuleConfiguration} from "./ModuleConfiguration";
+
+export interface FocusKeywordModuleConfiguration extends ModuleConfiguration {
     workspace: string,
     mode: FocusKeywordModuleMode,
+    baseNodeTypeFilter: string|null,
+    nodeTypeFilter: string|null,
     generateEmptyFocusKeywords: boolean,
     regenerateExistingFocusKeywords: boolean,
-    nodeTypeFilter: string|null,
-    limit: number,
-    firstResult: number
 }
 export enum FocusKeywordModuleMode {
+    'both',
     'only-empty',
     'only-existing',
-    'both'
 }

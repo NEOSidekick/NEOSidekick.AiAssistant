@@ -1,12 +1,15 @@
 import {Endpoints} from "../Model/Endpoints";
 import AiAssistantError from "./AiAssistantError";
-import {isNull, omitBy} from "lodash"
 import {ModuleConfiguration} from "../Model/ModuleConfiguration";
+import {AssetFilters, DocumentNodeFilters, Filters} from "../Dto/Filters";
+import {FocusKeywordModuleConfiguration} from "../Model/FocusKeywordModuleConfiguration";
+import {AssetModuleConfiguration} from "../Model/AssetModuleConfiguration";
 
 export default class BackendService {
     private static instance: BackendService | null = null;
-    private endpoints: object;
+    private endpoints: Endpoints;
     private csrfToken: string;
+
     public static getInstance(): BackendService {
         if (!BackendService.instance) {
             BackendService.instance = new BackendService();
@@ -19,10 +22,11 @@ export default class BackendService {
         this.csrfToken = csrfToken
     }
 
-    public async getItems(configuration: ModuleConfiguration)
+    public async getItems(moduleConfiguration: ModuleConfiguration)
     {
-        const params = new URLSearchParams()
-        Object.keys(omitBy(configuration || {}, isNull)).map(key => params.append(`configuration[${key}]`, configuration[key]))
+        const params = new URLSearchParams();
+        const filters = this.toFilterDto(moduleConfiguration);
+        Object.keys(filters).map(key => params.append(`configuration[${key}]`, filters[key]))
         const response = await fetch(this.endpoints.get + '?' + params.toString(), {
             credentials: 'include'
         });
@@ -30,6 +34,20 @@ export default class BackendService {
             throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037', await response.text())
         }
         return await response.json()
+    }
+
+    private toFilterDto(moduleConfiguration: ModuleConfiguration): Filters {
+        switch (moduleConfiguration.itemType) {
+            case 'Asset':
+                const {onlyAssetsInUse} = moduleConfiguration as AssetModuleConfiguration;
+                // TODO Refactor PHP DTO
+                return {onlyAssetsInUse, propertyName: 'title', language: 'de', firstResult:0, limit: 1000} as AssetFilters;
+            case 'DocumentNode':
+                const {workspace, mode, nodeTypeFilter} = moduleConfiguration as FocusKeywordModuleConfiguration;
+                return {workspace, mode, nodeTypeFilter: nodeTypeFilter || '', firstResult:0, limit: 1000} as DocumentNodeFilters;
+            default:
+                throw new Error('Unknown item type');
+        }
     }
 
     public async persistItems(updateItems: object[])

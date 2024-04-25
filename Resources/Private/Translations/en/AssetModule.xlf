@@ -56,7 +56,7 @@
             <trans-unit id="configuration.propertyName.label">
                 <source>Field to save the description in</source>
             </trans-unit>
-            <trans-unit id="configuration.limit.label">
+            <trans-unit id="configuration.itemsPerPage.label">
                 <source>How many images per page?</source>
             </trans-unit>
             <trans-unit id="configuration.language.label">

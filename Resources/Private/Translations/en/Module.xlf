@@ -5,6 +5,48 @@
             <trans-unit id="label">
                 <source>NEOSidekick AI-Assistant</source>
             </trans-unit>
+            <trans-unit id="selectionFilter" xml:space="preserve">
+                <source>Selection filter</source>
+            </trans-unit>
+            <trans-unit id="actions" xml:space="preserve">
+                <source>Actions</source>
+            </trans-unit>
+            <trans-unit id="listEmpty">
+                <source>There are no items that match the filter!</source>
+            </trans-unit>
+            <trans-unit id="error.configuration">
+                <source>This module is not configured correctly. Please consult the documentation!</source>
+            </trans-unit>
+            <trans-unit id="error.noApiKey">
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+            </trans-unit>
+            <trans-unit id="saveAndNextPage" xml:space="preserve">
+                <source>Save all and get next page</source>
+            </trans-unit>
+            <trans-unit id="discard">
+                <source>Discard</source>
+            </trans-unit>
+            <trans-unit id="persist">
+                <source>Save</source>
+            </trans-unit>
+            <trans-unit id="persisted">
+                <source>Saved</source>
+            </trans-unit>
+            <trans-unit id="persisting">
+                <source>Saving...</source>
+            </trans-unit>
+            <trans-unit id="generating">
+                <source>Generating...</source>
+            </trans-unit>
+            <trans-unit id="generate" xml:space="preserve">
+                <source>Generate</source>
+            </trans-unit>
+            <trans-unit id="startModule">
+                <source>Start generation</source>
+            </trans-unit>
+            <trans-unit id="returnToOverview">
+                <source>Return to overview</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

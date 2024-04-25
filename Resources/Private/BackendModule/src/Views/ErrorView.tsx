@@ -1,12 +1,12 @@
 import React from "react";
-import PureComponent from "../PureComponent";
+import PureComponent from "../Components/PureComponent";
+import ErrorMessage from "../Components/ErrorMessage";
 
 export default class ErrorView extends PureComponent<ErrorViewProps> {
     render() {
         return (
             <div className={'neos-content neos-indented neos-fluid-container'}>
-                <div style={{marginBottom: '1.5rem'}}
-                     dangerouslySetInnerHTML={{__html: '<div style="background-color: #ff0000; padding: 12px; font-weight: 400; font-size: 14px; line-height: 1.4;">' + this.props.errorMessage + '</div>'}}/>
+                <ErrorMessage message={this.props.message}/>
                 {this.props.overviewUri ? <div className={'neos-footer'}>
                     <a className={'neos-button neos-button-secondary'} href={this.props.overviewUri}>
                         {this.translationService.translate('NEOSidekick.AiAssistant:Module:returnToOverview', 'Return to overview')}
@@ -18,6 +18,6 @@ export default class ErrorView extends PureComponent<ErrorViewProps> {
 }
 
 export interface ErrorViewProps {
-    errorMessage: string,
+    message: string,
     overviewUri: string,
 }

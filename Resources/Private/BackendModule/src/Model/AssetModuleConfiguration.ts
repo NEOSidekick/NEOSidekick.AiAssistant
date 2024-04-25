@@ -1,17 +1,9 @@
-export interface AssetModuleConfiguration {
-    onlyAssetsInUse: OnlyAssetsInUse
-    propertyName: AssetPropertyName
-    limit: number,
-    language: string
-}
+import {ModuleConfiguration} from "./ModuleConfiguration";
 
-export enum OnlyAssetsInUse {
-    all = 0,
-    onlyInUse = 1
-}
-export enum AssetPropertyName {
-    title = 'title',
-    caption = 'caption'
+export interface AssetModuleConfiguration extends ModuleConfiguration {
+    onlyAssetsInUse: boolean;
+    propertyName: 'title' | 'caption';
+    language: Language;
 }
 
 export enum Language {

@@ -1,13 +1,15 @@
 import PureComponent from "../PureComponent";
-import PropTypes from "prop-types";
 import React, { ChangeEvent } from "react";
 
 interface SelectFieldProps {
     label: string,
     value: string | number,
     defaultValue?: string | number,
-    options: Object,
+    options: Options,
     onChange: (event: ChangeEvent<HTMLSelectElement>) => void,
+}
+interface Options {
+    [key: number | string]: string;
 }
 export default class SelectField extends PureComponent<SelectFieldProps> {
     render() {

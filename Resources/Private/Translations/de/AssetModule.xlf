@@ -34,7 +34,7 @@
                 <source>Field to save the description in</source>
                 <target xml:lang="de">Beschreibung speichern in</target>
             </trans-unit>
-            <trans-unit id="configuration.limit.label">
+            <trans-unit id="configuration.itemsPerPage.label">
                 <source>Number of images per page</source>
                 <target xml:lang="de">Anzahl der Bilder pro Seite</target>
             </trans-unit>

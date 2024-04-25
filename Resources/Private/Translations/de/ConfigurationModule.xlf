@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="label" xml:space="preserve">
+                <source>Edit configuration</source>
+                <target xml:lang="de" state="translated">Konfiguration bearbeiten</target>
+            </trans-unit>
+            <trans-unit id="description" xml:space="preserve">
+                <source>Here you can define the company and target group briefing which Sidekick should take into account.</source>
+                <target xml:lang="de" state="translated">Hier kannst du Informationen über dein Unternehmen und deine Zielgruppe eingeben, die Sidekick dann berücksichtigt.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

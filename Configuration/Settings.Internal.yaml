@@ -13,6 +13,7 @@ Neos:
             - 'Module'
             - 'AssetModule'
             - 'FocusKeywordModule'
+            - 'ConfigurationModule'
             - 'Editors/*'
     Ui:
       resources:
@@ -67,6 +68,13 @@ Neos:
             additionalResources:
               javaScripts:
                 module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+          configuration:
+            label: 'NEOSidekick.AiAssistant:ConfigurationModule:label'
+            description: 'NEOSidekick.AiAssistant:ConfigurationModule:description'
+            icon: 'fas fa-cog'
+            controller: 'NEOSidekick\AiAssistant\Controller\ConfigurationModuleController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
   Flow:
     mvc:
       routes:

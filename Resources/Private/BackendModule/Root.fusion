@@ -14,3 +14,9 @@ NEOSidekick.AiAssistant.FocusKeywordModuleController.index = NEOSidekick.AiAssis
     getAction = 'getFocusKeywordNodes'
     updateAction = 'updateFocusKeywordNodes'
 }
+
+NEOSidekick.AiAssistant.ConfigurationModuleController.index = Neos.Fusion:Component {
+    renderer = afx`
+        <iframe style="width: 100%; min-height: 1000px; height: 100%;" src={'https://api.neosidekick.com/chat/account-context/edit?apikey=' + apiKey}></iframe>
+    `
+}

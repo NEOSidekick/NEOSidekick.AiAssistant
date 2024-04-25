@@ -22,16 +22,6 @@ final class FocusKeywordFilters
     protected string $mode;
 
     /**
-     * @var bool
-     */
-    protected bool $generateEmptyFocusKeywords;
-
-    /**
-     * @var bool
-     */
-    protected bool $regenerateExistingFocusKeywords;
-
-    /**
      * @var string|null
      */
     protected ?string $nodeTypeFilter = null;
@@ -39,21 +29,15 @@ final class FocusKeywordFilters
     /**
      * @param string      $workspace
      * @param string      $mode
-     * @param bool        $generateEmptyFocusKeywords
-     * @param bool        $regenerateExistingFocusKeywords
      * @param string|null $nodeTypeFilter
      */
     public function __construct(
         string $workspace,
         string $mode,
-        bool $generateEmptyFocusKeywords,
-        bool $regenerateExistingFocusKeywords,
         ?string $nodeTypeFilter
     ) {
         $this->workspace = $workspace;
         $this->mode = $mode;
-        $this->generateEmptyFocusKeywords = $generateEmptyFocusKeywords;
-        $this->regenerateExistingFocusKeywords = $regenerateExistingFocusKeywords;
         $this->nodeTypeFilter = $nodeTypeFilter;
     }
 
@@ -67,16 +51,6 @@ final class FocusKeywordFilters
         return $this->mode;
     }
 
-    public function shouldGenerateEmptyFocusKeywords(): bool
-    {
-        return $this->generateEmptyFocusKeywords;
-    }
-
-    public function shouldRegenerateExistingFocusKeywords(): bool
-    {
-        return $this->regenerateExistingFocusKeywords;
-    }
-
     public function getNodeTypeFilter(): ?string
     {
         return $this->nodeTypeFilter;
@@ -86,8 +60,6 @@ final class FocusKeywordFilters
      * @param array{
      *     workspace: string,
      *     mode: string,
-     *     generateEmptyFocusKeywords: bool,
-     *     regenerateExistingFocusKeywords: bool,
      *     nodeTypeFilter: string|null
      * } $array
      *
@@ -98,8 +70,6 @@ final class FocusKeywordFilters
         return new self(
             $array['workspace'],
             $array['mode'],
-            $array['generateEmptyFocusKeywords'] ?? false,
-            $array['regenerateExistingFocusKeywords'] ?? false,
             $array['nodeTypeFilter'] ?? null
         );
     }

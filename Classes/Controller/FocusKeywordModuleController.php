@@ -8,11 +8,20 @@ use Neos\Flow\Security\Context;
 use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Service\UserService;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordFilters;
 
+/**
+ * @noinspection PhpUnused
+ */
 class FocusKeywordModuleController extends AbstractModuleController
 {
     protected $defaultViewObjectName = FusionView::class;
+
+    /**
+     * This is needed for type hinting in the IDE
+     *
+     * @var FusionView
+     */
+    protected $view;
 
     /**
      * @Flow\Inject
@@ -26,7 +35,12 @@ class FocusKeywordModuleController extends AbstractModuleController
      */
     protected $securityContext;
 
-    protected function initializeView(ViewInterface $view)
+    /**
+     * @param FusionView $view
+     *
+     * @return void
+     */
+    protected function initializeView(ViewInterface $view): void
     {
         parent::initializeView($view);
         $view->setFusionPathPattern('resource://NEOSidekick.AiAssistant/Private/BackendModule');

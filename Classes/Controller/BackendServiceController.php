@@ -15,6 +15,9 @@ use NEOSidekick\AiAssistant\Dto\FocusKeywordUpdateItem;
 use NEOSidekick\AiAssistant\Service\AssetService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 
+/**
+ * @noinspection PhpUnused
+ */
 class BackendServiceController extends ActionController
 {
     /**

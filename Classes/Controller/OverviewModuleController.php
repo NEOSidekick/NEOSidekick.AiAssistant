@@ -2,11 +2,11 @@
 
 namespace NEOSidekick\AiAssistant\Controller;
 
+use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 
-use Neos\Flow\Annotations as Flow;
-
 /**
+ * @noinspection PhpUnused
  * @Flow\Scope("singleton")
  */
 class OverviewModuleController extends AbstractModuleController

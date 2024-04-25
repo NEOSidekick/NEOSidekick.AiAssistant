@@ -12,6 +12,7 @@ export default class RootView extends PureComponent<RootViewProps, RootViewState
     constructor(props) {
         super(props);
         this.state = {
+            itemType: props.scope == 'altTextGeneratorModule' ? 'Asset' : 'DocumentNode',
             appConfiguration: props.appConfiguration,
             appState: AppState.Configure,
             initialAppConfiguration: props.initialAppConfiguration,
@@ -47,11 +48,12 @@ export default class RootView extends PureComponent<RootViewProps, RootViewState
     }
 
     render() {
-        const {endpoints}: {endpoints: Endpoints} = this.props;
+        const {endpoints} = this.props;
+        const {itemType, errorMessage} = this.state;
         return (
             <AppContext.Provider value={this.state}>
-                {this.state.appState === AppState.Error ? <ErrorView /> : null}
-                {this.state.appState === AppState.Configure ? <ConfigurationView/> : null}
+                {this.state.appState === AppState.Error ? <ErrorView errorMessage={errorMessage} overviewUri={endpoints.overview}/> : null}
+                {this.state.appState === AppState.Configure ? <ConfigurationView itemType={itemType}/> : null}
                 {this.state.appState === AppState.Edit ? <ListView overviewUri={endpoints.overview}/> : null}
             </AppContext.Provider>
         )
@@ -60,13 +62,14 @@ export default class RootView extends PureComponent<RootViewProps, RootViewState
 
 export interface RootViewProps {
     scope: string,
-    endpoints: object,
+    endpoints: Endpoints,
     appConfiguration: ModuleConfiguration,
     initialAppConfiguration: ModuleConfiguration,
     overviewUri: string
 }
 
 export interface RootViewState {
+    itemType: 'Asset' | 'DocumentNode',
     appConfiguration: ModuleConfiguration,
     appState: AppState,
     errorMessage?: string,

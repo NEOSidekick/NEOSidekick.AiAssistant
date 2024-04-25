@@ -4,21 +4,17 @@ import AssetConfigurationForm from "../ConfigurationForm/AssetConfigurationForm"
 import DocumentNodeConfigurationForm from "../ConfigurationForm/DocumentNodeConfigurationForm";
 import AppContext from "../../AppContext";
 
-export default class ConfigurationView extends PureComponent {
-    static contextType = AppContext;
-
-    constructor(props) {
-        super(props);
-        console.log(this.context);
-    }
-
+export default class ConfigurationView extends PureComponent<ConfigurationViewProps> {
     render() {
-        console.log(this.context)
-        switch(this.context.scope) {
-            case 'altTextGeneratorModule':
+        switch(this.props.itemType) {
+            case 'Asset':
                 return <AssetConfigurationForm/>;
-            case 'focusKeywordGeneratorModule':
+            case 'DocumentNode':
                 return <DocumentNodeConfigurationForm/>;
         }
     }
+}
+
+interface ConfigurationViewProps {
+    itemType: 'Asset' | 'DocumentNode',
 }

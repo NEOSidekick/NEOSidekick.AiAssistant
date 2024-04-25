@@ -34,7 +34,7 @@ final class FocusKeywordFilters
     public function __construct(
         string $workspace,
         string $mode,
-        ?string $nodeTypeFilter
+        ?string $nodeTypeFilter = null
     ) {
         $this->workspace = $workspace;
         $this->mode = $mode;

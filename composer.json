@@ -14,7 +14,7 @@
         "writing"
     ],
     "require": {
-        "php": "8",
+        "php": "^8.0",
         "neos/neos": "~7.0 || ~8.0 || dev-master",
         "neos/media": "~7.0 || ~8.0 || dev-master",
         "neos/neos-ui": "~7.0 || ~8.0 || dev-master",

@@ -20,7 +20,7 @@ export default class RootView extends PureComponent<RootViewProps, RootViewState
             scope: props.scope,
             updateAppConfiguration: (newConfiguration: Partial<ModuleConfiguration>) => this.updateAppConfiguration(newConfiguration),
             updateAppState: (newState: AppState) => this.updateAppState(newState),
-            updateErrorMessage: (errorMessage: string) => this.setError(errorMessage),
+            setError: (errorMessage: string) => this.setError(errorMessage),
         }
     }
 
@@ -77,6 +77,6 @@ export interface RootViewState {
     scope: string,
     updateAppConfiguration: Function,
     updateAppState: Function,
-    updateErrorMessage: Function,
+    setError: Function,
     overviewUri: string
 }

@@ -8,7 +8,7 @@ export default React.createContext({
     scope: null,
     updateAppConfiguration: () => {},
     updateAppState: () => {},
-    updateErrorMessage: () => {},
+    setError: () => {},
     errorMessage: null,
     overviewUri: null
 })

@@ -43,9 +43,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             const sortedItems = Object.fromEntries(Object.entries(processedItems).sort())
             this.setState(state => ({...state, items: sortedItems, currentState: (Object.values(processedItems).length > 0 ? ListState.Result : ListState.Empty)}))
         } catch (e) {
-            if (e instanceof AiAssistantError) {
-                this.context.updateErrorMessage(this.translationService.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage}))
-            }
+            this.context.setError(this.translationService.fromError(e));
         }
     }
 

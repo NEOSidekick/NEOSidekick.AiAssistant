@@ -27,7 +27,7 @@ export default class BackendService {
             credentials: 'include'
         });
         if (response.status < 200 || response.status >= 400) {
-            throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037')
+            throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037', await response.text())
         }
         return await response.json()
     }

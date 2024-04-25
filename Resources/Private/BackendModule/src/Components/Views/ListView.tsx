@@ -51,7 +51,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         return {
             ...item,
             state: ListItemState.Initial,
-            properties: Object.keys(item.properties).reduce((accumulator, propertyName) => {
+            // todo remove fallback after asset module is migrated
+            properties: Object.keys(item.properties ?? {}).reduce((accumulator, propertyName) => {
                 const propertyValue = item.properties[propertyName];
                 accumulator[propertyName] = {
                     state: PropertyState.Initial,

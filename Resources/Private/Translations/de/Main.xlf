@@ -10,6 +10,10 @@
                 <source>Generate</source>
                 <target xml:lang="de" state="translated">Generieren</target>
             </trans-unit>
+            <trans-unit id="calculateWithSidekick" xml:space="preserve">
+                <source>Calculate with Sidekick</source>
+                <target xml:lang="de" state="translated">Mit Sidekick berechnen</target>
+            </trans-unit>
             <trans-unit id="failedToGenerate" xml:space="preserve">
                 <source>Failed to fetch generated text</source>
                 <target xml:lang="de" state="translated">Der Text konnte nicht generiert werden</target>

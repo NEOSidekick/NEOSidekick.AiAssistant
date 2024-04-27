@@ -18,10 +18,13 @@ export interface ListItem {
 export interface AssetListItem extends ListItem {
     type: 'Asset',
     filename: string
-    thumbnailUri: string
     fullsizeUri: string
+    thumbnailUri: string
     propertyName: string
     propertyValue: string
+    properties:  {
+        [key: string]: string | number | boolean
+    },
 }
 
 export interface DocumentNodeListItem extends ListItem {

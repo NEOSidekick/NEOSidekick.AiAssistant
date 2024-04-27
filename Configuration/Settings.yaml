@@ -19,7 +19,7 @@ NEOSidekick:
       propertyName: null
       # Predefines how many images should be processed per page, to avoid generate too many in parallel
       # Allowed: 5, 10, 15, 20, 25
-      itemsPerPage: 10
+      itemsPerPage: 20
       # The language to write the text in, see allowed language keys in README
       language: null
     focusKeywordGeneratorModule:
@@ -37,7 +37,7 @@ NEOSidekick:
       nodeTypeFilter: null
       # Predefines how many images should be processed per page, to avoid generate too many in parallel
       # Allowed: 5, 10, 15, 20, 25
-      itemsPerPage: 10
+      itemsPerPage: 20
     seoTitleAndMetaDescriptionModule:
       # The workspace name where the nodes are taken from and saved to
       # Allowed: null, live, ... (any other workspace name)
@@ -52,4 +52,4 @@ NEOSidekick:
       nodeTypeFilter: null
       # Predefines how many images should be processed per page, to avoid generate too many in parallel
       # Allowed: 5, 10, 15, 20, 25
-      itemsPerPage: 10
+      itemsPerPage: 20

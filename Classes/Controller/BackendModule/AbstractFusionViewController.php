@@ -1,6 +1,6 @@
 <?php
 
-namespace NEOSidekick\AiAssistant\Controller;
+namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\View\ViewInterface;
@@ -9,7 +9,7 @@ use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Service\UserService;
 
-abstract class DocumentNodeModuleController extends AbstractModuleController
+abstract class AbstractFusionViewController extends AbstractModuleController
 {
     protected $defaultViewObjectName = FusionView::class;
 

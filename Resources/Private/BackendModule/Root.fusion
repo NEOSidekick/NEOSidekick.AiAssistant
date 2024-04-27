@@ -3,7 +3,7 @@ include: resource://Neos.Neos.Ui/Private/Fusion/Prototypes/RenderConfiguration.f
 include: resource://Sitegeist.FusionLinkPrototypes/Private/Fusion/Root.fusion
 include: ./BackendModule.fusion
 
-NEOSidekick.AiAssistant.AssetModuleController.index = NEOSidekick.AiAssistant:BackendModule {
+NEOSidekick.AiAssistant.BackendModule.ImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
     getAction = 'index'
     updateAction = 'update'
     moduleConfiguration = Neos.Fusion:Value {
@@ -20,7 +20,7 @@ NEOSidekick.AiAssistant.AssetModuleController.index = NEOSidekick.AiAssistant:Ba
     }
 }
 
-NEOSidekick.AiAssistant.FocusKeywordModuleController.index = NEOSidekick.AiAssistant:BackendModule {
+NEOSidekick.AiAssistant.BackendModule.FocusKeywordController.index = NEOSidekick.AiAssistant:BackendModule {
     getAction = 'getFocusKeywordNodes'
     updateAction = 'updateFocusKeywordNodes'
     moduleConfiguration = Neos.Fusion:Value {
@@ -40,7 +40,10 @@ NEOSidekick.AiAssistant.FocusKeywordModuleController.index = NEOSidekick.AiAssis
 }
 
 NEOSidekick.AiAssistant.ConfigurationModuleController.index = Neos.Fusion:Component {
+NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusion:Component {
+    apiDomain = ${developmentBuild ? 'https://api-staging.neosidekick.com' : 'https://api.neosidekick.com'}
     renderer = afx`
-        <iframe style="width: 100%; min-height: 1000px; height: 100%;" src={'https://api.neosidekick.com/chat/account-context/edit?apikey=' + apiKey}></iframe>
+        <div @if={developmentBuild} style="font-size: 1.5em; font-weight: bold; background: orange; padding: 1rem; margin-bottom: 1rem;">You are using the Development Version of the API</div>
+        <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey}></iframe>
     `
 }

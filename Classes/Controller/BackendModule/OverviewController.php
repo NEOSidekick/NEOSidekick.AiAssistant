@@ -1,6 +1,6 @@
 <?php
 
-namespace NEOSidekick\AiAssistant\Controller;
+namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\Module\AbstractModuleController;
@@ -9,7 +9,7 @@ use Neos\Neos\Controller\Module\AbstractModuleController;
  * @noinspection PhpUnused
  * @Flow\Scope("singleton")
  */
-class OverviewModuleController extends AbstractModuleController
+class OverviewController extends AbstractModuleController
 {
     /**
      * @Flow\InjectConfiguration(package="Neos.Neos")

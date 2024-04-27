@@ -111,7 +111,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                     <iframe ref={this.iframeRef} src="about:blank" style={{aspectRatio: '3 / 2', width: '100%'}} />
                 </div>
                 <div className={'neos-span4'}>
-                    <h2 style={{marginBottom: '1rem'}}>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNodeModule:listItem.label', 'Page »' + item.properties.title + '«', {0: item.properties.title})}</h2>
+                    <h2 style={{marginBottom: '1rem'}}>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:listItem.label', 'Page »' + item.properties.title + '«', {0: item.properties.title})}</h2>
                     <p>
                         <a href={item.publicUri} target="_blank">
                             {item.publicUri}&nbsp;

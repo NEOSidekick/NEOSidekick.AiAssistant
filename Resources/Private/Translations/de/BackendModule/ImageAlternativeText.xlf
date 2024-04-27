@@ -3,8 +3,8 @@
     <file original="" source-language="en" target-language="de" datatype="plaintext">
         <body>
             <trans-unit id="label">
-                <source>Alternative Text Generator</source>
-                <target xml:lang="de">Alternativer Text Generator</target>
+                <source>Image Alternative Text Generator</source>
+                <target xml:lang="de">Bild Alternativtext Generator</target>
             </trans-unit>
             <trans-unit id="assetListItemLabel">
                 <source>File »{0}«</source>

@@ -1,11 +1,11 @@
 <?php
 
-namespace NEOSidekick\AiAssistant\Controller;
+namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
 /**
  * @noinspection PhpUnused
  */
-class SeoTitleAndMetaDescriptionModuleController extends DocumentNodeModuleController
+class ImageAlternativeTextController extends AbstractFusionViewController
 {
     /**
      * @return void

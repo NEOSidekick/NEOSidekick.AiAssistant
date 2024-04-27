@@ -20,7 +20,7 @@ export default class NodeTypeFilter extends PureComponent<NodeTypeFilterProps,{}
         if (nodeTypes) {
             const translationService = TranslationService.getInstance();
             options = {
-                '': this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNodeModule:configuration.nodeTypeFilter.all', 'All page types')
+                '': this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.nodeTypeFilter.all', 'All page types')
             }
             const baseNodeTypeFilter = this.props.moduleConfiguration?.baseNodeTypeFilter;
             Object.keys(nodeTypes).forEach(nodeType => {
@@ -38,7 +38,7 @@ export default class NodeTypeFilter extends PureComponent<NodeTypeFilterProps,{}
         const moduleConfiguration = this.props.moduleConfiguration;
         return (moduleConfiguration.enforceConfigs.includes('nodeTypeFilter') ? null :
                 <SelectField
-                    label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNodeModule:configuration.nodeTypeFilter.label', 'Restrict to page type')}
+                    label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.nodeTypeFilter.label', 'Restrict to page type')}
                     value={moduleConfiguration.nodeTypeFilter}
                     onChange={e => this.context.updateModuleConfiguration({nodeTypeFilter: e.target.value})}
                     options={options}

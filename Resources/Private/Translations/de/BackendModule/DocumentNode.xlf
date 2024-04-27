@@ -26,10 +26,6 @@
                 <source>Workspace</source>
                 <target>Arbeitsbereich</target>
             </trans-unit>
-            <trans-unit id="configuration.mode.label">
-                <source>Selection of pages</source>
-                <target>Auswahl der Seiten</target>
-            </trans-unit>
             <trans-unit id="listItem.label">
                 <source>Page »{0}«</source>
                 <target>Seite »{0}«</target>

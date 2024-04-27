@@ -13,7 +13,7 @@ export default class ItemsPerPageField extends PureComponent<ItemsPerPageFieldPr
         const {moduleConfiguration, updateModuleConfiguration} = this.props;
         return (
             <SelectField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.itemsPerPage.label', 'How many images per page?')}
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.itemsPerPage.label', 'How many images per page?')}
                 value={moduleConfiguration.itemsPerPage}
                 defaultValue={10}
                 options={{

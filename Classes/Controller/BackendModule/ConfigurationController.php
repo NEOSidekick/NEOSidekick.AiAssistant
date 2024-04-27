@@ -1,6 +1,6 @@
 <?php
 
-namespace NEOSidekick\AiAssistant\Controller;
+namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\View\ViewInterface;
@@ -10,7 +10,7 @@ use Neos\Neos\Controller\Module\AbstractModuleController;
 /**
  * @noinspection PhpUnused
  */
-class ConfigurationModuleController extends AbstractModuleController
+class ConfigurationController extends AbstractModuleController
 {
     protected $defaultViewObjectName = FusionView::class;
 
@@ -28,6 +28,12 @@ class ConfigurationModuleController extends AbstractModuleController
     protected string $apiKey;
 
     /**
+     * @Flow\InjectConfiguration(path="developmentBuild")
+     * @var string
+     */
+    protected string $developmentBuild;
+
+    /**
      * @param FusionView $view
      *
      * @return void
@@ -41,5 +47,6 @@ class ConfigurationModuleController extends AbstractModuleController
     public function indexAction(): void
     {
         $this->view->assign('apiKey', $this->apiKey);
+        $this->view->assign('developmentBuild', $this->developmentBuild);
     }
 }

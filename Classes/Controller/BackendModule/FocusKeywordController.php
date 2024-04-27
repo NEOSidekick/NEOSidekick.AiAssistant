@@ -1,6 +1,6 @@
 <?php
 
-namespace NEOSidekick\AiAssistant\Controller;
+namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\View\ViewInterface;
@@ -12,7 +12,7 @@ use Neos\Neos\Service\UserService;
 /**
  * @noinspection PhpUnused
  */
-class FocusKeywordModuleController extends DocumentNodeModuleController
+class FocusKeywordController extends AbstractFusionViewController
 {
     /**
      * @return void

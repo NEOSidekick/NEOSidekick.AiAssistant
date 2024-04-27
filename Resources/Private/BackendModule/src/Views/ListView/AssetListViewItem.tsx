@@ -70,7 +70,7 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
                     <img style={{position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', objectFit: 'cover'}} src={item.thumbnailUri}  alt=""/>
                 </div>
                 <div className={'neos-span8'}>
-                    <h2 style={{marginBottom: '1rem'}}>{this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:assetListItemLabel', 'File »' + item.filename + '«', {0: item.filename})}</h2>
+                    <h2 style={{marginBottom: '1rem'}}>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:assetListItemLabel', 'File »' + item.filename + '«', {0: item.filename})}</h2>
                     <div className={'neos-control-group'}>
                         <label className={'neos-control-label'} htmlFor={textfieldId}>{this.translationService.translate('Neos.Media.Browser:Main:field_' + item.propertyName, item.propertyName)}</label>
                         <div className={'neos-controls'}>

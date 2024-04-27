@@ -171,7 +171,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     default:
                         throw new Error('Unknown item type ' + item.type);
                 }
-            }));
+            })
+            .filter(item => Object.keys(item.properties).length > 0));
         itemsToPersist.forEach(item => {
             this.updateItem(produce(item, (draft: ListItem) => {
                 draft.state = ListItemState.Persisted
@@ -184,7 +185,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             ...state,
             currentPage: this.state.currentPage + 1
         }))
-        window.scrollTo(0, 0)
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     render() {

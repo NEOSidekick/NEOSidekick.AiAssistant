@@ -1,3 +1,7 @@
 .neosidekick__editor__generate-button {
   width: 100%;
 }
+.neosidekick__editor__suggestion-button {
+  margin-top: 3px !important;
+  width: 100%;
+}

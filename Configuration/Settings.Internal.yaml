@@ -11,6 +11,7 @@ Neos:
             - 'Error'
             - 'AiModal'
             - 'AssetModule'
+            - 'Editors/*'
     Ui:
       resources:
         javascript:

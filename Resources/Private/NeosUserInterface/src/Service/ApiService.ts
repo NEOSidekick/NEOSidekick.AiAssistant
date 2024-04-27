@@ -28,8 +28,8 @@ export class ApiService {
         })
 
         let message = jsonData?.data?.message?.message;
-        // Truncate obsolete quotation marks
-        if(message.startsWith('"') && message.endsWith('"')) {
+        // Truncate obsolete quotation marks, if is string
+        if(typeof message === 'string' && message.startsWith('"') && message.endsWith('"')) {
             message = message.substring(1, message.length-1);
         }
         return message;

@@ -29,7 +29,7 @@ final class FocusKeywordListItem implements JsonSerializable
     /**
      * @var string
      */
-    protected string $pageTitle;
+    protected string $nodeTypeName;
 
     /**
      * @var array
@@ -44,17 +44,17 @@ final class FocusKeywordListItem implements JsonSerializable
     /**
      * @param string $identifier
      * @param string $nodeContextPath
+     * @param string $nodeTypeName
      * @param string $publicUri
-     * @param string $pageTitle
      * @param array $properties
      * @param string $language
      */
-    public function __construct(string $identifier, string $nodeContextPath, string $publicUri, string $pageTitle, array $properties, string $language)
+    public function __construct(string $identifier, string $nodeContextPath, string $nodeTypeName, string $publicUri, array $properties, string $language)
     {
         $this->identifier = $identifier;
         $this->nodeContextPath = $nodeContextPath;
+        $this->nodeTypeName = $nodeTypeName;
         $this->publicUri = $publicUri;
-        $this->pageTitle = $pageTitle;
         $this->properties = $properties;
         $this->language = $language;
     }
@@ -69,14 +69,14 @@ final class FocusKeywordListItem implements JsonSerializable
         return $this->nodeContextPath;
     }
 
+    public function getNodeTypeName(): string
+    {
+        return $this->nodeTypeName;
+    }
+
     public function getPublicUri(): string
     {
         return $this->publicUri;
-    }
-
-    public function getPageTitle(): string
-    {
-        return $this->pageTitle;
     }
 
     public function getProperties(): array
@@ -93,8 +93,8 @@ final class FocusKeywordListItem implements JsonSerializable
      * @param array{
      *     identifier: string,
      *     nodeContextPath: string,
+     *      nodeTypeName: string,
      *     publicUri: string,
-     *     pageTitle: string,
      *     properties: array,
      *     language: string
      * } $array
@@ -106,8 +106,8 @@ final class FocusKeywordListItem implements JsonSerializable
         return new self(
             $array['identifier'],
             $array['nodeContextPath'],
+            $array['nodeTypeName'],
             $array['publicUri'],
-            $array['pageTitle'],
             $array['properties'],
             $array['language']
         );
@@ -118,8 +118,8 @@ final class FocusKeywordListItem implements JsonSerializable
         return [
             'identifier' => $this->identifier,
             'nodeContextPath' => $this->nodeContextPath,
+            'nodeTypeName' => $this->nodeTypeName,
             'publicUri' => $this->publicUri,
-            'pageTitle' => $this->pageTitle,
             'properties' => $this->properties,
             'language' => $this->language,
             'type' => 'DocumentNode'

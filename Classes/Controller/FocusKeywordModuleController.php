@@ -12,48 +12,14 @@ use Neos\Neos\Service\UserService;
 /**
  * @noinspection PhpUnused
  */
-class FocusKeywordModuleController extends AbstractModuleController
+class FocusKeywordModuleController extends DocumentNodeModuleController
 {
-    protected $defaultViewObjectName = FusionView::class;
-
-    /**
-     * This is needed for type hinting in the IDE
-     *
-     * @var FusionView
-     */
-    protected $view;
-
-    /**
-     * @Flow\Inject
-     * @var UserService
-     */
-    protected $userService;
-
-    /**
-     * @Flow\Inject
-     * @var Context
-     */
-    protected $securityContext;
-
-    /**
-     * @param FusionView $view
-     *
-     * @return void
-     */
-    protected function initializeView(ViewInterface $view): void
-    {
-        parent::initializeView($view);
-        $view->setFusionPathPattern('resource://NEOSidekick.AiAssistant/Private/BackendModule');
-    }
-
     /**
      * @return void
      */
     public function indexAction(): void
     {
-        $user = $this->userService->getBackendUser();
-        $this->view->assign('user', $user);
-        $this->view->assign('interfaceLanguage', $this->userService->getInterfaceLanguage());
-        $this->view->assign('csrfToken', $this->securityContext->getCsrfProtectionToken());
+        // not sure why this is not correctly inherited from the parent class
+        $this->abstractIndexAction();
     }
 }

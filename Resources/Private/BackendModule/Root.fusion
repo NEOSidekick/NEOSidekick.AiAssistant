@@ -4,7 +4,6 @@ include: resource://Sitegeist.FusionLinkPrototypes/Private/Fusion/Root.fusion
 include: ./BackendModule.fusion
 
 NEOSidekick.AiAssistant.AssetModuleController.index = NEOSidekick.AiAssistant:BackendModule {
-    scope = 'altTextGeneratorModule'
     getAction = 'index'
     updateAction = 'update'
     moduleConfiguration = Neos.Fusion:Value {
@@ -22,7 +21,6 @@ NEOSidekick.AiAssistant.AssetModuleController.index = NEOSidekick.AiAssistant:Ba
 }
 
 NEOSidekick.AiAssistant.FocusKeywordModuleController.index = NEOSidekick.AiAssistant:BackendModule {
-    scope = 'focusKeywordGeneratorModule'
     getAction = 'getFocusKeywordNodes'
     updateAction = 'updateFocusKeywordNodes'
     moduleConfiguration = Neos.Fusion:Value {
@@ -33,6 +31,7 @@ NEOSidekick.AiAssistant.FocusKeywordModuleController.index = NEOSidekick.AiAssis
             nodeTypeFilter = null
             baseNodeTypeFilter = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing'
             itemsPerPage = 10
+            editableProperties = ${['focusKeyword']}
         }
         config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.focusKeywordGeneratorModule'), (value, key) => value != null)}
         enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}

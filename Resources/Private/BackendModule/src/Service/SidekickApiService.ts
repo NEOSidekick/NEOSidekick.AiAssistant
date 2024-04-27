@@ -1,7 +1,7 @@
-import AiAssistantError from "./AiAssistantError";
+import AiAssistantError from "../AiAssistantError";
 
-export class ExternalService {
-    private static instance: ExternalService | null = null;
+export class SidekickApiService {
+    private static instance: SidekickApiService | null = null;
     private apiDomain: string = ''
     private apiKey: string = ''
     private interfaceLanguage: string = 'en';
@@ -9,12 +9,12 @@ export class ExternalService {
     constructor() {
     }
 
-    public static getInstance(): ExternalService
+    public static getInstance(): SidekickApiService
     {
-        if (!ExternalService.instance) {
-            ExternalService.instance = new ExternalService();
+        if (!SidekickApiService.instance) {
+            SidekickApiService.instance = new SidekickApiService();
         }
-        return ExternalService.instance
+        return SidekickApiService.instance
     }
 
     public configure = (apiDomain: string, apiKey: string, interfaceLanguage: string) => {
@@ -55,8 +55,8 @@ export class ExternalService {
         }
 
         let message = jsonData?.data?.message?.message
-        // Truncate obsolete quotation marks
-        if(message.startsWith('"') && message.endsWith('"')) {
+        // Truncate obsolete quotation marks, if is string
+        if(typeof message === 'string' && message.startsWith('"') && message.endsWith('"')) {
             message = message.substr(1, message.length-2);
         }
         return message

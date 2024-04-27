@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="error.configuration">
+                <source>This module is not configured correctly. Please consult the documentation!</source>
+                <target xml:lang="de">Dieses Modul ist nicht korrekt konfiguriert. Bitte konsultiere die Dokumentation!</target>
+            </trans-unit>
+            <trans-unit id="error.noApiKey">
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+                <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
+            </trans-unit>
+            <trans-unit id="configuration.nodeTypeFilter.label">
+                <source>Restrict to page type</source>
+                <target>Auf Seitentyp einschränken</target>
+            </trans-unit>
+            <trans-unit id="configuration.nodeTypeFilter.all">
+                <source>All page types</source>
+                <target>Alle Seitentypen</target>
+            </trans-unit>
+            <trans-unit id="configuration.itemsPerPage.label">
+                <source>Number of generations per page</source>
+                <target xml:lang="de">Anzahl der Generierungen pro Seite</target>
+            </trans-unit>
+            <trans-unit id="configuration.workspace.label">
+                <source>Workspace</source>
+                <target>Arbeitsbereich</target>
+            </trans-unit>
+            <trans-unit id="configuration.mode.label">
+                <source>Selection of pages</source>
+                <target>Auswahl der Seiten</target>
+            </trans-unit>
+            <trans-unit id="listItem.label">
+                <source>Page »{0}«</source>
+                <target>Seite »{0}«</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

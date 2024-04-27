@@ -38,9 +38,9 @@ class FocusKeywordListItemFactory
         return new FocusKeywordListItem(
             sprintf('%s-%s', $node->getNodeData()->getIdentifier(), $node->getNodeData()->getDimensionsHash()),
             $node->getContextPath(),
+            $node->getNodeType(),
             $publicUri,
-            $node->hasProperty('title') ? $node->getProperty('title') : '',
-            ['focusKeyword' => $node->hasProperty('focusKeyword') ? $node->getProperty('focusKeyword') : ''],
+            (array)$node->getProperties(),
             // todo inspect [0] syntax... maybe we also need a mapping?
             $node->getNodeData()->getDimensionValues()[$this->languageDimensionName][0]
         );

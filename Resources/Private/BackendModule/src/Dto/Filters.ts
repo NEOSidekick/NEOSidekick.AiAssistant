@@ -1,4 +1,4 @@
-import {FocusKeywordModuleMode} from "../Model/FocusKeywordModuleConfiguration";
+import {FocusKeywordModuleMode} from "../Model/ModuleConfiguration";
 
 export interface Filters {
 }

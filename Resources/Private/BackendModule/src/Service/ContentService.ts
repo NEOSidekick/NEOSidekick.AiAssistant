@@ -1,0 +1,169 @@
+import AiAssistantError from "../AiAssistantError";
+import {Node} from "@neos-project/neos-ts-interfaces";
+import {selectors} from "@neos-project/neos-ui-redux-store";
+import {DocumentNodeListItem} from "../Model/ListItem";
+
+export class ContentService {
+    private static instance: ContentService | null = null;
+    private apiDomain: string = ''
+    private apiKey: string = ''
+    private interfaceLanguage: string = 'en';
+
+    public static getInstance(): ContentService
+    {
+        if (!ContentService.instance) {
+            ContentService.instance = new ContentService();
+        }
+        return ContentService.instance
+    }
+
+
+    processObjectWithClientEvalFromDocumentNodeListItem = async (obj: object, item: DocumentNodeListItem): Promise<object> => {
+        return this.processObjectWithClientEval(obj, this.createFakePartialNode(item), this.createFakeParentNode());
+    }
+
+    processClientEvalFromDocumentNodeListItem = async (value: any, item: DocumentNodeListItem): Promise<any> => {
+        return this.processClientEval(value, this.createFakePartialNode(item), this.createFakeParentNode());
+    }
+
+
+
+    /*
+     *
+     * Mimik Neos UI and DistributionPackages/NEOSidekick.AiAssistant/Resources/Private/NeosUserInterface/src/Service/ContentService.ts
+     *
+     */
+
+    processClientEval = async (value: any, node?: Node, parentNode?: Node): Promise<string> => {
+        if (typeof value === 'string' && (value.startsWith('SidekickClientEval:') || value.startsWith('ClientEval:'))) {
+            try {
+                if (!node || !parentNode) {
+                    throw new Error('ContentService.processClientEval() always requires a node and a parentNode')
+                }
+                if (value.indexOf('documentTitle') !== -1 || value.indexOf('documentContent') !== -1) {
+                    throw new Error('ContentService.processClientEval() currently does not support documentTitle and documentContent');
+                    // const documentTitle = this.getGuestFrameDocumentTitle()
+                    // const documentContent = this.getGuestFrameDocumentHtml()
+                }
+                const documentTitle = '';
+                const documentContent = '';
+
+                // Functions
+                const AssetUri = () => {
+                    throw new Error('ContentService.processClientEval() does not support AssetUri(...)');
+                }
+                const AsyncFunction = Object.getPrototypeOf(async function () {
+                }).constructor
+                const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
+                return await evaluateFn(node, parentNode, documentTitle, documentContent, AssetUri)
+            } catch (e) {
+                if (e instanceof AiAssistantError) {
+                    throw e
+                } else {
+                    console.error(e)
+                    throw new AiAssistantError('An error occurred while trying to evaluate "' + value + '"', '1694682118365', value)
+                }
+            }
+        }
+        return value;
+    }
+
+    private createFakePartialNode(item: DocumentNodeListItem) {
+        const dimensionProxy = new Proxy({
+            language: item.language
+        }, {
+            get: function (target, prop) {
+                if (!target.hasOwnProperty(prop)) {
+                    throw new Error('This is a fake node dimension, and only exposes the language dimension');
+                }
+                return target[prop];
+            }
+        });
+        return new Proxy({
+            contextPath: item.nodeContextPath,
+            nodeType: item.nodeTypeName,
+            properties: item.properties,
+            dimensions: dimensionProxy,
+        }, {
+            get: function (target, prop) {
+                if (!target.hasOwnProperty(prop)) {
+                    // @ts-ignore
+                    throw new Error('This is a fake node, and does not expose the property ' + prop);
+                }
+                return target[prop];
+            }
+        });
+    }
+
+    private createFakeParentNode() {
+        return new Proxy({}, {
+            get: function (target, prop) {
+                // @ts-ignore
+                throw new Error('This is a fake node, and does not expose the property ' + prop);
+            }
+        });
+    }
+
+    /* TODO
+    getGuestFrameContentDocument = (): Document | null => {
+        let parser = new DOMParser();
+        let doc = parser.parseFromString(htmlString, "text/html");
+        console.info(doc.title);
+        debugger
+        this.guestFrameContentDocument = doc?.contentDocument;
+        return this.guestFrameContentDocument;
+    }
+    */
+
+    /*
+     *
+     * EVERYTHING BELOW IS A COPY OF THE DistributionPackages/NEOSidekick.AiAssistant/Resources/Private/NeosUserInterface/src/Service/ContentService.ts
+     *
+     *
+     */
+
+    getGuestFrameDocumentTitle() {
+        return <string>this.getGuestFrameContentDocument()?.title;
+    }
+
+    getGuestFrameDocumentHtml() {
+        return <string>this.getGuestFrameContentDocument()?.body?.innerHTML;
+    }
+
+    processValueWithClientEval = async (value: any, node?: Node, parentNode?: Node): Promise<any> => {
+        if (typeof value === 'string') {
+            return this.processClientEval(value, node, parentNode)
+        }
+
+        if (typeof value === 'object' && value !== null) {
+            return this.processObjectWithClientEval(value, node, parentNode)
+        }
+
+        if (typeof value === 'boolean') {
+            return value;
+        }
+
+        if (value === null) {
+            return null;
+        }
+
+        if (Array.isArray(value)) {
+            return Promise.all(value.map(async itemValue => {
+                return this.processObjectWithClientEval(itemValue, node, parentNode)
+            }))
+        }
+    }
+
+    processObjectWithClientEval = async (obj: object, node?: Node, parentNode?: Node): Promise<object> => {
+        const result = {};
+        await Promise.all(Object.keys(obj).map(async key => {
+            // @ts-ignore
+            const value: any = obj[key];
+            // @ts-ignore
+            result[key] = await this.processValueWithClientEval(value, node, parentNode)
+        }))
+        return result;
+    }
+}
+
+

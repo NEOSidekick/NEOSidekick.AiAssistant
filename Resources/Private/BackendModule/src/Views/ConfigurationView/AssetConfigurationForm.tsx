@@ -1,11 +1,11 @@
 import React, {ReactElement} from "react";
-import {AssetModuleConfiguration, Language} from "../../Model/AssetModuleConfiguration";
+import {AssetModuleConfiguration, Language} from "../../Model/ModuleConfiguration";
 import PureComponent from "../../Components/PureComponent";
 import {enumKeys} from "../../Util";
 import ItemsPerPageField from "./ItemsPerPageField";
 import BackendMessage from "../../Components/BackendMessage";
 import StartModuleButton from "./StartModuleButton";
-import AppContext from "../../AppContext";
+import AppContext, {AppContextType} from "../../AppContext";
 import SelectField from "../../Components/Field/SelectField";
 
 interface AssetConfigurationFormProps {
@@ -14,7 +14,8 @@ interface AssetConfigurationFormProps {
 }
 
 export default class AssetConfigurationForm extends PureComponent<AssetConfigurationFormProps> {
-    static contextType = AppContext
+    static contextType = AppContext;
+    context: AppContextType;
 
     private renderOnlyInUseField(): ReactElement
     {
@@ -39,7 +40,7 @@ export default class AssetConfigurationForm extends PureComponent<AssetConfigura
             <SelectField
                 label={this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.propertyName.label', 'Welches Feld?')}
                 value={moduleConfiguration.propertyName}
-                onChange={e => this.context.updateModuleConfiguration({propertyName: e.target.value})}
+                onChange={e => this.context.updateModuleConfiguration({propertyName: e.target.value as 'title' | 'caption'})}
                 options={{
                     'title': this.translationService.translate('Neos.Media.Browser:Main:field_title', 'title'),
                     'caption': this.translationService.translate('Neos.Media.Browser:Main:field_caption', 'caption'),
@@ -55,7 +56,7 @@ export default class AssetConfigurationForm extends PureComponent<AssetConfigura
             <SelectField
                 label={this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.language.label', 'Which language?')}
                 value={moduleConfiguration.language}
-                onChange={e => this.context.updateModuleConfiguration({language: e.target.value})}
+                onChange={e => this.context.updateModuleConfiguration({language: e.target.value as unknown as Language})}
                 options={enumKeys(Language).reduce((acc, language) => {
                     acc[language] = this.translationService.translate('NEOSidekick.AiAssistant:AssetModule:configuration.language.' + language, language);
                     return acc;

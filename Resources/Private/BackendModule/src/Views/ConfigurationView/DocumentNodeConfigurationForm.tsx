@@ -2,17 +2,17 @@ import PureComponent from "../../Components/PureComponent";
 import ItemsPerPageField from "./ItemsPerPageField";
 import React from "react";
 import {enumKeys} from "../../Util";
-import {FocusKeywordModuleConfiguration, FocusKeywordModuleMode} from "../../Model/FocusKeywordModuleConfiguration";
+import {DocumentNodeModuleConfiguration, FocusKeywordModuleMode} from "../../Model/ModuleConfiguration";
 import BackendMessage from "../../Components/BackendMessage";
 import StartModuleButton from "./StartModuleButton";
-import AppContext from "../../AppContext";
+import AppContext, {AppContextType} from "../../AppContext";
 import SelectField from "../../Components/Field/SelectField";
 import CheckboxField from "../../Components/Field/CheckboxField";
 import NodeTypeFilter from "./DocumentNodeConfigurationForm.NodeTypeFilter";
 
 interface DocumentNodeConfigurationFormProps {
     // we take this as a prop just for typing the moduleConfiguration
-    moduleConfiguration: FocusKeywordModuleConfiguration
+    moduleConfiguration: DocumentNodeModuleConfiguration
 }
 
 function capitalizeFirstLetter(string: string) {
@@ -20,14 +20,15 @@ function capitalizeFirstLetter(string: string) {
 }
 
 export default class DocumentNodeConfigurationForm extends PureComponent<DocumentNodeConfigurationFormProps> {
-    static contextType = AppContext
+    static contextType = AppContext;
+    context: AppContextType;
 
     private renderWorkspaceField() {
         const workspaces = this.context.workspaces;
         const moduleConfiguration = this.props.moduleConfiguration;
         return (moduleConfiguration.enforceConfigs.includes('workspace') ? null :
             <SelectField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.workspace.label', 'Workspace')}
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNodeModule:configuration.workspace.label', 'Workspace')}
                 value={moduleConfiguration.workspace}
                 onChange={e => this.context.updateModuleConfiguration({workspace: e.target.value})}
                 options={Object.keys(workspaces).reduce((acc, workspaceIdentifier) => {
@@ -43,11 +44,11 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         const moduleConfiguration = this.props.moduleConfiguration;
         return (moduleConfiguration.enforceConfigs.includes('workspace') ? null :
             <SelectField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.mode.label', 'Selection of pages')}
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNodeModule:configuration.mode.label', 'Selection of pages')}
                 value={moduleConfiguration.mode}
-                onChange={e => this.context.updateModuleConfiguration({mode: e.target.value})}
+                onChange={e => this.context.updateModuleConfiguration({mode: e.target.value as unknown as FocusKeywordModuleMode})}
                 options={enumKeys(FocusKeywordModuleMode).reduce((acc, mode) => {
-                    acc[mode] = this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.mode.' + mode, mode);
+                    acc[mode] = this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNodeModule:configuration.mode.' + mode, mode);
                     return acc;
                 }, {})}
             />
@@ -59,7 +60,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         const moduleConfiguration = this.props.moduleConfiguration;
         return (moduleConfiguration.enforceConfigs.includes('generateEmptyFocusKeywords') ? null :
             <CheckboxField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.generateEmptyFocusKeywords.label', 'Generate empty focus keywords automatically')}
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNodeModule:configuration.generateEmptyFocusKeywords.label', 'Generate empty focus keywords automatically')}
                 checked={moduleConfiguration.generateEmptyFocusKeywords}
                 onChange={e => this.context.updateModuleConfiguration({generateEmptyFocusKeywords: e.target.checked})}
             />
@@ -71,7 +72,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         const moduleConfiguration = this.props.moduleConfiguration;
         return (moduleConfiguration.enforceConfigs.includes('regenerateExistingFocusKeywords') ? null :
             <CheckboxField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:configuration.regenerateExistingFocusKeywords.label', 'Regenerate existing focus keywords automatically')}
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNodeModule:configuration.regenerateExistingFocusKeywords.label', 'Regenerate existing focus keywords automatically')}
                 checked={moduleConfiguration.regenerateExistingFocusKeywords}
                 onChange={e => this.context.updateModuleConfiguration({regenerateExistingFocusKeywords: e.target.checked})}
             />
@@ -83,7 +84,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         return (
             <div className={'neos-content neos-indented neos-fluid-container'}>
                 <p style={{marginBottom: '1rem', maxWidth: '80ch'}}
-                   dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:FocusKeywordModule:intro', '')}}/>
+                   dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.FocusKeywordModule:description', '')}}/>
                 <BackendMessage identifier="focus-keyword"/>
 
                 <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', '')}:</h2>

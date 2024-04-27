@@ -3,10 +3,11 @@ import PureComponent from "../Components/PureComponent";
 import ErrorView from "./ErrorView";
 import ConfigurationView from "./ConfigurationView/ConfigurationView";
 import {Endpoints} from "../Model/Endpoints";
-import ListView from "./ListView";
-import {ModuleConfiguration} from "../Model/ModuleConfiguration";
+import ListView from "./ListView/ListView";
+import {AssetModuleConfiguration, DocumentNodeModuleConfiguration, ModuleConfiguration} from "../Model/ModuleConfiguration";
 import AppContext, {AppContextType, AppState} from "../AppContext";
 import Workspaces from "../Model/Workspaces";
+import NeosBackendService from "../Service/NeosBackendService";
 
 export interface RootViewProps {
     endpoints: Endpoints,
@@ -20,9 +21,10 @@ export default class RootView extends PureComponent<RootViewProps, AppContextTyp
         this.state = {
             endpoints: props.endpoints,
             workspaces: props.workspaces,
+            nodeTypes: undefined,
 
             moduleConfiguration: props.moduleConfiguration,
-            updateModuleConfiguration: (newConfiguration: Partial<ModuleConfiguration>) => this.updateModuleConfiguration(newConfiguration),
+            updateModuleConfiguration: (newConfiguration: Partial<DocumentNodeModuleConfiguration | AssetModuleConfiguration>) => this.updateModuleConfiguration(newConfiguration),
 
             // app state transitions
             setAppStateToError: (errorMessage: string) => this.setAppStateToError(errorMessage),
@@ -30,8 +32,18 @@ export default class RootView extends PureComponent<RootViewProps, AppContextTyp
 
             // internal state
             appState: AppState.Configure,
-        }
+            errorMessage: undefined,
+        };
+        // noinspection JSIgnoredPromiseFromCall
+        this.fetchNodeTypeSchema();
     }
+
+    private async fetchNodeTypeSchema() {
+        const backend = NeosBackendService.getInstance();
+        const nodeTypeSchema: Partial<{ nodeTypes: object }> = await backend.getNodeTypeSchema()
+        this.setState({nodeTypes: nodeTypeSchema.nodeTypes});
+    }
+
     private updateModuleConfiguration(newConfiguration: Partial<ModuleConfiguration>) {
         this.setState(state => ({
                 ...state,

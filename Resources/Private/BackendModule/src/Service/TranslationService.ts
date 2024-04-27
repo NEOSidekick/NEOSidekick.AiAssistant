@@ -2,7 +2,7 @@
  * This file is copied from Neos.Neos.Ui,
  * and extended with fromError method.
  */
-import AiAssistantError from "./AiAssistantError";
+import AiAssistantError from "../AiAssistantError";
 
 const getTranslationAddress = function (id, packageKey, sourceName) {
     if (id && id.indexOf(':') !== -1) {

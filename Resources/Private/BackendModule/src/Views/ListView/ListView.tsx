@@ -1,19 +1,21 @@
 import React from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faSpinner} from "@fortawesome/free-solid-svg-icons";
-import {StatefulModuleItem} from "../Model/StatefulModuleItem";
-import BackendService from "../Service/BackendService";
-import {ModuleItem} from "../Model/ModuleItem";
-import {ListState} from "../Enums/ListState";
-import {ListItemState} from "../Enums/ListItemState";
-import {PropertyState} from "../Model/PropertiesCollection";
-import ListItem from "../Components/ListItems/ListItem";
+import {faCheckDouble, faChevronLeft, faSpinner} from "@fortawesome/free-solid-svg-icons";
+import NeosBackendService from "../../Service/NeosBackendService";
+import {ListState} from "../../Model/ListState";
+import {AssetListItem, DocumentNodeListItem, ListItem, ListItemState} from "../../Model/ListItem";
+import {ListItemProperty, ListItemPropertyState} from "../../Model/ListItemProperty";
+import ListViewItem from "./ListViewItem";
 import {Draft, produce} from "immer";
-import PureComponent from "../Components/PureComponent";
-import AppContext from "../AppContext";
+import PureComponent from "../../Components/PureComponent";
+import AppContext, {AppContextType} from "../../AppContext";
+import {ModuleConfiguration} from "../../Model/ModuleConfiguration";
+import {ListItemDto} from "../../Dto/ListItemDto";
 
 export default class ListView extends PureComponent<ListViewProps, ListViewState> {
-    static contextType = AppContext
+    static contextType = AppContext;
+    context: AppContextType;
+
     constructor(props: ListViewProps) {
         super(props)
         this.state = {
@@ -27,16 +29,16 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         this.setState({
             itemsPerPage: this.context.moduleConfiguration.itemsPerPage
         })
-        const backend: BackendService = BackendService.getInstance()
+        const backend: NeosBackendService = NeosBackendService.getInstance()
         try {
-            const items: ModuleItem[] = await backend.getItems(this.context.moduleConfiguration)
+            const items: ListItemDto[] = await backend.getItems(this.context.moduleConfiguration);
             const processedItems = items.reduce((accumulator, item) => {
-                accumulator[item.identifier] = this.postprocessListItem(item);
+                accumulator[item.identifier] = this.postprocessListItem(item, this.context.moduleConfiguration);
                 return accumulator;
             }, {});
             const sortedItems = Object.fromEntries(Object.entries(processedItems).sort());
             this.setState({
-                items: sortedItems as ListViewItems,
+                items: sortedItems as ListItems,
                 listState: (Object.values(sortedItems).length > 0 ? ListState.Result : ListState.Empty)
             });
         } catch (e) {
@@ -44,18 +46,20 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         }
     }
 
-    private postprocessListItem(item: ModuleItem): StatefulModuleItem {
+    private postprocessListItem(item: ListItemDto, moduleConfiguration: ModuleConfiguration): AssetListItem | DocumentNodeListItem {
+        // @ts-ignore
         return {
             ...item,
             state: ListItemState.Initial,
-            // todo remove fallback after asset module is migrated
-            properties: Object.keys(item.properties ?? {}).reduce((accumulator, propertyName) => {
+            properties: item.properties ?? {},
+            editableProperties: moduleConfiguration.editableProperties?.reduce((accumulator, propertyName) => {
                 const propertyValue = item.properties[propertyName];
                 accumulator[propertyName] = {
-                    state: PropertyState.Initial,
+                    propertyName,
                     initialValue: propertyValue,
-                    currentValue: propertyValue
-                };
+                    currentValue: propertyValue,
+                    state: ListItemPropertyState.Initial,
+                } as ListItemProperty;
                 return accumulator;
             }, {})
         };
@@ -88,24 +92,24 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         )
     }
 
-    private paginatedItems(): StatefulModuleItem[]
+    private paginatedItems(): ListItem[]
     {
         const offset = (this.state.currentPage - 1) * this.state.itemsPerPage;
         return Object.values(this.state.items).slice(offset, offset + this.state.itemsPerPage);
     }
 
     private renderList() {
-        return (this.paginatedItems().map((item: StatefulModuleItem) =>
-            <ListItem
+        return (this.paginatedItems().map((item: ListItem) =>
+            <ListViewItem
                 item={item}
                 updateItem={(newItem) => this.updateItem(newItem)}
-                persistItem={(item: StatefulModuleItem) => this.persistItems([item])} />))
+                persistItem={(item: ListItem) => this.persistItems([item])} />))
     }
 
-    private updateItem(newItem: object) {
+    private updateItem(newItem: ListItem) {
         this.setState(state => {
             const identifier: string = newItem.identifier
-            const items = produce(state.items, (draft: Draft<StatefulModuleItem>) => {
+            const items = produce(state.items, (draft: Draft<ListItem>) => {
                 draft[identifier] = newItem
             })
             return {...state, items};
@@ -113,7 +117,17 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
     }
 
     private allowSaving(): boolean {
-        return !this.paginatedItems().find(item => item.state === ListItemState.Generating || item.state === ListItemState.Persisting)
+        let hasChanges = false;
+        for (const item of this.paginatedItems()) {
+            if (item.state === ListItemState.Persisting) {
+                return false;
+            }
+
+            if (item.state === ListItemState.Initial) {
+                hasChanges = hasChanges || !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated);
+            }
+        }
+        return hasChanges;
     }
 
     private showSaveButtonSpinner(): boolean {
@@ -126,25 +140,40 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         this.goToNextPage()
     }
 
-    private async persistItems(items: StatefulModuleItem[]) {
-        items.forEach(item => {
-            this.updateItem(produce(item, (draft: StatefulModuleItem) => {
+    private async persistItems(items: ListItem[]) {
+        const itemsToPersist = items.filter(item => item.state === ListItemState.Initial);
+        itemsToPersist.forEach(item => {
+            this.updateItem(produce(item, (draft: ListItem) => {
                 draft.state = ListItemState.Persisting
             }))
         })
-        await BackendService.getInstance().persistItems(
-            items.filter(item => item.state !== ListItemState.Persisted)
-                .map(item => ({
-                    nodeContextPath: item.nodeContextPath,
-                    properties: Object.keys(item.properties).reduce((accumulator, propertyName) => {
+        await NeosBackendService.getInstance().persistItems(
+            itemsToPersist.map(item => {
+                const properties = Object.values(item.editableProperties).reduce((accumulator, property) => {
+                    if (property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated) {
+                        accumulator[property.propertyName] = property.currentValue;
+                    }
+                    return accumulator;
+                }, {});
+
+                switch (item.type) {
+                    case 'Asset':
                         return {
-                            ...accumulator,
-                            [propertyName]: item.properties[propertyName].currentValue
+                            identifier: item.identifier,
+                            properties,
                         }
-                    }, {})
-                })))
-        items.forEach(item => {
-            this.updateItem(produce(item, (draft: StatefulModuleItem) => {
+                    case 'DocumentNode':
+                        return {
+                            // @ts-ignore
+                            nodeContextPath: item.nodeContextPath,
+                            properties,
+                        }
+                    default:
+                        throw new Error('Unknown item type ' + item.type);
+                }
+            }));
+        itemsToPersist.forEach(item => {
+            this.updateItem(produce(item, (draft: ListItem) => {
                 draft.state = ListItemState.Persisted
             }))
         })
@@ -166,13 +195,14 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 {this.state.listState === ListState.Result ? this.renderList() : null}
                 <div className={'neos-footer'}>
                     <a className={'neos-button neos-button-secondary'} href={this.context.endpoints.overview}>
+                        <FontAwesomeIcon icon={faChevronLeft}/>&nbsp;
                         {this.translationService.translate('NEOSidekick.AiAssistant:Module:returnToOverview', 'Return to overview')}
                     </a>
                     {this.state.listState === ListState.Result ? <button
                         onClick={() => this.saveCurrentItemsAndNextPage()}
                         className={'neos-button neos-button-success'}
                         disabled={!this.allowSaving()}>
-                        {this.showSaveButtonSpinner() ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : null}
+                        {this.showSaveButtonSpinner() ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : <FontAwesomeIcon icon={faCheckDouble}/>}&nbsp;
                         {this.translationService.translate('NEOSidekick.AiAssistant:Module:saveAndNextPage', 'Save all and next page')}
                     </button> : null}
                 </div>
@@ -185,11 +215,11 @@ export interface ListViewProps {}
 
 export interface ListViewState {
     listState: ListState,
-    items?: ListViewItems,
+    items?: ListItems,
     itemsPerPage?: number,
     currentPage?: number
 }
 
-export interface ListViewItems {
-    [key: string]: StatefulModuleItem
+export interface ListItems {
+    [key: string]: ListItem
 }

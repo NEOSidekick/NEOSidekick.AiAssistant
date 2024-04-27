@@ -30,7 +30,22 @@ NEOSidekick:
       # Allowed:
       #  - only-empty: Only nodes with an empty focusKeyword property are shown
       #  - only-existing: Only nodes with a non-empty focusKeyword property are shown
-      #  - both: Both nodes with an empty and  non-empty focusKeyword property are shown
+      #  - both: Both nodes with an empty and non-empty focusKeyword property are shown
+      mode: null
+      # Restrict the node selection to a specific document node type
+      # BEWARE: the node type needs to inherit from NEOSidekick.AiAssistant:Mixin.AiPageBriefing
+      nodeTypeFilter: null
+      # Predefines how many images should be processed per page, to avoid generate too many in parallel
+      # Allowed: 5, 10, 15, 20, 25
+      itemsPerPage: 10
+    seoTitleAndMetaDescriptionModule:
+      # The workspace name where the nodes are taken from and saved to
+      # Allowed: null, live, ... (any other workspace name)
+      workspace: null
+      # The mode how nodes should be filtered based on the focusKeyword property
+      # Allowed:
+      #  - only-empty: Only nodes with an empty seo title or meta description property are shown
+      #  - both: Both nodes with empty and non-empty seo title or meta description properties are shown
       mode: null
       # Restrict the node selection to a specific document node type
       # BEWARE: the node type needs to inherit from NEOSidekick.AiAssistant:Mixin.AiPageBriefing

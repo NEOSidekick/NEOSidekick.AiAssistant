@@ -1,32 +1,25 @@
 import React from "react";
-import PropTypes from "prop-types";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheck, faSpinner} from "@fortawesome/free-solid-svg-icons"
-import PureComponent from "../PureComponent";
-// @connect(null, (dispatch, ownProps) => ({
-//     update(propertyValue: string) {
-//         dispatch(updateItemProperty({ identifier: ownProps.item.identifier, propertyValue }))
-//     },
-//     persist() {
-//         dispatch(persistOneItem(ownProps.item.identifier))
-//     }
-// }))
-export default class AssetListItem extends PureComponent {
-    static propTypes = {
-        item: PropTypes.object.isRequired,
-        update: PropTypes.func,
-        persist: PropTypes.func
-    }
+import PureComponent from "../../Components/PureComponent";
+import ListViewItem, {ListItemProps} from "./ListViewItem";
+import {AssetListItem} from "../../Model/ListItem";
 
+export interface AssetListViewItemProps extends ListItemProps {
+    item: AssetListItem
+}
+
+// TODO
+export default class AssetListViewItem extends PureComponent<AssetListViewItemProps, {}> {
     handleChange(event) {
-        const {update} = this.props;
-        update(event.target.value)
+        const {updateItem} = this.props;
+        updateItem(event.target.value)
     }
 
     discard(): void
     {
-        const {update} = this.props;
-        update('')
+        const {updateItem} = this.props;
+        updateItem('')
     }
 
     canChangeValue(): boolean
@@ -35,13 +28,7 @@ export default class AssetListItem extends PureComponent {
         return !(item.persisted || item.generating || item.persisting);
     }
 
-    canDiscard(): boolean
-    {
-        const {item} = this.props;
-        return !(item.persisted || item.generating || item.persisting || item.propertyValue === '');
-    }
-
-    canPersist(): boolean
+    canDiscardAndPersist(): boolean
     {
         const {item} = this.props;
         return !(item.persisted || item.generating || item.persisting || item.propertyValue === '');
@@ -75,7 +62,7 @@ export default class AssetListItem extends PureComponent {
     }
 
     render() {
-        const { item, persist } = this.props;
+        const { item, persistItem } = this.props;
         const textfieldId = item.propertyName + '-' + item.identifier
         return (
             <div className={'neos-row-fluid'} style={{marginBottom: '2rem', opacity: (item.persisted ? '0.5' : '1')}}>
@@ -100,15 +87,15 @@ export default class AssetListItem extends PureComponent {
                         <button
                             className={'neos-button neos-button-danger'}
                             style={{marginRight: '8px'}}
-                            disabled={!this.canDiscard()}
+                            disabled={!this.canDiscardAndPersist()}
                             onClick={() => this.discard()}>
                             {this.translationService.translate('NEOSidekick.AiAssistant:Module:discard', 'Discard')}
                         </button>
                         <button
                             className={'neos-button neos-button-success'}
                             style={{marginRight: '8px'}}
-                            disabled={!this.canPersist()}
-                            onClick={persist}>{this.renderSaveButtonLabel()}
+                            disabled={!this.canDiscardAndPersist()}
+                            onClick={persistItem}>{this.renderSaveButtonLabel()}
                         </button>
                         {item.generating ? <span>
                             <FontAwesomeIcon icon={faSpinner} spin={true}/> {this.translationService.translate('NEOSidekick.AiAssistant:Module:generating', 'Generating...')}

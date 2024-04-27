@@ -2,9 +2,9 @@ import React from 'react';
 import RootView from './Views/RootView'
 import {createRoot} from 'react-dom/client';
 import {Endpoints} from "./Model/Endpoints";
-import BackendService from "./Service/BackendService";
+import NeosBackendService from "./Service/NeosBackendService";
 import TranslationService from "./Service/TranslationService";
-import {ExternalService} from "./Service/ExternalService";
+import {SidekickApiService} from "./Service/SidekickApiService";
 import {ModuleConfiguration} from "./Model/ModuleConfiguration";
 import ErrorMessage from "./Components/ErrorMessage";
 import Workspaces from "./Model/Workspaces";
@@ -21,7 +21,7 @@ document.addEventListener('DOMContentLoaded', async() => {
     const moduleConfiguration = window['_NEOSIDEKICK_AIASSISTANT_moduleConfiguration'] as ModuleConfiguration;
     const workspaces = window['_NEOSIDEKICK_AIASSISTANT_workspaces'] as Workspaces;
 
-    const backend = BackendService.getInstance()
+    const backend = NeosBackendService.getInstance()
     backend.configure(endpoints, csrfToken)
 
     const translationService = TranslationService.getInstance();
@@ -45,8 +45,8 @@ document.addEventListener('DOMContentLoaded', async() => {
         return
     }
 
-    const externalService = ExternalService.getInstance()
-    externalService.configure(frontendConfiguration.apiDomain, frontendConfiguration.apiKey, frontendConfiguration.userInterfaceLanguage)
+    const sidekickApiService = SidekickApiService.getInstance()
+    sidekickApiService.configure(frontendConfiguration.apiDomain, frontendConfiguration.apiKey, frontendConfiguration.userInterfaceLanguage)
 
     root.render(
         <RootView

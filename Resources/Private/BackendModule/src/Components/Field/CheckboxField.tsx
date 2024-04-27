@@ -3,7 +3,7 @@ import React, { ChangeEvent } from "react";
 
 interface CheckboxFieldProps {
     label: string,
-    value: string | number,
+    value?: string | number,
     checked: boolean,
     onChange: (event: ChangeEvent<HTMLInputElement>) => void,
 }

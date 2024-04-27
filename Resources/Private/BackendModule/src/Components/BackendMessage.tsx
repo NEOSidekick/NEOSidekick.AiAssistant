@@ -1,8 +1,6 @@
 import PureComponent from "./PureComponent";
-import {ExternalService} from "../Service/ExternalService";
+import {SidekickApiService} from "../Service/SidekickApiService";
 import React from "react";
-import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faSpinner} from "@fortawesome/free-solid-svg-icons";
 
 export default class BackendMessage extends PureComponent<BackendMessageProps, BackendMessageState> {
     constructor(props: BackendMessageProps) {
@@ -17,8 +15,8 @@ export default class BackendMessage extends PureComponent<BackendMessageProps, B
     }
     componentDidMount() {
         if (this.props.identifier) {
-            const externalService = ExternalService.getInstance();
-            externalService.getBackendNotification(this.props.identifier)
+            const sidekickApiService = SidekickApiService.getInstance();
+            sidekickApiService.getBackendNotification(this.props.identifier)
                 .then((data) => this.setState({message: data}))
                 .catch(() => this.setState({message: undefined}));
         }

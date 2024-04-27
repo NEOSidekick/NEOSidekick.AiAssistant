@@ -1,9 +1,10 @@
 import React from "react";
 import PureComponent from "../../Components/PureComponent";
-import AppContext from "../../AppContext";
+import AppContext, {AppContextType} from "../../AppContext";
 
 export default class StartModuleButton extends PureComponent {
-    static contextType = AppContext
+    static contextType = AppContext;
+    context: AppContextType;
 
     render() {
         return <button className={'neos-button neos-button-primary'} onClick={() =>  this.context.setAppStateToEdit()}>

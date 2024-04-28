@@ -1,13 +1,38 @@
 type: dictionary
 additionalProperties: false
 properties:
+  apikey: { type: string }
+  developmentBuild: { type: boolean }
+  defaultLanguage: { type: string, enum: ['de', 'en', 'fr', 'it', 'es']}
+  chatSidebarEnabled: { type: boolean }
+  languageDimensionName: { type: string }
+  modifyTextModal:
+    type: dictionary
+    additionalProperties: false
+    properties:
+      preferCustomPrompt: { type: boolean }
   altTextGeneratorModule:
     type: dictionary
     additionalProperties: false
     properties:
-      limit: { type: integer }
       onlyAssetsInUse: { type: boolean }
       propertyName: { type: [string, 'null'], enum: ['title', 'caption'] }
-  apikey: { type: string }
-  defaultLanguage: { type: string, enum: ['de', 'en', 'fr', 'it', 'es']}
-  developmentBuild: { type: boolean }
+      itemsPerPage: { type: integer }
+      language: { type: [string, 'null'] }
+  focusKeywordGeneratorModule:
+    type: dictionary
+    additionalProperties: false
+    properties:
+      workspace: { type: [string, 'null'] }
+      propertyFilter: { type: [string, 'null'], enum: ['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'] }
+      nodeTypeFilter: { type: [string, 'null'] }
+      itemsPerPage: { type: integer }
+  seoTitleAndMetaDescriptionModule:
+    type: dictionary
+    additionalProperties: false
+    properties:
+      workspace: { type: [string, 'null'] }
+      propertyFilter: { type: [string, 'null'], enum: ['none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions'] }
+      nodeTypeFilter: { type: [string, 'null'] }
+      itemsPerPage: { type: integer }
+

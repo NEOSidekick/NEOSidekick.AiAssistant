@@ -37,10 +37,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 accumulator[item.identifier] = this.postprocessListItem(item, this.context.moduleConfiguration);
                 return accumulator;
             }, {});
-            const sortedItems = Object.fromEntries(Object.entries(processedItems).sort());
             this.setState({
-                items: sortedItems as ListItems,
-                listState: (Object.values(sortedItems).length > 0 ? ListState.Result : ListState.Empty)
+                items: processedItems as ListItems,
+                listState: (Object.values(processedItems).length > 0 ? ListState.Result : ListState.Empty)
             });
         } catch (e) {
             this.context.setAppStateToError(this.translationService.fromError(e));
@@ -95,8 +94,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
 
     private paginatedItems(): ListItem[]
     {
+        const sortedItemsArray = Object.values(this.state.items).sort((a, b) => a.identifier.localeCompare(b.identifier));
         const offset = (this.state.currentPage - 1) * this.state.itemsPerPage;
-        return Object.values(this.state.items).slice(offset, offset + this.state.itemsPerPage);
+        return Object.values(sortedItemsArray).slice(offset, offset + this.state.itemsPerPage);
     }
 
     private renderList() {
@@ -114,6 +114,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         }
         return (this.paginatedItems().map((item: ListItem) =>
             <ListViewItem
+                key={item.identifier}
                 item={item}
                 updateItem={(newItem) => this.updateItem(newItem)}
                 persistItem={(item: ListItem) => this.persistItems([item])} />))
@@ -159,7 +160,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             this.updateItem(produce(item, (draft: ListItem) => {
                 draft.state = ListItemState.Persisting
             }))
-        })
+        });
         await NeosBackendService.getInstance().persistItems(
             itemsToPersist.map(item => {
                 const properties = Object.values(item.editableProperties).reduce((accumulator, property) => {
@@ -185,7 +186,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                         throw new Error('Unknown item type ' + item.type);
                 }
             })
-            .filter(item => Object.keys(item.properties).length > 0));
+            .filter(item => Object.keys(item.properties).length > 0)
+        );
         itemsToPersist.forEach(item => {
             this.updateItem(produce(item, (draft: ListItem) => {
                 draft.state = ListItemState.Persisted

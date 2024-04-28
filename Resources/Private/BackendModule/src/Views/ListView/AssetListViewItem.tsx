@@ -13,36 +13,58 @@ export interface AssetListViewItemProps extends ListItemProps {
     item: AssetListItem
 }
 
-export default class AssetListViewItem extends PureComponent<AssetListViewItemProps, {}> {
+export interface AssetListViewItemState {
+    errorMessage?: string,
+}
+
+export default class AssetListViewItem extends PureComponent<AssetListViewItemProps, AssetListViewItemState> {
     constructor(props: AssetListViewItemProps) {
         super(props);
+        this.state = {};
         // noinspection JSIgnoredPromiseFromCall
-        this.generate();
+        this.generateValue();
     }
 
-    async generate() {
+    private getProperty(): ListItemProperty {
+        return Object.values(this.props.item.editableProperties)[0];
+    }
+
+    async generateValue() {
         const {item} = this.props;
-        const property = Object.values(item.editableProperties)[0];
+        const property = this.getProperty();
         this.updateItemProperty(property.propertyName, property.currentValue, ListItemPropertyState.Generating);
         const sidekickApiService = SidekickApiService.getInstance();
-        const response = await sidekickApiService.generate('image_alt_text', 'de', [
-            {
-                identifier: 'url',
-                value: [
-                    item.fullsizeUri,
-                    item.thumbnailUri
-                ]
-            }
-        ])
-        debugger
-        if (response) {
+        try {
+            const response = await sidekickApiService.generate('image_alt_text', 'de', [
+                {
+                    identifier: 'url',
+                    value: [
+                        item.fullsizeUri,
+                        item.thumbnailUri
+                    ]
+                }
+            ]);
             this.updateItemProperty(property.propertyName, response, ListItemPropertyState.AiGenerated);
+        } catch (e) {
+            this.updateItemProperty(property.propertyName, property.currentValue, ListItemPropertyState.Initial);
+            this.setState({errorMessage: this.translationService.fromError(e)});
+        }
+    }
+
+    componentDidUpdate(prevProps: Readonly<AssetListViewItemProps>) {
+        // when the user starts typing again, remove the error message
+        if (!this.state.errorMessage) {
+            return;
+        }
+        const newProperty = this.props.item.editableProperties[Object.keys(this.props.item.editableProperties)[0]];
+        if (newProperty.state === ListItemPropertyState.UserManipulated) {
+            this.setState({errorMessage: undefined});
         }
     }
 
     handleChange(event: any) {
         const {item} = this.props;
-        const property = Object.values(item.editableProperties)[0];
+        const property = this.getProperty();
         this.updateItemProperty(property.propertyName, event.target.value, ListItemPropertyState.UserManipulated);
     }
 
@@ -74,7 +96,7 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
     private canChangeValue(): boolean
     {
         const {item} = this.props;
-        const property = Object.values(item.editableProperties)[0];
+        const property = this.getProperty();
         return item.state === ListItemState.Initial && property.state !== ListItemPropertyState.Generating;
     }
 
@@ -110,16 +132,25 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
         }
     }
 
-
     render() {
         const { item, persistItem } = this.props;
-        const property = Object.values(item.editableProperties)[0];
+        const {errorMessage} = this.state;
+        const property = this.getProperty();
         const textfieldId = item.propertyName + '-' + item.identifier;
 
-        const textAreaStyle = property.initialValue === property.currentValue ? {} : {
-            boxShadow: '0 0 0 2px #ff8700',
-            borderRadius: '3px'
-        };
+        let textAreaStyle = {width: '100%', padding: '10px 14px'};
+        if (property.initialValue !== property.currentValue) {
+            textAreaStyle = Object.assign(textAreaStyle, {
+                boxShadow: '0 0 0 2px #ff8700',
+                borderRadius: '3px',
+            });
+        }
+        if (item.state === ListItemState.Persisted) {
+            textAreaStyle = Object.assign(textAreaStyle, {
+                boxShadow: 'none',
+                background: 'var(--colors-Success)',
+            });
+        }
 
         return (
             <div className={'neos-row-fluid'} style={{marginBottom: '2rem', opacity: (item.state === ListItemState.Persisted ? '0.5' : '1')}}>
@@ -130,11 +161,12 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
                     <h2 style={{marginBottom: '1rem'}}>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:assetListItemLabel', 'File »' + item.filename + '«', {0: item.filename})}</h2>
                     <div className={'neos-control-group'}>
                         <label className={'neos-control-label'} htmlFor={textfieldId}>{this.translationService.translate('Neos.Media.Browser:Main:field_' + property.propertyName, property.propertyName)}</label>
-                        <div className={'neos-controls'}>
+                        <div className={'neos-controls'} style={{position: 'relative'}}>
+                            {property.state == ListItemPropertyState.Generating && <FontAwesomeIcon icon={faSpinner} spin={true} style={{position: 'absolute', inset: '12px'}}/>}
                             <textarea
                                 id={textfieldId}
                                 className={property.initialValue !== property.currentValue ? 'textarea--highlight' : ''}
-                                style={Object.assign(textAreaStyle, {width: '100%', padding: '10px 14px'})}
+                                style={textAreaStyle}
                                 value={property.currentValue || ''}
                                 rows={3}
                                 onChange={(e) => this.handleChange(e)}
@@ -142,6 +174,7 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
                         </div>
                     </div>
                     {Object.values(item.editableProperties).length > 1 && <ErrorMessage message="Expected only one editable property for an asset" />}
+                    {errorMessage && <ErrorMessage message={errorMessage}/>}
                     <div>
                         <button
                             className={'neos-button neos-button-danger'}

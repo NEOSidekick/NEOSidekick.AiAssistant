@@ -82,7 +82,7 @@ export default class AssetConfigurationForm extends PureComponent<AssetConfigura
                 <ItemsPerPageField moduleConfiguration={moduleConfiguration} updateModuleConfiguration={this.context.updateModuleConfiguration}/>
                 <br/>
                 <br/>
-                <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:actions', '')}:</h2>
+                {(!moduleConfiguration.enforceConfigs.includes('propertyName') || !moduleConfiguration.enforceConfigs.includes('language')) && <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:actions', '')}:</h2>}
                 <br/>
                 {this.renderPropertyNameField()}
                 {this.renderLanguageField()}

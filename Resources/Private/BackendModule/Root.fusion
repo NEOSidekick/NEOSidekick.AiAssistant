@@ -62,10 +62,10 @@ NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index
             editableProperties = ${['titleOverride', 'metaDescription']}
             showSeoDirectives = true
             actions = Neos.Fusion:DataStructure {
-                'autoGenerateEmptySeoTitles' = ${{'value': true, 'clientEval': 'Auto-generate empty SEO titles'}}
-                'autoGenerateEmptyMetaDescriptions' = ${{'value': true, 'clientEval': 'Auto-generate empty SEO titles'}}
-                'autoGenerateExistingSeoTitles' = ${{'value': false, 'clientEval': 'Auto-generate empty SEO titles'}}
-                'autoGenerateExistingMetaDescriptions' = ${{'value': false, 'clientEval': 'Auto-generate empty SEO titles'}}
+                'autoGenerateEmptySeoTitles' = ${{'active': true, 'propertyName': 'titleOverride', 'clientEval': 'ClientEval: !node.properties.titleOverride'}}
+                'autoGenerateEmptyMetaDescriptions' = ${{'active': true, 'propertyName': 'metaDescription', 'clientEval': 'ClientEval: !node.properties.metaDescription'}}
+                'autoGenerateExistingSeoTitles' = ${{'active': false, 'propertyName': 'titleOverride', 'clientEval': 'ClientEval: node.properties.titleOverride'}}
+                'autoGenerateExistingMetaDescriptions' = ${{'active': false, 'propertyName': 'metaDescription', 'clientEval': 'ClientEval: node.properties.metaDescription'}}
             }
         }
         config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.seoTitleAndMetaDescriptionModule'), (value, key) => value != null)}

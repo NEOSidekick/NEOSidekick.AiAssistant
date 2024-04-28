@@ -15,7 +15,8 @@ export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
     nodeTypeFilter: string|null,
     actions: {
         [key: string]: {
-            value: boolean,
+            active: boolean,
+            propertyName: string,
             clientEval: string,
         }
     }

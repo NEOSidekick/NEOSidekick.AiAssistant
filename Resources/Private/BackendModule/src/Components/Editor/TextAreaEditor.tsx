@@ -7,6 +7,8 @@ import {SidekickApiService} from "../../Service/SidekickApiService";
 import { ContentService } from "../../Service/ContentService";
 import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
 import ErrorMessage from "../ErrorMessage";
+import AppContext, {AppContextType} from "../../AppContext";
+import {DocumentNodeModuleConfiguration} from "../../Model/ModuleConfiguration";
 
 export interface TextAreaEditorProps {
     disabled: boolean,
@@ -16,7 +18,7 @@ export interface TextAreaEditorProps {
     htmlContent?: string
     updateItemProperty: (value: string, state: ListItemPropertyState) => void,
     sidekickConfiguration?: TextAreaEditorSidekickConfiguration,
-    autoGenerate?: boolean,
+    autoGenerateIfActionsMatch?: boolean,
     showGenerateButton?: boolean,
     rows?: number,
     marginBottom?: string,
@@ -30,21 +32,32 @@ export interface TextAreaEditorState {
 }
 
 export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,TextAreaEditorState> {
+    static contextType = AppContext;
+    context: AppContextType;
+
     constructor(props: TextAreaEditorProps) {
         super(props);
         this.state = {
             placeholder: ''
         }
-
-        if (this.props.autoGenerate) {
-            this.props.updateItemProperty(props.property.currentValue, ListItemPropertyState.Generating);
-        }
     }
 
-    componentDidMount() {
-        if (this.props.autoGenerate) {
-            // noinspection JSIgnoredPromiseFromCall
-            this.generateValue();
+    async componentDidMount() {
+        if (this.props.autoGenerateIfActionsMatch) {
+            const {actions} = this.context.moduleConfiguration as DocumentNodeModuleConfiguration;
+            let matches = false;
+            for (const key in actions) {
+                if (actions.hasOwnProperty(key)) {
+                    const action = actions[key];
+                    if (!matches && action.active && action.propertyName === this.props.property.propertyName) {
+                        matches = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(action.clientEval, this.props.item, '');
+                    }
+                }
+            }
+            if (matches) {
+                // noinspection JSIgnoredPromiseFromCall
+                this.generateValue();
+            }
         }
     }
 
@@ -153,7 +166,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
     }
 
     render () {
-        const {item, property, propertySchema, disabled, autoGenerate, showGenerateButton, rows, marginBottom} = this.props;
+        const {item, property, propertySchema, disabled, showGenerateButton, rows, marginBottom} = this.props;
         const {placeholder, generatedChoices, errorMessage} = this.state;
         const maxlength = propertySchema?.validation ? propertySchema.validation['Neos.Neos/Validation/StringLengthValidator']?.maximum : null;
         const id = 'field-' + (Math.random() * 1000);

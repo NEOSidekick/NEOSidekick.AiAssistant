@@ -8,6 +8,8 @@ import {ListItemProperty, ListItemPropertyState} from "../../Model/ListItemPrope
 import ErrorMessage from "../../Components/ErrorMessage";
 import {Draft, produce} from "immer";
 import {SidekickApiService} from "../../Service/SidekickApiService";
+import {AssetModuleConfiguration} from "../../Model/ModuleConfiguration";
+import AppContext, {AppContextType} from "../../AppContext";
 
 export interface AssetListViewItemProps extends ListItemProps {
     item: AssetListItem
@@ -18,11 +20,15 @@ export interface AssetListViewItemState {
 }
 
 export default class AssetListViewItem extends PureComponent<AssetListViewItemProps, AssetListViewItemState> {
+    static contextType = AppContext;
+    context: AppContextType;
+
     constructor(props: AssetListViewItemProps) {
         super(props);
         this.state = {};
         // noinspection JSIgnoredPromiseFromCall
-        this.generateValue();
+        // we need to wait for the context to be set
+        setTimeout(() => this.generateValue(), 100);
     }
 
     private getProperty(): ListItemProperty {
@@ -31,11 +37,13 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
 
     async generateValue() {
         const {item} = this.props;
+        const moduleConfiguration = this.context.moduleConfiguration as AssetModuleConfiguration;
+        const language = moduleConfiguration.language as unknown as string;
         const property = this.getProperty();
         this.updateItemProperty(property.propertyName, property.currentValue, ListItemPropertyState.Generating);
         const sidekickApiService = SidekickApiService.getInstance();
         try {
-            const response = await sidekickApiService.generate('image_alt_text', 'de', [
+            const response = await sidekickApiService.generate('image_alt_text', language, [
                 {
                     identifier: 'url',
                     value: [

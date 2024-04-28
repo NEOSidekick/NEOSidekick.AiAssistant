@@ -8,6 +8,7 @@ export class ContentService {
     private apiDomain: string = ''
     private apiKey: string = ''
     private interfaceLanguage: string = 'en';
+    private currentProcessingHtmlContent: string = '';
 
     public static getInstance(): ContentService
     {
@@ -18,11 +19,13 @@ export class ContentService {
     }
 
 
-    processObjectWithClientEvalFromDocumentNodeListItem = async (obj: object, item: DocumentNodeListItem): Promise<object> => {
+    processObjectWithClientEvalFromDocumentNodeListItem = async (obj: object, item: DocumentNodeListItem, htmlContent: string): Promise<object> => {
+        this.currentProcessingHtmlContent = htmlContent;
         return this.processObjectWithClientEval(obj, this.createFakePartialNode(item), this.createFakeParentNode());
     }
 
-    processClientEvalFromDocumentNodeListItem = async (value: any, item: DocumentNodeListItem): Promise<any> => {
+    processClientEvalFromDocumentNodeListItem = async (value: any, item: DocumentNodeListItem, htmlContent: string): Promise<any> => {
+        this.currentProcessingHtmlContent = htmlContent;
         return this.processClientEval(value, this.createFakePartialNode(item), this.createFakeParentNode());
     }
 
@@ -40,13 +43,16 @@ export class ContentService {
                 if (!node || !parentNode) {
                     throw new Error('ContentService.processClientEval() always requires a node and a parentNode')
                 }
+                let documentTitle = null;
+                let documentContent = null;
                 if (value.indexOf('documentTitle') !== -1 || value.indexOf('documentContent') !== -1) {
-                    throw new Error('ContentService.processClientEval() currently does not support documentTitle and documentContent');
-                    // const documentTitle = this.getGuestFrameDocumentTitle()
-                    // const documentContent = this.getGuestFrameDocumentHtml()
+                    if (!this.currentProcessingHtmlContent) {
+                        throw new Error('ContentService.processClientEval() currently does not support documentTitle and documentContent, because the htmlContent is not set.');
+                    }
+                    // eval only when needed
+                    documentTitle = this.getGuestFrameDocumentTitle();
+                    documentContent = this.getGuestFrameDocumentHtml();
                 }
-                const documentTitle = '';
-                const documentContent = '';
 
                 // Functions
                 const AssetUri = () => {
@@ -104,16 +110,19 @@ export class ContentService {
         });
     }
 
-    /* TODO
-    getGuestFrameContentDocument = (): Document | null => {
+    getGuestFrameDocumentTitle() {
+        if (!this.currentProcessingHtmlContent) {
+            return null;
+        }
+
         let parser = new DOMParser();
-        let doc = parser.parseFromString(htmlString, "text/html");
-        console.info(doc.title);
-        debugger
-        this.guestFrameContentDocument = doc?.contentDocument;
-        return this.guestFrameContentDocument;
+        let doc = parser.parseFromString(this.currentProcessingHtmlContent, "text/html");
+        return doc.title;
     }
-    */
+
+    getGuestFrameDocumentHtml() {
+        return this.currentProcessingHtmlContent;
+    }
 
     /*
      *
@@ -122,13 +131,6 @@ export class ContentService {
      *
      */
 
-    getGuestFrameDocumentTitle() {
-        return <string>this.getGuestFrameContentDocument()?.title;
-    }
-
-    getGuestFrameDocumentHtml() {
-        return <string>this.getGuestFrameContentDocument()?.body?.innerHTML;
-    }
 
     processValueWithClientEval = async (value: any, node?: Node, parentNode?: Node): Promise<any> => {
         if (typeof value === 'string') {

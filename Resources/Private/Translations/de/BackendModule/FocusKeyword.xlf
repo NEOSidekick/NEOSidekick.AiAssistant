@@ -10,30 +10,6 @@
                 <source>You can use this tool to set a focus keyword for each page. This is the first step in creating search engine optimized page titles and meta descriptions.</source>
                 <target>Mit diesem Tool kannst du pro Seite ein Fokus-Keyword setzen. Das ist der erste Schritt um suchmaschinenoptimierte Seitentitel und Metabeschreibungen zu erstellen.</target>
             </trans-unit>
-            <trans-unit id="configuration.mode.label">
-                <source>Selection of pages</source>
-                <target>Auswahl der Seiten</target>
-            </trans-unit>
-            <trans-unit id="configuration.mode.both">
-                <source>All</source>
-                <target>Alle</target>
-            </trans-unit>
-            <trans-unit id="configuration.mode.only-empty">
-                <source>Only empty focus keywords</source>
-                <target>Nur leere Fokus-Keywords</target>
-            </trans-unit>
-            <trans-unit id="configuration.mode.only-existing">
-                <source>Only existing focus keywords</source>
-                <target>Nur bestehende Fokus-Keywords</target>
-            </trans-unit>
-            <trans-unit id="configuration.generateEmptyFocusKeywords.label">
-                <source>Generate empty focus keywords automatically</source>
-                <target>Leere Fokus-Keywords automatisch generieren</target>
-            </trans-unit>
-            <trans-unit id="configuration.regenerateExistingFocusKeywords.label">
-                <source>Regenerate existing focus keywords automatically</source>
-                <target>Bestehende Fokus-Keywords automatisch neu generieren</target>
-            </trans-unit>
         </body>
     </file>
 </xliff>

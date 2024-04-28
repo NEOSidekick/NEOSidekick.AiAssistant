@@ -52,14 +52,14 @@ class NodeService
     protected $nodeTypeManager;
 
     /**
-     * @param FindDocumentNodesFilter $configurationDto
+     * @param FindDocumentNodesFilter $findDocumentNodesFilter
      * @param ControllerContext   $controllerContext
      *
      * @return array
      */
-    public function find(FindDocumentNodesFilter $configurationDto, ControllerContext $controllerContext): array
+    public function find(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext): array
     {
-        $workspace = $this->workspaceRepository->findByIdentifier($configurationDto->getWorkspace());
+        $workspace = $this->workspaceRepository->findByIdentifier($findDocumentNodesFilter->getWorkspace());
 
         if (!$workspace) {
             throw new InvalidArgumentException('The given workspace does not exist in the database. Please reload the page.', 1713440899886);
@@ -68,18 +68,16 @@ class NodeService
         $workspaceChain = array_merge([$workspace], array_values($workspace->getBaseWorkspaces()));
         $queryBuilder = $this->createQueryBuilder($workspaceChain);
         $queryBuilder->andWhere('n.nodeType IN (:includeNodeTypes)');
-        $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($configurationDto));
+        $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
-        // TODO Adopt
-        $itemsWhereFocusKeywordValueMatchesConfiguration = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($configurationDto) {
-            $currentFocusKeywordPropertyValue = $nodeData->hasProperty('focusKeyword') ? $nodeData->getProperty('focusKeyword') : null;
-            return self::focusKeywordValueMatchesConfiguration($currentFocusKeywordPropertyValue, $configurationDto);
+        $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($findDocumentNodesFilter) {
+            return self::nodeMatchesPropertyFilter($nodeData, $findDocumentNodesFilter);
         });
 
         $result = [];
-        foreach ($itemsWhereFocusKeywordValueMatchesConfiguration as $nodeData) {
-            $context = $this->createContentContext($configurationDto->getWorkspace(), $nodeData->getDimensionValues());
+        foreach ($itemsWithMatchingPropertyFilter as $nodeData) {
+            $context = $this->createContentContext($findDocumentNodesFilter->getWorkspace(), $nodeData->getDimensionValues());
             $node = new Node($nodeData, $context);
             $result[] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
         }
@@ -107,18 +105,25 @@ class NodeService
     }
 
     /**
-     * @param mixed               $value
-     * @param FindDocumentNodesFilter $configurationDto
+     * @param NodeData                $nodeData
+     * @param FindDocumentNodesFilter $findDocumentNodesFilter
      *
      * @return bool
      */
-    protected static function focusKeywordValueMatchesConfiguration(mixed $value, FindDocumentNodesFilter $configurationDto): bool
+    protected static function nodeMatchesPropertyFilter(NodeData $nodeData, FindDocumentNodesFilter $findDocumentNodesFilter): bool
     {
-        return match ($configurationDto->getMode()) {
-            'both' => true,
-            'only-empty' => empty($value),
-            'only-existing' => !empty($value),
-            default => false,
+        $focusKeywordValue = $nodeData->hasProperty('focusKeyword') ? $nodeData->getProperty('focusKeyword') : null;
+        $titleOverride = $nodeData->hasProperty('titleOverride') ? $nodeData->getProperty('titleOverride') : null;
+        $metaDescription = $nodeData->hasProperty('metaDescription') ? $nodeData->getProperty('metaDescription') : null;
+        return match ($findDocumentNodesFilter->getPropertyFilter()) {
+            'none' => true,
+            'only-empty-focus-keywords' => empty($focusKeywordValue),
+            'only-existing-focus-keywords' => !empty($focusKeywordValue),
+            'only-empty-seo-titles-or-meta-descriptions' => empty($titleOverride) || empty($metaDescription),
+            'only-empty-seo-titles' => empty($titleOverride),
+            'only-empty-meta-descriptions' => empty($metaDescription),
+            'only-existing-seo-titles' => !empty($titleOverride),
+            'only-existing-meta-descriptions' => !empty($metaDescription),
         };
     }
 

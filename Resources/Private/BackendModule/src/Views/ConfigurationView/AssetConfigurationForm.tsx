@@ -74,7 +74,7 @@ export default class AssetConfigurationForm extends PureComponent<AssetConfigura
             <div className={'neos-content neos-indented neos-fluid-container'}>
                 <p style={{marginBottom: '1rem', maxWidth: '80ch'}}
                    dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:intro', 'With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>')}}/>
-                <BackendMessage identifier="bulk-image-generation"/>
+                <BackendMessage identifier="alternate-image-text-generator"/>
 
                 <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', '')}:</h2>
                 <br/>

@@ -6,19 +6,19 @@ export interface ModuleConfiguration {
 }
 
 export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
+    moduleName: string,
     workspace: string,
-    mode: FocusKeywordModuleMode,
+    propertyFilterOptions: string[],
+    propertyFilter: string|null,
     baseNodeTypeFilter: string|null,
     nodeTypeFilter: string|null,
-    generateEmptyFocusKeywords: boolean,
-    regenerateExistingFocusKeywords: boolean,
+    actions: {
+        [key: string]: {
+            value: boolean,
+            clientEval: string,
+        }
+    }
 }
-export enum FocusKeywordModuleMode {
-    'both',
-    'only-empty',
-    'only-existing',
-}
-
 
 export interface AssetModuleConfiguration extends ModuleConfiguration {
     onlyAssetsInUse: boolean;

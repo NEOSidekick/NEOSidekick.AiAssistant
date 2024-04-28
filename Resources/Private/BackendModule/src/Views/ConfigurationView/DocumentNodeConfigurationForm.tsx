@@ -2,7 +2,7 @@ import PureComponent from "../../Components/PureComponent";
 import ItemsPerPageField from "./ItemsPerPageField";
 import React from "react";
 import {enumKeys} from "../../Util";
-import {DocumentNodeModuleConfiguration, FocusKeywordModuleMode} from "../../Model/ModuleConfiguration";
+import {DocumentNodeModuleConfiguration} from "../../Model/ModuleConfiguration";
 import BackendMessage from "../../Components/BackendMessage";
 import StartModuleButton from "./StartModuleButton";
 import AppContext, {AppContextType} from "../../AppContext";
@@ -25,7 +25,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
 
     private renderWorkspaceField() {
         const workspaces = this.context.workspaces;
-        const moduleConfiguration = this.props.moduleConfiguration;
+        const {moduleConfiguration} = this.props;
         return (moduleConfiguration.enforceConfigs.includes('workspace') ? null :
             <SelectField
                 label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.workspace.label', 'Workspace')}
@@ -40,65 +40,67 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         )
     }
 
-    private renderModeField() {
-        const moduleConfiguration = this.props.moduleConfiguration;
-        return (moduleConfiguration.enforceConfigs.includes('mode') ? null :
+    private renderPropertyFilterField() {
+        const {moduleConfiguration} = this.props;
+        return ((moduleConfiguration.enforceConfigs.includes('propertyFilter') || !moduleConfiguration.propertyFilterOptions?.length) ? null :
             <SelectField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.FocusKeyword:configuration.mode.label', 'Selection of pages')}
-                value={moduleConfiguration.mode}
-                onChange={e => this.context.updateModuleConfiguration({mode: e.target.value as unknown as FocusKeywordModuleMode})}
-                options={enumKeys(FocusKeywordModuleMode).reduce((acc, mode) => {
-                    acc[mode] = this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.FocusKeyword:configuration.mode.' + mode, mode);
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.propertyFilter.label', 'Restrict by properties')}
+                value={moduleConfiguration.propertyFilter}
+                onChange={e => this.context.updateModuleConfiguration({propertyFilter: e.target.value})}
+                options={moduleConfiguration.propertyFilterOptions.reduce((acc, propertyFilter) => {
+                    acc[propertyFilter] = this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.propertyFilter.' + propertyFilter, propertyFilter);
                     return acc;
                 }, {})}
             />
         )
     }
 
-    private renderGenerateEmptyFocusKeywordsField()
-    {
-        const moduleConfiguration = this.props.moduleConfiguration;
-        return (moduleConfiguration.enforceConfigs.includes('generateEmptyFocusKeywords') ? null :
-            <CheckboxField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.FocusKeyword:configuration.generateEmptyFocusKeywords.label', 'Generate empty focus keywords automatically')}
-                checked={moduleConfiguration.generateEmptyFocusKeywords}
-                onChange={e => this.context.updateModuleConfiguration({generateEmptyFocusKeywords: e.target.checked})}
-            />
-        )
-    }
-
-    private renderRegenerateExistingFocusKeywordsField()
-    {
-        const moduleConfiguration = this.props.moduleConfiguration;
-        return (moduleConfiguration.enforceConfigs.includes('regenerateExistingFocusKeywords') ? null :
-            <CheckboxField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.FocusKeyword:configuration.regenerateExistingFocusKeywords.label', 'Regenerate existing focus keywords automatically')}
-                checked={moduleConfiguration.regenerateExistingFocusKeywords}
-                onChange={e => this.context.updateModuleConfiguration({regenerateExistingFocusKeywords: e.target.checked})}
-            />
-        )
-    }
-
-    render() {
-        const moduleConfiguration = this.props.moduleConfiguration;
+    private renderActions() {
+        const {actions} = this.props.moduleConfiguration;
+        if (!Object.keys(actions).length) {
+            return null;
+        }
         return (
-            <div className={'neos-content neos-indented neos-fluid-container'}>
-                <p style={{marginBottom: '1rem', maxWidth: '80ch'}}
-                   dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.FocusKeyword:description', '')}}/>
-                <BackendMessage identifier="focus-keyword"/>
-
-                <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', '')}:</h2>
-                <br/>
-                {this.renderWorkspaceField()}
-                {this.renderModeField()}
-                <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>
-                <ItemsPerPageField moduleConfiguration={moduleConfiguration} updateModuleConfiguration={this.context.updateModuleConfiguration}/>
+            <div>
                 <br/>
                 <br/>
                 <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:actions', '')}:</h2>
                 <br/>
-                {this.renderGenerateEmptyFocusKeywordsField()}
-                {this.renderRegenerateExistingFocusKeywordsField()}
+                {Object.keys(actions).map(actionName => (
+                    <CheckboxField
+                        label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.action.' + actionName, actionName)}
+                        checked={actions[actionName].value}
+                        onChange={e => {
+                            const actions = this.props.moduleConfiguration.actions;
+                            actions[actionName].value = e.target.checked;
+                            this.context.updateModuleConfiguration({actions});
+                        }}
+                    />
+                ))}
+            </div>
+        )
+    }
+
+    render() {
+        const {moduleConfiguration} = this.props;
+
+        /* to kebab case */
+        let moduleNameKebabCase = moduleConfiguration.moduleName.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
+        moduleNameKebabCase = moduleNameKebabCase.startsWith('-') ? moduleNameKebabCase.substring(1) : moduleNameKebabCase;
+
+        return (
+            <div className={'neos-content neos-indented neos-fluid-container'}>
+                <p style={{marginBottom: '1rem', maxWidth: '80ch'}}
+                   dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.' + moduleConfiguration.moduleName + ':description', '')}}/>
+                <BackendMessage identifier={moduleNameKebabCase + '-generator'}/>
+
+                <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', '')}:</h2>
+                <br/>
+                {this.renderWorkspaceField()}
+                {this.renderPropertyFilterField()}
+                <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>
+                <ItemsPerPageField moduleConfiguration={moduleConfiguration} updateModuleConfiguration={this.context.updateModuleConfiguration}/>
+                {this.renderActions()}
                 <div className={'neos-footer'}>
                     <StartModuleButton/>
                 </div>

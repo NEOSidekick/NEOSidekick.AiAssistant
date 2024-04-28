@@ -91,7 +91,7 @@ class BackendServiceController extends ActionController
         return json_encode(array_map(fn (UpdateAssetData $item) => $item->jsonSerialize(), $updateItems));
     }
 
-    public function initializeGetFocusKeywordNodesAction(): void
+    public function initializeFindDocumentNodesAction(): void
     {
         /** @noinspection PhpUnhandledExceptionInspection */
         $this->arguments->getArgument('configuration')
@@ -99,7 +99,7 @@ class BackendServiceController extends ActionController
             ->skipUnknownProperties()
             ->allowProperties(
                 'workspace',
-                'mode',
+                'propertyFilter',
                 'nodeTypeFilter'
             );
     }
@@ -109,13 +109,13 @@ class BackendServiceController extends ActionController
      *
      * @return string|bool
      */
-    public function getFocusKeywordNodesAction(FindDocumentNodesFilter $configuration): string|bool
+    public function findDocumentNodesAction(FindDocumentNodesFilter $configuration): string|bool
     {
         $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
         return json_encode($resultCollection);
     }
 
-    public function initializeUpdateFocusKeywordNodesAction(): void
+    public function initializeUpdateNodePropertiesAction(): void
     {
         /** @noinspection PhpUnhandledExceptionInspection */
         $this->arguments->getArgument('updateItems')
@@ -135,7 +135,7 @@ class BackendServiceController extends ActionController
      *
      * @return string
      */
-    public function updateFocusKeywordNodesAction(array $updateItems): string
+    public function updateNodePropertiesAction(array $updateItems): string
     {
         $this->nodeService->updatePropertiesOnNodes($updateItems);
         return json_encode(array_map(fn (UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems));

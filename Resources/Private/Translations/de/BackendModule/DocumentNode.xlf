@@ -10,6 +10,42 @@
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
                 <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
             </trans-unit>
+            <trans-unit id="configuration.propertyFilter.label">
+                <source>Restrict by properties</source>
+                <target>Auf Eigenschaften einschränken</target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyFilter.none">
+                <source>None</source>
+                <target>Ohne</target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyFilter.only-empty-focus-keywords">
+                <source>Only without focus keyword</source>
+                <target>Nur ohne Fokus-Keyword</target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyFilter.only-existing-focus-keywords">
+                <source>Only with focus keyword</source>
+                <target>Nur mit Fokus-Keyword</target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyFilter.only-empty-seo-titles-or-meta-descriptions">
+                <source>Only without seo title or meta description</source>
+                <target>Nur ohne SEO-Titel oder Meta-Beschreibung</target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyFilter.only-empty-seo-titles">
+                <source>Only without seo title</source>
+                <target>Nur ohne SEO-Titel</target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyFilter.only-empty-meta-descriptions">
+                <source>Only without meta description</source>
+                <target>Nur ohne Meta-Beschreibung</target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyFilter.only-existing-seo-titles">
+                <source>Only with seo title</source>
+                <target>Nur mit SEO-Titel</target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyFilter.only-existing-meta-descriptions">
+                <source>Only with meta description</source>
+                <target>Nur mit Meta-Beschreibung</target>
+            </trans-unit>
             <trans-unit id="configuration.nodeTypeFilter.label">
                 <source>Restrict to page type</source>
                 <target>Auf Seitentyp einschränken</target>
@@ -25,6 +61,22 @@
             <trans-unit id="configuration.workspace.label">
                 <source>Workspace</source>
                 <target>Arbeitsbereich</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptySeoTitles">
+                <source>Automatically generate empty SEO titles</source>
+                <target>Leere SEO-Titel automatisch generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyMetaDescriptions">
+                <source>Automatically generate empty meta descriptions</source>
+                <target>Leere Meta-Beschreibungen automatisch generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingSeoTitles">
+                <source>Automatically regenerate existing SEO titles</source>
+                <target>Bestehende SEO-Titel automatisch neu generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingMetaDescriptions">
+                <source>Automatically regenerate existing meta descriptions</source>
+                <target>Bestehende Meta-Beschreibungen automatisch neu generieren</target>
             </trans-unit>
             <trans-unit id="listItem.label">
                 <source>Page »{0}«</source>

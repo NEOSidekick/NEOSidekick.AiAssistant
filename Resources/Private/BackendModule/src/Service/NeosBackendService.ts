@@ -78,8 +78,8 @@ export default class NeosBackendService {
                 const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
                 return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 10000} as FindAssetsFilter;
             case 'DocumentNode':
-                const {workspace, mode, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
-                return {workspace, mode, nodeTypeFilter: nodeTypeFilter || ''} as FindDocumentNodesFilter;
+                const {workspace, propertyFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
+                return {workspace, propertyFilter: propertyFilter || 'none', nodeTypeFilter: nodeTypeFilter || ''} as FindDocumentNodesFilter;
             default:
                 throw new Error('Unknown item type');
         }

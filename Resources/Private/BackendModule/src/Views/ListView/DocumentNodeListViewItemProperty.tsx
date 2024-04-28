@@ -47,18 +47,21 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                         property={property}
                         propertySchema={propertySchema}
                         item={item}
+                        htmlContent={this.props.htmlContent}
                         updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty(value, state)}
                     />
                 )
             case 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor':
-            case 'NEOSidekick.AiAssistant/Inspector/Editors/TextAreaEditor':
+            case 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor':
                 return (
                     <TextAreaEditor
                         disabled={!this.canChangeValue()}
                         property={property}
                         propertySchema={propertySchema}
                         item={item}
+                        htmlContent={this.props.htmlContent}
                         updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty(value, state)}
+                        autoGenerate={true}
                         showGenerateButton={true}
                     />
                 )

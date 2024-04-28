@@ -1,5 +1,3 @@
-import {FocusKeywordModuleMode} from "../Model/ModuleConfiguration";
-
 export interface FindFilter {
 }
 
@@ -9,6 +7,6 @@ export interface FindAssetsFilter extends FindFilter {
 
 export interface FindDocumentNodesFilter extends FindFilter {
     workspace: string;
-    mode: FocusKeywordModuleMode;
+    propertyFilter: string;
     nodeTypeFilter: string;
 }

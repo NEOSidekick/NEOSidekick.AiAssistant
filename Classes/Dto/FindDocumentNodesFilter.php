@@ -16,10 +16,10 @@ final class FindDocumentNodesFilter
     protected string $workspace;
 
     /**
-     * 'only-empty', 'only-existing' or 'both'
+     * 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'
      * @var string
      */
-    protected string $mode;
+    protected string $propertyFilter;
 
     /**
      * @var string|null
@@ -28,16 +28,16 @@ final class FindDocumentNodesFilter
 
     /**
      * @param string      $workspace
-     * @param string      $mode
+     * @param string|null $propertyFilter
      * @param string|null $nodeTypeFilter
      */
     public function __construct(
-        string $workspace,
-        string $mode,
+        string  $workspace,
+        ?string  $propertyFilter = 'none',
         ?string $nodeTypeFilter = null
     ) {
         $this->workspace = $workspace;
-        $this->mode = $mode;
+        $this->propertyFilter = $propertyFilter;
         $this->nodeTypeFilter = empty($nodeTypeFilter) ? null : $nodeTypeFilter;
     }
 
@@ -46,9 +46,9 @@ final class FindDocumentNodesFilter
         return $this->workspace;
     }
 
-    public function getMode(): string
+    public function getPropertyFilter(): string
     {
-        return $this->mode;
+        return $this->propertyFilter;
     }
 
     public function getNodeTypeFilter(): ?string
@@ -59,7 +59,7 @@ final class FindDocumentNodesFilter
     /**
      * @param array{
      *     workspace: string,
-     *     mode: string,
+     *     propertyFilter: string,
      *     nodeTypeFilter: string|null
      * } $array
      *
@@ -69,7 +69,7 @@ final class FindDocumentNodesFilter
     {
         return new self(
             $array['workspace'],
-            $array['mode'],
+            $array['propertyFilter'],
             $array['nodeTypeFilter'] ?? null
         );
     }

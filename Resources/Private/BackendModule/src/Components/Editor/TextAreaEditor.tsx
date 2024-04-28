@@ -5,22 +5,27 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faMagic, faSpinner} from "@fortawesome/free-solid-svg-icons";
 import {SidekickApiService} from "../../Service/SidekickApiService";
 import { ContentService } from "../../Service/ContentService";
-import {DocumentNodeListItem} from "../../Model/ListItem";
+import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
+import ErrorMessage from "../ErrorMessage";
 
 export interface TextAreaEditorProps {
     disabled: boolean,
     property: ListItemProperty,
     propertySchema?: PropertySchema,
     item: DocumentNodeListItem,
+    htmlContent?: string
     updateItemProperty: (value: string, state: ListItemPropertyState) => void,
     sidekickConfiguration?: TextAreaEditorSidekickConfiguration,
+    autoGenerate?: boolean,
     showGenerateButton?: boolean,
     marginBottom?: string,
 }
 
 export interface TextAreaEditorState {
     placeholder: string,
-    generatedChoices?: string[]
+    generatedChoices?: string[],
+    errorMessage?: string,
+    startGenerationOnHtmlContentReady?: boolean,
 }
 
 export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,TextAreaEditorState> {
@@ -35,19 +40,34 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
         // need to update on every item.property change
         let placeholder = this.props.propertySchema?.ui?.inspector?.editorOptions?.placeholder;
         if (placeholder && placeholder.includes('ClientEval')) {
-            placeholder = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(placeholder, this.props.item);
+            placeholder = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(placeholder, this.props.item, '');
+        }
+        if (placeholder) {
+            placeholder = this.translationService.translate(placeholder, placeholder);
         }
         this.setState({placeholder});
+
+        // as soon as the htmlContent is available, we can generate the value
+        if (this.state.startGenerationOnHtmlContentReady) {
+            this.setState({startGenerationOnHtmlContentReady: false});
+            // noinspection JSIgnoredPromiseFromCall
+            await this.generateValue();
+        }
     }
 
     private handleChange(event: any) {
         this.props.updateItemProperty(event.target.value, ListItemPropertyState.UserManipulated)
     }
 
-    private async generate() {
+    private async generateValue() {
         // set to generating state
         this.props.updateItemProperty(this.props.property.currentValue, ListItemPropertyState.Generating);
         this.setState({generatedChoices: undefined});
+
+        if (!this.props.htmlContent) {
+            this.setState({startGenerationOnHtmlContentReady: true});
+            return; // will start in componentDidUpdate
+        }
 
         const {module, userInput} = await this.getSidekickConfiguration();
         const generatedValue = await SidekickApiService.getInstance().generate(module, this.props.item.language, userInput);
@@ -65,18 +85,18 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
             return this.props.sidekickConfiguration;
         }
 
-        const {item, propertySchema} = this.props;
+        const {item, propertySchema, htmlContent} = this.props;
         const editorOptions = propertySchema?.ui?.inspector?.editorOptions;
 
         // Similar to MagicTextAreaEditor.fetch
         try {
             // Process SidekickClientEval und ClientEval
-            const processedArguments = await ContentService.getInstance().processObjectWithClientEvalFromDocumentNodeListItem(editorOptions.arguments, item);
+            const processedArguments = await ContentService.getInstance().processObjectWithClientEvalFromDocumentNodeListItem(editorOptions.arguments, item, htmlContent);
             // Map to external format
             // @ts-ignore
             const userInput = Object.keys(processedArguments).map((identifier: string) => ({
                 'identifier': identifier,
-                'value': userInput[identifier]
+                'value': processedArguments[identifier]
             })) as TextAreaEditorSidekickConfigurationSingleUserInput[];
             return {module: editorOptions.module, userInput};
         } catch (e) {
@@ -92,31 +112,65 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
         }
     }
 
+    getLabel() {
+        const {propertySchema} = this.props;
+        const label =  propertySchema?.ui?.label;
+        const translation = this.translationService.translate(propertySchema?.ui?.label, propertySchema?.ui?.label);
+
+        // improve SEO property names, if they are still the defaults
+        if (label === 'Neos.Seo:NodeTypes.SeoMetaTagsMixin:properties.titleOverride') {
+            const betterNames = {
+                'Title Override': 'SEO Page Title (Title Override)',
+                'Titel überschreiben': 'SEO-Seitentitel (Titel überschreiben)',
+            };
+            return betterNames[translation] || translation;
+        }
+        if (label === 'Neos.Seo:NodeTypes.SeoMetaTagsMixin:properties.metaDescription') {
+            const betterNames = {
+                'Description': ' Meta Description',
+                'Beschreibung': 'Meta-Beschreibung',
+            };
+            return betterNames[translation] || translation;
+        }
+
+        return translation;
+    }
+
     render () {
-        const {property, propertySchema, disabled, showGenerateButton, marginBottom} = this.props;
-        const {placeholder, generatedChoices} = this.state;
+        const {item, property, propertySchema, disabled, autoGenerate, showGenerateButton, marginBottom} = this.props;
+        const {placeholder, generatedChoices, errorMessage} = this.state;
         const maxlength = propertySchema?.validation ? propertySchema.validation['Neos.Neos/Validation/StringLengthValidator']?.maximum : null;
         const id = 'field-' + (Math.random() * 1000);
 
-        const textAreaStyle = property.initialValue === property.currentValue ? {} : {
-            boxShadow: '0 0 0 2px #ff8700',
-            borderRadius: '3px'
-        };
+        let textAreaStyle = {width: '100%', padding: '10px 14px'};
+        if (property.initialValue !== property.currentValue) {
+            textAreaStyle = Object.assign(textAreaStyle, {
+                boxShadow: '0 0 0 2px #ff8700',
+                borderRadius: '3px',
+            });
+            if (item.state === ListItemState.Persisted) {
+                textAreaStyle = Object.assign(textAreaStyle, {
+                    boxShadow: 'none',
+                    background: 'var(--colors-Success)',
+                });
+            }
+        }
 
         return (
             <div className={'neos-control-group'} style={{marginBottom: marginBottom || '16px'}}>
-                <label className={'neos-control-label'} htmlFor={id}>{propertySchema.ui.label}</label>
-                <div className={'neos-controls'}>
+                <label className={'neos-control-label'} htmlFor={id}>{this.getLabel()}</label>
+                <div className={'neos-controls'} style={{position: 'relative'}}>
+                    {property.state == ListItemPropertyState.Generating && <FontAwesomeIcon icon={faSpinner} spin={true} style={{position: 'absolute', inset: '12px'}}/>}
                     <textarea
                         id={id}
                         className={property.initialValue !== property.currentValue ? 'textarea--highlight' : ''}
-                        style={Object.assign(textAreaStyle, {width: '100%', padding: '10px 14px'})}
+                        style={textAreaStyle}
                         value={property.currentValue || ''}
                         rows={3}
                         onChange={(e) => this.handleChange(e)}
                         disabled={disabled}
                         maxLength={maxlength}
-                        placeholder={placeholder}
+                        placeholder={property.state != ListItemPropertyState.Generating && placeholder}
                     />
                     {(generatedChoices || []).map((choice, index) => (
                         <button
@@ -126,14 +180,15 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
                             {choice}
                         </button>
                     ))}
-                    {showGenerateButton ? <button
+                    {showGenerateButton && <button
                         className={'neos-button neos-button-secondary'}
                         style={{marginTop: '3px', width: '100%'}}
                         disabled={disabled}
-                        onClick={() => this.generate()}>
+                        onClick={() => this.generateValue()}>
                         {this.translationService.translate('NEOSidekick.AiAssistant:Main:generateWithSidekick', 'Generate with Sidekick')}&nbsp;
                         {this.renderIcon(property.state === ListItemPropertyState.Generating)}
-                    </button> : null}
+                    </button>}
+                    {errorMessage && <ErrorMessage message={errorMessage}/>}
                 </div>
             </div>
         )

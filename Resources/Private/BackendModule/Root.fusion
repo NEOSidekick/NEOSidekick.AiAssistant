@@ -22,17 +22,21 @@ NEOSidekick.AiAssistant.BackendModule.ImageAlternativeTextController.index = NEO
 }
 
 NEOSidekick.AiAssistant.BackendModule.FocusKeywordController.index = NEOSidekick.AiAssistant:BackendModule {
-    getAction = 'getFocusKeywordNodes'
-    updateAction = 'updateFocusKeywordNodes'
+    getAction = 'findDocumentNodes'
+    updateAction = 'updateNodeProperties'
     moduleConfiguration = Neos.Fusion:Value {
         defaults = Neos.Fusion:DataStructure {
+            // moduleName is only used for the configuration form text
+            moduleName = 'FocusKeyword'
             itemType = 'DocumentNode'
             workspace = 'live'
-            mode = 'both'
+            propertyFilter = null
+            propertyFilterOptions = ${['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords']}
             nodeTypeFilter = null
             baseNodeTypeFilter = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing'
             itemsPerPage = 10
             editableProperties = ${['focusKeyword']}
+            actions = Neos.Fusion:DataStructure
         }
         config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.focusKeywordGeneratorModule'), (value, key) => value != null)}
         enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
@@ -40,7 +44,34 @@ NEOSidekick.AiAssistant.BackendModule.FocusKeywordController.index = NEOSidekick
     }
 }
 
-NEOSidekick.AiAssistant.ConfigurationModuleController.index = Neos.Fusion:Component {
+NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index = NEOSidekick.AiAssistant:BackendModule {
+    getAction = 'findDocumentNodes'
+    updateAction = 'updateNodeProperties'
+    moduleConfiguration = Neos.Fusion:Value {
+        defaults = Neos.Fusion:DataStructure {
+            // moduleName is only used for the configuration form text
+            moduleName = 'SeoTitleAndMetaDescription'
+            itemType = 'DocumentNode'
+            workspace = 'live'
+            propertyFilter = null
+            propertyFilterOptions = ${['none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions']}
+            nodeTypeFilter = null
+            baseNodeTypeFilter = 'Neos.Seo:SeoMetaTagsMixin'
+            itemsPerPage = 10
+            editableProperties = ${['titleOverride', 'metaDescription']}
+            actions = Neos.Fusion:DataStructure {
+                'autoGenerateEmptySeoTitles' = ${{'value': true, 'clientEval': 'Auto-generate empty SEO titles'}}
+                'autoGenerateEmptyMetaDescriptions' = ${{'value': true, 'clientEval': 'Auto-generate empty SEO titles'}}
+                'autoGenerateExistingSeoTitles' = ${{'value': false, 'clientEval': 'Auto-generate empty SEO titles'}}
+                'autoGenerateExistingMetaDescriptions' = ${{'value': false, 'clientEval': 'Auto-generate empty SEO titles'}}
+            }
+        }
+        config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.seoTitleAndMetaDescriptionModule'), (value, key) => value != null)}
+        enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
+        value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs})}
+    }
+}
+
 NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusion:Component {
     apiDomain = ${developmentBuild ? 'https://api-staging.neosidekick.com' : 'https://api.neosidekick.com'}
     renderer = afx`

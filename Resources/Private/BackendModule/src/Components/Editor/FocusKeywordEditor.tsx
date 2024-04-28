@@ -5,6 +5,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faExternalLinkAlt, faSpinner} from "@fortawesome/free-solid-svg-icons";
 import TextAreaEditor, {TextAreaEditorProps} from "./TextAreaEditor";
 import {SidekickApiService} from "../../Service/SidekickApiService";
+import ErrorMessage from "../ErrorMessage";
 
 interface FocusKeywordEditorProps extends TextAreaEditorProps {
     htmlContent: string
@@ -12,7 +13,8 @@ interface FocusKeywordEditorProps extends TextAreaEditorProps {
 
 export interface FocusKeywordEditorState {
     suggestionsState: 'is-loading' | 'loaded' | 'failed',
-    suggestions: string[]
+    suggestions: string[],
+    errorMessage?: string,
 }
 
 export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditorProps,FocusKeywordEditorState> {
@@ -27,11 +29,11 @@ export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditor
     componentDidUpdate(prevProps: Readonly<FocusKeywordEditorProps>, prevState: Readonly<FocusKeywordEditorState>, snapshot?: any) {
         if (this.props.htmlContent && !prevProps.htmlContent) {
             // noinspection JSIgnoredPromiseFromCall
-            this.generate();
+            this.generateSuggestions();
         }
     }
 
-    private async generate(retries = 3) {
+    private async generateSuggestions(retries = 3) {
         const editorOptions = this.props.propertySchema?.ui.inspector.editorOptions;
         if (editorOptions.module !== 'focus_keyword_generator') {
             new Error('Your NodeType property focusKeyword must have "module: \'focus_keyword_generator\'" configured in the editorOptions');
@@ -53,21 +55,28 @@ export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditor
         }
 
         const {module, userInput} = sidekickConfiguration;
-        const generatedValue = await SidekickApiService.getInstance().generate(module, this.props.item.language, userInput);
-        if (!Array.isArray(generatedValue) || generatedValue.length === 0) {
-            if (retries === 0) {
-                this.setState({
-                    suggestionsState: 'failed',
-                });
-                return;
+        try {
+            const generatedValue = await SidekickApiService.getInstance().generate(module, this.props.item.language, userInput);
+            if (!Array.isArray(generatedValue) || generatedValue.length === 0) {
+                if (retries === 0) {
+                    this.setState({
+                        suggestionsState: 'failed',
+                        errorMessage: this.translationService.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:suggestionsFailed', 'Could not calculate focus keyword suggestions for the page.')
+                    });
+                    return;
+                }
+                return await this.generateSuggestions(retries - 1);
             }
-            return await this.generate(retries - 1);
+            this.setState({
+                suggestionsState: 'loaded',
+                suggestions: generatedValue
+            });
+        } catch (e) {
+            this.setState({
+                suggestionsState: 'failed',
+                errorMessage: this.translationService.fromError(e)
+            });
         }
-
-        this.setState({
-            suggestionsState: 'loaded',
-            suggestions: generatedValue
-        });
     }
 
     render () {
@@ -86,7 +95,7 @@ export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditor
                     item={item}
                     updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty(value, state)}
                     marginBottom="5px"/>
-                <p style={{padding: '1rem', background: 'gray', marginBottom: '5px'}}>
+                {suggestionsState !== 'failed' && <p style={{padding: '1rem', background: 'gray', marginBottom: '5px'}}>
                     {suggestionsState === 'is-loading' && <span>
                         <FontAwesomeIcon icon={faSpinner} spin={true}/>&nbsp;
                         {this.translationService.translate('NEOSidekick.AiAssistant:Main:loading', 'Loading...')}
@@ -96,15 +105,15 @@ export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditor
                         {suggestions.map((suggestion) => (
                             <button
                                 className={'neos-button neos-button-secondary'}
-                                style={{marginTop: '3px', width: '100%'}}
+                                style={{marginTop: '3px', width: '100%', minHeight: '40px', height: 'auto'}}
                                 disabled={disabled}
                                 onClick={() => this.props.updateItemProperty(suggestion, ListItemPropertyState.AiGenerated)}>
                                 {suggestion}
                             </button>
                         ))}
                     </span>}
-                    {suggestionsState === 'failed' && this.translationService.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:suggestionsFailed', 'Could not calculate focus keyword suggestions for the page.')}
-                </p>
+                </p>}
+                {suggestionsState === 'failed' && <ErrorMessage message={this.state.errorMessage}/>}
                 {(suggestionsState === 'loaded' || property.currentValue) &&
                     <p style={{marginBottom: '16px'}}>
                         {this.translationService.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:checkSearchVolume', `Check search volume:`)}

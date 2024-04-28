@@ -82,7 +82,7 @@ export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditor
     render () {
         const {disabled, item, property, propertySchema} = this.props;
         const {suggestionsState, suggestions} = this.state;
-        const ahrefsLink = `https://app.ahrefs.com/keywords-explorer/google/${item.language.toLowerCase().replace('en', 'uk')}/overview?keyword=${item.editableProperties.focusKeyword.currentValue}`
+        const ahrefsLink = `https://app.ahrefs.com/keywords-explorer/google/${item.language.toLowerCase().replace('en', 'uk')}/overview?keyword=${property.currentValue}`
         const googleLink = `https://ads.google.com/aw/keywordplanner/plan/keywords/historical`;
 
 
@@ -94,6 +94,7 @@ export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditor
                     propertySchema={propertySchema}
                     item={item}
                     updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty(value, state)}
+                    rows={1}
                     marginBottom="5px"/>
                 {suggestionsState !== 'failed' && <p style={{padding: '1rem', background: 'gray', marginBottom: '5px'}}>
                     {suggestionsState === 'is-loading' && <span>
@@ -104,6 +105,7 @@ export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditor
                         <p style={{marginBottom: '7px'}}>{this.translationService.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:suggestionsIntro', `Our page content analysis points one of the following phrases as focus keyword. If this does not fit at all, customising the text for SEO could be helpful.`)}</p>
                         {suggestions.map((suggestion) => (
                             <button
+                                key={suggestion}
                                 className={'neos-button neos-button-secondary'}
                                 style={{marginTop: '3px', width: '100%', minHeight: '40px', height: 'auto'}}
                                 disabled={disabled}

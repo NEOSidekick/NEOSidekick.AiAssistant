@@ -10,6 +10,7 @@ import FocusKeywordEditor from "../../Components/Editor/FocusKeywordEditor";
 interface DocumentNodeListItemPropertyProps {
     item: DocumentNodeListItem;
     property: ListItemProperty;
+    readonly?: boolean
     htmlContent: string;
     updateItemProperty(value: string, state: ListItemPropertyState): void;
 }
@@ -19,16 +20,31 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
 
     private canChangeValue(): boolean
     {
-        const {item, property} = this.props;
-        return item.state === ListItemState.Initial && property.state !== ListItemPropertyState.Generating;
+        const {item, property, readonly} = this.props;
+        return !readonly && item.state === ListItemState.Initial && property.state !== ListItemPropertyState.Generating;
     }
 
     render() {
-        const {item, property} = this.props;
+        const {item, property, readonly} = this.props;
         const propertySchema = this.context.nodeTypes[item.nodeTypeName]?.properties?.[property.propertyName] as PropertySchema;
+
+        if (!propertySchema) {
+            return; // ignore properties that no not exist on this node type
+        }
 
         switch (propertySchema?.ui.inspector.editor) {
             case 'NEOSidekick.AiAssistant/Inspector/Editors/FocusKeywordEditor':
+                if (readonly) {
+                    return (
+                        <TextAreaEditor
+                            disabled={true}
+                            property={property}
+                            propertySchema={propertySchema}
+                            item={item}
+                            rows={1}
+                        />
+                    );
+                }
                 return (
                     <FocusKeywordEditor
                         disabled={!this.canChangeValue()}
@@ -62,7 +78,6 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                         htmlContent={this.props.htmlContent}
                         updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty(value, state)}
                         autoGenerate={true}
-                        showGenerateButton={true}
                     />
                 )
             default:

@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="label" xml:space="preserve">
+                <source>Configuration</source>
+            </trans-unit>
+            <trans-unit id="description" xml:space="preserve">
+                <source>Here you can define the company and target group briefing which Sidekick should take into account.</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

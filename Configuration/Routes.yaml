@@ -1,24 +1,4 @@
 -
-  name:  'Backend Service :: Focus Keyword Module :: Get Nodes'
-  uriPattern: 'neosidekick/aiassistant/service/focus-keyword/get'
-  defaults:
-    '@package':    'NEOSidekick.AiAssistant'
-    '@controller': 'BackendService'
-    '@action':     'getFocusKeywordNodes'
-    '@format':     'json'
-  httpMethods: ['GET']
-
--
-  name:  'Backend Service :: Focus Keyword Module :: Update Nodes'
-  uriPattern: 'neosidekick/aiassistant/service/focus-keyword/update'
-  defaults:
-    '@package':    'NEOSidekick.AiAssistant'
-    '@controller': 'BackendService'
-    '@action':     'updateFocusKeywordNodes'
-    '@format':     'json'
-  httpMethods: ['POST']
-
--
   name:  'Backend Service'
   uriPattern: 'neosidekick/aiassistant/service/{@action}'
   defaults:

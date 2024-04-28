@@ -33,12 +33,12 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         const backend: NeosBackendService = NeosBackendService.getInstance()
         try {
             const items: FindAssetData[] | FindDocumentNodeData[] = await backend.getItems(this.context.moduleConfiguration);
-            const processedItems = items.reduce((accumulator, item) => {
+            const processedItems = items.reduce<ListItems>((accumulator: ListItems, item: FindAssetData | FindDocumentNodeData) => {
                 accumulator[item.identifier] = this.postprocessListItem(item, this.context.moduleConfiguration);
                 return accumulator;
-            }, {});
+            }, {} as ListItems);
             this.setState({
-                items: processedItems as ListItems,
+                items: processedItems,
                 listState: (Object.values(processedItems).length > 0 ? ListState.Result : ListState.Empty)
             });
         } catch (e) {
@@ -52,6 +52,16 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             ...item,
             state: ListItemState.Initial,
             properties: item.properties ?? {},
+            readonlyProperties: moduleConfiguration.readonlyProperties?.reduce((accumulator, propertyName) => {
+                const propertyValue = item.properties[propertyName];
+                accumulator[propertyName] = {
+                    propertyName,
+                    initialValue: propertyValue,
+                    currentValue: propertyValue,
+                    state: ListItemPropertyState.Initial,
+                } as ListItemProperty;
+                return accumulator;
+            }, {}) || {},
             editableProperties: moduleConfiguration.editableProperties?.reduce((accumulator, propertyName) => {
                 const propertyValue = item.properties[propertyName];
                 accumulator[propertyName] = {

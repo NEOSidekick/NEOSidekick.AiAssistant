@@ -2,6 +2,7 @@ export interface ModuleConfiguration {
     itemType: 'Asset' | 'DocumentNode';
     enforceConfigs: string[];
     itemsPerPage: number;
+    readonlyProperties: string[];
     editableProperties: string[];
 }
 
@@ -18,6 +19,8 @@ export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
             clientEval: string,
         }
     }
+    // TODO This should refactored to include readonlyProperties, editableProperties and custom views
+    showSeoDirectives: boolean,
 }
 
 export interface AssetModuleConfiguration extends ModuleConfiguration {

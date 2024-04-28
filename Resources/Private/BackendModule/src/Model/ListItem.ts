@@ -10,6 +10,9 @@ export interface ListItem {
     type: 'DocumentNode' | 'Asset',
     state: ListItemState,
     identifier: string,
+    readonlyProperties: {
+        [key: string]: ListItemProperty
+    },
     editableProperties: {
         [key: string]: ListItemProperty
     },

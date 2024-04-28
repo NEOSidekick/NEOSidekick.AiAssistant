@@ -68,6 +68,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
                 <br/>
                 {Object.keys(actions).map(actionName => (
                     <CheckboxField
+                        key={actionName}
                         label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.action.' + actionName, actionName)}
                         checked={actions[actionName].value}
                         onChange={e => {

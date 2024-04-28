@@ -2,12 +2,14 @@ import PureComponent from "../../Components/PureComponent";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faCheck, faExternalLinkAlt, faSpinner} from "@fortawesome/free-solid-svg-icons";
 import React, {RefObject} from "react";
-import {ListItemProperty, ListItemPropertyState} from "../../Model/ListItemProperty";
+import {ListItemProperty, ListItemPropertyState, PropertySchema} from "../../Model/ListItemProperty";
 import {Draft, produce} from "immer";
 import {DocumentNodeListItem, ListItemState, ListItem} from "../../Model/ListItem";
 import {ListItemProps} from "./ListViewItem";
 import DocumentNodeListViewItemProperty from "./DocumentNodeListViewItemProperty";
 import NeosBackendService from "../../Service/NeosBackendService";
+import AppContext, {AppContextType} from "../../AppContext";
+import ErrorMessage from "../../Components/ErrorMessage";
 
 export interface DocumentNodeListViewItemProps extends ListItemProps {
     item: DocumentNodeListItem
@@ -17,6 +19,8 @@ export interface DocumentNodeListItemState {
 }
 
 export default class DocumentNodeListViewItem extends PureComponent<DocumentNodeListViewItemProps, DocumentNodeListItemState> {
+    static contextType = AppContext;
+    context: AppContextType;
     private readonly iframeRef: RefObject<any>;
 
     constructor(props: ListItemProps) {
@@ -104,6 +108,8 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
     render() {
         const {item, persistItem} = this.props;
         const {htmlContent} = this.state;
+        const propertySchemas: { [key: string]: PropertySchema } = this.context.nodeTypes[item.nodeTypeName]?.properties;
+
         return (
             <div className={'neos-row-fluid'} style={{marginBottom: '2rem', opacity: (item.state === ListItemState.Persisted ? '0.5' : '1')}}>
                 <div className={'neos-span8'} style={{position: 'relative', background: '#3f3f3f'}}>
@@ -119,9 +125,20 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                         </a>
                     </p>
                     <br />
+                    {Object.values(item.readonlyProperties).map((property: ListItemProperty) => {
+                        return (
+                            <DocumentNodeListViewItemProperty
+                                key={property.propertyName}
+                                item={item}
+                                property={property}
+                                readonly={true}
+                            />
+                        )
+                    })}
                     {Object.values(item.editableProperties).map((property: ListItemProperty) => {
                         return (
                             <DocumentNodeListViewItemProperty
+                                key={property.propertyName}
                                 item={item}
                                 property={property}
                                 htmlContent={htmlContent}
@@ -129,6 +146,20 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                             />
                         )
                     })}
+                    {this.context.moduleConfiguration.showSeoDirectives && (item.properties.canonicalLink || item.properties.metaRobotsNoindex || item.properties.metaRobotsNofollow) && (
+                        <div style={{backgroundColor: 'var(--warning)', marginBottom: '1.5rem', padding: '12px', fontWeight: 400, fontSize: '14px', lineHeight: 1.4}}>
+                            <h3>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule:SeoTitleAndMetaDescription:seoDirectivesLabel', 'SEO Directives')}</h3>
+                            {item.properties.canonicalLink && (
+                                <p>Canonical: {item.properties.canonicalLink}</p>
+                            )}
+                            {item.properties.metaRobotsNoindex && (
+                                <p>{this.translationService.translate(propertySchemas?.metaRobotsNoindex?.ui?.label, propertySchemas?.metaRobotsNoindex?.ui?.label)}</p>
+                            )}
+                            {item.properties.metaRobotsNofollow && (
+                                <p>{this.translationService.translate(propertySchemas?.metaRobotsNofollow?.ui?.label, propertySchemas?.metaRobotsNofollow?.ui?.label)}</p>
+                            )}
+                        </div>
+                    )}
                     <br />
                     <div>
                         <button

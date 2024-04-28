@@ -58,7 +58,9 @@ NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index
             nodeTypeFilter = null
             baseNodeTypeFilter = 'Neos.Seo:SeoMetaTagsMixin'
             itemsPerPage = 10
+            readonlyProperties = ${['focusKeyword']}
             editableProperties = ${['titleOverride', 'metaDescription']}
+            showSeoDirectives = true
             actions = Neos.Fusion:DataStructure {
                 'autoGenerateEmptySeoTitles' = ${{'value': true, 'clientEval': 'Auto-generate empty SEO titles'}}
                 'autoGenerateEmptyMetaDescriptions' = ${{'value': true, 'clientEval': 'Auto-generate empty SEO titles'}}

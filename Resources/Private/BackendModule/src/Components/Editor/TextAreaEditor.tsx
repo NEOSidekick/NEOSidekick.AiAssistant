@@ -18,6 +18,7 @@ export interface TextAreaEditorProps {
     sidekickConfiguration?: TextAreaEditorSidekickConfiguration,
     autoGenerate?: boolean,
     showGenerateButton?: boolean,
+    rows?: number,
     marginBottom?: string,
 }
 
@@ -34,6 +35,17 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
         this.state = {
             placeholder: ''
         }
+
+        if (this.props.autoGenerate) {
+            this.props.updateItemProperty(props.property.currentValue, ListItemPropertyState.Generating);
+        }
+    }
+
+    componentDidMount() {
+        if (this.props.autoGenerate) {
+            // noinspection JSIgnoredPromiseFromCall
+            this.generateValue();
+        }
     }
 
     async componentDidUpdate(prevProps: Readonly<TextAreaEditorProps>, prevState: Readonly<{}>, snapshot?: any) {
@@ -48,10 +60,9 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
         this.setState({placeholder});
 
         // as soon as the htmlContent is available, we can generate the value
-        if (this.state.startGenerationOnHtmlContentReady) {
+        if (!prevProps.htmlContent && this.props.htmlContent && this.state.startGenerationOnHtmlContentReady) {
             this.setState({startGenerationOnHtmlContentReady: false});
-            // noinspection JSIgnoredPromiseFromCall
-            await this.generateValue();
+            this.generateValue().then(() => {});
         }
     }
 
@@ -69,13 +80,18 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
             return; // will start in componentDidUpdate
         }
 
-        const {module, userInput} = await this.getSidekickConfiguration();
-        const generatedValue = await SidekickApiService.getInstance().generate(module, this.props.item.language, userInput);
-        if (Array.isArray(generatedValue)) {
-            this.setState({generatedChoices: generatedValue});
-            this.props.updateItemProperty(this.props.property.currentValue, ListItemPropertyState.UserManipulated);
-        } else {
-            this.props.updateItemProperty(generatedValue, ListItemPropertyState.AiGenerated);
+        try {
+            const {module, userInput} = await this.getSidekickConfiguration();
+            const generatedValue = await SidekickApiService.getInstance().generate(module, this.props.item.language, userInput);
+            if (Array.isArray(generatedValue)) {
+                this.setState({generatedChoices: generatedValue});
+                this.props.updateItemProperty(this.props.property.currentValue, ListItemPropertyState.UserManipulated);
+            } else {
+                this.props.updateItemProperty(generatedValue, ListItemPropertyState.AiGenerated);
+            }
+        } catch (e) {
+            this.props.updateItemProperty(this.props.property.currentValue, ListItemPropertyState.Initial);
+            this.setState({errorMessage: this.translationService.fromError(e)});
         }
     }
 
@@ -115,7 +131,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
     getLabel() {
         const {propertySchema} = this.props;
         const label =  propertySchema?.ui?.label;
-        const translation = this.translationService.translate(propertySchema?.ui?.label, propertySchema?.ui?.label);
+        const translation = this.translationService.translate(label, label);
 
         // improve SEO property names, if they are still the defaults
         if (label === 'Neos.Seo:NodeTypes.SeoMetaTagsMixin:properties.titleOverride') {
@@ -137,7 +153,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
     }
 
     render () {
-        const {item, property, propertySchema, disabled, autoGenerate, showGenerateButton, marginBottom} = this.props;
+        const {item, property, propertySchema, disabled, autoGenerate, showGenerateButton, rows, marginBottom} = this.props;
         const {placeholder, generatedChoices, errorMessage} = this.state;
         const maxlength = propertySchema?.validation ? propertySchema.validation['Neos.Neos/Validation/StringLengthValidator']?.maximum : null;
         const id = 'field-' + (Math.random() * 1000);
@@ -166,18 +182,19 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
                         className={property.initialValue !== property.currentValue ? 'textarea--highlight' : ''}
                         style={textAreaStyle}
                         value={property.currentValue || ''}
-                        rows={3}
+                        rows={rows || 3}
                         onChange={(e) => this.handleChange(e)}
                         disabled={disabled}
                         maxLength={maxlength}
                         placeholder={property.state != ListItemPropertyState.Generating && placeholder}
                     />
-                    {(generatedChoices || []).map((choice, index) => (
+                    {(generatedChoices || []).map((suggestion, index) => (
                         <button
+                            key={suggestion}
                             className={'neos-button neos-button-secondary'}
                             style={{marginTop: '3px', width: '100%'}}
-                            onClick={() => this.props.updateItemProperty(choice, ListItemPropertyState.AiGenerated)}>
-                            {choice}
+                            onClick={() => this.props.updateItemProperty(suggestion, ListItemPropertyState.AiGenerated)}>
+                            {suggestion}
                         </button>
                     ))}
                     {showGenerateButton && <button

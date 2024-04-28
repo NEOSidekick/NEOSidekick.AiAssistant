@@ -32,6 +32,12 @@
             <trans-unit id="1696264259270">
                 <source>Please write a few words about how to create the text.</source>
             </trans-unit>
+            <trans-unit id="1709650151037">
+                <source>An error occurred while fetching the items: {0}</source>
+            </trans-unit>
+            <trans-unit id="1709648035592">
+                <source>An error occurred while persisting an item</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

@@ -15,25 +15,25 @@
                 <source>None</source>
             </trans-unit>
             <trans-unit id="configuration.propertyFilter.only-empty-focus-keywords">
-                <source>Only without focus keyword</sou
+                <source>Only without focus keyword</source>
             </trans-unit>
             <trans-unit id="configuration.propertyFilter.only-existing-focus-keywords">
-                <source>Only with focus keyword</sourc
+                <source>Only with focus keyword</source>
             </trans-unit>
             <trans-unit id="configuration.propertyFilter.only-empty-seo-titles-or-meta-descriptions">
-                <source>Only without seo title or meta description</source
+                <source>Only without seo title or meta description</source>
             </trans-unit>
             <trans-unit id="configuration.propertyFilter.only-empty-seo-titles">
-                <source>Only without seo title</sou
+                <source>Only without seo title</source>
             </trans-unit>
             <trans-unit id="configuration.propertyFilter.only-empty-meta-descriptions">
-                <source>Only without meta description</sour
+                <source>Only without meta description</source>
             </trans-unit>
             <trans-unit id="configuration.propertyFilter.only-existing-seo-titles">
-                <source>Only with seo title</sourc
+                <source>Only with seo title</source>
             </trans-unit>
             <trans-unit id="configuration.propertyFilter.only-existing-meta-descriptions">
-                <source>Only with meta description</source
+                <source>Only with meta description</source>
             </trans-unit>
             <trans-unit id="configuration.nodeTypeFilter.label">
                 <source>Restrict to page type</source>
@@ -48,7 +48,7 @@
                 <source>Workspace</source>
             </trans-unit>
             <trans-unit id="configuration.action.autoGenerateEmptySeoTitles">
-                <source>Automatically generate empty SEO titles</source
+                <source>Automatically generate empty SEO titles</source>
             </trans-unit>
             <trans-unit id="configuration.action.autoGenerateEmptyMetaDescriptions">
                 <source>Automatically generate empty meta descriptions</source>

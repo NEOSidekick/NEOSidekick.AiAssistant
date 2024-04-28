@@ -4,8 +4,8 @@ include: resource://Sitegeist.FusionLinkPrototypes/Private/Fusion/Root.fusion
 include: ./BackendModule.fusion
 
 NEOSidekick.AiAssistant.BackendModule.ImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
-    getAction = 'index'
-    updateAction = 'update'
+    getAction = 'findAssets'
+    updateAction = 'updateAssets'
     moduleConfiguration = Neos.Fusion:Value {
         defaults = Neos.Fusion:DataStructure {
             itemType = 'Asset'
@@ -16,7 +16,8 @@ NEOSidekick.AiAssistant.BackendModule.ImageAlternativeTextController.index = NEO
         }
         config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.altTextGeneratorModule'), (value, key) => value != null)}
         enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
-        value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs})}
+        editableProperties = ${this.config.propertyName ? [this.config.propertyName] : ['title']}
+        value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs}, {editableProperties: this.editableProperties})}
     }
 }
 

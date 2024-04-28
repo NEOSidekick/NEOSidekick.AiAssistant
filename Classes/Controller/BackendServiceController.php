@@ -8,10 +8,10 @@ namespace NEOSidekick\AiAssistant\Controller;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Property\PropertyMappingConfiguration;
-use NEOSidekick\AiAssistant\Dto\AssetModuleConfigurationDto;
-use NEOSidekick\AiAssistant\Dto\AssetModuleResultDto;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordFilters;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordUpdateItem;
+use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
+use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
+use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
+use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Service\AssetService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 
@@ -42,57 +42,53 @@ class BackendServiceController extends ActionController
         $this->response->setContentType('application/json');
     }
 
-    public function initializeIndexAction(): void
+    public function initializeFindAssetsAction(): void
     {
         /** @noinspection PhpUnhandledExceptionInspection */
         $this->arguments->getArgument('configuration')
             ->getPropertyMappingConfiguration()
             ->skipUnknownProperties()
             ->allowProperties(
-                'propertyName',
                 'onlyAssetsInUse',
+                'propertyNameMustBeEmpty',
                 'firstResult',
-                'limit',
-                'language');
+                'limit'
+                );
     }
 
     /**
-     * @param AssetModuleConfigurationDto $configuration
+     * @param FindAssetsFilterDto $configuration
      *
      * @return string
      */
-    public function indexAction(AssetModuleConfigurationDto $configuration): string
+    public function findAssetsAction(FindAssetsFilterDto $configuration): string
     {
-        $resultCollection = $this->assetService->getAssetsThatNeedProcessing($configuration);
+        $resultCollection = $this->assetService->findImages($configuration);
         return json_encode($resultCollection);
     }
 
-    public function initializeUpdateAction(): void
+    public function initializeUpdateAssetsAction(): void
     {
         /** @noinspection PhpUnhandledExceptionInspection */
-        $this->arguments->getArgument('resultDtos')
+        $this->arguments->getArgument('updateItems')
             ->getPropertyMappingConfiguration()
             ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
             ->skipUnknownProperties()
             ->allowProperties(
-                'filename',
                 'identifier',
-                'thumbnailUri',
-                'fullsizeUri',
-                'propertyName',
-                'propertyValue'
+                'properties'
             );
     }
 
     /**
-     * @param array<AssetModuleResultDto> $resultDtos
+     * @param array<UpdateAssetData> $updateItems
      *
      * @return string
      */
-    public function updateAction(array $resultDtos): string
+    public function updateAssetsAction(array $updateItems): string
     {
-        $this->assetService->updateMultipleAssets($resultDtos);
-        return json_encode(array_map(fn (AssetModuleResultDto $item) => $item->jsonSerialize(), $resultDtos));
+        $this->assetService->updateMultipleAssets($updateItems);
+        return json_encode(array_map(fn (UpdateAssetData $item) => $item->jsonSerialize(), $updateItems));
     }
 
     public function initializeGetFocusKeywordNodesAction(): void
@@ -109,11 +105,11 @@ class BackendServiceController extends ActionController
     }
 
     /**
-     * @param FocusKeywordFilters $configuration
+     * @param FindDocumentNodesFilter $configuration
      *
      * @return string|bool
      */
-    public function getFocusKeywordNodesAction(FocusKeywordFilters $configuration): string|bool
+    public function getFocusKeywordNodesAction(FindDocumentNodesFilter $configuration): string|bool
     {
         $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
         return json_encode($resultCollection);
@@ -135,13 +131,13 @@ class BackendServiceController extends ActionController
     /**
      * @Flow\SkipCsrfProtection
      *
-     * @param array<FocusKeywordUpdateItem> $updateItems
+     * @param array<UpdateNodeProperties> $updateItems
      *
      * @return string
      */
     public function updateFocusKeywordNodesAction(array $updateItems): string
     {
         $this->nodeService->updatePropertiesOnNodes($updateItems);
-        return json_encode(array_map(fn (FocusKeywordUpdateItem $item) => $item->jsonSerialize(), $updateItems));
+        return json_encode(array_map(fn (UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems));
     }
 }

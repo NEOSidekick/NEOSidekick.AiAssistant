@@ -8,16 +8,12 @@ use Neos\Flow\Annotations as Flow;
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class AssetModuleConfigurationDto
+final class FindAssetsFilterDto
 {
     /**
      * @var bool
      */
     protected bool $onlyAssetsInUse;
-    /**
-     * @var string
-     */
-    protected string $propertyName;
     /**
      * @var int
      */
@@ -29,27 +25,25 @@ final class AssetModuleConfigurationDto
     /**
      * @var string
      */
-    protected string $language;
+    private string $propertyNameMustBeEmpty;
 
     /**
      * @param bool   $onlyAssetsInUse
-     * @param string $propertyName
-     * @param string $language
+     * @param string $propertyNameMustBeEmpty
+     * @param int    $firstResult
      * @param int    $limit
      */
     public function __construct(
-        bool $onlyAssetsInUse,
-        string $propertyName,
-        int $firstResult = 0,
-        int $limit = 10,
-        string $language = 'en'
+        bool   $onlyAssetsInUse,
+        string $propertyNameMustBeEmpty = '',
+        int    $firstResult = 0,
+        int    $limit = 10
     )
     {
         $this->onlyAssetsInUse = $onlyAssetsInUse;
-        $this->propertyName = $propertyName;
         $this->limit = $limit;
-        $this->language = $language;
         $this->firstResult = $firstResult;
+        $this->propertyNameMustBeEmpty = $propertyNameMustBeEmpty;
     }
 
     public function isOnlyAssetsInUse(): bool
@@ -57,12 +51,9 @@ final class AssetModuleConfigurationDto
         return $this->onlyAssetsInUse;
     }
 
-    /**
-     * @return string{"title", "caption", "copyrightNotice"}
-     */
-    public function getPropertyName(): string
+    public function getPropertyNameMustBeEmpty(): ?string
     {
-        return $this->propertyName;
+        return $this->propertyNameMustBeEmpty;
     }
 
     public function getLimit(): int
@@ -73,10 +64,5 @@ final class AssetModuleConfigurationDto
     public function getFirstResult(): int
     {
         return $this->firstResult;
-    }
-
-    public function getLanguage(): string
-    {
-        return $this->language;
     }
 }

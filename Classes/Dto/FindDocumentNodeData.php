@@ -9,7 +9,7 @@ use Neos\Flow\Annotations as Flow;
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class FocusKeywordListItem implements JsonSerializable
+final class FindDocumentNodeData implements JsonSerializable
 {
     /**
      * @var string
@@ -24,12 +24,12 @@ final class FocusKeywordListItem implements JsonSerializable
     /**
      * @var string
      */
-    protected string $publicUri;
+    protected string $nodeTypeName;
 
     /**
      * @var string
      */
-    protected string $nodeTypeName;
+    protected string $publicUri;
 
     /**
      * @var array
@@ -46,7 +46,7 @@ final class FocusKeywordListItem implements JsonSerializable
      * @param string $nodeContextPath
      * @param string $nodeTypeName
      * @param string $publicUri
-     * @param array $properties
+     * @param array  $properties
      * @param string $language
      */
     public function __construct(string $identifier, string $nodeContextPath, string $nodeTypeName, string $publicUri, array $properties, string $language)
@@ -93,7 +93,7 @@ final class FocusKeywordListItem implements JsonSerializable
      * @param array{
      *     identifier: string,
      *     nodeContextPath: string,
-     *      nodeTypeName: string,
+     *     nodeTypeName: string,
      *     publicUri: string,
      *     properties: array,
      *     language: string
@@ -116,13 +116,13 @@ final class FocusKeywordListItem implements JsonSerializable
     public function jsonSerialize(): array
     {
         return [
+            'type' => 'DocumentNode',
             'identifier' => $this->identifier,
             'nodeContextPath' => $this->nodeContextPath,
             'nodeTypeName' => $this->nodeTypeName,
             'publicUri' => $this->publicUri,
             'properties' => $this->properties,
-            'language' => $this->language,
-            'type' => 'DocumentNode'
+            'language' => $this->language
         ];
     }
 }

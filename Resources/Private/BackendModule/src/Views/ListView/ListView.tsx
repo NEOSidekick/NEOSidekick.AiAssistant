@@ -10,7 +10,8 @@ import {Draft, produce} from "immer";
 import PureComponent from "../../Components/PureComponent";
 import AppContext, {AppContextType} from "../../AppContext";
 import {ModuleConfiguration} from "../../Model/ModuleConfiguration";
-import {ListItemDto} from "../../Dto/ListItemDto";
+import {FindAssetData, FindDocumentNodeData} from "../../Dto/ListItemDto";
+import ErrorMessage from "../../Components/ErrorMessage";
 
 export default class ListView extends PureComponent<ListViewProps, ListViewState> {
     static contextType = AppContext;
@@ -31,7 +32,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         })
         const backend: NeosBackendService = NeosBackendService.getInstance()
         try {
-            const items: ListItemDto[] = await backend.getItems(this.context.moduleConfiguration);
+            const items: FindAssetData[] | FindDocumentNodeData[] = await backend.getItems(this.context.moduleConfiguration);
             const processedItems = items.reduce((accumulator, item) => {
                 accumulator[item.identifier] = this.postprocessListItem(item, this.context.moduleConfiguration);
                 return accumulator;
@@ -46,7 +47,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         }
     }
 
-    private postprocessListItem(item: ListItemDto, moduleConfiguration: ModuleConfiguration): AssetListItem | DocumentNodeListItem {
+    private postprocessListItem(item: FindAssetData | FindDocumentNodeData, moduleConfiguration: ModuleConfiguration): AssetListItem | DocumentNodeListItem {
         // @ts-ignore
         return {
             ...item,
@@ -99,6 +100,18 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
     }
 
     private renderList() {
+        const paginatedItems = this.paginatedItems();
+        if (paginatedItems.length === 0) {
+            const itemsCount = Object.values(this.state.items).length;
+            if (itemsCount === 10000) {
+                return (
+                    <ErrorMessage type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listLimitReached', 'This tool can currently process a maximum of 10,000 entries at the same time. All your changes are saved, please start a new search.')}/>
+                )
+            }
+            return (
+                <ErrorMessage type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listEndReached', 'Congratulations. You have reached the end of the list. You have gone through {0} entries.', {0: itemsCount})}/>
+            )
+        }
         return (this.paginatedItems().map((item: ListItem) =>
             <ListViewItem
                 item={item}

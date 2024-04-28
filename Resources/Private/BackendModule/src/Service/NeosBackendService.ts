@@ -5,7 +5,7 @@ import {
     DocumentNodeModuleConfiguration,
     ModuleConfiguration
 } from "../Model/ModuleConfiguration";
-import {AssetFilters, DocumentNodeFilters, Filters} from "../Dto/Filters";
+import {FindAssetsFilter, FindDocumentNodesFilter, FindFilter} from "../Dto/FindFilter";
 
 export default class NeosBackendService {
     private static instance: NeosBackendService | null = null;
@@ -39,6 +39,7 @@ export default class NeosBackendService {
         this.fetchNextPreviewContents().then(() => {});
         return promise;
     }
+
     private async fetchNextPreviewContents() {
         // we want to resolve a maximum of 3 promises at a time
         for (let i = 0; i < this.previewContentQueue.length && i < 3; i++) {
@@ -71,15 +72,14 @@ export default class NeosBackendService {
         return await response.json()
     }
 
-    private toFilterDto(moduleConfiguration: ModuleConfiguration): Filters {
+    private toFilterDto(moduleConfiguration: ModuleConfiguration): FindFilter {
         switch (moduleConfiguration.itemType) {
             case 'Asset':
-                const {onlyAssetsInUse} = moduleConfiguration as AssetModuleConfiguration;
-                // TODO Refactor PHP DTO, remove propertyName and language
-                return {onlyAssetsInUse, propertyName: 'title', language: 'de', firstResult:0, limit: 1000} as AssetFilters;
+                const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
+                return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 10000} as FindAssetsFilter;
             case 'DocumentNode':
                 const {workspace, mode, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
-                return {workspace, mode, nodeTypeFilter: nodeTypeFilter || '', firstResult:0, limit: 1000} as DocumentNodeFilters;
+                return {workspace, mode, nodeTypeFilter: nodeTypeFilter || ''} as FindDocumentNodesFilter;
             default:
                 throw new Error('Unknown item type');
         }

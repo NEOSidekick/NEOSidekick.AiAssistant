@@ -17,9 +17,9 @@ use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Neos\Controller\CreateContentContextTrait;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordFilters;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordUpdateItem;
-use NEOSidekick\AiAssistant\Factory\FocusKeywordListItemFactory;
+use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
+use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
+use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 
 class NodeService
 {
@@ -41,9 +41,9 @@ class NodeService
 
     /**
      * @Flow\Inject
-     * @var FocusKeywordListItemFactory
+     * @var FindDocumentNodeDataFactory
      */
-    protected $focusKeywordListItemFactory;
+    protected $findDocumentNodeDataFactory;
 
     /**
      * @Flow\Inject
@@ -52,12 +52,12 @@ class NodeService
     protected $nodeTypeManager;
 
     /**
-     * @param FocusKeywordFilters $configurationDto
+     * @param FindDocumentNodesFilter $configurationDto
      * @param ControllerContext   $controllerContext
      *
      * @return array
      */
-    public function find(FocusKeywordFilters $configurationDto, ControllerContext $controllerContext): array
+    public function find(FindDocumentNodesFilter $configurationDto, ControllerContext $controllerContext): array
     {
         $workspace = $this->workspaceRepository->findByIdentifier($configurationDto->getWorkspace());
 
@@ -71,23 +71,24 @@ class NodeService
         $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($configurationDto));
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
+        // TODO Adopt
         $itemsWhereFocusKeywordValueMatchesConfiguration = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($configurationDto) {
             $currentFocusKeywordPropertyValue = $nodeData->hasProperty('focusKeyword') ? $nodeData->getProperty('focusKeyword') : null;
             return self::focusKeywordValueMatchesConfiguration($currentFocusKeywordPropertyValue, $configurationDto);
         });
 
-        $itemsThatNeedProcessing = [];
+        $result = [];
         foreach ($itemsWhereFocusKeywordValueMatchesConfiguration as $nodeData) {
             $context = $this->createContentContext($configurationDto->getWorkspace(), $nodeData->getDimensionValues());
             $node = new Node($nodeData, $context);
-            $itemsThatNeedProcessing[] = $this->focusKeywordListItemFactory->createFromNode($node, $controllerContext);
+            $result[] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
         }
 
-        return $itemsThatNeedProcessing;
+        return $result;
     }
 
     /**
-     * @param array<FocusKeywordUpdateItem> $itemsToUpdate
+     * @param array<UpdateNodeProperties> $itemsToUpdate
      *
      * @return void
      */
@@ -107,11 +108,11 @@ class NodeService
 
     /**
      * @param mixed               $value
-     * @param FocusKeywordFilters $configurationDto
+     * @param FindDocumentNodesFilter $configurationDto
      *
      * @return bool
      */
-    protected static function focusKeywordValueMatchesConfiguration(mixed $value, FocusKeywordFilters $configurationDto): bool
+    protected static function focusKeywordValueMatchesConfiguration(mixed $value, FindDocumentNodesFilter $configurationDto): bool
     {
         return match ($configurationDto->getMode()) {
             'both' => true,
@@ -141,11 +142,11 @@ class NodeService
      * that are either a document node type OR match the filtered
      * document node type, but also have our mixin as a super-type.
      *
-     * @param FocusKeywordFilters $configurationDto
+     * @param FindDocumentNodesFilter $configurationDto
      *
      * @return array<string>
      */
-    protected function getNodeTypeFilter(FocusKeywordFilters $configurationDto): array
+    protected function getNodeTypeFilter(FindDocumentNodesFilter $configurationDto): array
     {
         $documentNodeTypeFilter = $configurationDto->getNodeTypeFilter() ?? 'Neos.Neos:Document';
         $mixinSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes(self::MIXIN_NODE_TYPE, false);

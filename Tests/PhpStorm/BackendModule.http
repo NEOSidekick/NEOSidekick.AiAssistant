@@ -3,12 +3,11 @@ Accept: application/json
 Content-Type: application/json
 
 {
-  "resultDtos": [
+  "updateItems": [
     {
       "assetIdentifier": "5904c721-14bc-489a-be91-48973809e778",
       "fullsizeUri": "https://ailab.ddev.site/_Resources/Persistent/6/1/d/a/61daeb7807586b7c2bceff7996f5053de029fb22/jason-leung-8-Fl1mFcFfQ-unsplash.jpg",
-      "propertyName": "title",
-      "propertyValue": "asdf",
+      "properties": {"title": "asdf"},
       "thumbnailUri": "https://ailab.ddev.site/_Resources/Persistent/8/c/a/6/8ca68d51a648e93f1029bd282f209d0024d6ea5f/jason-leung-8-Fl1mFcFfQ-unsplash-667x1000.jpg"
     }
   ]

@@ -9,7 +9,7 @@ use Neos\Flow\Annotations as Flow;
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class AssetModuleResultDto implements JsonSerializable
+final class FindAssetData implements JsonSerializable
 {
     /**
      * @var string
@@ -28,36 +28,29 @@ final class AssetModuleResultDto implements JsonSerializable
      */
     protected string $fullsizeUri;
     /**
-     * @var string
+     * @var array
      */
-    protected string $propertyName;
-    /**
-     * @var string
-     */
-    protected string $propertyValue;
+    protected array $properties;
 
     /**
      * @param string $filename
      * @param string $identifier
      * @param string $thumbnailUri
      * @param string $fullsizeUri
-     * @param string $propertyName
-     * @param string $propertyValue
+     * @param array $properties
      */
     public function __construct(
         string $filename,
         string $identifier,
         string $thumbnailUri,
         string $fullsizeUri,
-        string $propertyName,
-        string $propertyValue
+        array $properties
     ) {
         $this->filename = $filename;
         $this->identifier = $identifier;
         $this->thumbnailUri = $thumbnailUri;
         $this->fullsizeUri = $fullsizeUri;
-        $this->propertyName = $propertyName;
-        $this->propertyValue = $propertyValue;
+        $this->properties = $properties;
     }
 
     public function getFilename(): string
@@ -80,14 +73,9 @@ final class AssetModuleResultDto implements JsonSerializable
         return $this->fullsizeUri;
     }
 
-    public function getPropertyName(): string
+    public function getProperties(): array
     {
-        return $this->propertyName;
-    }
-
-    public function getPropertyValue(): string
-    {
-        return $this->propertyValue;
+        return $this->properties;
     }
 
     public static function fromArray(array $array): self
@@ -97,21 +85,19 @@ final class AssetModuleResultDto implements JsonSerializable
             $array['identifier'],
             $array['thumbnailUri'],
             $array['fullsizeUri'],
-            $array['propertyName'],
-            $array['propertyValue']
+            $array['properties']
         );
     }
 
     public function jsonSerialize(): array
     {
         return [
+            'type' => 'Asset',
             'identifier' => $this->identifier,
             'filename' => $this->filename,
             'thumbnailUri' => $this->thumbnailUri,
             'fullsizeUri' => $this->fullsizeUri,
-            'propertyName' => $this->propertyName,
-            'propertyValue' => $this->propertyValue,
-            'type' => 'Asset'
+            'properties' => $this->properties,
         ];
     }
 }

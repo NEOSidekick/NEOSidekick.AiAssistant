@@ -8,7 +8,7 @@ use Neos\Flow\Annotations as Flow;
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class FocusKeywordFilters
+final class FindDocumentNodesFilter
 {
     /**
      * @var string

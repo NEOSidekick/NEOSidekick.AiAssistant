@@ -8,9 +8,9 @@ use Neos\Media\Domain\Model\Image;
 use Neos\Media\Domain\Repository\AssetRepository;
 use Neos\Utility\Exception\PropertyNotAccessibleException;
 use Neos\Utility\ObjectAccess;
-use NEOSidekick\AiAssistant\Dto\AssetModuleConfigurationDto;
-use NEOSidekick\AiAssistant\Dto\AssetModuleResultDto;
-use NEOSidekick\AiAssistant\Factory\AssetModuleResultDtoFactory;
+use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
+use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
+use NEOSidekick\AiAssistant\Factory\FindAssetItemDtoFactory;
 
 /**"
  * @Flow\Scope("singleton")
@@ -25,79 +25,82 @@ class AssetService
 
     /**
      * @Flow\Inject
-     * @var AssetModuleResultDtoFactory
+     * @var FindAssetItemDtoFactory
      */
     protected $assetModuleResultDtoFactory;
 
     /**
-     * @param AssetModuleConfigurationDto $configurationDto
+     * @param FindAssetsFilterDto $filters
      *
-     * @return array<AssetModuleResultDto>
+     * @return array<FindAssetData>
      */
-    public function getAssetsThatNeedProcessing(AssetModuleConfigurationDto $configurationDto): array
+    public function findImages(FindAssetsFilterDto $filters): array
     {
         $assetsIterator = $this->assetRepository->findAllIterator();
-        $assetsThatNeedProcessing = [];
-        $assetsThatNeedProcessingCount = 0;
+        $result = [];
+        $resultCount = 0;
         $iteratedItems = 0;
 
         foreach ($this->assetRepository->iterate($assetsIterator) as $currentAsset) {
             $iteratedItems++;
-            if ($iteratedItems <= $configurationDto->getFirstResult()) {
+            if ($iteratedItems <= $filters->getFirstResult()) {
                 continue;
             }
 
-            if ($assetsThatNeedProcessingCount >= $configurationDto->getLimit()) {
+            if ($resultCount >= $filters->getLimit()) {
                 break;
             }
+
             if (!$currentAsset instanceof Image) {
                 continue;
             }
-            try {
-                $propertyValue = ObjectAccess::getProperty($currentAsset, $configurationDto->getPropertyName());
-            } catch (PropertyNotAccessibleException $e) {
-                continue;
+
+            if (!empty($filters->getPropertyNameMustBeEmpty())) {
+                try {
+                    $propertyValue = ObjectAccess::getProperty($currentAsset, $filters->getPropertyNameMustBeEmpty());
+                } catch (PropertyNotAccessibleException $e) {
+                    continue;
+                }
+                if (!empty($propertyValue)) {
+                    continue;
+                }
             }
-            if (!empty($propertyValue)) {
-                continue;
-            }
-            if ($configurationDto->isOnlyAssetsInUse() && $currentAsset->getUsageCount() === 0) {
+
+            if ($filters->isOnlyAssetsInUse() && $currentAsset->getUsageCount() === 0) {
                 continue;
             }
 
-            $assetsThatNeedProcessing[] = $this->assetModuleResultDtoFactory->create(
-                $currentAsset,
-                $configurationDto
-            );
-            $assetsThatNeedProcessingCount++;
+            $result[] = $this->assetModuleResultDtoFactory->create($currentAsset);
+            $resultCount++;
         }
-        return $assetsThatNeedProcessing;
+        return $result;
     }
 
     /**
-     * @param array<AssetModuleResultDto> $resultDtos
+     * @param array<UpdateAssetData> $updateAssetsData
      *
      * @return void
      */
-    public function updateMultipleAssets(array $resultDtos): void
+    public function updateMultipleAssets(array $updateAssetsData): void
     {
-        foreach ($resultDtos as $resultDto) {
-            if (!$resultDto instanceof AssetModuleResultDto) {
-                continue;
-                // or throw exception?
+        foreach ($updateAssetsData as $updateAssetData) {
+            if (!$updateAssetData instanceof UpdateAssetData) {
+                throw new \InvalidArgumentException('Asset item data did not jach the expected type.');
             }
 
-            $this->updateAsset($resultDto);
+            $this->updateAsset($updateAssetData);
         }
     }
 
-    public function updateAsset(AssetModuleResultDto $resultDto): void
+    public function updateAsset(UpdateAssetData $updateAssetData): void
     {
         /** @var Asset $asset */
-        $asset = $this->assetRepository->findByIdentifier($resultDto->getIdentifier());
+        $asset = $this->assetRepository->findByIdentifier($updateAssetData->getIdentifier());
 
         if ($asset) {
-            ObjectAccess::setProperty($asset, $resultDto->getPropertyName(), $resultDto->getPropertyValue());
+            foreach ($updateAssetData->getProperties() as $propertyName => $propertyValue) {
+                ObjectAccess::setProperty($asset, $propertyName, $propertyValue);
+            }
             $this->assetRepository->update($asset);
         }
     }

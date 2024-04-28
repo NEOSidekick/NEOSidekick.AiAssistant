@@ -8,13 +8,13 @@ use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Service\ThumbnailService;
 use Neos\Utility\Exception\PropertyNotAccessibleException;
 use Neos\Utility\ObjectAccess;
-use NEOSidekick\AiAssistant\Dto\AssetModuleResultDto;
-use NEOSidekick\AiAssistant\Dto\AssetModuleConfigurationDto;
+use NEOSidekick\AiAssistant\Dto\FindAssetData;
+use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 
 /**
  * @Flow\Scope("singleton")
  */
-class AssetModuleResultDtoFactory
+class FindAssetItemDtoFactory
 {
     /**
      * @Flow\Inject
@@ -28,25 +28,24 @@ class AssetModuleResultDtoFactory
      */
     protected $resourceManager;
 
-    public function create(Asset $asset, AssetModuleConfigurationDto $configuration): AssetModuleResultDto
+    public function create(Asset $asset): FindAssetData
     {
         $thumbnailConfiguration = $this->thumbnailService->getThumbnailConfigurationForPreset('Neos.Media.Browser:Preview');
         $thumbnail = $this->thumbnailService->getThumbnail($asset, $thumbnailConfiguration);
         $thumbnailUri = $this->thumbnailService->getUriForThumbnail($thumbnail);
         $fullsizeUri = $this->resourceManager->getPublicPersistentResourceUri($asset->getResource());
+        $properties = [
+            "title" => ObjectAccess::getProperty($asset, 'title'),
+            "caption" => ObjectAccess::getProperty($asset, 'caption'),
+            "copyrightNotice" => ObjectAccess::getProperty($asset, 'copyrightNotice'),
+        ];
 
-        try {
-            return new AssetModuleResultDto(
-                $asset->getResource()->getFilename(),
-                $asset->getIdentifier(),
-                $thumbnailUri,
-                $fullsizeUri,
-                $configuration->getPropertyName(),
-                ObjectAccess::getProperty($asset, $configuration->getPropertyName())
-            );
-        } catch (PropertyNotAccessibleException) {
-            // This cannot happen, as we already validate the propertyName
-            // already in our AssetModuleConfigurationDto
-        }
+        return new FindAssetData(
+            $asset->getResource()->getFilename(),
+            $asset->getIdentifier(),
+            $thumbnailUri,
+            $fullsizeUri,
+            $properties
+        );
     }
 }

@@ -9,12 +9,12 @@ use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Neos\Service\LinkingService;
-use NEOSidekick\AiAssistant\Dto\FocusKeywordListItem;
+use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
 
 /**
  * @Flow\Scope("singleton")
  */
-class FocusKeywordListItemFactory
+class FindDocumentNodeDataFactory
 {
     /**
      * @Flow\Inject
@@ -28,14 +28,14 @@ class FocusKeywordListItemFactory
      */
     protected string $languageDimensionName;
 
-    public function createFromNode(Node $node, ControllerContext $controllerContext): FocusKeywordListItem
+    public function createFromNode(Node $node, ControllerContext $controllerContext): FindDocumentNodeData
     {
         try {
             $publicUri = $this->nodeLinkingService->createNodeUri($controllerContext, $node, null, 'html', true);
         } catch (Exception|MissingActionNameException|IllegalObjectTypeException|\Neos\Flow\Property\Exception|\Neos\Flow\Security\Exception|\Neos\Neos\Exception $e) {
             $publicUri = '';
         }
-        return new FocusKeywordListItem(
+        return new FindDocumentNodeData(
             sprintf('%s-%s', $node->getNodeData()->getIdentifier(), $node->getNodeData()->getDimensionsHash()),
             $node->getContextPath(),
             $node->getNodeType(),

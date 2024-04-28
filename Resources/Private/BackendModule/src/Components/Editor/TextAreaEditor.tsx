@@ -10,7 +10,7 @@ import {DocumentNodeListItem} from "../../Model/ListItem";
 export interface TextAreaEditorProps {
     disabled: boolean,
     property: ListItemProperty,
-    propertySchema: PropertySchema,
+    propertySchema?: PropertySchema,
     item: DocumentNodeListItem,
     updateItemProperty: (value: string, state: ListItemPropertyState) => void,
     sidekickConfiguration?: TextAreaEditorSidekickConfiguration,
@@ -33,7 +33,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
 
     async componentDidUpdate(prevProps: Readonly<TextAreaEditorProps>, prevState: Readonly<{}>, snapshot?: any) {
         // need to update on every item.property change
-        let placeholder = this.props.propertySchema.ui?.inspector?.editorOptions?.placeholder;
+        let placeholder = this.props.propertySchema?.ui?.inspector?.editorOptions?.placeholder;
         if (placeholder && placeholder.includes('ClientEval')) {
             placeholder = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(placeholder, this.props.item);
         }
@@ -66,7 +66,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
         }
 
         const {item, propertySchema} = this.props;
-        const editorOptions = propertySchema.ui?.inspector?.editorOptions;
+        const editorOptions = propertySchema?.ui?.inspector?.editorOptions;
 
         // Similar to MagicTextAreaEditor.fetch
         try {
@@ -95,7 +95,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
     render () {
         const {property, propertySchema, disabled, showGenerateButton, marginBottom} = this.props;
         const {placeholder, generatedChoices} = this.state;
-        const maxlength = propertySchema.validation ? propertySchema.validation['Neos.Neos/Validation/StringLengthValidator']?.maximum : null;
+        const maxlength = propertySchema?.validation ? propertySchema.validation['Neos.Neos/Validation/StringLengthValidator']?.maximum : null;
         const id = 'field-' + (Math.random() * 1000);
 
         const textAreaStyle = property.initialValue === property.currentValue ? {} : {

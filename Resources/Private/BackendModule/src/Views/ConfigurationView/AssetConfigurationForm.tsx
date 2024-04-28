@@ -40,7 +40,10 @@ export default class AssetConfigurationForm extends PureComponent<AssetConfigura
             <SelectField
                 label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.propertyName.label', 'Welches Feld?')}
                 value={moduleConfiguration.propertyName}
-                onChange={e => this.context.updateModuleConfiguration({propertyName: e.target.value as 'title' | 'caption'})}
+                onChange={e => {
+                    const propertyName = e.target.value as 'title' | 'caption';
+                    this.context.updateModuleConfiguration({propertyName: propertyName, editableProperties: [propertyName]});
+                }}
                 options={{
                     'title': this.translationService.translate('Neos.Media.Browser:Main:field_title', 'title'),
                     'caption': this.translationService.translate('Neos.Media.Browser:Main:field_caption', 'caption'),

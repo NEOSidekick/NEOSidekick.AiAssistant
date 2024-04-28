@@ -9,7 +9,7 @@ use Neos\Flow\Annotations as Flow;
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class FocusKeywordUpdateItem implements JsonSerializable
+final class UpdateNodeProperties implements JsonSerializable
 {
     /**
      * @var string
@@ -44,7 +44,7 @@ final class FocusKeywordUpdateItem implements JsonSerializable
     /**
      * @param array{
      *     nodeContextPath: string,
-     *     focusKeyword: string
+     *     properties: string
      * } $array
      *
      * @return self

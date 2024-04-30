@@ -44,8 +44,8 @@ export default (globalRegistry: object, store: Store, iFrameApiService: IFrameAp
 
             const data = {
                 'url': previewUrl,
-                'title': currentDocumentNode?.properties?.title || contentService.getGuestFrameDocumentTitle(),
-                'content': contentService.getGuestFrameDocumentHtml(),
+                'title': currentDocumentNode?.properties?.title || await contentService.getGuestFrameDocumentTitle(),
+                'content': await contentService.getGuestFrameDocumentHtml(),
                 'structuredContent': relevantNodes,
                 'targetAudience': await contentService.getCurrentDocumentTargetAudience(),
                 'pageBriefing': await contentService.getCurrentDocumentPageBriefing(),

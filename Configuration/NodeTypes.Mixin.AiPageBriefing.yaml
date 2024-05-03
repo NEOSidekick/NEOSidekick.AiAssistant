@@ -1,5 +1,6 @@
 #
-# You can add this mixin to any Document NodeType to allow editors to fine-tine the NEOSidekick AI Assistant behavior
+# This mixin allows editors to fine-tine the NEOSidekick AI Assistant behavior,
+# and is added by default to the Neos.Neos:Document NodeType.
 #
 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing':
   abstract: true

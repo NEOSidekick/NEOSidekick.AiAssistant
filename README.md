@@ -87,8 +87,8 @@ other role that you are using for example `Neos.Neos:Administrator`.
 
 ### Page-specific AI briefings
 
-You can add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to any Document NodeType to allow editors to fine-tune the NEOSidekick AI Assistant behavior,
-or you can build your own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).
+By default, we add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to the Neos.Neos:Document NodeType to allow editors to fine-tune the NEOSidekick AI Assistant behavior. 
+Advanced users can also build their own based on the [NEOSidekick YAML API](https://neosidekick.com/en/product/features/build-your-own-ai#page-specific-briefings).
 
 ![AiPageBriefing.png](docs%2FAiPageBriefing.png)
 

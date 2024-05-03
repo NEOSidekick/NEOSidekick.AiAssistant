@@ -12,6 +12,7 @@ Neos:
             - 'AiModal'
             - 'AssetModule'
             - 'Editors/*'
+            - 'NodeTypes/*'
     Ui:
       resources:
         javascript:

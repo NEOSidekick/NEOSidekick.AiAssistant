@@ -1,0 +1,16 @@
+##
+# We add the NEOSidekick seo title generation button to the SEO field
+##
+'Neos.Seo:TitleTagMixin':
+  properties:
+    titleOverride:
+      ui:
+        inspector:
+          editor: 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor'
+          editorOptions:
+            placeholder: 'Neos.Seo:NodeTypes.SeoMetaTagsMixin:properties.titleOverride.textAreaEditor.placeholder'
+            module: 'seo_title'
+            arguments:
+              content: 'SidekickClientEval:documentContent'
+              url: 'SidekickClientEval:node.properties.uriPathSegment'
+              focusKeyword: 'SidekickClientEval:node.properties.focusKeyword || ""'

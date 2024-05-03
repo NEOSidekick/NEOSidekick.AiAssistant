@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="groups.briefing" xml:space="preserve">
+                <source>AI Briefing</source>
+            </trans-unit>
+            <trans-unit id="properties.focusKeyword" xml:space="preserve">
+                <source>SEO Focus Keyword</source>
+            </trans-unit>
+            <trans-unit id="properties.focusKeyword.ui.help.message" xml:space="preserve">
+                <source>This focus keyword is used for generating better content, optimized seo titles and meta descriptions. Let us know know if you would like additional features based on that keyword.</source>
+            </trans-unit>
+            <trans-unit id="properties.targetAudience" xml:space="preserve">
+                <source>Target Audience</source>
+            </trans-unit>
+            <trans-unit id="properties.targetAudience.ui.help.message" xml:space="preserve">
+                <source>Help NEOSidekick to understand your target audience and write more optimized content, especially when writing FAQ. This will override the site-wide defined target audience.</source>
+            </trans-unit>
+            <trans-unit id="properties.targetAudience.textAreaEditor.placeholder" xml:space="preserve">
+                <source>What is your target audience?</source>
+            </trans-unit>
+            <trans-unit id="properties.pageBriefing" xml:space="preserve">
+                <source>Page Briefing</source>
+            </trans-unit>
+            <trans-unit id="properties.pageBriefing.ui.help.message" xml:space="preserve">
+                <source>Give NEOSidekick additional context, e.g., that this is a landing page which you want to optimize for the primary target of booking consultation calls with your sales team.</source>
+            </trans-unit>
+            <trans-unit id="properties.pageBriefing.textAreaEditor.placeholder" xml:space="preserve">
+                <source>What should the NEOSidekick AI Assistant also know?</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

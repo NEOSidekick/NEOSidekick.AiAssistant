@@ -28,18 +28,25 @@ export class ContentService {
         this.externalService = globalRegistry.get('NEOSidekick.AiAssistant').get('externalService');
     }
 
-    getGuestFrameContentDocument = (): Document | null => {
-        const guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
+    getGuestFrameContentDocument = async (): Promise<Document | null> => {
+        let guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
+        while (!guestFrame) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
+        }
+        while (!guestFrame.contentDocument || guestFrame.contentDocument.readyState === 'loading' || !guestFrame?.contentDocument?.title) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
         this.guestFrameContentDocument = guestFrame?.contentDocument;
         return this.guestFrameContentDocument;
     }
 
-    getGuestFrameDocumentTitle = (): string => {
-        return <string>this.getGuestFrameContentDocument()?.title;
+    getGuestFrameDocumentTitle = async (): Promise<string> => {
+        return <string>(await this.getGuestFrameContentDocument())?.title;
     }
 
-    getGuestFrameDocumentHtml = (): string => {
-        return <string>this.getGuestFrameContentDocument()?.body?.innerHTML;
+    getGuestFrameDocumentHtml = async (): Promise<string> => {
+        return <string>(await this.getGuestFrameContentDocument())?.body?.innerHTML;
     }
 
     getCurrentDocumentNode = (): Node => {
@@ -94,8 +101,12 @@ export class ContentService {
                 node = this.generateNodeForContext(node, transientValues)
 
                 parentNode = parentNode ?? this.getCurrentDocumentParentNode()
-                const documentTitle = this.getGuestFrameDocumentTitle()
-                const documentContent = this.getGuestFrameDocumentHtml()
+                let documentTitle = null;
+                let documentContent = null;
+                if (value.indexOf('documentTitle') !== -1 || value.indexOf('documentContent') !== -1) {
+                    documentTitle = await this.getGuestFrameDocumentTitle();
+                    documentContent = await this.getGuestFrameDocumentHtml();
+                }
                 // Functions
                 const AssetUri = this.getImageMetadata
                 const AsyncFunction = Object.getPrototypeOf(async function () {

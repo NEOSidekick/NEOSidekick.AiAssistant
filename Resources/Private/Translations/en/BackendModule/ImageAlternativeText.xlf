@@ -27,7 +27,7 @@
                 <source>Field to save the description in</source>
             </trans-unit>
             <trans-unit id="configuration.itemsPerPage.label">
-                <source>Number of images per page</source>
+                <source>Number of entries per page</source>
             </trans-unit>
             <trans-unit id="configuration.language.label">
                 <source>Language for the description</source>

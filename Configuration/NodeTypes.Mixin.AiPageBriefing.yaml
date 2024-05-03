@@ -1,5 +1,6 @@
 #
-# You can add this mixin to any Document NodeType to allow editors to fine-tine the NEOSidekick AI Assistant behavior
+# This mixin allows editors to fine-tine the NEOSidekick AI Assistant behavior,
+# and is added by default to the Neos.Neos:Document NodeType.
 #
 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing':
   abstract: true
@@ -7,9 +8,9 @@
     inspector:
       groups:
         briefing:
-          label: AI Briefing
+          label: i18n
           icon: route
-          position: 10
+          position: 15
   options:
     sidekick:
       focusKeyword: 'ClientEval: node.properties.focusKeyword || ""'
@@ -19,9 +20,9 @@
     focusKeyword:
       type: string
       ui:
-        label: SEO Focus Keyword
+        label: i18n
         help:
-          message: 'This focus keyword is used for generating better content briefings and optimized meta descriptions. Let us know know if you would like additional features based on that keyword.'
+          message: i18n
         inspector:
           group: 'briefing'
           position: 10
@@ -35,31 +36,30 @@
     targetAudience:
       type: string
       ui:
-        label: Target Audience
+        label: i18n
         help:
-          message: 'Help NEOSidekick to understand your target audience and write more optimized content, especially when writing FAQ. This will override the site-wide target audience.'
+          message: i18n
         inspector:
           group: 'briefing'
           position: 20
           editor: 'Neos.Neos/Inspector/Editors/TextAreaEditor'
           editorOptions:
-            placeholder: 'What is your target audience?'
-            rows: 7
+            placeholder: i18n
       validation:
         'Neos.Neos/Validation/StringLengthValidator':
           maximum: 450
     pageBriefing:
       type: string
       ui:
-        label: Page Briefing
+        label: i18n
         help:
-          message: 'Give NEOSidekick additional context, e.g., that this is a landing page which you want to optimize for the primary target of booking consultation calls with your sales team.'
+          message: i18n
         inspector:
           group: 'briefing'
           position: 30
           editor: 'Neos.Neos/Inspector/Editors/TextAreaEditor'
           editorOptions:
-            placeholder: 'What should the NEOSidekick AI Assistant also know?'
+            placeholder: i18n
       validation:
         'Neos.Neos/Validation/StringLengthValidator':
           maximum: 450

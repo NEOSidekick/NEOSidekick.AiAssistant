@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="groups.briefing" xml:space="preserve">
+                <source>AI Briefing</source>
+                <target xml:lang="de" state="translated">AI Briefing</target>
+            </trans-unit>
+            <trans-unit id="properties.focusKeyword" xml:space="preserve">
+                <source>SEO Focus Keyword</source>
+                <target xml:lang="de" state="translated">SEO Fokus-Keyword</target>
+            </trans-unit>
+            <trans-unit id="properties.focusKeyword.ui.help.message" xml:space="preserve">
+                <source>This focus keyword is used for generating better content, optimized seo titles and meta descriptions. Let us know know if you would like additional features based on that keyword.</source>
+                <target xml:lang="de" state="translated">Dieses Fokus-Keyword wird für die Generierung von besseren Texten, optimierten SEO-Titeln und Meta-Beschreibungen verwendet. Lass uns wissen, wenn du zusätzliche Funktionen basierend auf diesem Keyword wünscht.</target>
+            </trans-unit>
+            <trans-unit id="properties.targetAudience" xml:space="preserve">
+                <source>Target Audience</source>
+                <target xml:lang="de" state="translated">Zielgruppe</target>
+            </trans-unit>
+            <trans-unit id="properties.targetAudience.ui.help.message" xml:space="preserve">
+                <source>Help NEOSidekick to understand your target audience and write more optimized content, especially when writing FAQ. This will override the site-wide defined target audience.</source>
+                <target xml:lang="de" state="translated">Hilf NEOSidekick, deine Zielgruppe zu verstehen und zielgruppenspezifische Texte zu schreiben, insbesondere beim Schreiben der FAQ. Dies überschreibt die webseiten-weit definierte Zielgruppe.</target>
+            </trans-unit>
+            <trans-unit id="properties.targetAudience.textAreaEditor.placeholder" xml:space="preserve">
+                <source>What is your target audience?</source>
+                <target xml:lang="de" state="translated">Was ist deine Zielgruppe?</target>
+            </trans-unit>
+            <trans-unit id="properties.pageBriefing" xml:space="preserve">
+                <source>Page Briefing</source>
+                <target xml:lang="de" state="translated">Seiten-Briefing</target>
+            </trans-unit>
+            <trans-unit id="properties.pageBriefing.ui.help.message" xml:space="preserve">
+                <source>Give NEOSidekick additional context, e.g., that this is a landing page which you want to optimize for the primary target of booking consultation calls with your sales team.</source>
+                <target xml:lang="de" state="translated">Gib NEOSidekick zusätzlichen Kontext, z.B., dass dies eine Landingpage ist, die du für das Hauptziel der Buchung von Beratungsgesprächen mit deinem Vertriebsteam optimieren möchtest.</target>
+            </trans-unit>
+            <trans-unit id="properties.pageBriefing.textAreaEditor.placeholder" xml:space="preserve">
+                <source>What should the NEOSidekick AI Assistant also know?</source>
+                <target xml:lang="de" state="translated">Was sollte der NEOSidekick AI Assistant noch wissen?</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

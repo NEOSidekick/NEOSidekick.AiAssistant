@@ -133,8 +133,8 @@ export default class FocusKeywordEditor extends Component<any, FocusKeywordEdito
                     </div>
                 }
                 {suggestionsState === 'loaded' &&
-                    <div style={{padding: '1rem', background: 'gray', marginTop: '5px', marginBottom: '0'}}>
-                        <p style={{marginTop: '5px'}}>{i18nRegistry.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:suggestionsIntro', `Our page content analysis points one of the following phrases as focus keyword. If this does not fit at all, customising the text for SEO could be helpful.`)}</p>
+                    <div style={{padding: '1rem', background: 'gray'}}>
+                        {i18nRegistry.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:suggestionsIntro', `Our page content analysis points one of the following phrases as focus keyword. If this does not fit at all, customising the text for SEO could be helpful.`)}
                         {suggestions.map((suggestion) => (
                             <Button
                                 key={suggestion}
@@ -149,7 +149,7 @@ export default class FocusKeywordEditor extends Component<any, FocusKeywordEdito
                     </div>
                 }
                 {(suggestionsState === 'loaded' || value) &&
-                    <div style={{marginTop: '5px'}}>
+                    <p style={{marginBottom: '16px'}}>
                         {i18nRegistry.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:checkSearchVolume', `Check search volume:`)}
                         &nbsp;
                         <a href={ahrefsLink} target="_blank"
@@ -157,7 +157,7 @@ export default class FocusKeywordEditor extends Component<any, FocusKeywordEdito
                         &nbsp;|&nbsp;
                         <a href={googleLink} target="_blank"
                            style={{textDecoration: 'underline', color: 'white'}}>Google</a>
-                    </div>
+                    </p>
                 }
             </div>
         )

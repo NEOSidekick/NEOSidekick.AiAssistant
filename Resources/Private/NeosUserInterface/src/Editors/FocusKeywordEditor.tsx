@@ -131,32 +131,32 @@ export default class FocusKeywordEditor extends Component<any, FocusKeywordEdito
                         </Button>
                     </div>
                 }
-                {(suggestionsState === 'loaded' || value) &&
-                    <div>
-                        <p style={{padding: '1rem', background: 'gray', marginBottom: '10px'}}>
-                            {i18nRegistry.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:suggestionsIntro', `Our page content analysis points one of the following phrases as focus keyword. If this does not fit at all, customising the text for SEO could be helpful.`)}
-                            {suggestions.map((suggestion) => (
-                                <Button
-                                    key={suggestion}
-                                    className="neosidekick__editor__suggestion-button"
-                                    size="small"
-                                    style="lighter"
-                                    hoverStyle="brand"
-                                    onClick={() => commit(suggestion)}>
-                                    {suggestion}
-                                </Button>
-                            ))}
-                        </p>
-                        <p style={{marginBottom: '16px'}}>
-                            {i18nRegistry.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:checkSearchVolume', `Check search volume:`)}
-                            &nbsp;
-                            <a href={ahrefsLink} target="_blank"
-                               style={{textDecoration: 'underline', color: 'white'}}>Ahrefs</a>
-                            &nbsp;|&nbsp;
-                            <a href={googleLink} target="_blank"
-                               style={{textDecoration: 'underline', color: 'white'}}>Google</a>
-                        </p>
+                {suggestionsState === 'loaded' &&
+                    <div style={{padding: '1rem', background: 'gray'}}>
+                        {i18nRegistry.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:suggestionsIntro', `Our page content analysis points one of the following phrases as focus keyword. If this does not fit at all, customising the text for SEO could be helpful.`)}
+                        {suggestions.map((suggestion) => (
+                            <Button
+                                key={suggestion}
+                                className="neosidekick__editor__suggestion-button"
+                                size="small"
+                                style="lighter"
+                                hoverStyle="brand"
+                                onClick={() => commit(suggestion)}>
+                                {suggestion}
+                            </Button>
+                        ))}
                     </div>
+                }
+                {(suggestionsState === 'loaded' || value) &&
+                    <p style={{marginBottom: '16px'}}>
+                        {i18nRegistry.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:checkSearchVolume', `Check search volume:`)}
+                        &nbsp;
+                        <a href={ahrefsLink} target="_blank"
+                           style={{textDecoration: 'underline', color: 'white'}}>Ahrefs</a>
+                        &nbsp;|&nbsp;
+                        <a href={googleLink} target="_blank"
+                           style={{textDecoration: 'underline', color: 'white'}}>Google</a>
+                    </p>
                 }
             </div>
         )

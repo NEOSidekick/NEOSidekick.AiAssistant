@@ -32,13 +32,13 @@ class FindDocumentNodeDataFactory
     {
         try {
             $publicUri = $this->nodeLinkingService->createNodeUri($controllerContext, $node, null, 'html', true);
-        } catch (Exception|MissingActionNameException|IllegalObjectTypeException|\Neos\Flow\Property\Exception|\Neos\Flow\Security\Exception|\Neos\Neos\Exception $e) {
+        } catch (Exception|MissingActionNameException|IllegalObjectTypeException|\Neos\Flow\Property\Exception|\Neos\Flow\Security\Exception|\Neos\Neos\Exception|\Neos\Flow\Mvc\Exception\NoMatchingRouteException $e) {
             $publicUri = '';
         }
         return new FindDocumentNodeData(
             sprintf('%s-%s', $node->getNodeData()->getIdentifier(), $node->getNodeData()->getDimensionsHash()),
             $node->getContextPath(),
-            $node->getNodeType(),
+            $node->getNodeType()->getName(),
             $publicUri,
             (array)$node->getProperties(),
             // todo inspect [0] syntax... maybe we also need a mapping?

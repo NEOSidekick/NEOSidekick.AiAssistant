@@ -123,12 +123,12 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                 <div className={'neos-span4'}>
                     <h2 style={{marginBottom: '1rem'}}>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:listItem.label', 'Page »' + item.properties.title + '«', {0: item.properties.title})}</h2>
                     <p>
-                        <a href={item.publicUri} target="_blank">
+                        <a href={item.publicUri} target="_blank" style={{overflowWrap: 'break-word'}}>
                             {item.publicUri}&nbsp;
-                            <FontAwesomeIcon icon={faExternalLinkAlt} />
+                            <FontAwesomeIcon icon={faExternalLinkAlt}/>
                         </a>
                     </p>
-                    <br />
+                    <br/>
                     {Object.values(item.readonlyProperties).map((property: ListItemProperty) => {
                         return (
                             <DocumentNodeListViewItemProperty

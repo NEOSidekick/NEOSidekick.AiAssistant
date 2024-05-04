@@ -1,3 +1,7 @@
 'Neos.Neos:Document':
   superTypes:
     'NEOSidekick.AiAssistant:Mixin.AiPageBriefing': true
+
+'Neos.Neos:Shortcut':
+  superTypes:
+    'NEOSidekick.AiAssistant:Mixin.AiPageBriefing': false

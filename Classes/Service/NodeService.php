@@ -25,7 +25,7 @@ class NodeService
 {
     use CreateContentContextTrait;
 
-    private const MIXIN_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
+    private const BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
 
     /**
      * @Flow\Inject
@@ -147,17 +147,19 @@ class NodeService
      * that are either a document node type OR match the filtered
      * document node type, but also have our mixin as a super-type.
      *
-     * @param FindDocumentNodesFilter $configurationDto
+     * @param FindDocumentNodesFilter $findDocumentNodesFilter
      *
      * @return array<string>
      */
-    protected function getNodeTypeFilter(FindDocumentNodesFilter $configurationDto): array
+    protected function getNodeTypeFilter(FindDocumentNodesFilter $findDocumentNodesFilter): array
     {
-        $documentNodeTypeFilter = $configurationDto->getNodeTypeFilter() ?? 'Neos.Neos:Document';
-        $mixinSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes(self::MIXIN_NODE_TYPE, false);
+        $documentNodeTypeFilter = $findDocumentNodesFilter->getNodeTypeFilter() ?? 'Neos.Neos:Document';
+        $mixinSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes(self::BASE_NODE_TYPE, false);
+        $mixinNameWithSubNodeTypes = [self::BASE_NODE_TYPE, ...array_keys($mixinSubNodeTypes)];
         $documentSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes($documentNodeTypeFilter, false);
-        $intersectNodeTypes = array_intersect(array_values($mixinSubNodeTypes), array_intersect($documentSubNodeTypes));
-        return array_values(['Neos.Neos:Document', ...array_map(fn (NodeType $nodeType) => $nodeType->getName(), $intersectNodeTypes)]);
+        $documentNameWithSubNodeTypes = [$documentNodeTypeFilter, ...array_keys($documentSubNodeTypes)];
+        $intersectNodeTypes = array_intersect(array_values($mixinNameWithSubNodeTypes), array_values($documentNameWithSubNodeTypes));
+        return array_values($intersectNodeTypes);
     }
 
     /**

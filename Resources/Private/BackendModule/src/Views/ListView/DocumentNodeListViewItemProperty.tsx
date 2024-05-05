@@ -32,7 +32,7 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
             return; // ignore properties that no not exist on this node type
         }
 
-        switch (propertySchema?.ui.inspector.editor) {
+        switch (propertySchema?.ui?.inspector?.editor) {
             case 'NEOSidekick.AiAssistant/Inspector/Editors/FocusKeywordEditor':
                 if (readonly) {
                     return (

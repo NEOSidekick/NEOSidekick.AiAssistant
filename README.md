@@ -92,13 +92,24 @@ Advanced users can also build their own based on the [NEOSidekick YAML API](http
 
 ![AiPageBriefing.png](docs%2FAiPageBriefing.png)
 
-### Asset Alt-Text Generator
+### Image Description Generator
 
 Image alternative texts are essential for SEO and accessibility. With good image descriptions, you can help Google and screen readers to understand your images.
 
 [Read the tutorial](https://neosidekick.com/en/product/features/image-description-generator) on how create dozens of image descriptions in no time.
 
-![Alternative-Text-Generator.png](docs%2FAlternative-Text-Generator.png)
+![Alternate-Image-Text-Generator.png](docs%2FAlternate-Image-Text-Generator.png)
+
+### SEO Title and Meta Description Generator
+
+We have designed a two-step process to help you create great SEO titles and meta descriptions, that are both search engine friendly and engaging for your readers.
+We designed a special backend module just to ease the to make it fast and efficient.
+
+In the first step, we look at the pages and suggest a likely focus keyword for this page.
+![Focus-Keyword-Generator.gif](docs%2FFocus-Keyword-Generator.gif)
+
+Next we create SEO titles and meta description optimized for the given focus keyword.
+![SEO-Title-and-Meta-Description-Generator.gif](docs%2FSEO-Title-and-Meta-Description-Generator.gif)
 
 # License
 

@@ -410,9 +410,9 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                 args = processedConfig.arguments || {};
                 break;
             case 'intro':
-                module = 'free_conversation';
+                module = 'custom_prompt';
                 args = {
-                    content: 'Write a two sentence introduction for the current page.',
+                    customPrompt: 'Write a two sentence introduction for the current page.',
                     allowedMarkdownFormattingOptions
                 };
                 break;
@@ -429,9 +429,9 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                     module = 'modify_selected_text';
                     args = {fullText, selectedText, modificationType, allowedMarkdownFormattingOptions, customPrompt, writingStyle};
                 } else {
-                    module = 'free_conversation';
+                    module = 'custom_prompt';
                     args = {
-                        content: 'Please create additional content for the current page. ' + customPrompt,
+                        customPrompt,
                         allowedMarkdownFormattingOptions
                     };
                 }

@@ -157,10 +157,10 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                                 <p>Canonical: {item.properties.canonicalLink}</p>
                             )}
                             {item.properties.metaRobotsNoindex && (
-                                <p>{this.translationService.translate(propertySchemas?.metaRobotsNoindex?.ui?.label, propertySchemas?.metaRobotsNoindex?.ui?.label)}</p>
+                                <p>✓ {this.translationService.translate(propertySchemas?.metaRobotsNoindex?.ui?.label, propertySchemas?.metaRobotsNoindex?.ui?.label)}</p>
                             )}
                             {item.properties.metaRobotsNofollow && (
-                                <p>{this.translationService.translate(propertySchemas?.metaRobotsNofollow?.ui?.label, propertySchemas?.metaRobotsNofollow?.ui?.label)}</p>
+                                <p>✓ {this.translationService.translate(propertySchemas?.metaRobotsNofollow?.ui?.label, propertySchemas?.metaRobotsNofollow?.ui?.label)}</p>
                             )}
                         </div>
                     )}

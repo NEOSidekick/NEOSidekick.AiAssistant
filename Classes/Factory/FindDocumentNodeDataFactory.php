@@ -9,6 +9,7 @@ use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Neos\Service\LinkingService;
+use Neos\Utility\Arrays;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
 
 /**
@@ -41,8 +42,8 @@ class FindDocumentNodeDataFactory
             $node->getNodeType()->getName(),
             $publicUri,
             (array)$node->getProperties(),
-            // todo inspect [0] syntax... maybe we also need a mapping?
-            $node->getNodeData()->getDimensionValues()[$this->languageDimensionName][0]
+            // todo inspect [0] syntax... maybe we also need a mapping? replace default value and/or discuss setup with and without language dimensions
+            Arrays::getValueByPath($node->getNodeData()->getDimensionValues(), $this->languageDimensionName . '.0') ?: 'de'
         );
     }
 }

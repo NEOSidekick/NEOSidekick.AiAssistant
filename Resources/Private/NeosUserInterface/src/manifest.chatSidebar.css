@@ -44,6 +44,9 @@ body {
 .neosidekick_appWrapper div[class*="style__rightSideBar"] {
   right: var(--neosidekick-sidebar-width);
 }
+.neosidekick_appWrapper div[class*="style__secondaryInspector"] {
+  right: calc(320px + var(--neosidekick-sidebar-width));
+}
 /* compatibility with Neos 7 Neos 7 end */
 
 /**

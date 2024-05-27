@@ -25,7 +25,7 @@ export default class NodeTypeFilter extends PureComponent<NodeTypeFilterProps,{}
             const baseNodeTypeFilter = this.props.moduleConfiguration?.baseNodeTypeFilter;
             Object.keys(nodeTypes).forEach(nodeType => {
                 const nodeTypeDefinition: { superTypes: object, ui: { label: string } } = nodeTypes[nodeType]
-                if (!baseNodeTypeFilter || nodeTypeDefinition?.superTypes?.hasOwnProperty(baseNodeTypeFilter)) {
+                if (!baseNodeTypeFilter || (nodeTypeDefinition?.superTypes?.hasOwnProperty(baseNodeTypeFilter) && nodeTypeDefinition.superTypes[baseNodeTypeFilter])) {
                     options[nodeType] = translationService.translate(nodeTypeDefinition.ui.label, nodeTypeDefinition.ui.label);
                 }
             });

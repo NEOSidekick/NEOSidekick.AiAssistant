@@ -30,16 +30,16 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         }
         this.iframeRef = React.createRef();
         // noinspection JSIgnoredPromiseFromCall
-        setTimeout(() => this.fetchIframeContent(), 100);
+        setTimeout(() => this.fetchDocumentHtmlContent(), 100);
     }
 
-    private async fetchIframeContent() {
+    private async fetchDocumentHtmlContent() {
         const {item} = this.props;
         if (!item.publicUri) {
             this.setState({htmlContent: '<h1 style="color: white; padding: 1rem;">This the page is not accessible.</h1>'});
             return;
         }
-        const htmlContent = await NeosBackendService.getInstance().fetchPreviewContent(item.publicUri);
+        const htmlContent = await NeosBackendService.getInstance().fetchDocumentHtmlContent(item.publicUri);
         this.setState({htmlContent});
     }
 

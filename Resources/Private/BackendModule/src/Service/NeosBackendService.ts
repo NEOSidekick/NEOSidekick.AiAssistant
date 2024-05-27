@@ -11,7 +11,7 @@ export default class NeosBackendService {
     private static instance: NeosBackendService | null = null;
     private endpoints: Endpoints;
     private csrfToken: string;
-    private previewContentQueue: {isFetching: boolean, uri: string, promise: Promise<string>, resolve: (value: string) => void, reject: (reason?: any) => void}[] = [];
+    private documentHtmlContentQueue: {isFetching: boolean, uri: string, promise: Promise<string>, resolve: (value: string) => void, reject: (reason?: any) => void}[] = [];
 
     public static getInstance(): NeosBackendService {
         if (!NeosBackendService.instance) {
@@ -25,8 +25,8 @@ export default class NeosBackendService {
         this.csrfToken = csrfToken
     }
 
-    public async fetchPreviewContent(uri: string): Promise<string> {
-        const itemWithSameUri = this.previewContentQueue.find(item => item.uri === uri);
+    public async fetchDocumentHtmlContent(uri: string): Promise<string> {
+        const itemWithSameUri = this.documentHtmlContentQueue.find(item => item.uri === uri);
         if (itemWithSameUri) {
             return itemWithSameUri.promise;
         }
@@ -35,24 +35,24 @@ export default class NeosBackendService {
             resolve = localResolve;
             reject = localReject;
         });
-        this.previewContentQueue.push({isFetching: false, uri, promise, resolve, reject});
-        this.fetchNextPreviewContents().then(() => {});
+        this.documentHtmlContentQueue.push({isFetching: false, uri, promise, resolve, reject});
+        this.fetchNextDocumentHtmlContents().then(() => {});
         return promise;
     }
 
-    private async fetchNextPreviewContents() {
+    private async fetchNextDocumentHtmlContents() {
         // we want to resolve a maximum of 3 promises at a time
-        for (let i = 0; i < this.previewContentQueue.length && i < 3; i++) {
-            const {isFetching, uri, resolve, reject} = this.previewContentQueue[i];
+        for (let i = 0; i < this.documentHtmlContentQueue.length && i < 3; i++) {
+            const {isFetching, uri, resolve, reject} = this.documentHtmlContentQueue[i];
             if (!isFetching) {
-                this.previewContentQueue[i].isFetching = true;
+                this.documentHtmlContentQueue[i].isFetching = true;
                 fetch(uri)
                     .then(response => response.text())
                     .then(text => resolve(text))
                     .catch(reject)
                     .finally(() => {
-                        this.previewContentQueue = this.previewContentQueue.filter(item => item.uri !== uri);
-                        this.fetchNextPreviewContents();
+                        this.documentHtmlContentQueue = this.documentHtmlContentQueue.filter(item => item.uri !== uri);
+                        this.fetchNextDocumentHtmlContents();
                     });
             }
         }

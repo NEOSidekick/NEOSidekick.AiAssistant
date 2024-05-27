@@ -68,7 +68,11 @@ class NodeService
         $workspaceChain = array_merge([$workspace], array_values($workspace->getBaseWorkspaces()));
         $queryBuilder = $this->createQueryBuilder($workspaceChain);
         $queryBuilder->andWhere('n.nodeType IN (:includeNodeTypes)');
+        $queryBuilder->andWhere('n.removed = :removed');
+        $queryBuilder->andWhere('n.hidden = :hidden');
         $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
+        $queryBuilder->setParameter('hidden', false, \PDO::PARAM_BOOL);
+        $queryBuilder->setParameter('removed', false, \PDO::PARAM_BOOL);
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
         $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($findDocumentNodesFilter) {

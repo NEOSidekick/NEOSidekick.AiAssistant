@@ -1,6 +1,6 @@
 import React from "react";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faCheckDouble, faChevronLeft, faSpinner} from "@fortawesome/free-solid-svg-icons";
+import {faCheck, faCheckDouble, faChevronLeft, faSpinner} from "@fortawesome/free-solid-svg-icons";
 import NeosBackendService from "../../Service/NeosBackendService";
 import {ListState} from "../../Model/ListState";
 import {AssetListItem, DocumentNodeListItem, ListItem, ListItemState} from "../../Model/ListItem";
@@ -140,7 +140,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         })
     }
 
-    private allowSaving(): boolean {
+    private hasUnsavedChanges(): boolean {
         let hasChanges = false;
         for (const item of this.paginatedItems()) {
             if (item.state === ListItemState.Persisting) {
@@ -159,8 +159,10 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
     }
 
     private async saveCurrentItemsAndNextPage() {
-        const paginatedItems = this.paginatedItems();
-        await this.persistItems(paginatedItems);
+        if (this.hasUnsavedChanges()) {
+            const paginatedItems = this.paginatedItems();
+            await this.persistItems(paginatedItems);
+        }
         this.goToNextPage()
     }
 
@@ -226,10 +228,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     </a>
                     {this.state.listState === ListState.Result ? <button
                         onClick={() => this.saveCurrentItemsAndNextPage()}
-                        className={'neos-button neos-button-success'}
-                        disabled={!this.allowSaving()}>
-                        {this.showSaveButtonSpinner() ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : <FontAwesomeIcon icon={faCheckDouble}/>}&nbsp;
-                        {this.translationService.translate('NEOSidekick.AiAssistant:Module:saveAndNextPage', 'Save all and next page')}
+                        className={'neos-button neos-button-success'}>
+                        {this.showSaveButtonSpinner() ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : <FontAwesomeIcon icon={this.hasUnsavedChanges() ? faCheckDouble : faCheck}/>}&nbsp;
+                        {this.hasUnsavedChanges() ? this.translationService.translate('NEOSidekick.AiAssistant:Module:saveAndNextPage', 'Save all and next page') : this.translationService.translate('NEOSidekick.AiAssistant:Module:nextPage', 'Next page')}
                     </button> : null}
                 </div>
             </div>

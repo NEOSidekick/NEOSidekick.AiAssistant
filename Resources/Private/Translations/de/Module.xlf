@@ -38,6 +38,10 @@
                 <source>Save all and get next page</source>
                 <target xml:lang="de" state="translated">Alle Speichern und nächste Seite</target>
             </trans-unit>
+            <trans-unit id="nextPage" xml:space="preserve">
+                <source>Next page</source>
+                <target xml:lang="de" state="translated">Nächste Seite</target>
+            </trans-unit>
             <trans-unit id="discard">
                 <source>Discard</source>
                 <target xml:lang="de">Verwerfen</target>

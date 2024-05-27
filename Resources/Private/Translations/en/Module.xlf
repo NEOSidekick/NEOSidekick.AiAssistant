@@ -29,6 +29,9 @@
             <trans-unit id="saveAndNextPage" xml:space="preserve">
                 <source>Save all and get next page</source>
             </trans-unit>
+            <trans-unit id="nextPage" xml:space="preserve">
+                <source>Next page</source>
+            </trans-unit>
             <trans-unit id="discard">
                 <source>Discard</source>
             </trans-unit>

@@ -63,7 +63,7 @@ class BackendServiceController extends ActionController
      */
     public function findAssetsAction(FindAssetsFilterDto $configuration): string
     {
-        $resultCollection = $this->assetService->findImages($configuration);
+        $resultCollection = $this->assetService->findImages($configuration, $this->controllerContext);
         return json_encode($resultCollection);
     }
 

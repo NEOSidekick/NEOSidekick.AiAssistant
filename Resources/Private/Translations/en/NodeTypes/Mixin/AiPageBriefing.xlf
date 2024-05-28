@@ -21,7 +21,7 @@
                 <source>What is your target audience?</source>
             </trans-unit>
             <trans-unit id="properties.pageBriefing" xml:space="preserve">
-                <source>Page Briefing</source>
+                <source>Extend the site briefing</source>
             </trans-unit>
             <trans-unit id="properties.pageBriefing.ui.help.message" xml:space="preserve">
                 <source>Give NEOSidekick additional context, e.g., that this is a landing page which you want to optimize for the primary target of booking consultation calls with your sales team.</source>

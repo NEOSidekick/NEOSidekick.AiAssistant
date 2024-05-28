@@ -27,8 +27,8 @@
                 <target xml:lang="de" state="translated">Was ist deine Zielgruppe?</target>
             </trans-unit>
             <trans-unit id="properties.pageBriefing" xml:space="preserve">
-                <source>Page Briefing</source>
-                <target xml:lang="de" state="translated">Seiten-Briefing</target>
+                <source>Extend the site briefing</source>
+                <target xml:lang="de" state="translated">Erweitere das Seitenbriefing</target>
             </trans-unit>
             <trans-unit id="properties.pageBriefing.ui.help.message" xml:space="preserve">
                 <source>Give NEOSidekick additional context, e.g., that this is a landing page which you want to optimize for the primary target of booking consultation calls with your sales team.</source>

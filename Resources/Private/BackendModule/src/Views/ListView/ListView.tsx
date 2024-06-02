@@ -113,9 +113,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         const paginatedItems = this.paginatedItems();
         if (paginatedItems.length === 0) {
             const itemsCount = Object.values(this.state.items).length;
-            if (itemsCount === 10000) {
+            if (itemsCount === 1000) {
                 return (
-                    <ErrorMessage type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listLimitReached', 'This tool can currently process a maximum of 10,000 entries at the same time. All your changes are saved, please start a new search.')}/>
+                    <ErrorMessage type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listLimitReached', 'This tool can currently process a maximum of 1,000 entries at the same time. All your changes are saved, please start a new search.')}/>
                 )
             }
             return (

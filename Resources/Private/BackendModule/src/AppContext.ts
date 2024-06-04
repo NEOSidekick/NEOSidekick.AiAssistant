@@ -12,6 +12,7 @@ export interface AppContextType {
     endpoints: Endpoints;
     workspaces: Workspaces;
     nodeTypes?: object;
+    domain: string;
 
     // filter and actions
     moduleConfiguration: ModuleConfiguration;

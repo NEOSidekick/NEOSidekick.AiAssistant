@@ -47,8 +47,8 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
                 {
                     identifier: 'url',
                     value: [
-                        item.fullsizeUri,
-                        item.thumbnailUri
+                        this.prependConfiguredDomainToImageUri(item.fullsizeUri),
+                        this.prependConfiguredDomainToImageUri(item.thumbnailUri)
                     ]
                 }
             ]);
@@ -138,6 +138,28 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
                 </span>
             )
         }
+    }
+
+    private prependConfiguredDomainToImageUri(imageUri: string) {
+        // Make sure that the imageUri has a domain prepended
+        // Get instance domain from configuration
+        const hostWithScheme = this.context.domain;
+        // Remove the scheme and split URL into parts
+        // noinspection HttpUrlsUsage
+        const imageUriParts = imageUri
+            .replace('http://', '')
+            .replace('https://', '')
+            .split('/');
+        // If the imageUri started with http:// oder https:// we assume that the first item in the imageUriParts array is the host
+        // noinspection HttpUrlsUsage
+        if (imageUri.startsWith('http://') || imageUri.startsWith('https://')) {
+            // Remove the host
+            imageUriParts.shift();
+        }
+        // Re-join the array to a URL, remove double slashes and return
+        const relativePath = imageUriParts.join('/').replace('//', '/');
+        // Merge the configured host and the path and return
+        return hostWithScheme + relativePath;
     }
 
     render() {

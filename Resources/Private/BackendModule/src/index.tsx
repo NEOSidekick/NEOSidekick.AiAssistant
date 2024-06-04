@@ -16,7 +16,8 @@ document.addEventListener('DOMContentLoaded', async() => {
         apiDomain: string,
         apiKey: string,
         defaultLanguage: string,
-        userInterfaceLanguage: string
+        userInterfaceLanguage: string,
+        domain: string
     } = window['_NEOSIDEKICK_AIASSISTANT_frontendConfiguration'];
     const moduleConfiguration = window['_NEOSIDEKICK_AIASSISTANT_moduleConfiguration'] as ModuleConfiguration;
     const workspaces = window['_NEOSIDEKICK_AIASSISTANT_workspaces'] as Workspaces;
@@ -53,6 +54,7 @@ document.addEventListener('DOMContentLoaded', async() => {
             endpoints={endpoints}
             moduleConfiguration={moduleConfiguration}
             workspaces={workspaces}
+            domain={frontendConfiguration.domain}
         />
     )
 })

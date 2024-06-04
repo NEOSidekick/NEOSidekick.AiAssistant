@@ -13,6 +13,7 @@ export interface RootViewProps {
     endpoints: Endpoints,
     moduleConfiguration: ModuleConfiguration,
     workspaces: Workspaces,
+    domain: string
 }
 
 export default class RootView extends PureComponent<RootViewProps, AppContextType> {
@@ -22,6 +23,7 @@ export default class RootView extends PureComponent<RootViewProps, AppContextTyp
             endpoints: props.endpoints,
             workspaces: props.workspaces,
             nodeTypes: undefined,
+            domain: props.domain,
 
             moduleConfiguration: props.moduleConfiguration,
             updateModuleConfiguration: (newConfiguration: Partial<DocumentNodeModuleConfiguration | AssetModuleConfiguration>) => this.updateModuleConfiguration(newConfiguration),

@@ -71,7 +71,6 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
     }
 
     handleChange(event: any) {
-        const {item} = this.props;
         const property = this.getProperty();
         this.updateItemProperty(property.propertyName, event.target.value, ListItemPropertyState.UserManipulated);
     }

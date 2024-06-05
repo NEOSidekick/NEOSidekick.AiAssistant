@@ -9,7 +9,6 @@ use Generator;
 use InvalidArgumentException;
 use Neos\ContentRepository\Domain\Model\Node;
 use Neos\ContentRepository\Domain\Model\NodeData;
-use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
@@ -17,6 +16,12 @@ use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Neos\Controller\CreateContentContextTrait;
+use Neos\Neos\Domain\Model\Site;
+use Neos\Neos\Domain\Repository\DomainRepository;
+use Neos\Neos\Domain\Repository\SiteRepository;
+use Neos\Neos\Domain\Service\SiteService;
+use Neos\Neos\Exception as NeosException;
+use Neos\Neos\Routing\Exception\NoSiteException;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
@@ -52,13 +57,28 @@ class NodeService
     protected $nodeTypeManager;
 
     /**
+     * @Flow\Inject
+     * @var SiteRepository
+     */
+    protected $siteRepository;
+
+    /**
+     * @Flow\Inject
+     * @var DomainRepository
+     */
+    protected $domainRepository;
+
+    /**
      * @param FindDocumentNodesFilter $findDocumentNodesFilter
-     * @param ControllerContext   $controllerContext
+     * @param ControllerContext       $controllerContext
      *
      * @return array
+     * @throws NoSiteException
      */
     public function find(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext): array
     {
+        $currentRequestHost = $controllerContext->getRequest()->getHttpRequest()->getUri()->getHost();
+        $siteMatchingCurrentRequestHost = $this->getSiteByHostName($currentRequestHost);
         $workspace = $this->workspaceRepository->findByIdentifier($findDocumentNodesFilter->getWorkspace());
 
         if (!$workspace) {
@@ -67,9 +87,11 @@ class NodeService
 
         $workspaceChain = array_merge([$workspace], array_values($workspace->getBaseWorkspaces()));
         $queryBuilder = $this->createQueryBuilder($workspaceChain);
+        $queryBuilder->andWhere('n.path LIKE :currentSitePath');
         $queryBuilder->andWhere('n.nodeType IN (:includeNodeTypes)');
         $queryBuilder->andWhere('n.removed = :removed');
         $queryBuilder->andWhere('n.hidden = :hidden');
+        $queryBuilder->setParameter('currentSitePath', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()) . '%');
         $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
         $queryBuilder->setParameter('hidden', false, \PDO::PARAM_BOOL);
         $queryBuilder->setParameter('removed', false, \PDO::PARAM_BOOL);
@@ -220,5 +242,32 @@ class NodeService
         }
 
         return $reducedNodes;
+    }
+
+    /**
+     * @copyright Taken from: Neos\Neos\Routing\FrontendNodeRoutePartHandler::getSiteByHostname()
+     *
+     * Returns a site matching the given $hostName
+     *
+     * @param string $hostName
+     *
+     * @return Site
+     * @throws NoSiteException
+     */
+    protected function getSiteByHostName(string $hostName): Site
+    {
+        $domain = $this->domainRepository->findOneByHost($hostName, true);
+        if ($domain !== null) {
+            return $domain->getSite();
+        }
+        try {
+            $defaultSite = $this->siteRepository->findDefault();
+            if ($defaultSite === null) {
+                throw new NoSiteException('Failed to determine current site because no default site is configured', 1604929674);
+            }
+        } catch (NeosException $exception) {
+            throw new NoSiteException(sprintf('Failed to determine current site because no domain is specified matching host of "%s" and no default site could be found: %s', $hostName, $exception->getMessage()), 1604860219, $exception);
+        }
+        return $defaultSite;
     }
 }

@@ -99,7 +99,8 @@ class BackendServiceController extends ActionController
             ->skipUnknownProperties()
             ->allowProperties(
                 'workspace',
-                'propertyFilter',
+                'seoPropertiesFilter',
+                'focusKeywordPropertyFilter',
                 'nodeTypeFilter'
             );
     }

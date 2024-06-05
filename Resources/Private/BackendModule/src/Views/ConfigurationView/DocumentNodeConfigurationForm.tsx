@@ -1,7 +1,6 @@
 import PureComponent from "../../Components/PureComponent";
 import ItemsPerPageField from "./ItemsPerPageField";
 import React from "react";
-import {enumKeys} from "../../Util";
 import {DocumentNodeModuleConfiguration} from "../../Model/ModuleConfiguration";
 import BackendMessage from "../../Components/BackendMessage";
 import StartModuleButton from "./StartModuleButton";
@@ -40,15 +39,30 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         )
     }
 
-    private renderPropertyFilterField() {
+    private renderSeoPropertiesFilterField() {
         const {moduleConfiguration} = this.props;
-        return ((moduleConfiguration.enforceConfigs.includes('propertyFilter') || !moduleConfiguration.propertyFilterOptions?.length) ? null :
+        return ((moduleConfiguration.enforceConfigs.includes('seoPropertiesFilter') || !moduleConfiguration.seoPropertiesFilterOptions?.length) ? null :
             <SelectField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.propertyFilter.label', 'Restrict by properties')}
-                value={moduleConfiguration.propertyFilter}
-                onChange={e => this.context.updateModuleConfiguration({propertyFilter: e.target.value})}
-                options={moduleConfiguration.propertyFilterOptions.reduce((acc, propertyFilter) => {
-                    acc[propertyFilter] = this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.propertyFilter.' + propertyFilter, propertyFilter);
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.seoPropertiesFilter.label', 'Restrict by SEO properties')}
+                value={moduleConfiguration.seoPropertiesFilter}
+                onChange={e => this.context.updateModuleConfiguration({seoPropertiesFilter: e.target.value})}
+                options={moduleConfiguration.seoPropertiesFilterOptions.reduce((acc, seoPropertiesFilter) => {
+                    acc[seoPropertiesFilter] = this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.seoPropertiesFilter.' + seoPropertiesFilter, seoPropertiesFilter);
+                    return acc;
+                }, {})}
+            />
+        )
+    }
+
+    private renderFocusKeywordFilterField() {
+        const {moduleConfiguration} = this.props;
+        return ((moduleConfiguration.enforceConfigs.includes('focusKeywordPropertyFilter') || !moduleConfiguration.focusKeywordPropertyFilterOptions?.length) ? null :
+            <SelectField
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.focusKeywordPropertyFilter.label', 'Restrict by focus keyword')}
+                value={moduleConfiguration.focusKeywordPropertyFilter}
+                onChange={e => this.context.updateModuleConfiguration({focusKeywordPropertyFilter: e.target.value})}
+                options={moduleConfiguration.focusKeywordPropertyFilterOptions.reduce((acc, focusKeywordPropertyFilter) => {
+                    acc[focusKeywordPropertyFilter] = this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.focusKeywordPropertyFilter.' + focusKeywordPropertyFilter, focusKeywordPropertyFilter);
                     return acc;
                 }, {})}
             />
@@ -98,7 +112,8 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
                 <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', '')}:</h2>
                 <br/>
                 {this.renderWorkspaceField()}
-                {this.renderPropertyFilterField()}
+                {this.renderSeoPropertiesFilterField()}
+                {this.renderFocusKeywordFilterField()}
                 <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>
                 <ItemsPerPageField moduleConfiguration={moduleConfiguration} updateModuleConfiguration={this.context.updateModuleConfiguration}/>
                 {this.renderActions()}

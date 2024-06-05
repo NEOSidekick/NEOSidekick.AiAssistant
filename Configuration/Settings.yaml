@@ -31,7 +31,7 @@ NEOSidekick:
       #  - none: Both nodes with an empty and non-empty focusKeyword property are shown
       #  - only-empty-focus-keywords: Only nodes with an empty focusKeyword property are shown
       #  - only-existing-focus-keywords: Only nodes with a non-empty focusKeyword property are shown
-      propertyFilter: null
+      focusKeywordPropertyFilter: null
       # Restrict the node selection to a specific document node type
       # BEWARE: the node type needs to inherit from NEOSidekick.AiAssistant:Mixin.AiPageBriefing
       nodeTypeFilter: null
@@ -50,7 +50,13 @@ NEOSidekick:
       #  - only-empty-meta-descriptions: Only nodes with an empty metaDescription property are shown
       #  - only-existing-seo-titles: Only nodes with a non-empty titleOverride property are shown
       #  - only-existing-meta-descriptions: Only nodes with a non-empty metaDescription property are shown
-      propertyFilter: null
+      seoPropertiesFilter: null
+      # The property filter for the focusKeyword property
+      # Allowed:
+      #  - none: Both nodes with an empty and non-empty focusKeyword property are shown
+      #  - only-empty-focus-keywords: Only nodes with an empty focusKeyword property are shown
+      #  - only-existing-focus-keywords: Only nodes with a non-empty focusKeyword property are shown
+      focusKeywordPropertyFilter: null
       # Restrict the node selection to a specific document node type
       # BEWARE: the node type needs to inherit from NEOSidekick.AiAssistant:Mixin.AiPageBriefing
       nodeTypeFilter: null

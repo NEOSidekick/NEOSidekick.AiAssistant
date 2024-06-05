@@ -139,18 +139,24 @@ class NodeService
     protected static function nodeMatchesPropertyFilter(NodeData $nodeData, FindDocumentNodesFilter $findDocumentNodesFilter): bool
     {
         $focusKeywordValue = $nodeData->hasProperty('focusKeyword') ? $nodeData->getProperty('focusKeyword') : null;
-        $titleOverride = $nodeData->hasProperty('titleOverride') ? $nodeData->getProperty('titleOverride') : null;
-        $metaDescription = $nodeData->hasProperty('metaDescription') ? $nodeData->getProperty('metaDescription') : null;
-        return match ($findDocumentNodesFilter->getPropertyFilter()) {
+        $nodeMatchesFocusKeywordPropertyFilter = match ($findDocumentNodesFilter->getFocusKeywordPropertyFilter()) {
             'none' => true,
             'only-empty-focus-keywords' => empty($focusKeywordValue),
-            'only-existing-focus-keywords' => !empty($focusKeywordValue),
+            'only-existing-focus-keywords' => !empty($focusKeywordValue)
+        };
+
+        $titleOverride = $nodeData->hasProperty('titleOverride') ? $nodeData->getProperty('titleOverride') : null;
+        $metaDescription = $nodeData->hasProperty('metaDescription') ? $nodeData->getProperty('metaDescription') : null;
+        $nodeMatchesSeoPropertiesFilter = match ($findDocumentNodesFilter->getSeoPropertiesFilter()) {
+            'none' => true,
             'only-empty-seo-titles-or-meta-descriptions' => empty($titleOverride) || empty($metaDescription),
             'only-empty-seo-titles' => empty($titleOverride),
             'only-empty-meta-descriptions' => empty($metaDescription),
             'only-existing-seo-titles' => !empty($titleOverride),
             'only-existing-meta-descriptions' => !empty($metaDescription),
         };
+
+        return $nodeMatchesFocusKeywordPropertyFilter && $nodeMatchesSeoPropertiesFilter;
     }
 
     /**

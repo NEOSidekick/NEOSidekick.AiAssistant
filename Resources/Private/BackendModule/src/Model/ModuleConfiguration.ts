@@ -9,8 +9,10 @@ export interface ModuleConfiguration {
 export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
     moduleName: string,
     workspace: string,
-    propertyFilterOptions: string[],
-    propertyFilter: string|null,
+    seoPropertiesFilterOptions: string[],
+    seoPropertiesFilter: string|null,
+    focusKeywordPropertyFilterOptions: string[],
+    focusKeywordPropertyFilter: string|null,
     baseNodeTypeFilter: string|null,
     nodeTypeFilter: string|null,
     actions: {

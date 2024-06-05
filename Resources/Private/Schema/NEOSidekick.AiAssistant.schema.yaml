@@ -24,7 +24,7 @@ properties:
     additionalProperties: false
     properties:
       workspace: { type: [string, 'null'] }
-      propertyFilter: { type: [string, 'null'], enum: ['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'] }
+      focusKeywordPropertyFilter: { type: [string, 'null'], enum: ['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'] }
       nodeTypeFilter: { type: [string, 'null'] }
       itemsPerPage: { type: integer }
   seoTitleAndMetaDescriptionModule:
@@ -32,7 +32,8 @@ properties:
     additionalProperties: false
     properties:
       workspace: { type: [string, 'null'] }
-      propertyFilter: { type: [string, 'null'], enum: ['none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions'] }
+      focusKeywordPropertyFilter: { type: [ string, 'null' ], enum: [ 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords' ] }
+      seoPropertiesFilter: { type: [string, 'null'], enum: ['none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions'] }
       nodeTypeFilter: { type: [string, 'null'] }
       itemsPerPage: { type: integer }
 

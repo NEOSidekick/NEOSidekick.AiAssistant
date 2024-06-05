@@ -7,6 +7,7 @@ export interface FindAssetsFilter extends FindFilter {
 
 export interface FindDocumentNodesFilter extends FindFilter {
     workspace: string;
-    propertyFilter: string;
+    focusKeywordPropertyFilter: string;
+    seoPropertiesFilter: string;
     nodeTypeFilter: string;
 }

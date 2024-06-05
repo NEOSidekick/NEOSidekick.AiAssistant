@@ -10,39 +10,47 @@
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
                 <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.label">
-                <source>Restrict by properties</source>
-                <target>Auf Eigenschaften einschränken</target>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.label">
+                <source>Restrict by focus keyword</source>
+                <target>Auf Fokus-Keyword einschränken</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.none">
+            <trans-unit id="configuration.focusKeywordPropertyFilter.none">
                 <source>None</source>
                 <target>Ohne</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.only-empty-focus-keywords">
+            <trans-unit id="configuration.focusKeywordPropertyFilter.only-empty-focus-keywords">
                 <source>Only without focus keyword</source>
                 <target>Nur ohne Fokus-Keyword</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.only-existing-focus-keywords">
+            <trans-unit id="configuration.focusKeywordPropertyFilter.only-existing-focus-keywords">
                 <source>Only with focus keyword</source>
                 <target>Nur mit Fokus-Keyword</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.only-empty-seo-titles-or-meta-descriptions">
+            <trans-unit id="configuration.seoPropertiesFilter.label">
+                <source>Restrict by SEO properties</source>
+                <target>Auf SEO-Eigenschaften einschränken</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.none">
+                <source>None</source>
+                <target>Ohne</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-seo-titles-or-meta-descriptions">
                 <source>Only without seo title or meta description</source>
                 <target>Nur ohne SEO-Titel oder Meta-Beschreibung</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.only-empty-seo-titles">
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-seo-titles">
                 <source>Only without seo title</source>
                 <target>Nur ohne SEO-Titel</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.only-empty-meta-descriptions">
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-meta-descriptions">
                 <source>Only without meta description</source>
                 <target>Nur ohne Meta-Beschreibung</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.only-existing-seo-titles">
+            <trans-unit id="configuration.seoPropertiesFilter.only-existing-seo-titles">
                 <source>Only with seo title</source>
                 <target>Nur mit SEO-Titel</target>
             </trans-unit>
-            <trans-unit id="configuration.propertyFilter.only-existing-meta-descriptions">
+            <trans-unit id="configuration.seoPropertiesFilter.only-existing-meta-descriptions">
                 <source>Only with meta description</source>
                 <target>Nur mit Meta-Beschreibung</target>
             </trans-unit>

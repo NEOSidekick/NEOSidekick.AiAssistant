@@ -19,7 +19,13 @@ final class FindDocumentNodesFilter
      * 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'
      * @var string
      */
-    protected string $propertyFilter;
+    protected string $seoPropertiesFilter;
+
+    /**
+     * 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'
+     * @var string
+     */
+    protected string $focusKeywordPropertyFilter;
 
     /**
      * @var string|null
@@ -28,16 +34,19 @@ final class FindDocumentNodesFilter
 
     /**
      * @param string      $workspace
-     * @param string|null $propertyFilter
+     * @param string|null $seoPropertiesFilter
+     * @param string|null $focusKeywordPropertyFilter
      * @param string|null $nodeTypeFilter
      */
     public function __construct(
         string  $workspace,
-        ?string  $propertyFilter = 'none',
+        ?string $seoPropertiesFilter = 'none',
+        ?string $focusKeywordPropertyFilter = 'none',
         ?string $nodeTypeFilter = null
     ) {
         $this->workspace = $workspace;
-        $this->propertyFilter = $propertyFilter;
+        $this->seoPropertiesFilter = $seoPropertiesFilter;
+        $this->focusKeywordPropertyFilter = $focusKeywordPropertyFilter;
         $this->nodeTypeFilter = empty($nodeTypeFilter) ? null : $nodeTypeFilter;
     }
 
@@ -46,9 +55,14 @@ final class FindDocumentNodesFilter
         return $this->workspace;
     }
 
-    public function getPropertyFilter(): string
+    public function getSeoPropertiesFilter(): string
     {
-        return $this->propertyFilter;
+        return $this->seoPropertiesFilter;
+    }
+
+    public function getFocusKeywordPropertyFilter(): string
+    {
+        return $this->focusKeywordPropertyFilter;
     }
 
     public function getNodeTypeFilter(): ?string
@@ -59,7 +73,8 @@ final class FindDocumentNodesFilter
     /**
      * @param array{
      *     workspace: string,
-     *     propertyFilter: string,
+     *     seoPropertiesFilter: string,
+     *     focusKeywordPropertyFilter: string,
      *     nodeTypeFilter: string|null
      * } $array
      *
@@ -69,7 +84,8 @@ final class FindDocumentNodesFilter
     {
         return new self(
             $array['workspace'],
-            $array['propertyFilter'],
+            $array['seoPropertiesFilter'],
+            $array['focusKeywordPropertyFilter'],
             $array['nodeTypeFilter'] ?? null
         );
     }

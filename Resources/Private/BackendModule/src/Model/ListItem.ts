@@ -35,6 +35,7 @@ export interface DocumentNodeListItem extends ListItem {
     nodeContextPath: string,
     nodeTypeName: string,
     publicUri: string,
+    previewUri: string,
     language: string
     properties:  {
         [key: string]: string | number | boolean

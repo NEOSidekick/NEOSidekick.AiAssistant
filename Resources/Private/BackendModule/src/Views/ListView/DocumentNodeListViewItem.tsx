@@ -35,11 +35,11 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
 
     private async fetchDocumentHtmlContent() {
         const {item} = this.props;
-        if (!item.publicUri) {
+        if (!item.previewUri) {
             this.setState({htmlContent: '<h1 style="color: white; padding: 1rem;">This the page is not accessible.</h1>'});
             return;
         }
-        const htmlContent = await NeosBackendService.getInstance().fetchDocumentHtmlContent(item.publicUri);
+        const htmlContent = await NeosBackendService.getInstance().fetchDocumentHtmlContent(item.previewUri);
         this.setState({htmlContent});
     }
 

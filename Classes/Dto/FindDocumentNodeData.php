@@ -32,6 +32,11 @@ final class FindDocumentNodeData implements JsonSerializable
     protected string $publicUri;
 
     /**
+     * @var string
+     */
+    protected string $previewUri;
+
+    /**
      * @var array
      */
     protected array $properties;
@@ -46,15 +51,24 @@ final class FindDocumentNodeData implements JsonSerializable
      * @param string $nodeContextPath
      * @param string $nodeTypeName
      * @param string $publicUri
+     * @param string $previewUri
      * @param array  $properties
      * @param string $language
      */
-    public function __construct(string $identifier, string $nodeContextPath, string $nodeTypeName, string $publicUri, array $properties, string $language)
-    {
+    public function __construct(
+        string $identifier,
+        string $nodeContextPath,
+        string $nodeTypeName,
+        string $publicUri,
+        string $previewUri,
+        array $properties,
+        string $language
+    ) {
         $this->identifier = $identifier;
         $this->nodeContextPath = $nodeContextPath;
         $this->nodeTypeName = $nodeTypeName;
         $this->publicUri = $publicUri;
+        $this->previewUri = $previewUri;
         $this->properties = $properties;
         $this->language = $language;
     }
@@ -79,6 +93,11 @@ final class FindDocumentNodeData implements JsonSerializable
         return $this->publicUri;
     }
 
+    public function getPreviewUri(): string
+    {
+        return $this->previewUri;
+    }
+
     public function getProperties(): array
     {
         return $this->properties;
@@ -95,6 +114,7 @@ final class FindDocumentNodeData implements JsonSerializable
      *     nodeContextPath: string,
      *     nodeTypeName: string,
      *     publicUri: string,
+     *     previewUri: string,
      *     properties: array,
      *     language: string
      * } $array
@@ -108,6 +128,7 @@ final class FindDocumentNodeData implements JsonSerializable
             $array['nodeContextPath'],
             $array['nodeTypeName'],
             $array['publicUri'],
+            $array['previewUri'],
             $array['properties'],
             $array['language']
         );
@@ -121,6 +142,7 @@ final class FindDocumentNodeData implements JsonSerializable
             'nodeContextPath' => $this->nodeContextPath,
             'nodeTypeName' => $this->nodeTypeName,
             'publicUri' => $this->publicUri,
+            'previewUri' => $this->previewUri,
             'properties' => $this->properties,
             'language' => $this->language
         ];

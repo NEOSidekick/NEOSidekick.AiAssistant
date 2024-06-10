@@ -95,6 +95,11 @@ class NodeService
         $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
         $queryBuilder->setParameter('hidden', false, \PDO::PARAM_BOOL);
         $queryBuilder->setParameter('removed', false, \PDO::PARAM_BOOL);
+        if ($findDocumentNodesFilter->getLanguageDimensionFilter()) {
+            // todo make language dimension name configurable later and/or support multiple dimensions
+            $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder,
+                ['language' => [$findDocumentNodesFilter->getLanguageDimensionFilter()]]);
+        }
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
         $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($findDocumentNodesFilter) {
@@ -214,6 +219,30 @@ class NodeService
             ->setParameter('workspaces', $workspacesNames);
 
         return $queryBuilder;
+    }
+
+    /**
+     * @copyright Taken from: Neos\ContentRepository\Domain\Repository\NodeDataRepository::addDimensionJoinConstraintsToQueryBuilder()
+     *
+     * If $dimensions is not empty, adds join constraints to the given $queryBuilder
+     * limiting the query result to matching hits.
+     *
+     * @param QueryBuilder $queryBuilder
+     * @param array $dimensions
+     * @return void
+     */
+    protected function addDimensionJoinConstraintsToQueryBuilder(QueryBuilder $queryBuilder, array $dimensions)
+    {
+        $count = 0;
+        foreach ($dimensions as $dimensionName => $dimensionValues) {
+            $dimensionAlias = 'd' . $count;
+            $queryBuilder->andWhere(
+                'EXISTS (SELECT ' . $dimensionAlias . ' FROM Neos\ContentRepository\Domain\Model\NodeDimension ' . $dimensionAlias . ' WHERE ' . $dimensionAlias . '.nodeData = n AND ' . $dimensionAlias . '.name = \'' . $dimensionName . '\' AND ' . $dimensionAlias . '.value IN (:' . $dimensionAlias . ')) ' .
+                'OR NOT EXISTS (SELECT ' . $dimensionAlias . '_c FROM Neos\ContentRepository\Domain\Model\NodeDimension ' . $dimensionAlias . '_c WHERE ' . $dimensionAlias . '_c.nodeData = n AND ' . $dimensionAlias . '_c.name = \'' . $dimensionName . '\')'
+            );
+            $queryBuilder->setParameter($dimensionAlias, $dimensionValues);
+            $count++;
+        }
     }
 
     /**

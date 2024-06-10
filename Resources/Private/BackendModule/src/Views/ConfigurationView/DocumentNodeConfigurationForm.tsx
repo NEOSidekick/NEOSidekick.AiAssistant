@@ -39,6 +39,20 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         )
     }
 
+    private renderLanguageDimensionField() {
+        const languageDimensionConfiguration = this.context.languageDimensionConfiguration;
+        return (<SelectField
+                label={languageDimensionConfiguration.label}
+                value={languageDimensionConfiguration.default}
+                onChange={e => this.context.updateModuleConfiguration({languageDimensionFilter: e.target.value})}
+                options={Object.keys(languageDimensionConfiguration.presets).reduce((acc, languageDimensionPreset) => {
+                    acc[languageDimensionPreset] = languageDimensionConfiguration['presets'][languageDimensionPreset].label;
+                    return acc
+                }, {})}
+            />
+        )
+    }
+
     private renderSeoPropertiesFilterField() {
         const {moduleConfiguration} = this.props;
         return ((moduleConfiguration.enforceConfigs.includes('seoPropertiesFilter') || !moduleConfiguration.seoPropertiesFilterOptions?.length) ? null :
@@ -112,6 +126,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
                 <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', '')}:</h2>
                 <br/>
                 {this.renderWorkspaceField()}
+                {this.renderLanguageDimensionField()}
                 {this.renderSeoPropertiesFilterField()}
                 {this.renderFocusKeywordFilterField()}
                 <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>

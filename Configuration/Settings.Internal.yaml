@@ -38,6 +38,7 @@ Neos:
           chatSidebarEnabled: '${NEOSidekick.AiAssistant.chatSidebarEnabled()}'
           modifyTextModalPreferCustomPrompt: '${NEOSidekick.AiAssistant.modifyTextModalPreferCustomPrompt()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
+          contentDimensions: '${Neos.Ui.ContentDimensions.contentDimensionsByName()}'
     modules:
       ai-assistant:
         label: 'NEOSidekick.AiAssistant:Module:label'

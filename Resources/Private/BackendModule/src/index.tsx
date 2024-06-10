@@ -17,7 +17,21 @@ document.addEventListener('DOMContentLoaded', async() => {
         apiKey: string,
         defaultLanguage: string,
         userInterfaceLanguage: string,
-        domain: string
+        domain: string,
+        contentDimensions: {
+            [dimensionName: string]: {
+                label: string,
+                icon: string,
+                default: string,
+                presets: {
+                    [preset: string]: {
+                        label: string,
+                        values: string[],
+                        uriSegment: string
+                    }
+                }
+            }
+        }
     } = window['_NEOSIDEKICK_AIASSISTANT_frontendConfiguration'];
     const moduleConfiguration = window['_NEOSIDEKICK_AIASSISTANT_moduleConfiguration'] as ModuleConfiguration;
     const workspaces = window['_NEOSIDEKICK_AIASSISTANT_workspaces'] as Workspaces;
@@ -54,6 +68,7 @@ document.addEventListener('DOMContentLoaded', async() => {
             endpoints={endpoints}
             moduleConfiguration={moduleConfiguration}
             workspaces={workspaces}
+            languageDimensionConfiguration={frontendConfiguration.contentDimensions.language ?? null}
             domain={frontendConfiguration.domain}
         />
     )

@@ -11,6 +11,18 @@ export interface AppContextType {
     // backend configuration
     endpoints: Endpoints;
     workspaces: Workspaces;
+    languageDimensionConfiguration: {
+        label: string,
+        icon: string,
+        default: string,
+        presets: {
+            [preset: string]: {
+                label: string,
+                values: string[],
+                uriSegment: string
+            }
+        }
+    };
     nodeTypes?: object;
     domain: string;
 

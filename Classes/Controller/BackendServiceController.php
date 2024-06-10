@@ -101,6 +101,7 @@ class BackendServiceController extends ActionController
                 'workspace',
                 'seoPropertiesFilter',
                 'focusKeywordPropertyFilter',
+                'languageDimensionFilter',
                 'nodeTypeFilter'
             );
     }

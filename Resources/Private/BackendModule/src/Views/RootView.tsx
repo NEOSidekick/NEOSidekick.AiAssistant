@@ -13,6 +13,18 @@ export interface RootViewProps {
     endpoints: Endpoints,
     moduleConfiguration: ModuleConfiguration,
     workspaces: Workspaces,
+    languageDimensionConfiguration: {
+        label: string,
+        icon: string,
+        default: string,
+        presets: {
+            [preset: string]: {
+                label: string,
+                values: string[],
+                uriSegment: string
+            }
+        }
+    },
     domain: string
 }
 
@@ -22,6 +34,7 @@ export default class RootView extends PureComponent<RootViewProps, AppContextTyp
         this.state = {
             endpoints: props.endpoints,
             workspaces: props.workspaces,
+            languageDimensionConfiguration: props.languageDimensionConfiguration,
             nodeTypes: undefined,
             domain: props.domain,
 

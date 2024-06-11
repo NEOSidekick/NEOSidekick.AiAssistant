@@ -62,6 +62,14 @@
                 <source>All page types</source>
                 <target>Alle Seitentypen</target>
             </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.label">
+                <source>Restrict to language</source>
+                <target>Auf Sprache einschränken</target>
+            </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.all">
+                <source>All languages</source>
+                <target>Alle Sprachen</target>
+            </trans-unit>
             <trans-unit id="configuration.itemsPerPage.label">
                 <source>Number of generations per page</source>
                 <target xml:lang="de">Anzahl der Generierungen pro Seite</target>

@@ -47,6 +47,12 @@
             <trans-unit id="configuration.nodeTypeFilter.all">
                 <source>All page types</source>
             </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.label">
+                <source>Restrict to language</source>
+            </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.all">
+                <source>All languages</source>
+            </trans-unit>
             <trans-unit id="configuration.itemsPerPage.label">
                 <source>Number of generations per page</source>
             </trans-unit>

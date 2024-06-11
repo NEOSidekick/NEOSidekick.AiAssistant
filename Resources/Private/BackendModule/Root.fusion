@@ -32,6 +32,7 @@ NEOSidekick.AiAssistant.BackendModule.FocusKeywordController.index = NEOSidekick
             workspace = 'live'
             focusKeywordPropertyFilter = null
             focusKeywordPropertyFilterOptions = ${['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords']}
+            languageDimensionFilter = null
             nodeTypeFilter = null
             baseNodeTypeFilter = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing'
             itemsPerPage = 10
@@ -57,6 +58,7 @@ NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index
             seoPropertiesFilterOptions = ${['none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions']}
             focusKeywordPropertyFilter = null
             focusKeywordPropertyFilterOptions = ${['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords']}
+            languageDimensionFilter = null
             nodeTypeFilter = null
             baseNodeTypeFilter = 'Neos.Seo:SeoMetaTagsMixin'
             itemsPerPage = 10

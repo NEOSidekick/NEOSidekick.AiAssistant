@@ -40,17 +40,17 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
     }
 
     private renderLanguageDimensionField() {
+        const {moduleConfiguration} = this.props;
         const languageDimensionConfiguration = this.context.languageDimensionConfiguration;
-        return (<SelectField
-                label={languageDimensionConfiguration.label}
-                value={languageDimensionConfiguration.default}
+        return (languageDimensionConfiguration ? <SelectField
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.languageDimensionFilter.label', 'Restrict by language')}
+                value={moduleConfiguration.languageDimensionFilter}
                 onChange={e => this.context.updateModuleConfiguration({languageDimensionFilter: e.target.value})}
                 options={Object.keys(languageDimensionConfiguration.presets).reduce((acc, languageDimensionPreset) => {
                     acc[languageDimensionPreset] = languageDimensionConfiguration['presets'][languageDimensionPreset].label;
                     return acc
-                }, {})}
-            />
-        )
+                }, {'': this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.languageDimensionFilter.all', 'All languages')})}
+            /> : null)
     }
 
     private renderSeoPropertiesFilterField() {

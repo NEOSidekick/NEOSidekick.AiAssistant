@@ -52,5 +52,8 @@
             "package-key": "NEOSidekick.AiAssistant"
         },
         "applied-flow-migrations": []
+    },
+    "suggest": {
+        "webandco/neos-asset-usage-cache": "To improve performance of the image alt-text generator when using the 'only-in-usage' filter"
     }
 }

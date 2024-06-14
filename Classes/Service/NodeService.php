@@ -13,6 +13,7 @@ use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
+use Neos\ContentRepository\Exception\NodeException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Neos\Controller\CreateContentContextTrait;
@@ -110,6 +111,20 @@ class NodeService
         foreach ($itemsWithMatchingPropertyFilter as $nodeData) {
             $context = $this->createContentContext($findDocumentNodesFilter->getWorkspace(), $nodeData->getDimensionValues());
             $node = new Node($nodeData, $context);
+
+            try {
+                $parentNode = $node->findParentNode();
+                while ($parentNode !== null) {
+                    if ($parentNode->isHidden()) {
+                        // The 2 is a signal to continue with the next iteration of the outer loop.
+                        continue 2;
+                    }
+                    $parentNode = $parentNode->findParentNode();
+                }
+            } catch (NodeException $e) {
+                // This is thrown if no more parent node is found, in which case we add the node to our result list.
+            }
+
             $result[] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
         }
 

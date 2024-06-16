@@ -23,6 +23,9 @@
             <trans-unit id="configuration.onlyAssetsInUse.1">
                 <source>Only images in use</source>
             </trans-unit>
+            <trans-unit id="configuration.recommendNeosAssetCachePackage">
+                <source><![CDATA[Calculating asset usage on large websites can take a long time. We strongly recommend to install <a href="https://github.com/webandco/neos-asset-usage-cache" style=text-decoration:underline">webandco/neos-asset-usage-cache</a> in those cases.]]></source>
+            </trans-unit>
             <trans-unit id="configuration.propertyName.label">
                 <source>Field to save the description in</source>
             </trans-unit>

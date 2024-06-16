@@ -7,6 +7,7 @@ import BackendMessage from "../../Components/BackendMessage";
 import StartModuleButton from "./StartModuleButton";
 import AppContext, {AppContextType} from "../../AppContext";
 import SelectField from "../../Components/Field/SelectField";
+import Alert from "../../Components/Alert";
 
 interface AssetConfigurationFormProps {
     // we take this as a prop just for typing the moduleConfiguration
@@ -21,15 +22,18 @@ export default class AssetConfigurationForm extends PureComponent<AssetConfigura
     {
         const moduleConfiguration = this.props.moduleConfiguration;
         return (moduleConfiguration.enforceConfigs.includes('onlyAssetsInUse') ? null :
-            <SelectField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.onlyAssetsInUse.label', 'Selection of images')}
-                value={moduleConfiguration.onlyAssetsInUse ? 1 : 0}
-                onChange={e => this.context.updateModuleConfiguration({onlyAssetsInUse: !!e.target.value})}
-                options={{
-                    0: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.onlyAssetsInUse.0', 'All images'),
-                    1: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.onlyAssetsInUse.1', 'Only images in use'),
-                }}
-            />
+            <div style={{maxWidth: '80ch'}}>
+                <SelectField
+                    label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.onlyAssetsInUse.label', 'Selection of images')}
+                    value={moduleConfiguration.onlyAssetsInUse ? 1 : 0}
+                    onChange={e => this.context.updateModuleConfiguration({onlyAssetsInUse: !!e.target.value})}
+                    options={{
+                        0: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.onlyAssetsInUse.0', 'All images'),
+                        1: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.onlyAssetsInUse.1', 'Only images in use'),
+                    }}
+                />
+                {moduleConfiguration.recommendNeosAssetCachePackage && moduleConfiguration.onlyAssetsInUse && <Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:configuration.recommendNeosAssetCachePackage', 'Calculating asset usage on large websites can take a long time. We strongly recommend to install <a href="https://github.com/webandco/neos-asset-usage-cache">webandco/neos-asset-usage-cache</a> in those cases.')}/>}
+            </div>
         )
     }
 

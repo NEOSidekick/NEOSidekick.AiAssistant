@@ -28,6 +28,7 @@ export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
 }
 
 export interface AssetModuleConfiguration extends ModuleConfiguration {
+    recommendNeosAssetCachePackage: boolean;
     onlyAssetsInUse: boolean;
     propertyName: 'title' | 'caption';
     language: Language;

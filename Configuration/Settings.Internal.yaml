@@ -1,4 +1,8 @@
 Neos:
+  Fusion:
+    defaultContext:
+      # Only used for altTextGeneratorModule recommendNeosAssetCachePackage
+      'NEOSidekick.AiAssistant': 'NEOSidekick\AiAssistant\EelHelper'
   Neos:
     fusion:
       autoInclude:

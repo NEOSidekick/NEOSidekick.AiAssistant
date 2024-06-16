@@ -13,6 +13,7 @@ NEOSidekick.AiAssistant.BackendModule.ImageAlternativeTextController.index = NEO
             propertyName = 'title'
             itemsPerPage = 10
             language = ${Configuration.setting('NEOSidekick.AiAssistant.defaultLanguage')}
+            recommendNeosAssetCachePackage = ${NEOSidekick.AiAssistant.recommendNeosAssetCachePackage()}
         }
         config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.altTextGeneratorModule'), (value, key) => value != null)}
         enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}

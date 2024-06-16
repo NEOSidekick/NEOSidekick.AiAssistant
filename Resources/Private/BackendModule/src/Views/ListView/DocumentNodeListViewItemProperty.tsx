@@ -4,7 +4,7 @@ import {ListItemProperty, ListItemPropertyState, PropertySchema} from "../../Mod
 import TextAreaEditor from "../../Components/Editor/TextAreaEditor";
 import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
 import AppContext, {AppContextType} from "../../AppContext";
-import ErrorMessage from "../../Components/ErrorMessage";
+import Alert from "../../Components/Alert";
 import FocusKeywordEditor from "../../Components/Editor/FocusKeywordEditor";
 
 interface DocumentNodeListItemPropertyProps {
@@ -81,7 +81,7 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                     />
                 )
             default:
-                return <ErrorMessage message={`${propertySchema?.ui.inspector.editor} is currently not supported`} />
+                return <Alert message={`${propertySchema?.ui.inspector.editor} is currently not supported`} />
         }
     }
 }

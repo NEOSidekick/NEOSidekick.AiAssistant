@@ -9,7 +9,7 @@ import {ListItemProps} from "./ListViewItem";
 import DocumentNodeListViewItemProperty from "./DocumentNodeListViewItemProperty";
 import NeosBackendService from "../../Service/NeosBackendService";
 import AppContext, {AppContextType} from "../../AppContext";
-import ErrorMessage from "../../Components/ErrorMessage";
+import Alert from "../../Components/Alert";
 
 export interface DocumentNodeListViewItemProps extends ListItemProps {
     item: DocumentNodeListItem

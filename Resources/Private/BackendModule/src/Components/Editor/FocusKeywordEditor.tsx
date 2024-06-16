@@ -5,7 +5,7 @@ import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faExternalLinkAlt, faSpinner} from "@fortawesome/free-solid-svg-icons";
 import TextAreaEditor, {TextAreaEditorProps} from "./TextAreaEditor";
 import {SidekickApiService} from "../../Service/SidekickApiService";
-import ErrorMessage from "../ErrorMessage";
+import Alert from "../Alert";
 
 interface FocusKeywordEditorProps extends TextAreaEditorProps {
     htmlContent: string
@@ -115,7 +115,7 @@ export default class FocusKeywordEditor extends PureComponent<FocusKeywordEditor
                         ))}
                     </span>}
                 </p>}
-                {suggestionsState === 'failed' && <ErrorMessage message={this.state.errorMessage}/>}
+                {suggestionsState === 'failed' && <Alert message={this.state.errorMessage}/>}
                 {(suggestionsState === 'loaded' || property.currentValue) &&
                     <p style={{marginBottom: '16px'}}>
                         {this.translationService.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:checkSearchVolume', `Check search volume:`)}

@@ -5,7 +5,7 @@ import PureComponent from "../../Components/PureComponent";
 import {ListItemProps} from "./ListViewItem";
 import {AssetListItem, DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
 import {ListItemProperty, ListItemPropertyState} from "../../Model/ListItemProperty";
-import ErrorMessage from "../../Components/ErrorMessage";
+import Alert from "../../Components/Alert";
 import {Draft, produce} from "immer";
 import {SidekickApiService} from "../../Service/SidekickApiService";
 import {AssetModuleConfiguration} from "../../Model/ModuleConfiguration";
@@ -202,8 +202,8 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
                                 disabled={!this.canChangeValue()} />
                         </div>
                     </div>
-                    {Object.values(item.editableProperties).length > 1 && <ErrorMessage message="Expected only one editable property for an asset" />}
-                    {errorMessage && <ErrorMessage message={errorMessage}/>}
+                    {Object.values(item.editableProperties).length > 1 && <Alert type="error" message="Expected only one editable property for an asset" />}
+                    {errorMessage && <Alert type="error" message={errorMessage}/>}
                     <div>
                         <button
                             className={'neos-button neos-button-danger'}

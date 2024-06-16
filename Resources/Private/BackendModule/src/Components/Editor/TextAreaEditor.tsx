@@ -6,7 +6,7 @@ import {faMagic, faSpinner} from "@fortawesome/free-solid-svg-icons";
 import {SidekickApiService} from "../../Service/SidekickApiService";
 import { ContentService } from "../../Service/ContentService";
 import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
-import ErrorMessage from "../ErrorMessage";
+import Alert from "../Alert";
 import AppContext, {AppContextType} from "../../AppContext";
 import {DocumentNodeModuleConfiguration} from "../../Model/ModuleConfiguration";
 
@@ -218,7 +218,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
                         {this.translationService.translate('NEOSidekick.AiAssistant:Main:generateWithSidekick', 'Generate with Sidekick')}&nbsp;
                         {this.renderIcon(property.state === ListItemPropertyState.Generating)}
                     </button>}
-                    {errorMessage && <ErrorMessage message={errorMessage}/>}
+                    {errorMessage && <Alert message={errorMessage}/>}
                 </div>
             </div>
         )

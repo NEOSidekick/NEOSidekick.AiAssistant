@@ -1,11 +1,11 @@
 import React, {PureComponent} from "react";
 
-export interface ErrorMessageProps {
+export interface AlertProps {
     type?: 'error' | 'warning' | 'info'
     message: string,
 }
 
-export default class ErrorMessage extends PureComponent<ErrorMessageProps> {
+export default class Alert extends PureComponent<AlertProps> {
     render() {
         const type = this.props.type || 'error';
         const backgroundColor = type === 'error' ? 'var(--warning)' : type === 'warning' ? 'var(--orange)' : 'var(--blueLight)';

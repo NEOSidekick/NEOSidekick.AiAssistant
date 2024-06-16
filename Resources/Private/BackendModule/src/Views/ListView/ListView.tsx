@@ -11,7 +11,7 @@ import PureComponent from "../../Components/PureComponent";
 import AppContext, {AppContextType} from "../../AppContext";
 import {ModuleConfiguration} from "../../Model/ModuleConfiguration";
 import {FindAssetData, FindDocumentNodeData} from "../../Dto/ListItemDto";
-import ErrorMessage from "../../Components/ErrorMessage";
+import Alert from "../../Components/Alert";
 
 export default class ListView extends PureComponent<ListViewProps, ListViewState> {
     static contextType = AppContext;
@@ -115,11 +115,11 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             const itemsCount = Object.values(this.state.items).length;
             if (itemsCount === 1000) {
                 return (
-                    <ErrorMessage type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listLimitReached', 'This tool can currently process a maximum of 1,000 entries at the same time. All your changes are saved, please start a new search.')}/>
+                    <Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listLimitReached', 'This tool can currently process a maximum of 1,000 entries at the same time. All your changes are saved, please start a new search.')}/>
                 )
             }
             return (
-                <ErrorMessage type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listEndReached', 'Congratulations. You have reached the end of the list. You have gone through {0} entries.', {0: itemsCount})}/>
+                <Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listEndReached', 'Congratulations. You have reached the end of the list. You have gone through {0} entries.', {0: itemsCount})}/>
             )
         }
         return (this.paginatedItems().map((item: ListItem) =>

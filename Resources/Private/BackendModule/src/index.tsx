@@ -6,7 +6,7 @@ import NeosBackendService from "./Service/NeosBackendService";
 import TranslationService from "./Service/TranslationService";
 import {SidekickApiService} from "./Service/SidekickApiService";
 import {ModuleConfiguration} from "./Model/ModuleConfiguration";
-import ErrorMessage from "./Components/ErrorMessage";
+import Alert from "./Components/Alert";
 import Workspaces from "./Model/Workspaces";
 
 document.addEventListener('DOMContentLoaded', async() => {
@@ -48,14 +48,14 @@ document.addEventListener('DOMContentLoaded', async() => {
 
     if (!csrfToken || !endpoints || !frontendConfiguration || !moduleConfiguration || !workspaces) {
         root.render(
-            <ErrorMessage message={translationService.translate('NEOSidekick.AiAssistant:Module:error.configuration', 'This module is not configured correctly. Please consult the documentation!')} />
+            <Alert message={translationService.translate('NEOSidekick.AiAssistant:Module:error.configuration', 'This module is not configured correctly. Please consult the documentation!')} />
         )
         return
     }
 
     if (!frontendConfiguration.apiKey) {
         root.render(
-            <ErrorMessage message={translationService.translate('NEOSidekick.AiAssistant:Module:error.noApiKey', 'This feature is not available in the free version!')} />
+            <Alert message={translationService.translate('NEOSidekick.AiAssistant:Module:error.noApiKey', 'This feature is not available in the free version!')} />
         )
         return
     }

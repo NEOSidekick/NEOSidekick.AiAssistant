@@ -43,12 +43,12 @@
                 <target>Bitte beschreibe, was als neuer Text erstellt werden soll.</target>
             </trans-unit>
             <trans-unit id="1709650151037">
-                <source>An error occurred while fetching the assets</source>
-                <target>Es ist ein Fehler beim Abrufen der Bilder aufgetreten</target>
+                <source>An error occurred while fetching the items: {0}</source>
+                <target>Es ist ein Fehler beim Abrufen der Einträge aufgetreten: {0}</target>
             </trans-unit>
             <trans-unit id="1709648035592">
-                <source>An error occurred while persisting an asset</source>
-                <target>Es ist ein Fehler beim Speichern eines Bildes aufgetreten</target>
+                <source>An error occurred while persisting an item</source>
+                <target>Es ist ein Fehler beim Speichern eines Eintrags aufgetreten</target>
             </trans-unit>
         </body>
     </file>

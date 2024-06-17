@@ -90,6 +90,7 @@ export default class FocusKeywordEditor extends Component<any, FocusKeywordEdito
                     throw new Error(i18nRegistry.translate('NEOSidekick.AiAssistant:Editors.FocusKeywordEditor:suggestionsFailed', 'Could not calculate focus keyword suggestions for the page.'));
                 }
                 this.fetchSuggestions(retries - 1);
+                return;
             }
 
             this.setState({

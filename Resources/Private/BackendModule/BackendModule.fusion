@@ -1,0 +1,84 @@
+prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Component) {
+    getAction = null
+    updateAction = null
+    moduleConfiguration = null
+
+    renderer = Neos.Fusion:Component {
+        endpoints = Neos.Fusion:DataStructure {
+            overview = Sitegeist.FusionLinkPrototypes:ModuleUri {
+                action = 'index'
+                absolute = true
+            }
+            nodeTypeSchema = Sitegeist.FusionLinkPrototypes:ActionUri {
+                package = 'Neos.Neos'
+                controller = 'Backend\\Schema'
+                action = 'nodeTypeSchema'
+                absolute = true
+                arguments = Neos.Fusion:DataStructure {
+                    # This is taken from Neos.Neos.Ui
+                    # Original comment: dirty hack to not have to re-implement neos:backend.configurationCacheVersion VH
+                    version = Neos.Fusion:Template {
+                        templatePath = 'resource://Neos.Neos.Ui/Private/Templates/Backend/ConfigurationVersion.html'
+                        @process.trim = ${String.trim(value)}
+                    }
+                }
+            }
+            translations = Sitegeist.FusionLinkPrototypes:ActionUri {
+                package = 'Neos.Neos'
+                controller = 'Backend\\Backend'
+                action = 'xliffAsJson'
+                absolute = true
+                arguments = Neos.Fusion:DataStructure {
+                    locale = ${interfaceLanguage}
+                    # This is taken from Neos.Neos.Ui
+                    # Original comment: dirty hack to not have to re-implement neos:backend.configurationCacheVersion VH
+                    version = Neos.Fusion:Template {
+                        templatePath = 'resource://Neos.Neos.Ui/Private/Templates/Backend/ConfigurationVersion.html'
+                        @process.trim = ${String.trim(value)}
+                    }
+                }
+            }
+            get = Sitegeist.FusionLinkPrototypes:ActionUri {
+                package = 'NEOSidekick.AiAssistant'
+                controller = 'BackendService'
+                action = ${props.getAction}
+                absolute = true
+                format = 'json'
+            }
+            update = Sitegeist.FusionLinkPrototypes:ActionUri {
+                package = 'NEOSidekick.AiAssistant'
+                controller = 'BackendService'
+                action = ${props.updateAction}
+                absolute = true
+                format = 'json'
+            }
+            @process.json = ${Json.stringify(value)}
+        }
+        frontendConfiguration = Neos.Neos.Ui:RenderConfiguration {
+            path = 'frontendConfiguration'
+            context.user = ${user}
+            @process.subset = ${value['NEOSidekick.AiAssistant']}
+            @process.json = ${Json.stringify(value)}
+        }
+        workspaces = Neos.Fusion:Value {
+            personalWorkspace = ${Neos.Ui.Workspace.getPersonalWorkspace()}
+            allowedTargetWorkspaces = ${Neos.Ui.Workspace.getAllowedTargetWorkspaces()}
+            value = ${Array.set(this.allowedTargetWorkspaces, this.personalWorkspace.name, this.personalWorkspace)}
+            @process.json = ${Json.stringify(value)}
+        }
+        moduleConfiguration = ${props.moduleConfiguration}
+
+        renderer = afx`
+            <script>{'_NEOSIDEKICK_AIASSISTANT_csrfToken = ' + Json.stringify(csrfToken)}</script>
+            <script>{'_NEOSIDEKICK_AIASSISTANT_endpoints = ' + props.endpoints}</script>
+            <script>{'_NEOSIDEKICK_AIASSISTANT_frontendConfiguration = ' + props.frontendConfiguration}</script>
+            <script>{'_NEOSIDEKICK_AIASSISTANT_moduleConfiguration = ' + Json.stringify(props.moduleConfiguration)}</script>
+            <script>{'_NEOSIDEKICK_AIASSISTANT_workspaces = ' + props.workspaces}</script>
+            <div id="appContainer"></div>
+        `
+    }
+
+    @cache {
+        mode = 'embed'
+    }
+}

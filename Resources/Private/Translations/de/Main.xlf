@@ -18,6 +18,10 @@
                 <source>Failed to fetch generated text</source>
                 <target xml:lang="de" state="translated">Der Text konnte nicht generiert werden</target>
             </trans-unit>
+            <trans-unit id="loading">
+                <source>Loading...</source>
+                <target xml:lang="de">Lade...</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

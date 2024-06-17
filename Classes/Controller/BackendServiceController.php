@@ -6,18 +6,18 @@ namespace NEOSidekick\AiAssistant\Controller;
  */
 
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Exception;
 use Neos\Flow\Mvc\Controller\ActionController;
-use Neos\Flow\Mvc\Exception\NoSuchArgumentException;
-use Neos\Flow\Mvc\View\JsonView;
-use Neos\Flow\Mvc\View\ViewInterface;
 use Neos\Flow\Property\PropertyMappingConfiguration;
-use Neos\Flow\Property\TypeConverter\ArrayObjectConverter;
-use Neos\Flow\Property\TypeConverter\ObjectConverter;
-use NEOSidekick\AiAssistant\Dto\AssetModuleConfigurationDto;
-use NEOSidekick\AiAssistant\Dto\AssetModuleResultDto;
+use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
+use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
+use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
+use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Service\AssetService;
+use NEOSidekick\AiAssistant\Service\NodeService;
 
+/**
+ * @noinspection PhpUnused
+ */
 class BackendServiceController extends ActionController
 {
     /**
@@ -25,59 +25,121 @@ class BackendServiceController extends ActionController
      * @var AssetService
      */
     protected $assetService;
-    protected $defaultViewObjectName = JsonView::class;
+
+    /**
+     * @Flow\Inject
+     * @var NodeService
+     */
+    protected $nodeService;
+
+    /**
+     * @var string[]
+     */
     protected $supportedMediaTypes = ['application/json'];
 
-    public function initializeIndexAction(): void
+    public function initializeAction(): void
     {
-        try {
-            $propertyMappingConfiguration = $this->arguments->getArgument('configuration')
-                ->getPropertyMappingConfiguration();
-            $propertyMappingConfiguration->allowProperties('propertyName');
-            $propertyMappingConfiguration->allowProperties('onlyAssetsInUse');
-            $propertyMappingConfiguration->allowProperties('limit');
-            $propertyMappingConfiguration->allowProperties('language');
-        } catch (NoSuchArgumentException) {
-            // This cannot happen, otherwise we have a broken
-            // request anyway
-        }
+        $this->response->setContentType('application/json');
+    }
+
+    public function initializeFindAssetsAction(): void
+    {
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('configuration')
+            ->getPropertyMappingConfiguration()
+            ->skipUnknownProperties()
+            ->allowProperties(
+                'onlyAssetsInUse',
+                'propertyNameMustBeEmpty',
+                'firstResult',
+                'limit'
+                );
     }
 
     /**
-     * @return void
-     */
-    public function indexAction(AssetModuleConfigurationDto $configuration = null): void
-    {
-        if (!$configuration) {
-            $configuration = new AssetModuleConfigurationDto(false, 'title', 5, 'en');
-        }
-        $nextTenAssetsToBeProcessed = $this->assetService->getAssetsThatNeedProcessing($configuration);
-        $this->view->assign('value', $nextTenAssetsToBeProcessed);
-    }
-
-    public function initializeUpdateAction(): void
-    {
-        try {
-            $propertyMappingConfiguration =
-                $this->arguments->getArgument('resultDtos')->getPropertyMappingConfiguration();
-            $propertyMappingConfiguration
-                ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
-                ->skipProperties('generating', 'persisting', 'persisted')
-                ->allowAllProperties();
-        } catch (NoSuchArgumentException $e) {
-            // This cannot happen, otherwise we have a broken
-            // request anyway
-        }
-    }
-
-    /**
-     * @param array<AssetModuleResultDto> $resultDtos
+     * @param FindAssetsFilterDto $configuration
      *
-     * @return void
+     * @return string
      */
-    public function updateAction(array $resultDtos): void
+    public function findAssetsAction(FindAssetsFilterDto $configuration): string
     {
-        $this->assetService->updateMultipleAssets($resultDtos);
-        $this->view->assign('value', $resultDtos);
+        $resultCollection = $this->assetService->findImages($configuration, $this->controllerContext);
+        return json_encode($resultCollection);
+    }
+
+    public function initializeUpdateAssetsAction(): void
+    {
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('updateItems')
+            ->getPropertyMappingConfiguration()
+            ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
+            ->skipUnknownProperties()
+            ->allowProperties(
+                'identifier',
+                'properties'
+            );
+    }
+
+    /**
+     * @param array<UpdateAssetData> $updateItems
+     *
+     * @return string
+     */
+    public function updateAssetsAction(array $updateItems): string
+    {
+        $this->assetService->updateMultipleAssets($updateItems);
+        return json_encode(array_map(fn (UpdateAssetData $item) => $item->jsonSerialize(), $updateItems));
+    }
+
+    public function initializeFindDocumentNodesAction(): void
+    {
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('configuration')
+            ->getPropertyMappingConfiguration()
+            ->skipUnknownProperties()
+            ->allowProperties(
+                'workspace',
+                'seoPropertiesFilter',
+                'focusKeywordPropertyFilter',
+                'languageDimensionFilter',
+                'nodeTypeFilter'
+            );
+    }
+
+    /**
+     * @param FindDocumentNodesFilter $configuration
+     *
+     * @return string|bool
+     */
+    public function findDocumentNodesAction(FindDocumentNodesFilter $configuration): string|bool
+    {
+        $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
+        return json_encode($resultCollection);
+    }
+
+    public function initializeUpdateNodePropertiesAction(): void
+    {
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('updateItems')
+            ->getPropertyMappingConfiguration()
+            ->skipUnknownProperties()
+            ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
+            ->allowProperties(
+                'nodeContextPath',
+                'properties'
+            );
+    }
+
+    /**
+     * @Flow\SkipCsrfProtection
+     *
+     * @param array<UpdateNodeProperties> $updateItems
+     *
+     * @return string
+     */
+    public function updateNodePropertiesAction(array $updateItems): string
+    {
+        $this->nodeService->updatePropertiesOnNodes($updateItems);
+        return json_encode(array_map(fn (UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems));
     }
 }

@@ -14,3 +14,4 @@
               title: 'SidekickClientEval:documentTitle'
               content: 'SidekickClientEval:documentContent'
               focusKeyword: 'SidekickClientEval:node.properties.focusKeyword || ""'
+              prefer: 'speed'

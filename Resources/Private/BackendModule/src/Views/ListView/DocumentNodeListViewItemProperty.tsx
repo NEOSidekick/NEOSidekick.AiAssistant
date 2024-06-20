@@ -69,17 +69,17 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                 )
             case 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor':
             case 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor':
-                let clonedPropertySchema = propertySchema;
+                let finalPropertySchema = propertySchema;
                 if (propertySchema?.ui?.inspector?.editorOptions?.module === 'meta_description') {
-                    console.log('is meta_description module');
-                    clonedPropertySchema = JSON.parse(JSON.stringify(propertySchema));
-                    clonedPropertySchema.ui.inspector.editorOptions.arguments.prefer = 'quality';
+                    // For the meta description we always want to prefer quality to speed in the bulk module
+                    finalPropertySchema = JSON.parse(JSON.stringify(propertySchema));
+                    finalPropertySchema.ui.inspector.editorOptions.arguments.prefer = 'quality';
                 }
                 return (
                     <TextAreaEditor
                         disabled={!this.canChangeValue()}
                         property={property}
-                        propertySchema={clonedPropertySchema}
+                        propertySchema={finalPropertySchema}
                         item={item}
                         htmlContent={this.props.htmlContent}
                         updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty(value, state)}

@@ -34,9 +34,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         try {
             const items: FindAssetData[] | FindDocumentNodeData[] = await backend.getItems(this.context.moduleConfiguration);
             const processedItems = items.reduce<ListItems>((accumulator: ListItems, item: FindAssetData | FindDocumentNodeData) => {
-                accumulator[item.identifier] = this.postprocessListItem(item, this.context.moduleConfiguration);
+                accumulator.push(this.postprocessListItem(item, this.context.moduleConfiguration));
                 return accumulator;
-            }, {} as ListItems);
+            }, [] as ListItems);
             this.setState({
                 items: processedItems,
                 listState: (Object.values(processedItems).length > 0 ? ListState.Result : ListState.Empty)
@@ -104,9 +104,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
 
     private paginatedItems(): ListItem[]
     {
-        const sortedItemsArray = Object.values(this.state.items).sort((a, b) => a.identifier.localeCompare(b.identifier));
         const offset = (this.state.currentPage - 1) * this.state.itemsPerPage;
-        return Object.values(sortedItemsArray).slice(offset, offset + this.state.itemsPerPage);
+        return Object.values(this.state.items).slice(offset, offset + this.state.itemsPerPage);
     }
 
     private renderList() {
@@ -248,5 +247,6 @@ export interface ListViewState {
 }
 
 export interface ListItems {
-    [key: string]: ListItem
+    [key: number]: ListItem
+    push: (item: ListItem) => void
 }

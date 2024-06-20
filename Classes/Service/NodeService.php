@@ -88,11 +88,15 @@ class NodeService
 
         $workspaceChain = array_merge([$workspace], array_values($workspace->getBaseWorkspaces()));
         $queryBuilder = $this->createQueryBuilder($workspaceChain);
-        $queryBuilder->andWhere('n.path LIKE :currentSitePath');
         $queryBuilder->andWhere('n.nodeType IN (:includeNodeTypes)');
         $queryBuilder->andWhere('n.removed = :removed');
         $queryBuilder->andWhere('n.hidden = :hidden');
-        $queryBuilder->setParameter('currentSitePath', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()) . '%');
+        $queryBuilder->andWhere($queryBuilder->expr()->orX(
+            $queryBuilder->expr()->eq('n.path', ':currentSitePath'),
+            $queryBuilder->expr()->like('n.path', ':currentSitePathWithWildcard')
+        ));
+        $queryBuilder->setParameter('currentSitePath', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()));
+        $queryBuilder->setParameter('currentSitePathWithWildcard', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()) . '%');
         $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
         $queryBuilder->setParameter('hidden', false, \PDO::PARAM_BOOL);
         $queryBuilder->setParameter('removed', false, \PDO::PARAM_BOOL);
@@ -101,6 +105,7 @@ class NodeService
             $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder,
                 ['language' => [$findDocumentNodesFilter->getLanguageDimensionFilter()]]);
         }
+        $queryBuilder->addOrderBy('LENGTH(n.path)', 'ASC');
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
         $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($findDocumentNodesFilter) {

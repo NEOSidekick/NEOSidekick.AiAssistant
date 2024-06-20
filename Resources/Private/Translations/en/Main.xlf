@@ -17,6 +17,9 @@
             <trans-unit id="loading">
                 <source>Loading...</source>
             </trans-unit>
+            <trans-unit id="progressBarLabel">
+                <source>Page {0} of {1}</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

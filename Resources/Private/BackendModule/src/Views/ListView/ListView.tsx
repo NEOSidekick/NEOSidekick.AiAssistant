@@ -12,6 +12,7 @@ import AppContext, {AppContextType} from "../../AppContext";
 import {ModuleConfiguration} from "../../Model/ModuleConfiguration";
 import {FindAssetData, FindDocumentNodeData} from "../../Dto/ListItemDto";
 import Alert from "../../Components/Alert";
+import ProgressBar from "../../Components/ProgressBar";
 
 export default class ListView extends PureComponent<ListViewProps, ListViewState> {
     static contextType = AppContext;
@@ -121,12 +122,15 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 <Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listEndReached', 'Congratulations. You have reached the end of the list. You have gone through {0} entries.', {0: itemsCount})}/>
             )
         }
-        return (this.paginatedItems().map((item: ListItem) =>
-            <ListViewItem
-                key={item.identifier}
-                item={item}
-                updateItem={(newItem) => this.updateItem(newItem)}
-                persistItem={(item: ListItem) => this.persistItems([item])} />))
+        const totalPages = Math.ceil(Object.values(this.state.items).length / this.state.itemsPerPage);
+        return [
+            <ProgressBar currentPage={this.state.currentPage} totalPages={totalPages} translationService={this.translationService}/>,
+            this.paginatedItems().map((item: ListItem) =>
+                <ListViewItem
+                    key={item.identifier}
+                    item={item}
+                    updateItem={(newItem) => this.updateItem(newItem)}
+                    persistItem={(item: ListItem) => this.persistItems([item])}/>)]
     }
 
     private updateItem(newItem: ListItem) {

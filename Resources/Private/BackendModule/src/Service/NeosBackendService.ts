@@ -66,10 +66,17 @@ export default class NeosBackendService {
         const response = await fetch(this.endpoints.get + '?' + params.toString(), {
             credentials: 'include'
         });
-        if (response.status < 200 || response.status >= 400) {
-            throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037', await response.text())
+        // Redirect after logout
+        if (response.redirected) {
+            window.location.assign(response.url);
+            return [];
         }
-        return await response.json()
+        if (response.status < 200 || response.status >= 400) {
+            throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037', await response.text());
+        }
+        return await response.json().catch((e) => {
+            throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037', e);
+        });
     }
 
     private toFilterDto(moduleConfiguration: ModuleConfiguration): FindFilter {

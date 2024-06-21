@@ -14,7 +14,7 @@ export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
     focusKeywordPropertyFilterOptions: string[],
     focusKeywordPropertyFilter: string|null,
     baseNodeTypeFilter: string|null,
-    languageDimensionFilter: string|null,
+    languageDimensionFilter: string[],
     nodeTypeFilter: string|null,
     actions: {
         [key: string]: {

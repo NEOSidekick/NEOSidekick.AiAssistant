@@ -40,17 +40,32 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
     }
 
     private renderLanguageDimensionField() {
-        const {moduleConfiguration} = this.props;
+        const {languageDimensionFilter} = this.props.moduleConfiguration;
         const languageDimensionConfiguration = this.context.languageDimensionConfiguration;
-        return (languageDimensionConfiguration ? <SelectField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.languageDimensionFilter.label', 'Restrict by language')}
-                value={moduleConfiguration.languageDimensionFilter}
-                onChange={e => this.context.updateModuleConfiguration({languageDimensionFilter: e.target.value})}
-                options={Object.keys(languageDimensionConfiguration.presets).reduce((acc, languageDimensionPreset) => {
-                    acc[languageDimensionPreset] = languageDimensionConfiguration['presets'][languageDimensionPreset].label;
-                    return acc
-                }, {'': this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.languageDimensionFilter.all', 'All languages')})}
-            /> : null)
+        if (!languageDimensionConfiguration) {
+            return null;
+        }
+        return (
+            <div>
+                <p style={{fontWeight: 'bold', marginBottom: '0.5rem'}}>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.languageDimensionFilter.label', 'Select languages')}</p>
+                {Object.keys(languageDimensionConfiguration.presets).map(languageDimensionPreset => (
+                    <CheckboxField
+                        key={languageDimensionPreset}
+                        label={languageDimensionConfiguration['presets'][languageDimensionPreset].label}
+                        checked={languageDimensionFilter.includes(languageDimensionPreset)}
+                        onChange={e => {
+                            let languageDimensionFilter = this.props.moduleConfiguration.languageDimensionFilter;
+                            if (e.target.checked) {
+                                languageDimensionFilter.push(languageDimensionPreset);
+                            } else {
+                                languageDimensionFilter = languageDimensionFilter.filter(preset => preset !== languageDimensionPreset);
+                            }
+                            this.context.updateModuleConfiguration({languageDimensionFilter});
+                        }}
+                    />
+                ))}
+            </div>
+        );
     }
 
     private renderSeoPropertiesFilterField() {

@@ -70,6 +70,12 @@ class NodeService
     protected $domainRepository;
 
     /**
+     * @Flow\InjectConfiguration(path="languageDimensionName")
+     * @var string
+     */
+    protected $languageDimensionName;
+
+    /**
      * @param FindDocumentNodesFilter $findDocumentNodesFilter
      * @param ControllerContext       $controllerContext
      *
@@ -100,10 +106,9 @@ class NodeService
         $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
         $queryBuilder->setParameter('hidden', false, \PDO::PARAM_BOOL);
         $queryBuilder->setParameter('removed', false, \PDO::PARAM_BOOL);
-        if ($findDocumentNodesFilter->getLanguageDimensionFilter()) {
-            // todo make language dimension name configurable later and/or support multiple dimensions
+        if (!empty($findDocumentNodesFilter->getLanguageDimensionFilter())) {
             $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder,
-                ['language' => [$findDocumentNodesFilter->getLanguageDimensionFilter()]]);
+                [$this->languageDimensionName => $findDocumentNodesFilter->getLanguageDimensionFilter()]);
         }
         $queryBuilder->addOrderBy('LENGTH(n.path)', 'ASC');
         $queryBuilder->addOrderBy('n.index', 'ASC');

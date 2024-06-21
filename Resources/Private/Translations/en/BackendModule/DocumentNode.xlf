@@ -48,7 +48,7 @@
                 <source>All page types</source>
             </trans-unit>
             <trans-unit id="configuration.languageDimensionFilter.label">
-                <source>Restrict to language</source>
+                <source>Select languages</source>
             </trans-unit>
             <trans-unit id="configuration.languageDimensionFilter.all">
                 <source>All languages</source>

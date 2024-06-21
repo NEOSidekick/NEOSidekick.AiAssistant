@@ -63,8 +63,8 @@
                 <target>Alle Seitentypen</target>
             </trans-unit>
             <trans-unit id="configuration.languageDimensionFilter.label">
-                <source>Restrict to language</source>
-                <target>Auf Sprache einschränken</target>
+                <source>Select languages</source>
+                <target>Sprachen auswählen</target>
             </trans-unit>
             <trans-unit id="configuration.languageDimensionFilter.all">
                 <source>All languages</source>

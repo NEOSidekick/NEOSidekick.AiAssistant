@@ -90,7 +90,7 @@ export default class NeosBackendService {
                     workspace,
                     seoPropertiesFilter: seoPropertiesFilter || 'none',
                     focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',
-                    languageDimensionFilter: languageDimensionFilter || '',
+                    languageDimensionFilter: languageDimensionFilter || [],
                     nodeTypeFilter: nodeTypeFilter || ''
                 } as FindDocumentNodesFilter;
             default:

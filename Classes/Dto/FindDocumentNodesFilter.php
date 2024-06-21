@@ -28,9 +28,9 @@ final class FindDocumentNodesFilter
     protected string $focusKeywordPropertyFilter;
 
     /**
-     * @var string|null
+     * @var string[]
      */
-    protected ?string $languageDimensionFilter = null;
+    protected array $languageDimensionFilter = [];
 
     /**
      * @var string|null
@@ -41,14 +41,14 @@ final class FindDocumentNodesFilter
      * @param string      $workspace
      * @param string|null $seoPropertiesFilter
      * @param string|null $focusKeywordPropertyFilter
-     * @param string|null $languageDimensionFilter
+     * @param string[] $languageDimensionFilter
      * @param string|null $nodeTypeFilter
      */
     public function __construct(
         string  $workspace,
         ?string $seoPropertiesFilter = 'none',
         ?string $focusKeywordPropertyFilter = 'none',
-        ?string $languageDimensionFilter = null,
+        ?array $languageDimensionFilter = [],
         ?string $nodeTypeFilter = null
     ) {
         $this->workspace = $workspace;
@@ -73,7 +73,7 @@ final class FindDocumentNodesFilter
         return $this->focusKeywordPropertyFilter;
     }
 
-    public function getLanguageDimensionFilter(): ?string
+    public function getLanguageDimensionFilter(): ?array
     {
         return $this->languageDimensionFilter;
     }
@@ -88,7 +88,7 @@ final class FindDocumentNodesFilter
      *     workspace: string,
      *     seoPropertiesFilter: string,
      *     focusKeywordPropertyFilter: string,
-     *     languageDimensionFilter: string|null,
+     *     languageDimensionFilter: string[],
      *     nodeTypeFilter: string|null
      * } $array
      *
@@ -100,7 +100,7 @@ final class FindDocumentNodesFilter
             $array['workspace'],
             $array['seoPropertiesFilter'],
             $array['focusKeywordPropertyFilter'],
-            $array['languageDimensionFilter'] ?? null,
+            $array['languageDimensionFilter'] ?? [],
             $array['nodeTypeFilter'] ?? null
         );
     }

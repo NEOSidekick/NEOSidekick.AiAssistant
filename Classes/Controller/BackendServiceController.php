@@ -98,6 +98,7 @@ class BackendServiceController extends ActionController
             ->getPropertyMappingConfiguration()
             ->skipUnknownProperties()
             ->allowProperties(
+                'filter',
                 'workspace',
                 'seoPropertiesFilter',
                 'focusKeywordPropertyFilter',
@@ -113,7 +114,11 @@ class BackendServiceController extends ActionController
      */
     public function findDocumentNodesAction(FindDocumentNodesFilter $configuration): string|bool
     {
-        $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
+        if ($configuration->getFilter() === 'important-pages') {
+            $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext);
+        } else {
+            $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
+        }
         return json_encode($resultCollection);
     }
 

@@ -8,6 +8,9 @@
             <trans-unit id="error.noApiKey">
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
             </trans-unit>
+            <trans-unit id="configuration.filter.custom">
+                <source>I know what I'm doing and would prefer to set individual filters</source>
+            </trans-unit>
             <trans-unit id="configuration.focusKeywordPropertyFilter.label">
                 <source>Restrict by focus keyword</source>
             </trans-unit>
@@ -57,7 +60,7 @@
                 <source>Number of generations per page</source>
             </trans-unit>
             <trans-unit id="configuration.workspace.label">
-                <source>Workspace</source>
+                <source>Workspace (read and write)</source>
             </trans-unit>
             <trans-unit id="configuration.action.autoGenerateEmptySeoTitles">
                 <source>Automatically generate empty SEO titles</source>

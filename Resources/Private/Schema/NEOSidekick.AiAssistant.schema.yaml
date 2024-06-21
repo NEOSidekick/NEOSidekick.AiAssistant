@@ -23,6 +23,7 @@ properties:
     type: dictionary
     additionalProperties: false
     properties:
+      filter: { type: [string, 'null'], enum: ['important-pages', 'custom'] }
       workspace: { type: [string, 'null'] }
       focusKeywordPropertyFilter: { type: [string, 'null'], enum: ['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'] }
       nodeTypeFilter: { type: [string, 'null'] }
@@ -31,6 +32,7 @@ properties:
     type: dictionary
     additionalProperties: false
     properties:
+      filter: { type: [string, 'null'], enum: ['important-pages', 'custom'] }
       workspace: { type: [string, 'null'] }
       focusKeywordPropertyFilter: { type: [ string, 'null' ], enum: [ 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords' ] }
       seoPropertiesFilter: { type: [string, 'null'], enum: ['none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions'] }

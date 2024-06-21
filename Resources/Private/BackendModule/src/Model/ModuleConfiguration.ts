@@ -8,6 +8,7 @@ export interface ModuleConfiguration {
 
 export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
     moduleName: string,
+    filter: 'important-pages' | 'custom',
     workspace: string,
     seoPropertiesFilterOptions: string[],
     seoPropertiesFilter: string|null,

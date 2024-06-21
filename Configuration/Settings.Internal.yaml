@@ -64,7 +64,7 @@ Neos:
                 module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
           focus-keyword-generator:
             label: 'NEOSidekick.AiAssistant:BackendModule.FocusKeyword:label'
-            description: 'NEOSidekick.AiAssistant:BackendModule.FocusKeywor:description'
+            description: 'NEOSidekick.AiAssistant:BackendModule.FocusKeyword:description'
             icon: 'fas fa-search'
             controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController'
             privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
@@ -77,6 +77,16 @@ Neos:
             description: 'NEOSidekick.AiAssistant:BackendModule.SeoTitleAndMetaDescription:description'
             icon: 'fas fa-tachometer-alt'
             controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
+            additionalResources:
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+          seo-image-alt-text-generator:
+            label: 'NEOSidekick.AiAssistant:BackendModule.SeoImageAlternativeText:label'
+            description: 'NEOSidekick.AiAssistant:BackendModule.SeoImageAlternativeText:description'
+            icon: 'fas fa-images'
+            controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController'
             privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
             mainStylesheet: Lite
             additionalResources:

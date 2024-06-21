@@ -85,8 +85,9 @@ export default class NeosBackendService {
                 const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
                 return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
             case 'DocumentNode':
-                const {workspace, seoPropertiesFilter, focusKeywordPropertyFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
+                const {filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
                 return {
+                    filter,
                     workspace,
                     seoPropertiesFilter: seoPropertiesFilter || 'none',
                     focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',

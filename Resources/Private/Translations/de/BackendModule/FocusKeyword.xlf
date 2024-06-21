@@ -6,6 +6,10 @@
                 <source>Focus-Keyword Generator</source>
                 <target xml:lang="de">Fokus-Keywords Generator</target>
             </trans-unit>
+            <trans-unit id="stepName">
+                <source>Define Focus Keywords</source>
+                <target xml:lang="de">Fokus-Keywords definieren</target>
+            </trans-unit>
             <trans-unit id="description">
                 <source>You can use this tool to set a focus keyword for each page. This is the first step in creating search engine optimized page titles and meta descriptions.</source>
                 <target>Mit diesem Tool kannst du pro Seite ein Fokus-Keyword setzen. Das ist der erste Schritt um suchmaschinenoptimierte Seitentitel und Metabeschreibungen zu erstellen.</target>

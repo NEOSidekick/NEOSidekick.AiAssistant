@@ -2,6 +2,22 @@
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
     <file original="" source-language="en" target-language="de" datatype="plaintext">
         <body>
+            <trans-unit id="title">
+                <source>The Essential Toolkit for Effective On-Page SEO</source>
+                <target xml:lang="de">Das unverzichtbare Toolkit für effektives On-Page SEO</target>
+            </trans-unit>
+            <trans-unit id="intro">
+                <source>On-page SEO is a cornerstone of successful digital marketing. It ensures your content is not only visible but also compelling to search engines. Here’s a streamlined toolkit to enhance your content.</source>
+                <target xml:lang="de">On-Page-SEO ist ein essenziell für erfolgreichen digitalen Marketings. Es stellt sicher, dass Ihr Inhalt nicht nur sichtbar, sondern auch für Suchmaschinen ansprechend ist. Hier effektive Tools, um Deine Seiten zu optimieren.</target>
+            </trans-unit>
+            <trans-unit id="filterTypeExplanation">
+                <source>NEOSidekick can identify the most relevant pages for you and provide suggestions for each of these pages.</source>
+                <target xml:lang="de">NEOSidekick kann für dich die relevantesten Seiten ermitteln, und dir für jeder dieser Seiten Vorschläge machen.</target>
+            </trans-unit>
+            <trans-unit id="startModule">
+                <source>Start generation for most important pages</source>
+                <target xml:lang="de">Generierung für wichtigste Seiten starten</target>
+            </trans-unit>
             <trans-unit id="error.configuration">
                 <source>This module is not configured correctly. Please consult the documentation!</source>
                 <target xml:lang="de">Dieses Modul ist nicht korrekt konfiguriert. Bitte konsultiere die Dokumentation!</target>
@@ -9,6 +25,10 @@
             <trans-unit id="error.noApiKey">
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
                 <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
+            </trans-unit>
+            <trans-unit id="configuration.filter.custom">
+                <source>I know what I'm doing and would prefer to set individual filters</source>
+                <target>Ich weiß was ich tue, und möchte individuelle Filter setzen</target>
             </trans-unit>
             <trans-unit id="configuration.focusKeywordPropertyFilter.label">
                 <source>Restrict by focus keyword</source>
@@ -75,8 +95,8 @@
                 <target xml:lang="de">Anzahl der Generierungen pro Seite</target>
             </trans-unit>
             <trans-unit id="configuration.workspace.label">
-                <source>Workspace</source>
-                <target>Arbeitsbereich</target>
+                <source>Workspace (read and write)</source>
+                <target>Arbeitsbereich (lesen und schreiben)</target>
             </trans-unit>
             <trans-unit id="configuration.action.autoGenerateEmptySeoTitles">
                 <source>Automatically generate empty SEO titles</source>

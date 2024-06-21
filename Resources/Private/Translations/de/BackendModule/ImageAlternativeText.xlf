@@ -6,17 +6,17 @@
                 <source>Image Alternative Text Generator</source>
                 <target xml:lang="de">Bild Alternativtext Generator</target>
             </trans-unit>
-            <trans-unit id="assetListItemLabel">
-                <source>File »{0}«</source>
-                <target xml:lang="de">Datei »{0}«</target>
+            <trans-unit id="description">
+                <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility.]]></source>
+                <target xml:lang="de"><![CDATA[Mit diesem Tool kannst du Bildbeschreibungen erstellen und diese in das Feld Titel oder Beschreibung des Mediums speichern. Diese Beschreibungen sind als Bild-Alternativtexte für Barrierefreiheit optimiert.]]></target>
             </trans-unit>
             <trans-unit id="intro">
                 <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>]]></source>
-                <target xml:lang="de"><![CDATA[Mit diesem Tool kannst du Bildbeschreibungen erstellen und diese in das Feld Titel oder Beschreibung des Mediums speichern. Diese Beschreibungen sind als Bild-Alternativtexte für SEO und Barrierefreiheit optimiert. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Hier gehts zum Tutorial, wie ein Entwickler sie einbinden kann.</a>]]></target>
+                <target xml:lang="de"><![CDATA[Mit diesem Tool kannst du Bildbeschreibungen erstellen und diese in das Feld Titel oder Beschreibung des Mediums speichern. Diese Beschreibungen sind als Bild-Alternativtexte für Barrierefreiheit optimiert. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Hier gehts zum Tutorial, wie ein Entwickler sie einbinden kann.</a>]]></target>
             </trans-unit>
-            <trans-unit id="description">
-                <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility.]]></source>
-                <target xml:lang="de"><![CDATA[Mit diesem Tool kannst du Bildbeschreibungen erstellen und diese in das Feld Titel oder Beschreibung des Mediums speichern. Diese Beschreibungen sind als Bild-Alternativtexte für SEO und Barrierefreiheit optimiert.]]></target>
+            <trans-unit id="assetListItemLabel">
+                <source>File »{0}«</source>
+                <target xml:lang="de">Datei »{0}«</target>
             </trans-unit>
             <trans-unit id="configuration.onlyAssetsInUse.label">
                 <source>Selection of images</source>
@@ -31,8 +31,8 @@
                 <target>Nur Bilder in Verwendung</target>
             </trans-unit>
             <trans-unit id="configuration.recommendNeosAssetCachePackage">
-                <source><![CDATA[Calculating asset usage on large websites can take a long time. We strongly recommend to install <a href="https://github.com/webandco/neos-asset-usage-cache" style=text-decoration:underline">webandco/neos-asset-usage-cache</a> in those cases.]]></source>
-                <target><![CDATA[Die Berechnung der Bild-Nutzung auf großen Websites kann lange dauern. Wir empfehlen in diesen Fällen <a href="https://github.com/webandco/neos-asset-usage-cache" style=text-decoration:underline">webandco/neos-asset-usage-cache</a> zu installieren.]]></target>
+                <source><![CDATA[Calculating asset usage on large websites can take a long time. We strongly recommend to install <a href="https://github.com/webandco/neos-asset-usage-cache" style="text-decoration:underline">webandco/neos-asset-usage-cache</a> in those cases.]]></source>
+                <target><![CDATA[Die Berechnung der Bild-Nutzung auf großen Websites kann lange dauern. Wir empfehlen in diesen Fällen <a href="https://github.com/webandco/neos-asset-usage-cache" style="text-decoration:underline">webandco/neos-asset-usage-cache</a> zu installieren.]]></target>
             </trans-unit>
             <trans-unit id="configuration.propertyName.label">
                 <source>Field to save the description in</source>

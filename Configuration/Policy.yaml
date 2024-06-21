@@ -2,7 +2,7 @@ privilegeTargets:
   'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
     'NEOSidekick.AiAssistant:CanUse':
       label: 'Can use AiAssistant'
-      matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController)'
+      matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController)'
 
 roles:
   'Neos.Neos:AbstractEditor':

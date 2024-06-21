@@ -23,6 +23,8 @@ NEOSidekick:
       # The language to write the text in, see allowed language keys in README
       language: null
     focusKeywordGeneratorModule:
+      # If you want to use custom filters, change this property to 'custom'
+      filter: 'important-pages'
       # The workspace name where the nodes are taken from and saved to
       # Allowed: null, live, ... (any other workspace name)
       workspace: null
@@ -39,6 +41,8 @@ NEOSidekick:
       # Allowed: 5, 10, 15, 20, 25
       itemsPerPage: 20
     seoTitleAndMetaDescriptionModule:
+      # If you want to use custom filters, change this property to 'custom'
+      filter: 'important-pages'
       # The workspace name where the nodes are taken from and saved to
       # Allowed: null, live, ... (any other workspace name)
       workspace: null

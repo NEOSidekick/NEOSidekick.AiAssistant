@@ -75,6 +75,12 @@ class NodeService
      */
     protected $languageDimensionName;
 
+    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext): array
+    {
+        // TODO: Implement this method
+        return [];
+    }
+
     /**
      * @param FindDocumentNodesFilter $findDocumentNodesFilter
      * @param ControllerContext       $controllerContext

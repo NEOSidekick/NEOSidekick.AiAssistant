@@ -8,6 +8,7 @@ import AppContext, {AppContextType} from "../../AppContext";
 import SelectField from "../../Components/Field/SelectField";
 import CheckboxField from "../../Components/Field/CheckboxField";
 import NodeTypeFilter from "./DocumentNodeConfigurationForm.NodeTypeFilter";
+import ProgressSteps from "../../Components/ProgressSteps";
 
 interface DocumentNodeConfigurationFormProps {
     // we take this as a prop just for typing the moduleConfiguration
@@ -27,7 +28,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         const {moduleConfiguration} = this.props;
         return (moduleConfiguration.enforceConfigs.includes('workspace') ? null :
             <SelectField
-                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.workspace.label', 'Workspace')}
+                label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.workspace.label', 'Workspace (read and write)')}
                 value={moduleConfiguration.workspace}
                 onChange={e => this.context.updateModuleConfiguration({workspace: e.target.value})}
                 options={Object.keys(workspaces).reduce((acc, workspaceIdentifier) => {
@@ -127,6 +128,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
 
     render() {
         const {moduleConfiguration} = this.props;
+        const isSeoImageAlternativeText = moduleConfiguration.moduleName === 'SeoImageAlternativeText';
 
         /* to kebab case */
         let moduleNameKebabCase = moduleConfiguration.moduleName.replace(/([a-z0-9]|(?=[A-Z]))([A-Z])/g, '$1-$2').toLowerCase();
@@ -134,22 +136,81 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
 
         return (
             <div className={'neos-content neos-indented neos-fluid-container'}>
-                <p style={{marginBottom: '1rem', maxWidth: '80ch'}}
-                   dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.' + moduleConfiguration.moduleName + ':description', '')}}/>
-                <BackendMessage identifier={moduleNameKebabCase + '-generator'}/>
-
-                <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', '')}:</h2>
-                <br/>
-                {this.renderWorkspaceField()}
-                {this.renderLanguageDimensionField()}
-                {this.renderSeoPropertiesFilterField()}
-                {this.renderFocusKeywordFilterField()}
-                <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>
-                <ItemsPerPageField moduleConfiguration={moduleConfiguration} updateModuleConfiguration={this.context.updateModuleConfiguration}/>
-                {this.renderActions()}
-                <div className={'neos-footer'}>
-                    <StartModuleButton/>
+                <div style={{maxWidth: '135ch'}}>
+                    <h1 style={{fontSize: '2rem', marginTop: '3rem', marginBottom: '1.5rem'}}>
+                        {this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:title', 'The Essential Toolkit for Effective On-Page SEO')}
+                    </h1>
+                    <p style={{marginBottom: '1rem'}}>
+                        {this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:intro', 'On-page SEO is a cornerstone of successful digital marketing. It ensures your content is not only visible but also compelling to search engines. Here’s a streamlined toolkit to enhance your content.')}
+                    </p>
+                    <ProgressSteps steps={[
+                        {
+                            id: '01',
+                            name: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.FocusKeyword:stepName', 'Define Focus Keywords'),
+                            href: '/neos/ai-assistant/focus-keyword-generator',
+                            status: moduleConfiguration.moduleName === 'FocusKeyword' ? 'current' : 'upcoming'
+                        },
+                        {
+                            id: '02',
+                            name: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.SeoTitleAndMetaDescription:stepName', 'Write SEO Titles and Meta Descriptions'),
+                            href: '/neos/ai-assistant/seo-title-and-meta-description-generator',
+                            status: moduleConfiguration.moduleName === 'SeoTitleAndMetaDescription' ? 'current' : 'upcoming'
+                        },
+                        {
+                            id: '03',
+                            name: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.SeoImageAlternativeText:stepName', 'Optimize Image Alt Texts'),
+                            href: '/neos/ai-assistant/seo-image-alt-text-generator',
+                            status: moduleConfiguration.moduleName === 'SeoImageAlternativeText' ? 'current' : 'upcoming'
+                        },
+                    ]}/>
                 </div>
+
+                {isSeoImageAlternativeText ? (
+                    <div style={{maxWidth: '80ch'}}>
+                        <p style={{marginBottom: '1rem'}}
+                           dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.' + moduleConfiguration.moduleName + ':description', '')}}/>
+                    </div>
+                ) : (
+                    <div style={{maxWidth: '80ch'}}>
+                        <BackendMessage identifier={moduleNameKebabCase + '-generator'}/>
+
+                        <p style={{marginBottom: '1rem'}}
+                           dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.' + moduleConfiguration.moduleName + ':description', '')}}/>
+
+                        <p style={{marginBottom: '1rem', maxWidth: '80ch'}}>
+                            {this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:filterTypeExplanation', 'NEOSidekick can identify the most relevant pages for you and provide suggestions for each of these pages.')}
+                        </p>
+
+                        {moduleConfiguration.filter === 'important-pages' && (<div style={{marginBottom: '2rem'}}>
+                            {this.renderLanguageDimensionField()}
+                            <StartModuleButton label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:startModule', 'Start generation for most important pages')} style={{marginTop: '1rem'}}/>
+                        </div>)}
+
+                        <CheckboxField
+                            label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.filter.custom', 'I know what I\'m doing and would prefer to set individual filters')}
+                            checked={moduleConfiguration.filter === 'custom'}
+                            onChange={e => this.context.updateModuleConfiguration({filter: e.target.checked ? 'custom' : 'important-pages'})}
+                        />
+
+                        {moduleConfiguration.filter === 'custom' && (
+                            <div style={{marginTop: '1rem', border: '1px solid #3f3f3f', borderRadius: '0.375rem', padding: '1rem', maxWidth: 'calc(80ch - 2rem)'}}>
+                                <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', 'Selection filter')}:</h2>
+                                <br/>
+                                {this.renderWorkspaceField()}
+                                {this.renderLanguageDimensionField()}
+                                {this.renderSeoPropertiesFilterField()}
+                                {this.renderFocusKeywordFilterField()}
+                                <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>
+                                <ItemsPerPageField moduleConfiguration={moduleConfiguration}
+                                                   updateModuleConfiguration={this.context.updateModuleConfiguration}/>
+                                {this.renderActions()}
+                            </div>)}
+                    </div>
+                )}
+
+                {moduleConfiguration.filter === 'custom' && (<div className={'neos-footer'}>
+                    <StartModuleButton/>
+                </div>)}
             </div>
         )
     }

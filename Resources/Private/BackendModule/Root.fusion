@@ -29,6 +29,7 @@ NEOSidekick.AiAssistant.BackendModule.FocusKeywordController.index = NEOSidekick
         defaults = Neos.Fusion:DataStructure {
             // moduleName is only used for the configuration form text
             moduleName = 'FocusKeyword'
+            filter = 'important-pages'
             itemType = 'DocumentNode'
             workspace = 'live'
             focusKeywordPropertyFilter = null
@@ -53,6 +54,7 @@ NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index
         defaults = Neos.Fusion:DataStructure {
             // moduleName is only used for the configuration form text
             moduleName = 'SeoTitleAndMetaDescription'
+            filter = 'important-pages'
             itemType = 'DocumentNode'
             workspace = 'live'
             seoPropertiesFilter = null
@@ -76,6 +78,15 @@ NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index
         config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.seoTitleAndMetaDescriptionModule'), (value, key) => value != null)}
         enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
         value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs})}
+    }
+}
+
+NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
+    getAction = 'findDocumentNodes'
+    updateAction = 'updateNodeProperties'
+    moduleConfiguration = Neos.Fusion:DataStructure {
+        moduleName = 'SeoImageAlternativeText'
+        itemType = 'DocumentNode'
     }
 }
 

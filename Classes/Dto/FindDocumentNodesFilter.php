@@ -11,6 +11,12 @@ use Neos\Flow\Annotations as Flow;
 final class FindDocumentNodesFilter
 {
     /**
+     * 'important-pages' | 'custom'
+     * @var string
+     */
+    protected string $filter;
+
+    /**
      * @var string
      */
     protected string $workspace;
@@ -38,24 +44,32 @@ final class FindDocumentNodesFilter
     protected ?string $nodeTypeFilter = null;
 
     /**
-     * @param string      $workspace
+     * @param string      $filter
+     * @param string|null $workspace
      * @param string|null $seoPropertiesFilter
      * @param string|null $focusKeywordPropertyFilter
-     * @param string[] $languageDimensionFilter
+     * @param string[]    $languageDimensionFilter
      * @param string|null $nodeTypeFilter
      */
     public function __construct(
-        string  $workspace,
+        string $filter,
+        ?string  $workspace,
         ?string $seoPropertiesFilter = 'none',
         ?string $focusKeywordPropertyFilter = 'none',
         ?array $languageDimensionFilter = [],
         ?string $nodeTypeFilter = null
     ) {
+        $this->filter = $filter;
         $this->workspace = $workspace;
         $this->seoPropertiesFilter = $seoPropertiesFilter;
         $this->focusKeywordPropertyFilter = $focusKeywordPropertyFilter;
         $this->languageDimensionFilter = $languageDimensionFilter;
         $this->nodeTypeFilter = empty($nodeTypeFilter) ? null : $nodeTypeFilter;
+    }
+
+    public function getFilter(): string
+    {
+        return $this->filter;
     }
 
     public function getWorkspace(): string
@@ -85,6 +99,7 @@ final class FindDocumentNodesFilter
 
     /**
      * @param array{
+     *     filter: string,
      *     workspace: string,
      *     seoPropertiesFilter: string,
      *     focusKeywordPropertyFilter: string,
@@ -97,6 +112,7 @@ final class FindDocumentNodesFilter
     public static function fromArray(array $array): self
     {
         return new self(
+            $array['filter'],
             $array['workspace'],
             $array['seoPropertiesFilter'],
             $array['focusKeywordPropertyFilter'],

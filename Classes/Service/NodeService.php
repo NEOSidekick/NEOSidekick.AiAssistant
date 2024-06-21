@@ -106,6 +106,8 @@ class NodeService
                 ['language' => [$findDocumentNodesFilter->getLanguageDimensionFilter()]]);
         }
         $queryBuilder->addOrderBy('LENGTH(n.path)', 'ASC');
+        $queryBuilder->addOrderBy('n.index', 'ASC');
+        $queryBuilder->addOrderBy('n.dimensionsHash', 'DESC');
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
         $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($findDocumentNodesFilter) {

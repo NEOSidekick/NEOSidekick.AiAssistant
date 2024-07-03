@@ -48,7 +48,7 @@ final class FindDocumentNodesFilter
      * @param string|null $workspace
      * @param string|null $seoPropertiesFilter
      * @param string|null $focusKeywordPropertyFilter
-     * @param string[]    $languageDimensionFilter
+     * @param string|null $languageDimensionFilter
      * @param string|null $nodeTypeFilter
      */
     public function __construct(
@@ -56,14 +56,14 @@ final class FindDocumentNodesFilter
         ?string  $workspace,
         ?string $seoPropertiesFilter = 'none',
         ?string $focusKeywordPropertyFilter = 'none',
-        ?array $languageDimensionFilter = [],
+        ?string $languageDimensionFilter = null,
         ?string $nodeTypeFilter = null
     ) {
         $this->filter = $filter;
         $this->workspace = $workspace;
         $this->seoPropertiesFilter = $seoPropertiesFilter;
         $this->focusKeywordPropertyFilter = $focusKeywordPropertyFilter;
-        $this->languageDimensionFilter = $languageDimensionFilter;
+        $this->languageDimensionFilter = $languageDimensionFilter ? explode(',', $languageDimensionFilter) : [];
         $this->nodeTypeFilter = empty($nodeTypeFilter) ? null : $nodeTypeFilter;
     }
 

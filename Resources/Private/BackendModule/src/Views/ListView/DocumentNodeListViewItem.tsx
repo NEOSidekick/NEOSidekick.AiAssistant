@@ -4,12 +4,11 @@ import {faCheck, faExternalLinkAlt, faSpinner} from "@fortawesome/free-solid-svg
 import React, {RefObject} from "react";
 import {ListItemProperty, ListItemPropertyState, PropertySchema} from "../../Model/ListItemProperty";
 import {Draft, produce} from "immer";
-import {DocumentNodeListItem, ListItemState, ListItem} from "../../Model/ListItem";
+import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
 import {ListItemProps} from "./ListViewItem";
 import DocumentNodeListViewItemProperty from "./DocumentNodeListViewItemProperty";
 import NeosBackendService from "../../Service/NeosBackendService";
 import AppContext, {AppContextType} from "../../AppContext";
-import Alert from "../../Components/Alert";
 
 export interface DocumentNodeListViewItemProps extends ListItemProps {
     item: DocumentNodeListItem

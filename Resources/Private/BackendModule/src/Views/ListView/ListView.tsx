@@ -137,9 +137,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
 
     private updateItem(newItem: ListItem) {
         this.setState(state => {
-            const identifier: string = newItem.identifier
+            const index = Object.values(state.items).findIndex(item => item.identifier === newItem.identifier)
             const items = produce(state.items, (draft: Draft<ListItem>) => {
-                draft[identifier] = newItem
+                draft[index] = newItem
             })
             return {...state, items};
         })

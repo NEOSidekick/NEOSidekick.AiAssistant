@@ -55,8 +55,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
                 }
             }
             if (matches) {
-                // noinspection JSIgnoredPromiseFromCall
-                this.generateValue();
+                this.generateValue().then(() => {});
             }
         }
     }

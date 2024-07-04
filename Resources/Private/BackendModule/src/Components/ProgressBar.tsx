@@ -20,7 +20,7 @@ export default class ProgressBar extends React.Component<ProgressBarProps> {
             display: 'flex',
             color: 'black',
             fontWeight: 'bold',
-            marginBottom: '1rem'
+            marginBottom: '1.25rem'
         };
 
         const progressStyle = {
@@ -41,7 +41,7 @@ export default class ProgressBar extends React.Component<ProgressBarProps> {
         };
 
         return (
-            <div style={progressBarStyle}>
+            <nav style={progressBarStyle}>
                 <div style={progressStyle}>
                     <svg style={{height: '1.25rem', width: '1.25rem', color: '#ffffff'}}
                          viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
@@ -54,7 +54,7 @@ export default class ProgressBar extends React.Component<ProgressBarProps> {
                         1: totalPages
                     })}</span>
                 </div>
-            </div>
+            </nav>
         );
     }
 }

@@ -137,7 +137,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         return (
             <div className={'neos-content neos-indented neos-fluid-container'}>
                 <div style={{maxWidth: '135ch'}}>
-                    <h1 style={{fontSize: '2rem', marginTop: '3rem', marginBottom: '1.5rem'}}>
+                    <h1 style={{fontSize: '2rem', marginTop: '3rem', marginBottom: '1.5rem', lineHeight: '1.4'}}>
                         {this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:title', 'The Essential Toolkit for Effective On-Page SEO')}
                     </h1>
                     <p style={{marginBottom: '1rem'}}>

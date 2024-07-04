@@ -14,8 +14,12 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\ContentRepository\Exception\NodeException;
+use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ControllerContext;
+use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
+use Neos\Flow\Security\Exception;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\DomainRepository;
@@ -26,6 +30,8 @@ use Neos\Neos\Routing\Exception\NoSiteException;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
+use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
+use Psr\Http\Client\ClientExceptionInterface;
 
 class NodeService
 {
@@ -75,10 +81,67 @@ class NodeService
      */
     protected $languageDimensionName;
 
+    /**
+     * @Flow\InjectConfiguration(package="Neos.ContentRepository", path="contentDimensions")
+     * @var array
+     */
+    protected $contentDimensions;
+
+    /**
+     * @Flow\Inject
+     * @var ApiFacade
+     */
+    protected $apiFacade;
+
+    /**
+     * @Flow\Inject
+     * @var NodeFindingService
+     */
+    protected $nodeFindingService;
+
+    /**
+     * @throws NodeException
+     * @throws Exception
+     * @throws NodeTypeNotFoundException
+     * @throws \Neos\Flow\Property\Exception
+     * @throws \Neos\Flow\Http\Exception
+     * @throws \JsonException
+     * @throws NeosException
+     * @throws ClientExceptionInterface
+     * @throws MissingActionNameException
+     * @throws IllegalObjectTypeException
+     */
     public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext): array
     {
-        // TODO: Implement this method
-        return [];
+        $currentRequestUri = $controllerContext->getRequest()->getHttpRequest()->getUri();
+        $hosts = [];
+        if (isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+            foreach ($this->contentDimensions[$this->languageDimensionName]['presets'] as $presetIdentifier => $preset) {
+                if (sizeof($findDocumentNodesFilter->getLanguageDimensionFilter()) === 0 || in_array($presetIdentifier, $findDocumentNodesFilter->getLanguageDimensionFilter(), true)) {
+                    $hosts[] = $currentRequestUri->getScheme() . '://' . $currentRequestUri->getHost() . '/' . $preset['uriSegment'];
+                }
+            }
+        } else {
+            $hosts = [$currentRequestUri->getScheme() . '://' . $currentRequestUri->getHost()];
+        }
+        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts);
+
+        $result = [];
+        foreach ($mostRelevantInternalSeoUris as $uri) {
+            $node = $this->nodeFindingService->tryToResolvePublicUriToNode((string)$uri, $findDocumentNodesFilter->getWorkspace());
+            if ($node === null) {
+                continue;
+            }
+            if ($this->isNodeHidden($node)) {
+                continue;
+            }
+            if (!$this->nodeMatchesLanguageDimensionFilter($findDocumentNodesFilter, $node)) {
+                continue;
+            }
+            $result[] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
+        }
+
+        return $result;
     }
 
     /**
@@ -130,17 +193,8 @@ class NodeService
             $context = $this->createContentContext($findDocumentNodesFilter->getWorkspace(), $nodeData->getDimensionValues());
             $node = new Node($nodeData, $context);
 
-            try {
-                $parentNode = $node->findParentNode();
-                while ($parentNode !== null) {
-                    if ($parentNode->isHidden()) {
-                        // The 2 is a signal to continue with the next iteration of the outer loop.
-                        continue 2;
-                    }
-                    $parentNode = $parentNode->findParentNode();
-                }
-            } catch (NodeException $e) {
-                // This is thrown if no more parent node is found, in which case we add the node to our result list.
+            if ($this->isNodeHidden($node)) {
+                continue;
             }
 
             $result[] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
@@ -337,5 +391,26 @@ class NodeService
             throw new NoSiteException(sprintf('Failed to determine current site because no domain is specified matching host of "%s" and no default site could be found: %s', $hostName, $exception->getMessage()), 1604860219, $exception);
         }
         return $defaultSite;
+    }
+
+    protected function isNodeHidden(Node $node): bool
+    {
+        try {
+            $parentNode = $node->findParentNode();
+        } catch (NodeException $e) {
+            // This is thrown if no more parent node is found and that means our Node is not hidden
+            return false;
+        }
+        if ($parentNode->isHidden()) {
+            return true;
+        }
+
+        return $this->isNodeHidden($parentNode);
+    }
+
+    protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, Node $node): bool
+    {
+        $nodeLanguageDimensionValues = $node->getDimensions()[$this->languageDimensionName];
+        return sizeof(array_intersect($nodeLanguageDimensionValues, $findDocumentNodesFilter->getLanguageDimensionFilter())) > 0;
     }
 }

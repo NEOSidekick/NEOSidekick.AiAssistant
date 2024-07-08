@@ -3,6 +3,7 @@
 namespace NEOSidekick\AiAssistant\Infrastructure;
 
 use GuzzleHttp\Psr7\Request;
+use GuzzleHttp\Psr7\ServerRequest;
 use GuzzleHttp\Psr7\Stream;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
@@ -57,7 +58,7 @@ class ApiClient
      */
     public function getMostRelevantInternalSeoLinksByHosts(array $hosts): array
     {
-        $request = new Request('POST', $this->apiDomain . '/api/v1/find-most-relevant-internal-seo-links');
+        $request = new ServerRequest('POST', $this->apiDomain . '/api/v1/find-most-relevant-internal-seo-links');
         $request = $request->withAddedHeader('Accept', 'application/json');
         $request = $request->withAddedHeader('Authorization', 'Bearer ' . $this->apiKey);
         $request = $request->withAddedHeader('Content-Type', 'application/json');

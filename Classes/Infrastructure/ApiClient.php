@@ -65,11 +65,15 @@ class ApiClient
         /** @var Request $request */
         $request = $request->withBody(self::streamFor(json_encode(['uris' => $hosts], JSON_THROW_ON_ERROR)));
         $response = $this->browser->sendRequest($request);
-        $responseJson = json_decode($response->getBody()->getContents(), true, 512, JSON_THROW_ON_ERROR);
-        if (!isset($responseJson['data']['uris'])) {
-            throw new RuntimeException('Invalid response from NEOSidekick API');
+        if ($response->getStatusCode() !== 200) {
+            throw new RuntimeException(sprintf('Invalid status code from NEOSidekick API: %s', $response->getStatusCode()));
         }
-        return $responseJson['data']['uris'];
+        $responseBodyContents = $response->getBody()->getContents();
+        $responseBodyContentsFromJson = json_decode($responseBodyContents, true, 512, JSON_THROW_ON_ERROR);
+        if (!isset($responseBodyContentsFromJson['data']['uris'])) {
+            throw new RuntimeException(sprintf('Invalid response from NEOSidekick API, "data.uris" is missing: %s', $responseBodyContents));
+        }
+        return $responseBodyContentsFromJson['data']['uris'];
     }
 
     private static function streamFor(string $jsonData): Stream

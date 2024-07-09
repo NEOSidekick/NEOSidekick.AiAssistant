@@ -25,12 +25,23 @@ const defaultOptions = {
     return {
         activeContentDimensions: selectors.CR.ContentDimensions.active(state),
         node: node,
+        transientValues: selectors.UI.Inspector.transientValues(state),
         parentNode: selectors.CR.Nodes.nodeByContextPath(state)(node.parent),
     };
 }, {
     addFlashMessage: actions.UI.FlashMessages.add
 })
 export default class MagicTextFieldEditor extends PureComponent<any, any> {
+    constructor(props: any) {
+        super(props);
+        this.state = {loading: false, placeholder: ''};
+        if (props.options?.placeholder?.startsWith('SidekickClientEval')) {
+            this.fetchAndUpdatePlaceholder();
+        } else if (props.options?.placeholder) {
+            // Placeholder text must be unescaped in case html entities were used
+            this.setState({ placeholder: props.i18nRegistry.translate(unescape(props.options.placeholder)) });
+        }
+    }
     static propTypes = {
         // matches TextField
         className: PropTypes.string,
@@ -44,6 +55,7 @@ export default class MagicTextFieldEditor extends PureComponent<any, any> {
         activeContentDimensions: PropTypes.object.isRequired,
         node: PropTypes.object,
         parentNode: PropTypes.object,
+        transientValues: PropTypes.object,
 
         i18nRegistry: PropTypes.object.isRequired,
         externalService: PropTypes.object.isRequired,
@@ -56,8 +68,8 @@ export default class MagicTextFieldEditor extends PureComponent<any, any> {
         options: {}
     };
 
-    state = {
-        loading: false
+    componentDidUpdate(prevProps) {
+        this.fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged(prevProps);
     }
 
     renderIcon(loading: boolean) {
@@ -87,11 +99,41 @@ export default class MagicTextFieldEditor extends PureComponent<any, any> {
         }
     }
 
+    private fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged = async (prevProps) => {
+        const {node, transientValues, options} = this.props;
+
+        if (!options?.placeholder?.startsWith('SidekickClientEval')) {
+            return;
+        }
+
+        const pattern = /node\.properties\.(\w+)/g;
+        const matches = options.placeholder.match(pattern);
+        const properties = matches.map((match: string) => {
+            const [, property]: RegExpMatchArray = match.match(/node\.properties\.(.*)/);
+            return property;
+        });
+
+        let shouldUpdate = false;
+        properties.forEach((property: string) => {
+            if (transientValues?.[property] !== prevProps.transientValues?.[property] || node.properties[property] !== prevProps.node.properties[property]) {
+                shouldUpdate = true;
+            }
+        });
+
+        shouldUpdate && this.fetchAndUpdatePlaceholder();
+    }
+
+    private fetchAndUpdatePlaceholder = async () => {
+        const {contentService, node, parentNode, options} = this.props;
+        contentService
+            .processClientEval(options.placeholder, node, parentNode)
+            .then((placeholder: string) => this.setState({placeholder}));
+    }
+
     render () {
         const {id, value, className, commit, options, i18nRegistry, onKeyPress, onEnterKey} = this.props;
+        const {placeholder} = this.state;
 
-        // Placeholder text must be unescaped in case html entities were used
-        const placeholder = options && options.placeholder && i18nRegistry.translate(unescape(options.placeholder));
         const finalOptions = Object.assign({}, defaultOptions, options);
         const showGenerateButton = !finalOptions.readonly && !finalOptions.disabled;
 

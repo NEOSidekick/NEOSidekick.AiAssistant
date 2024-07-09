@@ -48,7 +48,6 @@ class ApiClient
             $this->apiDomain = 'https://api.neosidekick.com';
         }
         $browserRequestEngine = new CurlEngine();
-        $browserRequestEngine->setOption(CURLOPT_TIMEOUT, 10);
         $this->browser = new Browser();
         $this->browser->setRequestEngine($browserRequestEngine);
     }

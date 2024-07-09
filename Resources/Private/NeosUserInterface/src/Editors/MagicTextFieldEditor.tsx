@@ -34,13 +34,14 @@ const defaultOptions = {
 export default class MagicTextFieldEditor extends PureComponent<any, any> {
     constructor(props: any) {
         super(props);
-        this.state = {loading: false, placeholder: ''};
+        let initialPlaceholder = '';
         if (props.options?.placeholder?.startsWith('SidekickClientEval')) {
             this.fetchAndUpdatePlaceholder();
         } else if (props.options?.placeholder) {
             // Placeholder text must be unescaped in case html entities were used
-            this.setState({ placeholder: props.i18nRegistry.translate(unescape(props.options.placeholder)) });
+            initialPlaceholder = props.i18nRegistry.translate(unescape(props.options.placeholder));
         }
+        this.state = {loading: false, placeholder: initialPlaceholder};
     }
     static propTypes = {
         // matches TextField

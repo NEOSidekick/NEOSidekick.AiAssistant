@@ -7,6 +7,7 @@ use Doctrine\ORM\Internal\Hydration\IterableResult;
 use Doctrine\ORM\QueryBuilder;
 use Generator;
 use InvalidArgumentException;
+use JsonException;
 use Neos\ContentRepository\Domain\Model\Node;
 use Neos\ContentRepository\Domain\Model\NodeData;
 use Neos\ContentRepository\Domain\Model\Workspace;
@@ -31,13 +32,14 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
+use PDO;
 use Psr\Http\Client\ClientExceptionInterface;
 
 class NodeService
 {
     use CreateContentContextTrait;
 
-    private const BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
+    private const string BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
 
     /**
      * @Flow\Inject
@@ -105,7 +107,7 @@ class NodeService
      * @throws NodeTypeNotFoundException
      * @throws \Neos\Flow\Property\Exception
      * @throws \Neos\Flow\Http\Exception
-     * @throws \JsonException
+     * @throws JsonException
      * @throws NeosException
      * @throws ClientExceptionInterface
      * @throws MissingActionNameException
@@ -152,7 +154,15 @@ class NodeService
      * @param ControllerContext       $controllerContext
      *
      * @return array
+     * @throws Exception
+     * @throws IllegalObjectTypeException
+     * @throws MissingActionNameException
+     * @throws NeosException
      * @throws NoSiteException
+     * @throws NodeException
+     * @throws NodeTypeNotFoundException
+     * @throws \Neos\Flow\Http\Exception
+     * @throws \Neos\Flow\Property\Exception
      */
     public function find(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext): array
     {
@@ -176,8 +186,8 @@ class NodeService
         $queryBuilder->setParameter('currentSitePath', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()));
         $queryBuilder->setParameter('currentSitePathWithWildcard', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()) . '%');
         $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
-        $queryBuilder->setParameter('hidden', false, \PDO::PARAM_BOOL);
-        $queryBuilder->setParameter('removed', false, \PDO::PARAM_BOOL);
+        $queryBuilder->setParameter('hidden', false, PDO::PARAM_BOOL);
+        $queryBuilder->setParameter('removed', false, PDO::PARAM_BOOL);
         if (!empty($findDocumentNodesFilter->getLanguageDimensionFilter())) {
             $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder,
                 [$this->languageDimensionName => $findDocumentNodesFilter->getLanguageDimensionFilter()]);
@@ -187,7 +197,7 @@ class NodeService
         $queryBuilder->addOrderBy('n.dimensionsHash', 'DESC');
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
-        $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, function(NodeData $nodeData) use ($findDocumentNodesFilter) {
+        $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, static function(NodeData $nodeData) use ($findDocumentNodesFilter) {
             return self::nodeMatchesPropertyFilter($nodeData, $findDocumentNodesFilter);
         });
 
@@ -230,6 +240,7 @@ class NodeService
      * @param FindDocumentNodesFilter $findDocumentNodesFilter
      *
      * @return bool
+     * @throws NodeException
      */
     protected static function nodeMatchesPropertyFilter(NodeData $nodeData, FindDocumentNodesFilter $findDocumentNodesFilter): bool
     {
@@ -321,7 +332,7 @@ class NodeService
      * @param array $dimensions
      * @return void
      */
-    protected function addDimensionJoinConstraintsToQueryBuilder(QueryBuilder $queryBuilder, array $dimensions)
+    protected function addDimensionJoinConstraintsToQueryBuilder(QueryBuilder $queryBuilder, array $dimensions): void
     {
         $count = 0;
         foreach ($dimensions as $dimensionName => $dimensionValues) {
@@ -350,14 +361,14 @@ class NodeService
         $minimalWorkspacePositionByIdentifier = [];
 
         $workspaceNames = array_map(
-            function (Workspace $workspace) {
+            static function (Workspace $workspace) {
                 return $workspace->getName();
             },
             $workspaces
         );
         foreach ($nodes as $node) {
             // Find the position of the workspace, a smaller value means more priority
-            $workspacePosition = array_search($node->getWorkspace()->getName(), $workspaceNames);
+            $workspacePosition = array_search($node->getWorkspace()->getName(), $workspaceNames, true);
             $identifier = $node->getIdentifier() . '-' . $node->getDimensionsHash();
             // Yes, it seems to work comparing arrays that way!
             if (!isset($minimalWorkspacePositionByIdentifier[$identifier]) || $workspacePosition < $minimalWorkspacePositionByIdentifier[$identifier]) {

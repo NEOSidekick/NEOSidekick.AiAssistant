@@ -2,13 +2,6 @@
 
 namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
-use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Mvc\View\ViewInterface;
-use Neos\Flow\Security\Context;
-use Neos\Fusion\View\FusionView;
-use Neos\Neos\Controller\Module\AbstractModuleController;
-use Neos\Neos\Service\UserService;
-
 /**
  * @noinspection PhpUnused
  */

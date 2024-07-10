@@ -5,15 +5,23 @@ namespace NEOSidekick\AiAssistant\Controller;
  * This file is part of the NEOSidekick.AiAssistant package.
  */
 
+use JsonException;
+use Neos\ContentRepository\Exception\NodeException;
+use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\Exception;
 use Neos\Flow\Mvc\Controller\ActionController;
+use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
+use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Flow\Property\PropertyMappingConfiguration;
+use Neos\Neos\Routing\Exception\NoSiteException;
 use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
 use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Service\AssetService;
 use NEOSidekick\AiAssistant\Service\NodeService;
+use Psr\Http\Client\ClientExceptionInterface;
 
 /**
  * @noinspection PhpUnused
@@ -60,11 +68,12 @@ class BackendServiceController extends ActionController
      * @param FindAssetsFilterDto $configuration
      *
      * @return string
+     * @throws JsonException
      */
     public function findAssetsAction(FindAssetsFilterDto $configuration): string
     {
         $resultCollection = $this->assetService->findImages($configuration, $this->controllerContext);
-        return json_encode($resultCollection);
+        return json_encode($resultCollection, JSON_THROW_ON_ERROR);
     }
 
     public function initializeUpdateAssetsAction(): void
@@ -84,11 +93,13 @@ class BackendServiceController extends ActionController
      * @param array<UpdateAssetData> $updateItems
      *
      * @return string
+     * @throws JsonException
      */
     public function updateAssetsAction(array $updateItems): string
     {
         $this->assetService->updateMultipleAssets($updateItems);
-        return json_encode(array_map(fn (UpdateAssetData $item) => $item->jsonSerialize(), $updateItems));
+        return json_encode(array_map(static fn(UpdateAssetData $item) => $item->jsonSerialize(), $updateItems),
+            JSON_THROW_ON_ERROR);
     }
 
     public function initializeFindDocumentNodesAction(): void
@@ -111,6 +122,17 @@ class BackendServiceController extends ActionController
      * @param FindDocumentNodesFilter $configuration
      *
      * @return string|bool
+     * @throws ClientExceptionInterface
+     * @throws Exception
+     * @throws IllegalObjectTypeException
+     * @throws JsonException
+     * @throws MissingActionNameException
+     * @throws NoSiteException
+     * @throws NodeException
+     * @throws NodeTypeNotFoundException
+     * @throws \Neos\Flow\Property\Exception
+     * @throws \Neos\Flow\Security\Exception
+     * @throws \Neos\Neos\Exception
      */
     public function findDocumentNodesAction(FindDocumentNodesFilter $configuration): string|bool
     {
@@ -119,7 +141,7 @@ class BackendServiceController extends ActionController
         } else {
             $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
         }
-        return json_encode($resultCollection);
+        return json_encode($resultCollection, JSON_THROW_ON_ERROR);
     }
 
     public function initializeUpdateNodePropertiesAction(): void
@@ -141,10 +163,12 @@ class BackendServiceController extends ActionController
      * @param array<UpdateNodeProperties> $updateItems
      *
      * @return string
+     * @throws JsonException
      */
     public function updateNodePropertiesAction(array $updateItems): string
     {
         $this->nodeService->updatePropertiesOnNodes($updateItems);
-        return json_encode(array_map(fn (UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems));
+        return json_encode(array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems),
+            JSON_THROW_ON_ERROR);
     }
 }

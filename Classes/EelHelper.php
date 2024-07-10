@@ -144,7 +144,7 @@ class EelHelper implements ProtectedContextAwareInterface
     /**
      * @inheritDoc
      */
-    public function allowsCallOfMethod($methodName)
+    public function allowsCallOfMethod($methodName): bool
     {
         return true;
     }

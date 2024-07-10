@@ -3,8 +3,11 @@
 namespace NEOSidekick\AiAssistant\Service;
 
 use Doctrine\ORM\Internal\Hydration\IterableResult;
+use InvalidArgumentException;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\Exception;
 use Neos\Flow\Mvc\Controller\ControllerContext;
+use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Persistence\Doctrine\Query;
 use Neos\Flow\Persistence\QueryInterface;
@@ -13,6 +16,9 @@ use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\AssetVariantInterface;
 use Neos\Media\Domain\Model\Image;
 use Neos\Media\Domain\Repository\AssetRepository;
+use Neos\Media\Exception\AssetServiceException;
+use Neos\Media\Exception\ThumbnailServiceException;
+use Neos\Utility\Exception\PropertyNotAccessibleException;
 use Neos\Utility\ObjectAccess;
 use NEOSidekick\AiAssistant\Dto\FindAssetData;
 use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
@@ -50,8 +56,14 @@ class AssetService
 
     /**
      * @param FindAssetsFilterDto $filters
+     * @param ControllerContext   $controllerContext
      *
      * @return array<FindAssetData>
+     * @throws AssetServiceException
+     * @throws Exception
+     * @throws MissingActionNameException
+     * @throws PropertyNotAccessibleException
+     * @throws ThumbnailServiceException
      */
     public function findImages(FindAssetsFilterDto $filters, ControllerContext $controllerContext): array
     {
@@ -89,7 +101,7 @@ class AssetService
     {
         foreach ($updateAssetsData as $updateAssetData) {
             if (!$updateAssetData instanceof UpdateAssetData) {
-                throw new \InvalidArgumentException('Asset item data did not jach the expected type.');
+                throw new InvalidArgumentException('Asset item data did not match the expected type.');
             }
 
             $this->updateAsset($updateAssetData);

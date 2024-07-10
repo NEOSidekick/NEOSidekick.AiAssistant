@@ -132,10 +132,13 @@ class NodeService
             if ($node === null) {
                 continue;
             }
-            if ($this->isNodeHidden($node)) {
+            if (!self::nodeMatchesPropertyFilter($node->getNodeData(), $findDocumentNodesFilter)) {
                 continue;
             }
             if (!$this->nodeMatchesLanguageDimensionFilter($findDocumentNodesFilter, $node)) {
+                continue;
+            }
+            if ($this->isNodeHidden($node)) {
                 continue;
             }
             $result[] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);

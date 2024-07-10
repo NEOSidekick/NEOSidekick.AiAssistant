@@ -7,7 +7,7 @@ export interface ModuleConfiguration {
 }
 
 export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
-    moduleName: string,
+    moduleName: 'FocusKeyword' | 'SeoTitleAndMetaDescription' | 'SeoImageAlternativeText',
     filter: 'important-pages' | 'custom',
     workspace: string,
     seoPropertiesFilterOptions: string[],

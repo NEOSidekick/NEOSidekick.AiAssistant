@@ -92,7 +92,6 @@ export default class NeosBackendService {
                             focusKeywordPropertyFilter = 'only-empty-focus-keywords';
                             break;
                         case 'SeoTitleAndMetaDescription':
-                            focusKeywordPropertyFilter = 'only-existing-focus-keywords';
                             seoPropertiesFilter = 'only-empty-seo-titles-or-meta-descriptions';
                             break;
                     }

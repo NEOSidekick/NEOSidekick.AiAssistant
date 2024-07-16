@@ -39,7 +39,7 @@ class NodeService
 {
     use CreateContentContextTrait;
 
-    private const string BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
+    private const BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
 
     /**
      * @Flow\Inject

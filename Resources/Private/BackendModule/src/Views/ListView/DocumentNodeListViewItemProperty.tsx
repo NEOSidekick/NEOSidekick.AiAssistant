@@ -42,6 +42,7 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                             propertySchema={propertySchema}
                             item={item}
                             rows={1}
+                            updateItemProperty={() => {}}
                         />
                     );
                 }
@@ -87,7 +88,11 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                     />
                 )
             default:
-                return <Alert message={`${propertySchema?.ui.inspector.editor} is currently not supported`} />
+                if (propertySchema?.ui?.inspector?.editor) {
+                    return <Alert message={`[${item.nodeTypeName}:${property.propertyName}] Editor "${propertySchema.ui.inspector.editor}" is currently not supported`}/>
+                } else {
+                    return <Alert message={`[${item.nodeTypeName}:${property.propertyName}] Editor configuration is missing`}/>
+                }
         }
     }
 }

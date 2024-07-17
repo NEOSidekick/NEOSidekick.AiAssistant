@@ -46,7 +46,8 @@ export default class NeosBackendService {
             const {isFetching, uri, resolve, reject} = this.documentHtmlContentQueue[i];
             if (!isFetching) {
                 this.documentHtmlContentQueue[i].isFetching = true;
-                fetch(uri)
+                // We need to pass credentials here to omit the Nginx cache
+                fetch(uri, { credentials: 'include' })
                     .then(response => response.text())
                     .then(text => resolve(text))
                     .catch(reject)

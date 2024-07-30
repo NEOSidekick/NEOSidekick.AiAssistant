@@ -22,10 +22,6 @@ use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Flow\Security\Exception;
 use Neos\Neos\Controller\CreateContentContextTrait;
-use Neos\Neos\Domain\Model\Site;
-use Neos\Neos\Domain\Repository\DomainRepository;
-use Neos\Neos\Domain\Repository\SiteRepository;
-use Neos\Neos\Domain\Service\SiteService;
 use Neos\Neos\Exception as NeosException;
 use Neos\Neos\Routing\Exception\NoSiteException;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
@@ -67,15 +63,9 @@ class NodeService
 
     /**
      * @Flow\Inject
-     * @var SiteRepository
+     * @var SiteService
      */
-    protected $siteRepository;
-
-    /**
-     * @Flow\Inject
-     * @var DomainRepository
-     */
-    protected $domainRepository;
+    protected $siteService;
 
     /**
      * @Flow\InjectConfiguration(path="languageDimensionName")
@@ -167,7 +157,7 @@ class NodeService
     public function find(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext): array
     {
         $currentRequestHost = $controllerContext->getRequest()->getHttpRequest()->getUri()->getHost();
-        $siteMatchingCurrentRequestHost = $this->getSiteByHostName($currentRequestHost);
+        $siteMatchingCurrentRequestHost = $this->siteService->getSiteByHostName($currentRequestHost);
         $workspace = $this->workspaceRepository->findByIdentifier($findDocumentNodesFilter->getWorkspace());
 
         if (!$workspace) {

@@ -14,6 +14,8 @@ use Neos\Neos\Routing\Exception\NoSiteException;
  */
 class SiteService
 {
+    public const SITES_ROOT_PATH = \Neos\Neos\Domain\Service\SiteService::SITES_ROOT_PATH;
+
     /**
      * @Flow\Inject
      * @var SiteRepository

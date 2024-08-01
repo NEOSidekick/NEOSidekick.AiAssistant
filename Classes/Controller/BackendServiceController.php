@@ -17,11 +17,13 @@ use Neos\Flow\Property\PropertyMappingConfiguration;
 use Neos\Neos\Routing\Exception\NoSiteException;
 use Neos\Neos\Service\UserService;
 use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
+use NEOSidekick\AiAssistant\Dto\FindContentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
 use NEOSidekick\AiAssistant\Service\AssetService;
+use NEOSidekick\AiAssistant\Service\ContentNodeService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use Psr\Http\Client\ClientExceptionInterface;
 use Throwable;
@@ -42,6 +44,12 @@ class BackendServiceController extends ActionController
      * @var NodeService
      */
     protected $nodeService;
+
+    /**
+     * @Flow\Inject
+     * @var ContentNodeService
+     */
+    protected $contentNodeService;
 
     /**
      * @var string[]
@@ -183,6 +191,12 @@ class BackendServiceController extends ActionController
         $this->nodeService->updatePropertiesOnNodes($updateItems);
         return json_encode(array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems),
             JSON_THROW_ON_ERROR);
+    }
+
+    public function debugAction(): string
+    {
+        $filter = new FindContentNodesFilter('live', 'none', 'de');
+        return json_encode($this->contentNodeService->findDocumentNodesHavingChildNodes($filter, $this->controllerContext), JSON_THROW_ON_ERROR);
     }
 
     /**

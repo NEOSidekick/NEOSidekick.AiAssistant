@@ -174,7 +174,8 @@ class BackendServiceController extends ActionController
             ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
             ->allowProperties(
                 'nodeContextPath',
-                'properties'
+                'properties',
+                'images'
             );
     }
 

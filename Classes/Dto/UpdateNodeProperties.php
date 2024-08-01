@@ -22,13 +22,20 @@ final class UpdateNodeProperties implements JsonSerializable
     protected array $properties;
 
     /**
-     * @param string $nodeContextPath
-     * @param array $properties
+     * @var array
      */
-    public function __construct(string $nodeContextPath, array $properties)
+    protected array $images;
+
+    /**
+     * @param string $nodeContextPath
+     * @param array  $properties
+     * @param array  $images
+     */
+    public function __construct(string $nodeContextPath, array $properties, array $images = [])
     {
         $this->nodeContextPath = $nodeContextPath;
         $this->properties = $properties;
+        $this->images = $images;
     }
 
     public function getNodeContextPath(): string
@@ -41,10 +48,16 @@ final class UpdateNodeProperties implements JsonSerializable
         return $this->properties;
     }
 
+    public function getImages(): array
+    {
+        return $this->images;
+    }
+
     /**
      * @param array{
      *     nodeContextPath: string,
-     *     properties: string
+     *     properties: string[],
+     *     images: array[]
      * } $array
      *
      * @return self
@@ -54,6 +67,7 @@ final class UpdateNodeProperties implements JsonSerializable
         return new self(
             $array['nodeContextPath'],
             $array['properties'],
+            $array['images']
         );
     }
 
@@ -62,6 +76,7 @@ final class UpdateNodeProperties implements JsonSerializable
         return [
             'nodeContextPath' => $this->nodeContextPath,
             'properties' => $this->properties,
+            'images' => $this->images,
         ];
     }
 }

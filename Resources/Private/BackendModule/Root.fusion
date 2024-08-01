@@ -94,11 +94,11 @@ NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = 
             alternativeTextPropertyFilterOptions = ${['none', 'only-empty']}
             languageDimensionFilter = ${Array.keys(Configuration.setting('Neos.ContentRepository.contentDimensions.' + Configuration.setting('NEOSidekick.AiAssistant.languageDimensionName') + '.presets'))}
             itemsPerPage = 10
+            readonlyProperties = ${[]}
+            editableProperties = ${[]}
             actions = Neos.Fusion:DataStructure {
-//                'autoGenerateEmptySeoTitles' = ${{'active': true, 'propertyName': 'titleOverride', 'clientEval': 'ClientEval: !node.properties.titleOverride'}}
-//                'autoGenerateEmptyMetaDescriptions' = ${{'active': true, 'propertyName': 'metaDescription', 'clientEval': 'ClientEval: !node.properties.metaDescription'}}
-//                'autoGenerateExistingSeoTitles' = ${{'active': false, 'propertyName': 'titleOverride', 'clientEval': 'ClientEval: node.properties.titleOverride'}}
-//                'autoGenerateExistingMetaDescriptions' = ${{'active': false, 'propertyName': 'metaDescription', 'clientEval': 'ClientEval: node.properties.metaDescription'}}
+                'autoGenerateEmptyAlternativeTexts' = ${{'active': true}}
+                'autoGenerateExistingAlternativeTexts' = ${{'active': false}}
             }
         }
         config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.seoImageAltTextGenerator'), (value, key) => value != null)}

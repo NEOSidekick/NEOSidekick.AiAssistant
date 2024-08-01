@@ -61,6 +61,62 @@ export default class NeosBackendService {
 
     public async getItems(moduleConfiguration: ModuleConfiguration)
     {
+        // Fixture start
+        if (moduleConfiguration.itemType === 'ContentNode') {
+            return [
+                {
+                    "type": "DocumentNode",
+                    "identifier": "c8996a15-dc7d-4115-b0fe-510d10f640fa-fb11fdde869d0a8fcfe00a2fd35c031d",
+                    "nodeContextPath": "/sites/kapsch-group/node-fzfnuebwvwav9/node-feh4m7sr65680@live;language=de",
+                    "nodeTypeName": "CodeQ.Site:Document.CaseStudyPage",
+                    "publicUri": "https://cancomwebsite.ddev.site/case-studys/regional-medien-austria",
+                    "previewUri": "https://cancomwebsite.ddev.site/case-studys/regional-medien-austria",
+                    "properties": {
+                        "uriPathSegment": "regional-medien-austria",
+                        "showJumpMarkersMenu": false,
+                        "heroTitle": "RegionalMedien Austria",
+                        "heroSubtitle": "Die RegionalMedien Austria sind mit ihrem breiten Portfolio an digitalen und gedruckten Produkten sowie umfassenden Serviceleistungen ein erfolgreiches österreichweites Medienunternehmen und durch den Fokus auf lokale und regionale Nachrichten einzigartig am heimischen Markt.",
+                        "buttonLabel": "Download Casestudy",
+                        "introTitle": "Wer sind die&nbsp;<br><strong>RegionalMedien Austria?</strong>",
+                        "introText": "<p>Die RegionalMedien Austria (RMA) stehen österreichweit für lokale Nachrichten aus den Regionen und vereinen unter ihrem Dach insgesamt 129 Zeitungen und 121 Online-Portale. Das Unternehmen beschäftigt rund 800 Mitarbeiterinnen und Mitarbeiter in 82 Geschäftsstellen.</p>",
+                        "logoWidth": "300",
+                        "imagePosition": "left",
+                        "imageHiddenOnMobile": false,
+                        "title": "Regional Medien Austria",
+                        "hideSegmentInUriPath": false
+                    },
+                    "language": "de",
+                    "images": [
+                        {
+                            "nodeType": "CodeQ.Site:Content.SectionImage",
+                            "nodeContextPath": "/sites/kapsch-group/node-fzfnuebwvwav9/node-feh4m7sr65680/main/node-b6gx6q3c60adz@live;language=de",
+                            "label": "Bild 1", // todo what should we put here?
+                            "filename": "Photo 1.jpg",
+                            "fullsizeUri": "https://images.unsplash.com/photo-1722172118908-1a97c312ce8c?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                            "thumbnailUri": "https://images.unsplash.com/photo-1722172118908-1a97c312ce8c?q=80&w=3087&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                            "alternativeTextPropertyName": "alternativeText",
+                            "alternativeTextPropertyValue": "Lorem ipsum",
+                            "titlePropertyName": "imageTitle",
+                            "titlePropertyValue": null
+                        },
+                        {
+                            "nodeType": "CodeQ.Site:Content.SectionImage",
+                            "nodeContextPath": "/sites/kapsch-group/node-fzfnuebwvwav9/node-feh4m7sr65680/main/node-05j9rxpplm3yx@live;language=de",
+                            "label": "Bild 1", // todo what should we put here?
+                            "filename": "Photo 2.jpg",
+                            "fullsizeUri": "https://images.unsplash.com/photo-1721633617180-97c67428a48e?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                            "thumbnailUri": "https://images.unsplash.com/photo-1721633617180-97c67428a48e?q=80&w=2970&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+                            "alternativeTextPropertyName": "alternativeText",
+                            "alternativeTextPropertyValue": null,
+                            "titlePropertyName": "imageTitle",
+                            "titlePropertyValue": null
+                        }
+                    ]
+                }
+            ]
+        }
+        // Fixture end
+
         const params = new URLSearchParams();
         const filters = this.toFilterDto(moduleConfiguration);
         Object.keys(filters).map(key => params.append(`configuration[${key}]`, filters[key]))

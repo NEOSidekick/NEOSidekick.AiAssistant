@@ -47,6 +47,11 @@ final class FindDocumentNodeData implements JsonSerializable
     protected string $language;
 
     /**
+     * @var array<FindContentNodeData>
+     */
+    protected array $relevantContentNodes;
+
+    /**
      * @param string $identifier
      * @param string $nodeContextPath
      * @param string $nodeTypeName
@@ -54,6 +59,7 @@ final class FindDocumentNodeData implements JsonSerializable
      * @param string $previewUri
      * @param array  $properties
      * @param string $language
+     * @param array $relevantContentNodes
      */
     public function __construct(
         string $identifier,
@@ -62,7 +68,8 @@ final class FindDocumentNodeData implements JsonSerializable
         string $publicUri,
         string $previewUri,
         array $properties,
-        string $language
+        string $language,
+        array $relevantContentNodes = []
     ) {
         $this->identifier = $identifier;
         $this->nodeContextPath = $nodeContextPath;
@@ -71,6 +78,7 @@ final class FindDocumentNodeData implements JsonSerializable
         $this->previewUri = $previewUri;
         $this->properties = $properties;
         $this->language = $language;
+        $this->relevantContentNodes = $relevantContentNodes;
     }
 
     public function getIdentifier(): string
@@ -106,6 +114,25 @@ final class FindDocumentNodeData implements JsonSerializable
     public function getLanguage(): string
     {
         return $this->language;
+    }
+
+    public function getRelevantContentNodes(): array
+    {
+        return $this->relevantContentNodes;
+    }
+
+    public function withAddedRelevantContentNode(FindContentNodeData $contentNode): self
+    {
+        return new self(
+            $this->identifier,
+            $this->nodeContextPath,
+            $this->nodeTypeName,
+            $this->publicUri,
+            $this->previewUri,
+            $this->properties,
+            $this->language,
+            [...$this->relevantContentNodes, $contentNode]
+        );
     }
 
     /**
@@ -144,7 +171,8 @@ final class FindDocumentNodeData implements JsonSerializable
             'publicUri' => $this->publicUri,
             'previewUri' => $this->previewUri,
             'properties' => $this->properties,
-            'language' => $this->language
+            'language' => $this->language,
+            'relevantContentNodes' => $this->relevantContentNodes
         ];
     }
 }

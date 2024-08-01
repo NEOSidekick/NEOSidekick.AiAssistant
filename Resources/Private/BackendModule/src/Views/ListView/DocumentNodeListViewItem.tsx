@@ -9,6 +9,8 @@ import {ListItemProps} from "./ListViewItem";
 import DocumentNodeListViewItemProperty from "./DocumentNodeListViewItemProperty";
 import NeosBackendService from "../../Service/NeosBackendService";
 import AppContext, {AppContextType} from "../../AppContext";
+import DocumentNodeListViewItemImage from "./DocumentNodeListViewItemImage";
+import {ListItemImage} from "../../Model/ListItemImage";
 import {getItemByIdentifier, ListViewState} from "./ListView";
 
 export interface DocumentNodeListViewItemProps extends ListItemProps {
@@ -63,6 +65,17 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
 
     }
 
+    private updateItemImageProperty(contextPath: string, propertyName: string, propertyValue: any, state: ListItemPropertyState) {
+        const {updateItem, item} = this.props;
+        updateItem(produce(item, (draft: Draft<DocumentNodeListItem>) => {
+            draft.images[contextPath][propertyName] = {
+                ...draft.images[contextPath][propertyName],
+                state: (state !== ListItemPropertyState.Generating && draft.images[contextPath][propertyName].initialValue === propertyValue) ? ListItemPropertyState.Initial : state,
+                currentValue: propertyValue
+            } as ListItemProperty;
+        }));
+    }
+
     private discard(): void {
         const {updateItem, item} = this.props;
         updateItem(produce(item, (draft: Draft<DocumentNodeListItem>) => {
@@ -74,12 +87,29 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                 } as ListItemProperty;
                 return accumulator;
             }, {});
+            draft.images = Object.keys(draft.images).reduce((accumulator, contextPath) => {
+                let image = {
+                    ...draft.images[contextPath]
+                } as ListItemImage;
+                if (image.alternativeTextProperty) {
+                    image.alternativeTextProperty.state = ListItemPropertyState.Initial;
+                    image.alternativeTextProperty.currentValue = image.alternativeTextProperty.initialValue;
+                }
+                if (image.titleProperty) {
+                    image.titleProperty.state = ListItemPropertyState.Initial;
+                    image.titleProperty.currentValue = image.titleProperty.initialValue;
+                }
+                accumulator[contextPath] = image;
+                return accumulator;
+            }, {})
         }));
     }
 
     private canDiscardAndPersist(): boolean {
         const {item} = this.props;
-        return item.state === ListItemState.Initial && !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
+        return item.state === ListItemState.Initial && (
+            !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
+            || !!Object.values(item.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleProperty?.state === ListItemPropertyState.AiGenerated || image.titleProperty?.state === ListItemPropertyState.UserManipulated))
     }
 
     private renderSaveButtonLabel() {
@@ -156,6 +186,16 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                                 property={property}
                                 htmlContent={htmlContent}
                                 updateItemProperty={(value: string, state: ListItemPropertyState) => this.updateItemProperty(property.propertyName, value, state)}
+                            />
+                        )
+                    })}
+                    {Object.values(item.images).map((imageProperty) => {
+                        return (
+                            <DocumentNodeListViewItemImage
+                                item={item}
+                                imageProperty={imageProperty}
+                                htmlContent={htmlContent}
+                                updateItemProperty={(propertyName: string, value: string, state: ListItemPropertyState) => this.updateItemImageProperty(imageProperty.nodeContextPath, propertyName, value, state)}
                             />
                         )
                     })}

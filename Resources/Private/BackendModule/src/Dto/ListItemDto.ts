@@ -17,6 +17,7 @@ export interface FindDocumentNodeData {
     publicUri: string;
     properties?:  {
         [key: string]: string | number | boolean
-    },
+    };
+    images?: object[];
     language: string;
 }

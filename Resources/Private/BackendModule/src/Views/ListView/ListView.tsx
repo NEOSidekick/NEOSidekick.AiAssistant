@@ -14,6 +14,8 @@ import {FindAssetData, FindDocumentNodeData} from "../../Dto/ListItemDto";
 import Alert from "../../Components/Alert";
 import ProgressCircles from "../../Components/ProgressCircles";
 import ProgressBar from "../../Components/ProgressBar";
+import {ListItemImage} from "../../Model/ListItemImage";
+import {has} from "lodash";
 
 export function getItemByIdentifier(state: ListViewState, identifier: string) {
     return Object.values(state.items).find(item => item.identifier === identifier);
@@ -75,7 +77,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 } as ListItemProperty;
                 return accumulator;
             }, {}) || {},
-            editableProperties: moduleConfiguration.editableProperties?.reduce((accumulator, propertyName) => {
+            // todo i made a fallback here with an empty array
+            editableProperties: (moduleConfiguration.editableProperties || [])?.reduce((accumulator, propertyName) => {
                 const propertyValue = item.properties[propertyName];
                 accumulator[propertyName] = {
                     propertyName,
@@ -83,6 +86,34 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     currentValue: propertyValue,
                     state: ListItemPropertyState.Initial,
                 } as ListItemProperty;
+                return accumulator;
+            }, {}),
+            images: (item.images || []).reduce((accumulator, image) => {
+                const newImage = {
+                    "nodeType": image.nodeType,
+                    "nodeContextPath": image.nodeContextPath,
+                    "label": image.label,
+                    "filename": image.filename,
+                    "fullsizeUri": image.fullsizeUri,
+                    "thumbnailUri": image.thumbnailUri
+                } as ListItemImage;
+                if (image.alternativeTextPropertyName) {
+                    newImage.alternativeTextProperty = {
+                        propertyName: image.alternativeTextPropertyName,
+                        initialValue: image.alternativeTextPropertyValue,
+                        currentValue: image.alternativeTextPropertyValue,
+                        state: ListItemPropertyState.Initial,
+                    } as ListItemProperty;
+                }
+                if (image.titlePropertyName) {
+                    newImage.titleProperty = {
+                        propertyName: image.titlePropertyName,
+                        initialValue: image.titlePropertyValue,
+                        currentValue: image.titlePropertyValue,
+                        state: ListItemPropertyState.Initial,
+                    } as ListItemProperty;
+                }
+                accumulator[newImage.nodeContextPath] = newImage;
                 return accumulator;
             }, {})
         };
@@ -166,7 +197,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             }
 
             if (item.state === ListItemState.Initial) {
-                hasChanges = hasChanges || !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated);
+                hasChanges = hasChanges
+                    || !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
+                    || !!Object.values(item.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleProperty?.state === ListItemPropertyState.AiGenerated || image.titleProperty?.state === ListItemPropertyState.UserManipulated);
             }
         }
         return hasChanges;
@@ -203,6 +236,17 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     return accumulator;
                 }, {});
 
+                const images = Object.values(item.images).reduce((accumulator, image: ListItemImage) => {
+                    accumulator[image.nodeContextPath] = {};
+                    if (image.alternativeTextProperty.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty.state === ListItemPropertyState.UserManipulated) {
+                        accumulator[image.nodeContextPath][image.alternativeTextProperty.propertyName] = image.alternativeTextProperty.currentValue;
+                    }
+                    if (image.titleProperty.state === ListItemPropertyState.AiGenerated || image.titleProperty.state === ListItemPropertyState.UserManipulated) {
+                        accumulator[image.nodeContextPath][image.titleProperty.propertyName] = image.titleProperty.currentValue;
+                    }
+                    return accumulator;
+                }, {});
+
                 switch (item.type) {
                     case 'Asset':
                         return {
@@ -214,12 +258,13 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                             // @ts-ignore
                             nodeContextPath: item.nodeContextPath,
                             properties,
+                            images
                         }
                     default:
                         throw new Error('Unknown item type ' + item.type);
                 }
             })
-            .filter(item => Object.keys(item.properties).length > 0)
+            .filter(item => (Object.keys(item.properties).length > 0 || Object.keys(item.images).length > 0))
         );
         itemsToPersist.forEach(item => {
             this.updateItem((state: Readonly<ListViewState>) => {

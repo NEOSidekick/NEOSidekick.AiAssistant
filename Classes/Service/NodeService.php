@@ -209,6 +209,18 @@ class NodeService extends AbstractNodeService
             foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
                 $node->setProperty($propertyName, $propertyValue);
             }
+
+            foreach ($updateItem->getImages() as $imageNodeContextPath => $imageNodeProperties) {
+                if (empty($imageNodeProperties)) {
+                    continue;
+                }
+
+                $imageNodeContextPathSegments = NodePaths::explodeContextPath($imageNodeContextPath);
+                $imageNode = $context->getNode($imageNodeContextPathSegments['nodePath']);
+                foreach ($imageNodeProperties as $propertyName => $propertyValue) {
+                    $imageNode->setProperty($propertyName, $propertyValue);
+                }
+            }
         }
     }
 

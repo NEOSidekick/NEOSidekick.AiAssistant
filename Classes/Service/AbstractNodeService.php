@@ -11,9 +11,12 @@ use Neos\ContentRepository\Domain\Model\NodeData;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Exception\NodeException;
 use Neos\Flow\Annotations as Flow;
+use Neos\Neos\Controller\CreateContentContextTrait;
 
 abstract class AbstractNodeService
 {
+    use CreateContentContextTrait;
+
     /**
      * @Flow\Inject
      * @var EntityManagerInterface

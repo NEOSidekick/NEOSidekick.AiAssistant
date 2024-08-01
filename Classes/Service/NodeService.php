@@ -16,7 +16,6 @@ use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Flow\Security\Exception;
-use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\Neos\Exception as NeosException;
 use Neos\Neos\Routing\Exception\NoSiteException;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
@@ -28,8 +27,6 @@ use Psr\Http\Client\ClientExceptionInterface;
 
 class NodeService extends AbstractNodeService
 {
-    use CreateContentContextTrait;
-
     private const BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
 
     /**

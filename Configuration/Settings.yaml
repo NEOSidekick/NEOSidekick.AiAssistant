@@ -67,3 +67,15 @@ NEOSidekick:
       # Predefines how many images should be processed per page, to avoid generate too many in parallel
       # Allowed: 5, 10, 15, 20, 25
       itemsPerPage: 20
+    seoImageAltTextGenerator:
+      # The workspace name where the nodes are taken from and saved to
+      # Allowed: null, live, ... (any other workspace name)
+      workspace: null
+      # The property filter for the titleOverride and metaDescription properties
+      # Allowed:
+      #  - none: All nodes are shown
+      #  - only-empty: Only nodes with an empty alternative text property are shown
+      alternativeTextPropertyFilter: null
+      # Predefines how many images should be processed per page, to avoid generate too many in parallel
+      # Allowed: 5, 10, 15, 20, 25
+      itemsPerPage: 20

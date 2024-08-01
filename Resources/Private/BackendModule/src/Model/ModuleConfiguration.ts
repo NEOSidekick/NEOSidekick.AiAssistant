@@ -1,5 +1,5 @@
 export interface ModuleConfiguration {
-    itemType: 'Asset' | 'DocumentNode';
+    itemType: 'Asset' | 'DocumentNode' | 'ContentNode';
     enforceConfigs: string[];
     itemsPerPage: number;
     readonlyProperties: string[];
@@ -7,7 +7,7 @@ export interface ModuleConfiguration {
 }
 
 export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
-    moduleName: 'FocusKeyword' | 'SeoTitleAndMetaDescription' | 'SeoImageAlternativeText',
+    moduleName: 'FocusKeyword' | 'SeoTitleAndMetaDescription',
     filter: 'important-pages' | 'custom',
     workspace: string,
     seoPropertiesFilterOptions: string[],
@@ -26,6 +26,21 @@ export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
     }
     // TODO This should refactored to include readonlyProperties, editableProperties and custom views
     showSeoDirectives: boolean,
+}
+
+export interface ContentNodeModuleConfiguration extends ModuleConfiguration {
+    moduleName: 'SeoImageAlternativeText',
+    workspace: string,
+    alternativeTextPropertyFilterOptions: string[],
+    alternativeTextPropertyFilter: string|null,
+    languageDimensionFilter: string[],
+    actions: {
+        [key: string]: {
+            active: boolean,
+            propertyName: string,
+            clientEval: string,
+        }
+    }
 }
 
 export interface AssetModuleConfiguration extends ModuleConfiguration {

@@ -1,11 +1,11 @@
 import {Endpoints} from "../Model/Endpoints";
 import AiAssistantError from "../AiAssistantError";
 import {
-    AssetModuleConfiguration,
+    AssetModuleConfiguration, ContentNodeModuleConfiguration,
     DocumentNodeModuleConfiguration,
     ModuleConfiguration
 } from "../Model/ModuleConfiguration";
-import {FindAssetsFilter, FindDocumentNodesFilter, FindFilter} from "../Dto/FindFilter";
+import {FindAssetsFilter, FindContentNodesFilter, FindDocumentNodesFilter, FindFilter} from "../Dto/FindFilter";
 
 export default class NeosBackendService {
     private static instance: NeosBackendService | null = null;
@@ -86,32 +86,39 @@ export default class NeosBackendService {
     }
 
     private toFilterDto(moduleConfiguration: ModuleConfiguration): FindFilter {
-        switch (moduleConfiguration.itemType) {
-            case 'Asset':
-                const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
-                return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
-            case 'DocumentNode':
-                let {moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
-                if (filter === 'important-pages') {
-                    switch(moduleName) {
-                        case 'FocusKeyword':
-                            focusKeywordPropertyFilter = 'only-empty-focus-keywords';
-                            break;
-                        case 'SeoTitleAndMetaDescription':
-                            seoPropertiesFilter = 'only-empty-seo-titles-or-meta-descriptions';
-                            break;
-                    }
+        let moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, alternativeTextPropertyFilter, languageDimensionFilter, nodeTypeFilter;
+        if (moduleConfiguration.itemType === 'Asset') {
+            const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
+            return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
+        } else if (moduleConfiguration.itemType === 'DocumentNode') {
+            let {moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
+            if (filter === 'important-pages') {
+                switch(moduleName) {
+                    case 'FocusKeyword':
+                        focusKeywordPropertyFilter = 'only-empty-focus-keywords';
+                        break;
+                    case 'SeoTitleAndMetaDescription':
+                        seoPropertiesFilter = 'only-empty-seo-titles-or-meta-descriptions';
+                        break;
                 }
-                return {
-                    filter,
-                    workspace,
-                    seoPropertiesFilter: seoPropertiesFilter || 'none',
-                    focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',
-                    languageDimensionFilter: languageDimensionFilter || [],
-                    nodeTypeFilter: nodeTypeFilter || ''
-                } as FindDocumentNodesFilter;
-            default:
-                throw new Error('Unknown item type');
+            }
+            return {
+                filter,
+                workspace,
+                seoPropertiesFilter: seoPropertiesFilter || 'none',
+                focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',
+                languageDimensionFilter: languageDimensionFilter || [],
+                nodeTypeFilter: nodeTypeFilter || ''
+            } as FindDocumentNodesFilter;
+        } else if (moduleConfiguration.itemType === 'ContentNode') {
+            let {workspace, alternativeTextPropertyFilter, languageDimensionFilter} = moduleConfiguration as ContentNodeModuleConfiguration;
+            return {
+                workspace,
+                alternativeTextPropertyFilter: alternativeTextPropertyFilter || 'none',
+                languageDimensionFilter: languageDimensionFilter || [],
+            } as FindContentNodesFilter;
+        } else {
+            throw new Error('Unknown item type');
         }
     }
 

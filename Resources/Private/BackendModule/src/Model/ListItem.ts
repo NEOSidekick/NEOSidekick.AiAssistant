@@ -7,7 +7,7 @@ export enum ListItemState {
 }
 
 export interface ListItem {
-    type: 'DocumentNode' | 'Asset',
+    type: 'ContentNode' | 'DocumentNode' | 'Asset',
     state: ListItemState,
     identifier: string,
     readonlyProperties: {

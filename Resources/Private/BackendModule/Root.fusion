@@ -82,11 +82,28 @@ NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index
 }
 
 NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
-    getAction = 'findDocumentNodes'
+    getAction = 'debug'
     updateAction = 'updateNodeProperties'
-    moduleConfiguration = Neos.Fusion:DataStructure {
-        moduleName = 'SeoImageAlternativeText'
-        itemType = 'DocumentNode'
+    moduleConfiguration = Neos.Fusion:Value {
+        defaults = Neos.Fusion:DataStructure {
+            // moduleName is only used for the configuration form text
+            moduleName = 'SeoImageAlternativeText'
+            itemType = 'ContentNode'
+            workspace = 'live'
+            alternativeTextPropertyFilter = null
+            alternativeTextPropertyFilterOptions = ${['none', 'only-empty']}
+            languageDimensionFilter = ${Array.keys(Configuration.setting('Neos.ContentRepository.contentDimensions.' + Configuration.setting('NEOSidekick.AiAssistant.languageDimensionName') + '.presets'))}
+            itemsPerPage = 10
+            actions = Neos.Fusion:DataStructure {
+//                'autoGenerateEmptySeoTitles' = ${{'active': true, 'propertyName': 'titleOverride', 'clientEval': 'ClientEval: !node.properties.titleOverride'}}
+//                'autoGenerateEmptyMetaDescriptions' = ${{'active': true, 'propertyName': 'metaDescription', 'clientEval': 'ClientEval: !node.properties.metaDescription'}}
+//                'autoGenerateExistingSeoTitles' = ${{'active': false, 'propertyName': 'titleOverride', 'clientEval': 'ClientEval: node.properties.titleOverride'}}
+//                'autoGenerateExistingMetaDescriptions' = ${{'active': false, 'propertyName': 'metaDescription', 'clientEval': 'ClientEval: node.properties.metaDescription'}}
+            }
+        }
+        config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.seoImageAltTextGenerator'), (value, key) => value != null)}
+        enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
+        value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs})}
     }
 }
 

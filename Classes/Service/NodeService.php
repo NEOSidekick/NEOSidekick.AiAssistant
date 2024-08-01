@@ -150,6 +150,7 @@ class NodeService extends AbstractNodeService
             throw new InvalidArgumentException('The given workspace does not exist in the database. Please reload the page.', 1713440899886);
         }
 
+        // todo what if we have multiple nested workspaces
         $workspaceChain = array_merge([$workspace], array_values($workspace->getBaseWorkspaces()));
         $queryBuilder = $this->createQueryBuilder($workspaceChain);
         $queryBuilder->andWhere('n.nodeType IN (:includeNodeTypes)');

@@ -1,0 +1,9 @@
+NEOSidekick\AiAssistant\Service\NodeTypeService:
+  properties:
+    cache:
+      object:
+        factoryObjectName: Neos\Flow\Cache\CacheManager
+        factoryMethodName: getCache
+        arguments:
+          1:
+            value: NEOSidekick_AiAssistant_NodeTypeServiceCache

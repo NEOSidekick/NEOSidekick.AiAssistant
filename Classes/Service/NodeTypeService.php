@@ -2,6 +2,8 @@
 
 namespace NEOSidekick\AiAssistant\Service;
 
+use Neos\Cache\Exception;
+use Neos\Cache\Frontend\VariableFrontend;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Arrays;
@@ -14,6 +16,7 @@ class NodeTypeService
 {
     public const ASSET_URI_EXPRESSION = '/SidekickClientEval:\s*AssetUri\(node\.properties\.(\w+)\)/';
     private const ALT_TAG_GENERATOR_MODULE = 'alt_tag_generator';
+    private const CACHE_ENTRY_IDENTIFIER = 'nodeTypesWithImageAlternativeTextOrTitleConfiguration';
 
     /**
      * @Flow\Inject()
@@ -21,12 +24,28 @@ class NodeTypeService
      */
     protected $nodeTypeManager;
 
+    /**
+     * @var VariableFrontend
+     */
+    protected $cache;
+
     public function getNodeTypesWithImageAlternativeTextOrTitleConfiguration(): array
     {
+        if ($this->cache->has(self::CACHE_ENTRY_IDENTIFIER)) {
+            return $this->cache->get(self::CACHE_ENTRY_IDENTIFIER);
+        }
+
         $nodeTypes = $this->nodeTypeManager->getNodeTypes();
         $matchingNodeTypes = $this->findMatchingNodeTypes($nodeTypes);
 
-        return $this->createNodeTypeDtos($matchingNodeTypes);
+        $nodeTypeDtos = $this->createNodeTypeDtos($matchingNodeTypes);
+        try {
+            $this->cache->set(self::CACHE_ENTRY_IDENTIFIER, $nodeTypeDtos);
+        } catch (Exception) {
+            // A failure here should not break the application
+        }
+
+        return $nodeTypeDtos;
     }
 
     private function findMatchingNodeTypes(array $nodeTypes): array

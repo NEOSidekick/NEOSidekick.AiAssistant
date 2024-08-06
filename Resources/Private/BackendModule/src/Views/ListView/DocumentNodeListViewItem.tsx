@@ -155,7 +155,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
 
         return (
             <div className={'neos-row-fluid'} style={{marginBottom: '2rem', opacity: (item.state === ListItemState.Persisted ? '0.5' : '1')}}>
-                <div className={'neos-span8'} style={{position: 'relative', background: '#3f3f3f'}}>
+                <div className={'neos-span8'} style={{position: 'sticky', top: '50px', background: '#3f3f3f'}}>
                     {htmlContent ? null : <FontAwesomeIcon icon={faSpinner} spin={true} style={{position: 'absolute', left: 'calc(50% - 14px)', top: 'calc(50% - 14px)', width: '28px', height: '28px'}}/>}
                     <iframe ref={this.iframeRef} src="about:blank" style={{aspectRatio: '3 / 2', width: '100%'}} />
                 </div>

@@ -5,10 +5,8 @@ import DocumentNodeConfigurationForm from "./DocumentNodeConfigurationForm";
 import AppContext, {AppContextType} from "../../AppContext";
 import {
     AssetModuleConfiguration,
-    ContentNodeModuleConfiguration,
     DocumentNodeModuleConfiguration
 } from "../../Model/ModuleConfiguration";
-import ContentNodeConfigurationForm from "./ContentNodeConfigurationForm";
 
 export default class ConfigurationView extends PureComponent {
     static contextType = AppContext;
@@ -21,8 +19,8 @@ export default class ConfigurationView extends PureComponent {
                 return <AssetConfigurationForm moduleConfiguration={moduleConfiguration as AssetModuleConfiguration}/>;
             case 'DocumentNode':
                 return <DocumentNodeConfigurationForm moduleConfiguration={moduleConfiguration as DocumentNodeModuleConfiguration}/>;
-            case 'ContentNode':
-                return <ContentNodeConfigurationForm moduleConfiguration={moduleConfiguration as ContentNodeModuleConfiguration}/>;
+            default:
+                throw new Error('Unknown item type ' + moduleConfiguration.itemType);
         }
     }
 }

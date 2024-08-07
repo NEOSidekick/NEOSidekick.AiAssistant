@@ -28,7 +28,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
     private canChangeTitleTextValue(): boolean
     {
         const {item, imageProperty} = this.props;
-        return item.state === ListItemState.Initial && imageProperty.titleProperty?.state !== ListItemPropertyState.Generating;
+        return item.state === ListItemState.Initial && imageProperty.titleTextProperty?.state !== ListItemPropertyState.Generating;
     }
 
     private getLabel(): string
@@ -44,9 +44,9 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
     render() {
         const {item, imageProperty} = this.props;
         const alternativeTextPropertySchema = imageProperty.alternativeTextProperty?.propertyName ? this.context.nodeTypes[imageProperty.nodeTypeName]?.properties?.[imageProperty.alternativeTextProperty.propertyName] as PropertySchema : null;
-        const titlePropertySchema = imageProperty.titleProperty?.propertyName ? this.context.nodeTypes[item.nodeTypeName]?.properties?.[imageProperty.titleProperty.propertyName] as PropertySchema : null;
+        const titleTextPropertySchema = imageProperty.titleTextProperty?.propertyName ? this.context.nodeTypes[item.nodeTypeName]?.properties?.[imageProperty.titleTextProperty.propertyName] as PropertySchema : null;
 
-        if (!alternativeTextPropertySchema && !titlePropertySchema) {
+        if (!alternativeTextPropertySchema && !titleTextPropertySchema) {
             return; // ignore properties that do not exist on this node type
         }
 
@@ -74,8 +74,8 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
 
         // todo sidekick configuration for title properties
         let titleTextSidekickConfiguration: TextAreaEditorSidekickConfiguration | null = null;
-        if (titlePropertySchema) {
-            titleTextSidekickConfiguration = produce(titlePropertySchema.ui.inspector.editorOptions, (draft: any) => ({
+        if (titleTextPropertySchema) {
+            titleTextSidekickConfiguration = produce(titleTextPropertySchema.ui.inspector.editorOptions, (draft: any) => ({
                 module: draft.module,
                 userInput: [
                     {
@@ -111,13 +111,13 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
                     updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('alternativeTextProperty', value, state)}/> : null}
                 {titleTextSidekickConfiguration ? <TextAreaEditor
                     disabled={!this.canChangeTitleTextValue()}
-                    property={imageProperty.titleProperty}
-                    propertySchema={titlePropertySchema}
+                    property={imageProperty.titleTextProperty}
+                    propertySchema={titleTextPropertySchema}
                     item={item}
                     htmlContent={this.props.htmlContent}
                     sidekickConfiguration={titleTextSidekickConfiguration}
                     autoGenerateIfActionsMatch={true}
-                    updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('titleProperty', value, state)} /> : null}
+                    updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('titleTextProperty', value, state)} /> : null}
             </div>
         )
     }

@@ -31,6 +31,6 @@ export interface FindImageData {
     imagePropertyName: string;
     alternativeTextPropertyName: string | null;
     alternativeTextPropertyValue: string | null;
-    titlePropertyName: string | null;
-    titlePropertyValue: string | null;
+    titleTextPropertyName: string | null;
+    titleTextPropertyValue: string | null;
 }

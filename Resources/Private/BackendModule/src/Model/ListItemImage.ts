@@ -9,5 +9,5 @@ export interface ListItemImage {
     thumbnailUri: string;
     imagePropertyName: string;
     alternativeTextProperty: ListItemProperty | null;
-    titleProperty: ListItemProperty | null;
+    titleTextProperty: ListItemProperty | null;
 }

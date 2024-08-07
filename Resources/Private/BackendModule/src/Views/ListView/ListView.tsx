@@ -107,13 +107,13 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                         state: ListItemPropertyState.Initial,
                     } as ListItemProperty;
                 }
-                if (image.titlePropertyName) {
-                    newImage.titleProperty = {
-                        propertyName: image.titlePropertyName,
+                if (image.titleTextPropertyName) {
+                    newImage.titleTextProperty = {
+                        propertyName: image.titleTextPropertyName,
                         // todo consider this pattern
                         aliasPropertyName: 'titleText',
-                        initialValue: image.titlePropertyValue,
-                        currentValue: image.titlePropertyValue,
+                        initialValue: image.titleTextPropertyValue,
+                        currentValue: image.titleTextPropertyValue,
                         state: ListItemPropertyState.Initial,
                     } as ListItemProperty;
                 }
@@ -203,7 +203,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             if (item.state === ListItemState.Initial) {
                 hasChanges = hasChanges
                     || !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
-                    || !!Object.values(item.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleProperty?.state === ListItemPropertyState.AiGenerated || image.titleProperty?.state === ListItemPropertyState.UserManipulated);
+                    || !!Object.values(item.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated);
             }
         }
         return hasChanges;
@@ -245,8 +245,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     if (image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated) {
                         accumulator[image.nodeContextPath][image.alternativeTextProperty.propertyName] = image.alternativeTextProperty.currentValue;
                     }
-                    if (image.titleProperty?.state === ListItemPropertyState.AiGenerated || image.titleProperty?.state === ListItemPropertyState.UserManipulated) {
-                        accumulator[image.nodeContextPath][image.titleProperty.propertyName] = image.titleProperty.currentValue;
+                    if (image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated) {
+                        accumulator[image.nodeContextPath][image.titleTextProperty.propertyName] = image.titleTextProperty.currentValue;
                     }
                     return accumulator;
                 }, {});

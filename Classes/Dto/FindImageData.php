@@ -54,12 +54,12 @@ final class FindImageData implements JsonSerializable
     /**
      * @var string|null
      */
-    protected ?string $titlePropertyName;
+    protected ?string $titleTextPropertyName;
 
     /**
      * @var string|null
      */
-    protected ?string $titlePropertyValue;
+    protected ?string $titleTextPropertyValue;
 
     public function __construct(
         string $nodeContextPath,
@@ -70,8 +70,8 @@ final class FindImageData implements JsonSerializable
         string $imagePropertyName,
         ?string $alternativeTextPropertyName,
         ?string $alternativeTextPropertyValue,
-        ?string $titlePropertyName,
-        ?string $titlePropertyValue
+        ?string $titleTextPropertyName,
+        ?string $titleTextPropertyValue
     ) {
         $this->nodeContextPath = $nodeContextPath;
         $this->nodeTypeName = $nodeTypeName;
@@ -81,8 +81,8 @@ final class FindImageData implements JsonSerializable
         $this->imagePropertyName = $imagePropertyName;
         $this->alternativeTextPropertyName = $alternativeTextPropertyName;
         $this->alternativeTextPropertyValue = $alternativeTextPropertyValue;
-        $this->titlePropertyName = $titlePropertyName;
-        $this->titlePropertyValue = $titlePropertyValue;
+        $this->titleTextPropertyName = $titleTextPropertyName;
+        $this->titleTextPropertyValue = $titleTextPropertyValue;
     }
 
     public function getNodeContextPath(): string
@@ -125,14 +125,14 @@ final class FindImageData implements JsonSerializable
         return $this->alternativeTextPropertyValue;
     }
 
-    public function getTitlePropertyName(): ?string
+    public function gettitleTextPropertyName(): ?string
     {
-        return $this->titlePropertyName;
+        return $this->titleTextPropertyName;
     }
 
-    public function getTitlePropertyValue(): ?string
+    public function gettitleTextPropertyValue(): ?string
     {
-        return $this->titlePropertyValue;
+        return $this->titleTextPropertyValue;
     }
     public function jsonSerialize(): array
     {
@@ -145,8 +145,8 @@ final class FindImageData implements JsonSerializable
             'imagePropertyName' => $this->imagePropertyName,
             'alternativeTextPropertyName' => $this->alternativeTextPropertyName,
             'alternativeTextPropertyValue' => $this->alternativeTextPropertyValue,
-            'titlePropertyName' => $this->titlePropertyName,
-            'titlePropertyValue' => $this->titlePropertyValue
+            'titleTextPropertyName' => $this->titleTextPropertyName,
+            'titleTextPropertyValue' => $this->titleTextPropertyValue
         ];
     }
 }

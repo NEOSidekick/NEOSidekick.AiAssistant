@@ -95,9 +95,9 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                     image.alternativeTextProperty.state = ListItemPropertyState.Initial;
                     image.alternativeTextProperty.currentValue = image.alternativeTextProperty.initialValue;
                 }
-                if (image.titleProperty) {
-                    image.titleProperty.state = ListItemPropertyState.Initial;
-                    image.titleProperty.currentValue = image.titleProperty.initialValue;
+                if (image.titleTextProperty) {
+                    image.titleTextProperty.state = ListItemPropertyState.Initial;
+                    image.titleTextProperty.currentValue = image.titleTextProperty.initialValue;
                 }
                 accumulator[contextPath] = image;
                 return accumulator;
@@ -109,7 +109,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         const {item} = this.props;
         return item.state === ListItemState.Initial && (
             !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
-            || !!Object.values(item.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleProperty?.state === ListItemPropertyState.AiGenerated || image.titleProperty?.state === ListItemPropertyState.UserManipulated))
+            || !!Object.values(item.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated))
     }
 
     private renderSaveButtonLabel() {

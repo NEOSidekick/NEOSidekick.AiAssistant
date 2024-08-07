@@ -7,13 +7,15 @@ export interface ModuleConfiguration {
 }
 
 export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
-    moduleName: 'FocusKeyword' | 'SeoTitleAndMetaDescription',
+    moduleName: 'FocusKeyword' | 'SeoTitleAndMetaDescription' | 'SeoImageAlternativeText',
     filter: 'important-pages' | 'custom',
     workspace: string,
     seoPropertiesFilterOptions: string[],
     seoPropertiesFilter: string|null,
     focusKeywordPropertyFilterOptions: string[],
     focusKeywordPropertyFilter: string|null,
+    imageAlternativeTextPropertyFilterOptions: string[],
+    imageAlternativeTextPropertyFilter: string|null,
     baseNodeTypeFilter: string|null,
     languageDimensionFilter: string[],
     nodeTypeFilter: string|null,
@@ -26,21 +28,6 @@ export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
     }
     // TODO This should refactored to include readonlyProperties, editableProperties and custom views
     showSeoDirectives: boolean,
-}
-
-export interface ContentNodeModuleConfiguration extends ModuleConfiguration {
-    moduleName: 'SeoImageAlternativeText',
-    workspace: string,
-    alternativeTextPropertyFilterOptions: string[],
-    alternativeTextPropertyFilter: string|null,
-    languageDimensionFilter: string[],
-    actions: {
-        [key: string]: {
-            active: boolean,
-            propertyName: string,
-            clientEval: string,
-        }
-    }
 }
 
 export interface AssetModuleConfiguration extends ModuleConfiguration {

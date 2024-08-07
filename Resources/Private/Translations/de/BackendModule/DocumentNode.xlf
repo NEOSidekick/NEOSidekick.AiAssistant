@@ -114,6 +114,22 @@
                 <source>Automatically regenerate existing meta descriptions</source>
                 <target>Bestehende Meta-Beschreibungen automatisch neu generieren</target>
             </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyAlternativeTexts">
+                <source>Automatically generate empty alternative texts for images</source>
+                <target>Leere Alternativ-Texte für Bilder automatisch generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyTitleTexts">
+                <source>Automatically generate empty title texts for images</source>
+                <target>Leere Titel-Texte für Bilder automatisch generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingAlternativeTexts">
+                <source>Automatically regenerate existing alternative texts for images</source>
+                <target>Bestehende Alternativ-Texte für Bilder automatisch neu generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingTitleTexts">
+                <source>Automatically regenerate existing title texts for images</source>
+                <target>Bestehende Titel-Texte für Bilder automatisch neu generieren</target>
+            </trans-unit>
             <trans-unit id="listItem.label">
                 <source>Page »{0}«</source>
                 <target>Seite »{0}«</target>

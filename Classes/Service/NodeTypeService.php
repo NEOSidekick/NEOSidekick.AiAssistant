@@ -104,7 +104,7 @@ class NodeTypeService
         foreach ($matchingNodeTypes as $nodeTypeName => $imagePropertyNames) {
             foreach ($imagePropertyNames as $imagePropertyName => $propertyConfiguration) {
                 if ($propertyConfiguration['alternativeTextPropertyName'] || $propertyConfiguration['titleTextPropertyName']) {
-                    $nodeTypeWithImageMetadataSchemaDtos[] = new NodeTypeWithImageMetadataSchemaDto(
+                    $nodeTypeWithImageMetadataSchemaDtos[$nodeTypeName][$imagePropertyName] = new NodeTypeWithImageMetadataSchemaDto(
                         $nodeTypeName,
                         $imagePropertyName,
                         $propertyConfiguration['alternativeTextPropertyName'],

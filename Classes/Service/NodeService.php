@@ -119,8 +119,11 @@ class NodeService extends AbstractNodeService
             if ($this->isNodeHidden($node)) {
                 continue;
             }
-            $result[] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
+            $result[$node->getContextPath()] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
         }
+
+        // The result should be sorted by the length of the node path, so that the most specific nodes are first.
+        ksort($result);
 
         return $result;
     }
@@ -187,7 +190,7 @@ class NodeService extends AbstractNodeService
                 continue;
             }
 
-            $result[] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
+            $result[$node->getContextPath()] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
         }
 
         return $result;

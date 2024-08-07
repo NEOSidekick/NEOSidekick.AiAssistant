@@ -44,5 +44,7 @@ export interface DocumentNodeListItem extends ListItem {
     editableProperties: {
         [key: string]: ListItemProperty
     },
-    images: ListItemImage[];
+    images: {
+        [key: string]: ListItemImage
+    };
 }

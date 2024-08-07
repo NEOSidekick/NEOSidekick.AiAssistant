@@ -18,6 +18,19 @@ export interface FindDocumentNodeData {
     properties?:  {
         [key: string]: string | number | boolean
     };
-    images?: object[];
+    images?: FindImageData[];
     language: string;
+}
+
+export interface FindImageData {
+    nodeTypeName: string;
+    nodeContextPath: string;
+    filename: string;
+    fullsizeUri: string;
+    thumbnailUri: string | null;
+    imagePropertyName: string;
+    alternativeTextPropertyName: string | null;
+    alternativeTextPropertyValue: string | null;
+    titlePropertyName: string | null;
+    titlePropertyValue: string | null;
 }

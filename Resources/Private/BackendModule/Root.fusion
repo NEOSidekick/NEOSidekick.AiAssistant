@@ -82,23 +82,28 @@ NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index
 }
 
 NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
-    getAction = 'debug'
+    getAction = 'findDocumentNodesWithImages'
     updateAction = 'updateNodeProperties'
     moduleConfiguration = Neos.Fusion:Value {
         defaults = Neos.Fusion:DataStructure {
             // moduleName is only used for the configuration form text
             moduleName = 'SeoImageAlternativeText'
-            itemType = 'ContentNode'
+            filter = 'important-pages'
+            itemType = 'DocumentNode'
             workspace = 'live'
             alternativeTextPropertyFilter = null
             alternativeTextPropertyFilterOptions = ${['none', 'only-empty']}
             languageDimensionFilter = ${Array.keys(Configuration.setting('Neos.ContentRepository.contentDimensions.' + Configuration.setting('NEOSidekick.AiAssistant.languageDimensionName') + '.presets'))}
+            nodeTypeFilter = null
+            baseNodeTypeFilter = 'Neos.Seo:SeoMetaTagsMixin'
             itemsPerPage = 10
             readonlyProperties = ${[]}
             editableProperties = ${[]}
             actions = Neos.Fusion:DataStructure {
-                'autoGenerateEmptyAlternativeTexts' = ${{'active': true}}
-                'autoGenerateExistingAlternativeTexts' = ${{'active': false}}
+                'autoGenerateEmptyAlternativeTexts' = ${{'active': true, 'propertyName': 'alternativeText', 'clientEval': 'ClientEval: !property.currentValue'}}
+                'autoGenerateEmptyTitleTexts' = ${{'active': true, 'propertyName': 'titleText', 'clientEval': 'ClientEval: !property.currentValue'}}
+                'autoGenerateExistingAlternativeTexts' = ${{'active': false, 'propertyName': 'alternativeText', 'clientEval': 'ClientEval: property.currentValue'}}
+                'autoGenerateExistingTitleTexts' = ${{'active': false, 'propertyName': 'titleText', 'clientEval': 'ClientEval: property.currentValue'}}
             }
         }
         config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.seoImageAltTextGenerator'), (value, key) => value != null)}

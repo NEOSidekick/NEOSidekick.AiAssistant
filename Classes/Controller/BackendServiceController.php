@@ -23,8 +23,9 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
 use NEOSidekick\AiAssistant\Service\AssetService;
-use NEOSidekick\AiAssistant\Service\ContentNodeService;
+use NEOSidekick\AiAssistant\Service\NodeWithImageService;
 use NEOSidekick\AiAssistant\Service\NodeService;
+use NEOSidekick\AiAssistant\Service\NodeTypeService;
 use Psr\Http\Client\ClientExceptionInterface;
 use Throwable;
 
@@ -47,9 +48,15 @@ class BackendServiceController extends ActionController
 
     /**
      * @Flow\Inject
-     * @var ContentNodeService
+     * @var NodeWithImageService
      */
     protected $contentNodeService;
+
+    /**
+     * @Flow\Inject
+     * @var NodeTypeService
+     */
+    protected $nodeTypeService;
 
     /**
      * @var string[]
@@ -194,10 +201,46 @@ class BackendServiceController extends ActionController
             JSON_THROW_ON_ERROR);
     }
 
-    public function debugAction(): string
+    public function initializeFindDocumentNodesWithImagesAction(): void
     {
-        $filter = new FindContentNodesFilter('live', 'none', 'de');
-        return json_encode($this->contentNodeService->findDocumentNodesHavingChildNodes($filter, $this->controllerContext), JSON_THROW_ON_ERROR);
+        /** @noinspection PhpUnhandledExceptionInspection */
+        $this->arguments->getArgument('configuration')
+            ->getPropertyMappingConfiguration()
+            ->skipUnknownProperties()
+            ->allowProperties(
+                'filter',
+                'workspace',
+                'seoPropertiesFilter',
+                'focusKeywordPropertyFilter',
+                'languageDimensionFilter',
+                'nodeTypeFilter'
+            );
+    }
+
+    /**
+     * @param FindDocumentNodesFilter $configuration
+     *
+     * @return string
+     * @throws ClientExceptionInterface
+     * @throws Exception
+     * @throws IllegalObjectTypeException
+     * @throws JsonException
+     * @throws MissingActionNameException
+     * @throws NoSiteException
+     * @throws NodeException
+     * @throws NodeTypeNotFoundException
+     * @throws \Neos\Flow\Property\Exception
+     * @throws \Neos\Flow\Security\Exception
+     * @throws \Neos\Neos\Exception
+     */
+    public function findDocumentNodesWithImagesAction(FindDocumentNodesFilter $configuration): string
+    {
+        if ($configuration->getFilter() === 'important-pages') {
+            $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext);
+        } else {
+            $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
+        }
+        return json_encode($this->contentNodeService->findDocumentNodesHavingChildNodesWithImages($configuration, $resultCollection, $this->controllerContext), JSON_THROW_ON_ERROR);
     }
 
     /**

@@ -2,6 +2,7 @@ import AiAssistantError from "../AiAssistantError";
 import {Node} from "@neos-project/neos-ts-interfaces";
 import {selectors} from "@neos-project/neos-ui-redux-store";
 import {DocumentNodeListItem} from "../Model/ListItem";
+import {ListItemProperty} from "../Model/ListItemProperty";
 
 export class ContentService {
     private static instance: ContentService | null = null;
@@ -24,9 +25,9 @@ export class ContentService {
         return this.processObjectWithClientEval(obj, this.createFakePartialNode(item), this.createFakeParentNode());
     }
 
-    processClientEvalFromDocumentNodeListItem = async (value: any, item: DocumentNodeListItem, htmlContent: string): Promise<any> => {
+    processClientEvalFromDocumentNodeListItem = async (value: any, item: DocumentNodeListItem, property: ListItemProperty, htmlContent: string): Promise<any> => {
         this.currentProcessingHtmlContent = htmlContent;
-        return this.processClientEval(value, this.createFakePartialNode(item), this.createFakeParentNode());
+        return this.processClientEval(value, this.createFakePartialNode(item), this.createFakeParentNode(), property);
     }
 
 
@@ -37,7 +38,7 @@ export class ContentService {
      *
      */
 
-    processClientEval = async (value: any, node?: Node, parentNode?: Node): Promise<string> => {
+    processClientEval = async (value: any, node?: Node, parentNode?: Node, property?: ListItemProperty): Promise<string> => {
         if (typeof value === 'string' && (value.startsWith('SidekickClientEval:') || value.startsWith('ClientEval:'))) {
             try {
                 if (!node || !parentNode) {
@@ -60,8 +61,8 @@ export class ContentService {
                 }
                 const AsyncFunction = Object.getPrototypeOf(async function () {
                 }).constructor
-                const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
-                return await evaluateFn(node, parentNode, documentTitle, documentContent, AssetUri)
+                const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri,property', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
+                return await evaluateFn(node, parentNode, documentTitle, documentContent, AssetUri, property)
             } catch (e) {
                 if (e instanceof AiAssistantError) {
                     throw e

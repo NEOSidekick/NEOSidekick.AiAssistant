@@ -10,7 +10,7 @@ import {Draft, produce} from "immer";
 import PureComponent from "../../Components/PureComponent";
 import AppContext, {AppContextType} from "../../AppContext";
 import {ModuleConfiguration} from "../../Model/ModuleConfiguration";
-import {FindAssetData, FindDocumentNodeData} from "../../Dto/ListItemDto";
+import {FindAssetData, FindDocumentNodeData, FindImageData} from "../../Dto/ListItemDto";
 import Alert from "../../Components/Alert";
 import ProgressCircles from "../../Components/ProgressCircles";
 import ProgressBar from "../../Components/ProgressBar";
@@ -48,7 +48,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         const backend: NeosBackendService = NeosBackendService.getInstance()
         try {
             const items: FindAssetData[] | FindDocumentNodeData[] = await backend.getItems(this.context.moduleConfiguration);
-            const processedItems = items.reduce<ListItems>((accumulator: ListItems, item: FindAssetData | FindDocumentNodeData) => {
+            const processedItems = Object.values(items).reduce<ListItems>((accumulator: ListItems, item: FindAssetData | FindDocumentNodeData) => {
                 accumulator.push(this.postprocessListItem(item, this.context.moduleConfiguration));
                 return accumulator;
             }, [] as ListItems);
@@ -88,18 +88,20 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 } as ListItemProperty;
                 return accumulator;
             }, {}),
-            images: (item.images || []).reduce((accumulator, image) => {
+            images: (item.images || []).reduce((accumulator: ListItemImage[], image: FindImageData): ListItemImage[] => {
                 const newImage = {
-                    "nodeType": image.nodeType,
-                    "nodeContextPath": image.nodeContextPath,
-                    "label": image.label,
-                    "filename": image.filename,
-                    "fullsizeUri": image.fullsizeUri,
-                    "thumbnailUri": image.thumbnailUri
+                    nodeTypeName: image.nodeTypeName,
+                    nodeContextPath: image.nodeContextPath,
+                    imagePropertyName: image.imagePropertyName,
+                    filename: image.filename,
+                    fullsizeUri: image.fullsizeUri,
+                    thumbnailUri: image.thumbnailUri
                 } as ListItemImage;
                 if (image.alternativeTextPropertyName) {
                     newImage.alternativeTextProperty = {
                         propertyName: image.alternativeTextPropertyName,
+                        // todo consider this pattern
+                        aliasPropertyName: 'alternativeText',
                         initialValue: image.alternativeTextPropertyValue,
                         currentValue: image.alternativeTextPropertyValue,
                         state: ListItemPropertyState.Initial,
@@ -108,6 +110,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 if (image.titlePropertyName) {
                     newImage.titleProperty = {
                         propertyName: image.titlePropertyName,
+                        // todo consider this pattern
+                        aliasPropertyName: 'titleText',
                         initialValue: image.titlePropertyValue,
                         currentValue: image.titlePropertyValue,
                         state: ListItemPropertyState.Initial,
@@ -238,10 +242,10 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
 
                 const images = Object.values(item.images).reduce((accumulator, image: ListItemImage) => {
                     accumulator[image.nodeContextPath] = {};
-                    if (image.alternativeTextProperty.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty.state === ListItemPropertyState.UserManipulated) {
+                    if (image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated) {
                         accumulator[image.nodeContextPath][image.alternativeTextProperty.propertyName] = image.alternativeTextProperty.currentValue;
                     }
-                    if (image.titleProperty.state === ListItemPropertyState.AiGenerated || image.titleProperty.state === ListItemPropertyState.UserManipulated) {
+                    if (image.titleProperty?.state === ListItemPropertyState.AiGenerated || image.titleProperty?.state === ListItemPropertyState.UserManipulated) {
                         accumulator[image.nodeContextPath][image.titleProperty.propertyName] = image.titleProperty.currentValue;
                     }
                     return accumulator;

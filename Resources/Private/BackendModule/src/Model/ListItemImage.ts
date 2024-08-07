@@ -2,11 +2,12 @@ import {ListItemProperty} from "./ListItemProperty";
 
 export interface ListItemImage {
     label: string;
-    nodeType: string;
+    nodeTypeName: string;
     nodeContextPath: string;
     filename: string;
     fullsizeUri: string;
     thumbnailUri: string;
+    imagePropertyName: string;
     alternativeTextProperty: ListItemProperty | null;
     titleProperty: ListItemProperty | null;
 }

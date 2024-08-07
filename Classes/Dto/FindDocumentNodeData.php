@@ -47,9 +47,9 @@ final class FindDocumentNodeData implements JsonSerializable
     protected string $language;
 
     /**
-     * @var array<FindContentNodeData>
+     * @var array<FindImageData>
      */
-    protected array $relevantContentNodes;
+    protected array $images;
 
     /**
      * @param string $identifier
@@ -59,7 +59,7 @@ final class FindDocumentNodeData implements JsonSerializable
      * @param string $previewUri
      * @param array  $properties
      * @param string $language
-     * @param array $relevantContentNodes
+     * @param array $images
      */
     public function __construct(
         string $identifier,
@@ -69,7 +69,7 @@ final class FindDocumentNodeData implements JsonSerializable
         string $previewUri,
         array $properties,
         string $language,
-        array $relevantContentNodes = []
+        array $images = []
     ) {
         $this->identifier = $identifier;
         $this->nodeContextPath = $nodeContextPath;
@@ -78,7 +78,7 @@ final class FindDocumentNodeData implements JsonSerializable
         $this->previewUri = $previewUri;
         $this->properties = $properties;
         $this->language = $language;
-        $this->relevantContentNodes = $relevantContentNodes;
+        $this->images = $images;
     }
 
     public function getIdentifier(): string
@@ -116,12 +116,12 @@ final class FindDocumentNodeData implements JsonSerializable
         return $this->language;
     }
 
-    public function getRelevantContentNodes(): array
+    public function getImages(): array
     {
-        return $this->relevantContentNodes;
+        return $this->images;
     }
 
-    public function withAddedRelevantContentNode(FindContentNodeData $contentNode): self
+    public function withAddedImage(FindImageData $findImageData): self
     {
         return new self(
             $this->identifier,
@@ -131,7 +131,7 @@ final class FindDocumentNodeData implements JsonSerializable
             $this->previewUri,
             $this->properties,
             $this->language,
-            [...$this->relevantContentNodes, $contentNode]
+            [...$this->images, $findImageData]
         );
     }
 
@@ -172,7 +172,7 @@ final class FindDocumentNodeData implements JsonSerializable
             'previewUri' => $this->previewUri,
             'properties' => $this->properties,
             'language' => $this->language,
-            'relevantContentNodes' => $this->relevantContentNodes
+            'images' => $this->images
         ];
     }
 }

@@ -204,7 +204,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                                 item={item}
                                 imageProperty={imageProperty}
                                 htmlContent={htmlContent}
-                                updateItemProperty={(propertyName: string, value: string, state: ListItemPropertyState) => this.updateItemImageProperty(imageProperty.nodeContextPath, propertyName, value, state)}
+                                updateItemProperty={(propertyName: string, propertyValue: string, propertyState: ListItemPropertyState) => this.updateItemImageProperty(imageProperty.nodeContextPath, propertyName, propertyValue, propertyState)}
                             />
                         )
                     })}

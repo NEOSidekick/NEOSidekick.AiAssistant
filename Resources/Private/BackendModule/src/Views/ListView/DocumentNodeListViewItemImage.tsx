@@ -108,6 +108,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
                     htmlContent={this.props.htmlContent}
                     sidekickConfiguration={alternativeTextSidekickConfiguration}
                     autoGenerateIfActionsMatch={true}
+                    showResetButton={true}
                     updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('alternativeTextProperty', value, state)}/> : null}
                 {titleTextSidekickConfiguration ? <TextAreaEditor
                     disabled={!this.canChangeTitleTextValue()}
@@ -117,6 +118,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
                     htmlContent={this.props.htmlContent}
                     sidekickConfiguration={titleTextSidekickConfiguration}
                     autoGenerateIfActionsMatch={true}
+                    showResetButton={true}
                     updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('titleTextProperty', value, state)} /> : null}
             </div>
         )

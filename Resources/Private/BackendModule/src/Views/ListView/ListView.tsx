@@ -203,7 +203,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             if (item.state === ListItemState.Initial) {
                 hasChanges = hasChanges
                     || !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
-                    || !!Object.values(item.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated);
+                    || !!Object.values((item as DocumentNodeListItem)?.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated);
             }
         }
         return hasChanges;
@@ -240,16 +240,21 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     return accumulator;
                 }, {});
 
-                const images = Object.values(item.images).reduce((accumulator, image: ListItemImage) => {
-                    accumulator[image.nodeContextPath] = {};
-                    if (image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated) {
-                        accumulator[image.nodeContextPath][image.alternativeTextProperty.propertyName] = image.alternativeTextProperty.currentValue;
-                    }
-                    if (image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated) {
-                        accumulator[image.nodeContextPath][image.titleTextProperty.propertyName] = image.titleTextProperty.currentValue;
-                    }
-                    return accumulator;
-                }, {});
+                let images: {
+                    [key: string]: ListItemImage;
+                };
+                if (item.type === 'DocumentNode') {
+                    images = Object.values((item as DocumentNodeListItem).images).reduce((accumulator, image: ListItemImage) => {
+                        accumulator[image.nodeContextPath] = {};
+                        if (image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated) {
+                            accumulator[image.nodeContextPath][image.alternativeTextProperty.propertyName] = image.alternativeTextProperty.currentValue;
+                        }
+                        if (image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated) {
+                            accumulator[image.nodeContextPath][image.titleTextProperty.propertyName] = image.titleTextProperty.currentValue;
+                        }
+                        return accumulator;
+                    }, {});
+                }
 
                 switch (item.type) {
                     case 'Asset':

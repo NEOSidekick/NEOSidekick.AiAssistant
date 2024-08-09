@@ -4,7 +4,7 @@ import {ListItemProperty, ListItemPropertyState, PropertySchema} from "../../Mod
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faMagic, faSpinner, faUndo} from "@fortawesome/free-solid-svg-icons";
 import {SidekickApiService} from "../../Service/SidekickApiService";
-import { ContentService } from "../../Service/ContentService";
+import {ContentService} from "../../Service/ContentService";
 import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
 import Alert from "../Alert";
 import AppContext, {AppContextType} from "../../AppContext";

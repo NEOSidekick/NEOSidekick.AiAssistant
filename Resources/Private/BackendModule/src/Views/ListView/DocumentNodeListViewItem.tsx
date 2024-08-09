@@ -49,6 +49,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         propertyName: string,
         propertyValue: any,
         propertyState: ListItemPropertyState
+
     ) {
         const {updateItem} = this.props;
         const documentNodeIdentifier = this.props.item.identifier;
@@ -62,18 +63,26 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                 } as ListItemProperty;
             })
         });
-
     }
 
-    private updateItemImageProperty(contextPath: string, propertyName: string, propertyValue: any, state: ListItemPropertyState) {
-        const {updateItem, item} = this.props;
-        updateItem(produce(item, (draft: Draft<DocumentNodeListItem>) => {
-            draft.images[contextPath][propertyName] = {
-                ...draft.images[contextPath][propertyName],
-                state: (state !== ListItemPropertyState.Generating && draft.images[contextPath][propertyName].initialValue === propertyValue) ? ListItemPropertyState.Initial : state,
-                currentValue: propertyValue
-            } as ListItemProperty;
-        }));
+    private updateItemImageProperty(
+        nodeWithImageContextPath: string,
+        nodeWithImagePropertyName: string,
+        nodeWithImageNewPropertyValue: any,
+        nodeWithImageNewPropertyState: ListItemPropertyState
+    ) {
+        const {updateItem} = this.props;
+        const documentNodeIdentifier = this.props.item.identifier;
+        updateItem((state: Readonly<ListViewState>) => {
+            const item = getItemByIdentifier(state, documentNodeIdentifier);
+            return produce(item, (draft: Draft<DocumentNodeListItem>) => {
+                draft.images[nodeWithImageContextPath][nodeWithImagePropertyName] = {
+                    ...draft.images[nodeWithImageContextPath][nodeWithImagePropertyName],
+                    state: (nodeWithImageNewPropertyState !== ListItemPropertyState.Generating && draft.images[nodeWithImageContextPath][nodeWithImagePropertyName].initialValue === nodeWithImageNewPropertyValue) ? ListItemPropertyState.Initial : nodeWithImageNewPropertyState,
+                    currentValue: nodeWithImageNewPropertyValue
+                } as ListItemProperty;
+            });
+        });
     }
 
     private discard(): void {

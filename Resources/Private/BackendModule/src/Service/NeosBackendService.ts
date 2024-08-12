@@ -91,7 +91,7 @@ export default class NeosBackendService {
             const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
             return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
         } else if (moduleConfiguration.itemType === 'DocumentNode') {
-            let {moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
+            let {moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, imagePropertiesFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
             if (filter === 'important-pages') {
                 switch(moduleName) {
                     case 'FocusKeyword':
@@ -107,6 +107,7 @@ export default class NeosBackendService {
                 workspace,
                 seoPropertiesFilter: seoPropertiesFilter || 'none',
                 focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',
+                imagePropertiesFilter: imagePropertiesFilter || 'none',
                 languageDimensionFilter: languageDimensionFilter || [],
                 nodeTypeFilter: nodeTypeFilter || ''
             } as FindDocumentNodesFilter;

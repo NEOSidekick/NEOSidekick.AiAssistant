@@ -135,10 +135,6 @@ class NodeWithImageService extends AbstractNodeService
 
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
 
-//        $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, static function(NodeData $nodeData) use ($filter) {
-//            return self::nodeMatchesPropertyFilter($nodeData, $filter);
-//        });
-
         $result = $findDocumentNodeDataDtos;
         foreach ($itemsReducedByWorkspaceChain as $item) {
             $closestAggregate = $this->findClosestAggregate($item);
@@ -158,6 +154,10 @@ class NodeWithImageService extends AbstractNodeService
             $imagePropertiesForNodeType = $nodeTypeSchemaDtos[$contentNode->getNodeType()->getName()];
             /** @var NodeTypeWithImageMetadataSchemaDto $schema */
             foreach ($imagePropertiesForNodeType as $schema) {
+                if (!self::nodeMatchesPropertyFilter($item, $filter, $schema)) {
+                    continue;
+                }
+
                 $findImageData = $this->findImageDataFactory->createFromNodeAndSchema($contentNode, $schema, $controllerContext);
                 if (!$findImageData) {
                     continue;
@@ -190,25 +190,30 @@ class NodeWithImageService extends AbstractNodeService
     }
 
     /**
-     * todo to be implemented
-     *
-     * @param NodeData               $nodeData
-     * @param FindContentNodesFilter $filter
+     * @param NodeData                           $nodeData
+     * @param FindDocumentNodesFilter            $filter
+     * @param NodeTypeWithImageMetadataSchemaDto $schema
      *
      * @return bool
      * @throws NodeException
      */
-    private static function nodeMatchesPropertyFilter(NodeData $nodeData, FindContentNodesFilter $filter)
+    private static function nodeMatchesPropertyFilter(NodeData $nodeData, FindDocumentNodesFilter $filter, NodeTypeWithImageMetadataSchemaDto $schema): bool
     {
-        // todo replace with extracted property name from configuration
-        $alternativeTextPropertyMatchesFilter = match($filter->getAlternativeTextFilter()) {
+        $alternativeTextPropertyName = $schema->getAlternativeTextPropertyName();
+        $alternativeTextPropertyValue = ($alternativeTextPropertyName && $nodeData->hasProperty($alternativeTextPropertyName)) ? $nodeData->getProperty($alternativeTextPropertyName) : null;
+        $titleTextPropertyName = $schema->getTitleTextPropertyName();
+        $titleTextPropertyValue = ($titleTextPropertyName && $nodeData->hasProperty($titleTextPropertyName)) ? $nodeData->getProperty($titleTextPropertyName) : null;
+        $propertyValuesMatchFilter = match($filter->getImagePropertiesFilter()) {
             'none' => true,
-            'only-empty' => !$nodeData->hasProperty('alternativeText') || $nodeData->getProperty('alternativeText') !== '',
+            'only-empty-alternative-text-or-title-text' => empty($alternativeTextPropertyValue) || empty($titleTextPropertyValue),
+            'only-empty-alternative-text' => empty($alternativeTextPropertyValue),
+            'only-empty-title-text' => empty($titleTextPropertyValue),
+            'only-existing-alternative-text' => !empty($alternativeTextPropertyValue),
+            'only-existing-title-text' => !empty($titleTextPropertyValue),
         };
 
-        // todo replace with extracted property name from configuration
-        $imagePropertyIsNotEmpty = $nodeData->hasProperty('image') && $nodeData->getProperty('image') !== null;
+        $imagePropertyIsNotEmpty = $nodeData->hasProperty($schema->getImagePropertyName()) && $nodeData->getProperty($schema->getImagePropertyName()) !== null;
 
-        return $alternativeTextPropertyMatchesFilter && $imagePropertyIsNotEmpty;
+        return $propertyValuesMatchFilter && $imagePropertyIsNotEmpty;
     }
 }

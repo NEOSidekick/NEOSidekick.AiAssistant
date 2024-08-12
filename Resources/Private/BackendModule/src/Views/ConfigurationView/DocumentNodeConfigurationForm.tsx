@@ -99,6 +99,21 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         )
     }
 
+    private renderImagePropertiesFilterField() {
+        const {moduleConfiguration} = this.props;
+        return ((moduleConfiguration.enforceConfigs.includes('imagePropertiesFilter') || !moduleConfiguration.imagePropertiesFilterOptions?.length) ? null :
+                <SelectField
+                    label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.imagePropertiesFilter.label', 'Restrict by image properties')}
+                    value={moduleConfiguration.imagePropertiesFilter}
+                    onChange={e => this.context.updateModuleConfiguration({imagePropertiesFilter: e.target.value})}
+                    options={moduleConfiguration.imagePropertiesFilterOptions.reduce((acc, imagePropertiesFilter) => {
+                        acc[imagePropertiesFilter] = this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.imagePropertiesFilter.' + imagePropertiesFilter, imagePropertiesFilter);
+                        return acc;
+                    }, {})}
+                />
+        )
+    }
+
     private renderActions() {
         const {actions} = this.props.moduleConfiguration;
         if (!Object.keys(actions).length) {
@@ -193,6 +208,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
                             {this.renderWorkspaceField()}
                             {this.renderLanguageDimensionField()}
                             {this.renderSeoPropertiesFilterField()}
+                            {this.renderImagePropertiesFilterField()}
                             {this.renderFocusKeywordFilterField()}
                             <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>
                             <ItemsPerPageField moduleConfiguration={moduleConfiguration}

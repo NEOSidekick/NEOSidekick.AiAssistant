@@ -2,7 +2,7 @@ import PureComponent from "../PureComponent";
 import React from "react";
 import {ListItemProperty, ListItemPropertyState, PropertySchema} from "../../Model/ListItemProperty";
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
-import {faMagic, faSpinner} from "@fortawesome/free-solid-svg-icons";
+import {faMagic, faSpinner, faUndo} from "@fortawesome/free-solid-svg-icons";
 import {SidekickApiService} from "../../Service/SidekickApiService";
 import { ContentService } from "../../Service/ContentService";
 import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
@@ -22,6 +22,7 @@ export interface TextAreaEditorProps {
     showGenerateButton?: boolean,
     rows?: number,
     marginBottom?: string,
+    showResetButton?: boolean,
 }
 
 export interface TextAreaEditorState {
@@ -165,7 +166,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
     }
 
     render () {
-        const {item, property, propertySchema, disabled, showGenerateButton, rows, marginBottom} = this.props;
+        const {item, property, propertySchema, disabled, showGenerateButton, rows, marginBottom, showResetButton} = this.props;
         const {placeholder, generatedChoices, errorMessage} = this.state;
         const maxlength = propertySchema?.validation ? propertySchema.validation['Neos.Neos/Validation/StringLengthValidator']?.maximum : null;
         const id = 'field-' + (Math.random() * 1000);
@@ -209,14 +210,24 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
                             {suggestion}
                         </button>
                     ))}
-                    {showGenerateButton && <button
-                        className={'neos-button neos-button-secondary'}
-                        style={{marginTop: '3px', width: '100%'}}
-                        disabled={disabled}
-                        onClick={() => this.generateValue()}>
-                        {this.translationService.translate('NEOSidekick.AiAssistant:Main:generateWithSidekick', 'Generate with Sidekick')}&nbsp;
-                        {this.renderIcon(property.state === ListItemPropertyState.Generating)}
-                    </button>}
+                    <div style={{display: 'flex', flexDirection: 'row', alignItems: 'stretch', gap: '3px'}}>
+                        {showResetButton && <button
+                            className={'neos-button neos-button-secondary'}
+                            style={{marginTop: '3px', width: '100%'}}
+                            disabled={disabled || property.state === ListItemPropertyState.Initial}
+                            onClick={() => this.props.updateItemProperty(this.props.property.initialValue, ListItemPropertyState.Initial)}>
+                            {this.translationService.translate('NEOSidekick.AiAssistant:Main:reset', 'Reset')}&nbsp;
+                            <FontAwesomeIcon icon={faUndo} />
+                        </button>}
+                        {showGenerateButton && <button
+                            className={'neos-button neos-button-secondary'}
+                            style={{marginTop: '3px', width: '100%'}}
+                            disabled={disabled}
+                            onClick={() => this.generateValue()}>
+                            {this.translationService.translate('NEOSidekick.AiAssistant:Main:generate', 'Generate')}&nbsp;
+                            {this.renderIcon(property.state === ListItemPropertyState.Generating)}
+                        </button>}
+                    </div>
                     {errorMessage && <Alert message={errorMessage}/>}
                 </div>
             </div>

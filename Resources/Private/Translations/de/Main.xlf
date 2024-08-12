@@ -26,6 +26,10 @@
                 <source>Page {0} of {1}</source>
                 <target xml:lang="de">Seite {0} von {1}</target>
             </trans-unit>
+            <trans-unit id="reset">
+                <source>Reset</source>
+                <target>Zurücksetzen</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

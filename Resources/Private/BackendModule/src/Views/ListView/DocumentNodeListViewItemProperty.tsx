@@ -85,6 +85,8 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                         htmlContent={this.props.htmlContent}
                         updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty(value, state)}
                         autoGenerateIfActionsMatch={true}
+                        showGenerateButton={!readonly}
+                        showResetButton={!readonly}
                     />
                 )
             default:

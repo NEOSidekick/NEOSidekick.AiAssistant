@@ -101,6 +101,28 @@
             <trans-unit id="listItem.label">
                 <source>Page »{0}«</source>
             </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.label">
+                <source>Restrict by image properties</source>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.none">
+                <source>None</source>
+            </trans-unit>
+            <!--  'only-empty-alternative-text-or-title-text', 'only-empty-alternative-text', 'only-existing-alternative-text', 'only-empty-title-text', 'only-existing-title-text'-->
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-alternative-text-or-title-text">
+                <source>Only without alternative text or title text</source>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-alternative-text">
+                <source>Only without alternative text</source>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-title-text">
+                <source>Only without title text</source>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-existing-alternative-text">
+                <source>Only with alternative text</source>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-existing-title-text">
+                <source>Only with title text</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

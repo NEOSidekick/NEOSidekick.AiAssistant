@@ -66,7 +66,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
     }
 
     private updateItemImageProperty(
-        nodeWithImageContextPath: string,
+        nodeWithImageContextPathAndPropertyName: string,
         nodeWithImagePropertyName: string,
         nodeWithImageNewPropertyValue: any,
         nodeWithImageNewPropertyState: ListItemPropertyState
@@ -76,9 +76,9 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         updateItem((state: Readonly<ListViewState>) => {
             const item = getItemByIdentifier(state, documentNodeIdentifier);
             return produce(item, (draft: Draft<DocumentNodeListItem>) => {
-                draft.images[nodeWithImageContextPath][nodeWithImagePropertyName] = {
-                    ...draft.images[nodeWithImageContextPath][nodeWithImagePropertyName],
-                    state: (nodeWithImageNewPropertyState !== ListItemPropertyState.Generating && draft.images[nodeWithImageContextPath][nodeWithImagePropertyName].initialValue === nodeWithImageNewPropertyValue) ? ListItemPropertyState.Initial : nodeWithImageNewPropertyState,
+                draft.images[nodeWithImageContextPathAndPropertyName][nodeWithImagePropertyName] = {
+                    ...draft.images[nodeWithImageContextPathAndPropertyName][nodeWithImagePropertyName],
+                    state: (nodeWithImageNewPropertyState !== ListItemPropertyState.Generating && draft.images[nodeWithImageContextPathAndPropertyName][nodeWithImagePropertyName].initialValue === nodeWithImageNewPropertyValue) ? ListItemPropertyState.Initial : nodeWithImageNewPropertyState,
                     currentValue: nodeWithImageNewPropertyValue
                 } as ListItemProperty;
             });
@@ -204,7 +204,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                                 item={item}
                                 imageProperty={imageProperty}
                                 htmlContent={htmlContent}
-                                updateItemProperty={(propertyName: string, propertyValue: string, propertyState: ListItemPropertyState) => this.updateItemImageProperty(imageProperty.nodeContextPath, propertyName, propertyValue, propertyState)}
+                                updateItemProperty={(propertyName: string, propertyValue: string, propertyState: ListItemPropertyState) => this.updateItemImageProperty(imageProperty.nodeContextPathWithProperty, propertyName, propertyValue, propertyState)}
                             />
                         )
                     })}

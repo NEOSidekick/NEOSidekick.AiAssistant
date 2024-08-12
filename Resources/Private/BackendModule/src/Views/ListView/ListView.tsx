@@ -92,6 +92,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 const newImage = {
                     nodeTypeName: image.nodeTypeName,
                     nodeContextPath: image.nodeContextPath,
+                    nodeContextPathWithProperty: image.nodeContextPath + '#' + image.imagePropertyName,
                     imagePropertyName: image.imagePropertyName,
                     filename: image.filename,
                     fullsizeUri: image.fullsizeUri,
@@ -117,7 +118,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                         state: ListItemPropertyState.Initial,
                     } as ListItemProperty;
                 }
-                accumulator[newImage.nodeContextPath] = newImage;
+                accumulator[newImage.nodeContextPathWithProperty] = newImage;
                 return accumulator;
             }, {})
         };

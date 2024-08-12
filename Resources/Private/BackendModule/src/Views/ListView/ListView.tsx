@@ -15,6 +15,10 @@ import Alert from "../../Components/Alert";
 import ProgressCircles from "../../Components/ProgressCircles";
 import ProgressBar from "../../Components/ProgressBar";
 
+export function getItemByIdentifier(state: ListViewState, identifier: string) {
+    return Object.values(state.items).find(item => item.identifier === identifier);
+}
+
 export default class ListView extends PureComponent<ListViewProps, ListViewState> {
     static contextType = AppContext;
     context: AppContextType;
@@ -131,12 +135,13 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 <ListViewItem
                     key={item.identifier}
                     item={item}
-                    updateItem={(newItem) => this.updateItem(newItem)}
+                    updateItem={(newItemProducer: (state: Readonly<ListViewState>) => ListItem) => this.updateItem(newItemProducer)}
                     persistItem={(item: ListItem) => this.persistItems([item])}/>)]
     }
 
-    private updateItem(newItem: ListItem) {
+    private updateItem(newItemProducer: (state: Readonly<ListViewState>) => ListItem) {
         this.setState(state => {
+            const newItem = newItemProducer(state);
             const index = Object.values(state.items).findIndex(item => item.identifier === newItem.identifier)
             const items = produce(state.items, (draft: Draft<ListItem>) => {
                 draft[index] = newItem
@@ -174,9 +179,12 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
     private async persistItems(items: ListItem[]) {
         const itemsToPersist = items.filter(item => item.state === ListItemState.Initial);
         itemsToPersist.forEach(item => {
-            this.updateItem(produce(item, (draft: ListItem) => {
-                draft.state = ListItemState.Persisting
-            }))
+            this.updateItem((state: Readonly<ListViewState>) => {
+                const itemFromState = getItemByIdentifier(state, item.identifier);
+                return produce(itemFromState, (draft: ListItem) => {
+                    draft.state = ListItemState.Persisting
+                })
+            })
         });
         await NeosBackendService.getInstance().persistItems(
             itemsToPersist.map(item => {
@@ -206,9 +214,12 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             .filter(item => Object.keys(item.properties).length > 0)
         );
         itemsToPersist.forEach(item => {
-            this.updateItem(produce(item, (draft: ListItem) => {
-                draft.state = ListItemState.Persisted
-            }))
+            this.updateItem((state: Readonly<ListViewState>) => {
+                const itemFromState = getItemByIdentifier(state, item.identifier);
+                return produce(itemFromState, (draft: ListItem) => {
+                    draft.state = ListItemState.Persisted
+                });
+            });
         })
     }
 

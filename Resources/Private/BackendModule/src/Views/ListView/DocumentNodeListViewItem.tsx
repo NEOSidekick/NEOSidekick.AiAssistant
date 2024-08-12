@@ -9,6 +9,7 @@ import {ListItemProps} from "./ListViewItem";
 import DocumentNodeListViewItemProperty from "./DocumentNodeListViewItemProperty";
 import NeosBackendService from "../../Service/NeosBackendService";
 import AppContext, {AppContextType} from "../../AppContext";
+import {getItemByIdentifier, ListViewState} from "./ListView";
 
 export interface DocumentNodeListViewItemProps extends ListItemProps {
     item: DocumentNodeListItem
@@ -42,15 +43,24 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         this.setState({htmlContent});
     }
 
-    private updateItemProperty(propertyName: string, propertyValue: any, state: ListItemPropertyState) {
-        const {updateItem, item} = this.props;
-        updateItem(produce(item, (draft: Draft<DocumentNodeListItem>) => {
-            draft.editableProperties[propertyName] = {
-                ...draft.editableProperties[propertyName],
-                state: (state !== ListItemPropertyState.Generating && draft.editableProperties[propertyName].initialValue === propertyValue) ? ListItemPropertyState.Initial : state,
-                currentValue: propertyValue
-            } as ListItemProperty;
-        }));
+    private updateItemProperty(
+        propertyName: string,
+        propertyValue: any,
+        propertyState: ListItemPropertyState
+    ) {
+        const {updateItem} = this.props;
+        const documentNodeIdentifier = this.props.item.identifier;
+        updateItem((state: Readonly<ListViewState>) => {
+            const item = getItemByIdentifier(state, documentNodeIdentifier);
+            return produce(item, (draft: Draft<DocumentNodeListItem>) => {
+                draft.editableProperties[propertyName] = {
+                    ...draft.editableProperties[propertyName],
+                    state: (propertyState !== ListItemPropertyState.Generating && draft.editableProperties[propertyName].initialValue === propertyValue) ? ListItemPropertyState.Initial : propertyState,
+                    currentValue: propertyValue
+                } as ListItemProperty;
+            })
+        });
+
     }
 
     private discard(): void {

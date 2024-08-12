@@ -17,15 +17,13 @@ use Neos\Flow\Property\PropertyMappingConfiguration;
 use Neos\Neos\Routing\Exception\NoSiteException;
 use Neos\Neos\Service\UserService;
 use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
-use NEOSidekick\AiAssistant\Dto\FindContentNodesFilter;
-use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
+use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
 use NEOSidekick\AiAssistant\Service\AssetService;
-use NEOSidekick\AiAssistant\Service\NodeWithImageService;
 use NEOSidekick\AiAssistant\Service\NodeService;
-use NEOSidekick\AiAssistant\Service\NodeTypeService;
+use NEOSidekick\AiAssistant\Service\NodeWithImageService;
 use Psr\Http\Client\ClientExceptionInterface;
 use Throwable;
 
@@ -51,12 +49,6 @@ class BackendServiceController extends ActionController
      * @var NodeWithImageService
      */
     protected $contentNodeService;
-
-    /**
-     * @Flow\Inject
-     * @var NodeTypeService
-     */
-    protected $nodeTypeService;
 
     /**
      * @var string[]

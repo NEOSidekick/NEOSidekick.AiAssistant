@@ -59,7 +59,7 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
      */
     public function __construct(
         string $filter,
-        ?string  $workspace,
+        ?string $workspace,
         ?string $seoPropertiesFilter = 'none',
         ?string $focusKeywordPropertyFilter = 'none',
         ?string $imagePropertiesFilter = 'none',

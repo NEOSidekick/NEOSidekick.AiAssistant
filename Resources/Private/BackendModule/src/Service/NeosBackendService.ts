@@ -1,7 +1,7 @@
 import {Endpoints} from "../Model/Endpoints";
 import AiAssistantError from "../AiAssistantError";
 import {
-    AssetModuleConfiguration, ContentNodeModuleConfiguration,
+    AssetModuleConfiguration,
     DocumentNodeModuleConfiguration,
     ModuleConfiguration
 } from "../Model/ModuleConfiguration";
@@ -86,7 +86,6 @@ export default class NeosBackendService {
     }
 
     private toFilterDto(moduleConfiguration: ModuleConfiguration): FindFilter {
-        let moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, alternativeTextPropertyFilter, languageDimensionFilter, nodeTypeFilter;
         if (moduleConfiguration.itemType === 'Asset') {
             const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
             return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
@@ -111,13 +110,6 @@ export default class NeosBackendService {
                 languageDimensionFilter: languageDimensionFilter || [],
                 nodeTypeFilter: nodeTypeFilter || ''
             } as FindDocumentNodesFilter;
-        } else if (moduleConfiguration.itemType === 'ContentNode') {
-            let {workspace, alternativeTextPropertyFilter, languageDimensionFilter} = moduleConfiguration as ContentNodeModuleConfiguration;
-            return {
-                workspace,
-                alternativeTextPropertyFilter: alternativeTextPropertyFilter || 'none',
-                languageDimensionFilter: languageDimensionFilter || [],
-            } as FindContentNodesFilter;
         } else {
             throw new Error('Unknown item type');
         }

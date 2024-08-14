@@ -25,6 +25,7 @@ export interface FindDocumentNodeData {
 export interface FindImageData {
     nodeTypeName: string;
     nodeContextPath: string;
+    nodeOrderIndex: number;
     filename: string;
     fullsizeUri: string;
     thumbnailUri: string | null;

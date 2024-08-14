@@ -33,8 +33,8 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
 
     private getLabel(): string
     {
-        const {item, imageProperty} = this.props;
-        const nodeTypeSchema = this.context.nodeTypes[item.nodeTypeName];
+        const {imageProperty} = this.props;
+        const nodeTypeSchema = this.context.nodeTypes[imageProperty.nodeTypeName];
         const imagePropertySchema = this.context.nodeTypes[imageProperty.nodeTypeName]?.properties?.[imageProperty.imagePropertyName] as PropertySchema;
         const nodeTypeLabelTranslation = this.translationService.translate(nodeTypeSchema.label, nodeTypeSchema.label);
         const imagePropertyLabelTranslation = this.translationService.translate(imagePropertySchema.ui?.label, imagePropertySchema.ui?.label);

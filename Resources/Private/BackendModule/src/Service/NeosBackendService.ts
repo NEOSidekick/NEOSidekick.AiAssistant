@@ -5,7 +5,7 @@ import {
     DocumentNodeModuleConfiguration,
     ModuleConfiguration
 } from "../Model/ModuleConfiguration";
-import {FindAssetsFilter, FindContentNodesFilter, FindDocumentNodesFilter, FindFilter} from "../Dto/FindFilter";
+import {FindAssetsFilter, FindDocumentNodesFilter, FindFilter} from "../Dto/FindFilter";
 
 export default class NeosBackendService {
     private static instance: NeosBackendService | null = null;

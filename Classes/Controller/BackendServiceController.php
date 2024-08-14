@@ -230,7 +230,11 @@ class BackendServiceController extends ActionController
     public function findDocumentNodesWithImagesAction(FindDocumentNodesFilter $configuration): string
     {
         if ($configuration->getFilter() === 'important-pages') {
-            $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext);
+            try {
+                $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext);
+            } catch (GetMostRelevantInternalSeoLinksApiException $e) {
+                return $this->handleException($e);
+            }
         } else {
             $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
         }

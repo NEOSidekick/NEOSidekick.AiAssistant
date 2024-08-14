@@ -5,6 +5,7 @@ export interface ListItemImage {
     nodeTypeName: string;
     nodeContextPath: string;
     nodeContextPathWithProperty: string;
+    nodeOrderIndex: number;
     filename: string;
     fullsizeUri: string;
     thumbnailUri: string;

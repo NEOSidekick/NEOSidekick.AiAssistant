@@ -22,6 +22,11 @@ final class FindImageData implements JsonSerializable
     protected string $nodeTypeName;
 
     /**
+     * @var int
+     */
+    protected int $nodeOrderIndex;
+
+    /**
      * @var string
      */
     protected string $filename;
@@ -64,6 +69,7 @@ final class FindImageData implements JsonSerializable
     public function __construct(
         string $nodeContextPath,
         string $nodeTypeName,
+        int $nodeOrderIndex,
         string $filename,
         string $fullsizeUri,
         string $thumbnailUri,
@@ -75,6 +81,7 @@ final class FindImageData implements JsonSerializable
     ) {
         $this->nodeContextPath = $nodeContextPath;
         $this->nodeTypeName = $nodeTypeName;
+        $this->nodeOrderIndex = $nodeOrderIndex;
         $this->filename = $filename;
         $this->fullsizeUri = $fullsizeUri;
         $this->thumbnailUri = $thumbnailUri;
@@ -93,6 +100,11 @@ final class FindImageData implements JsonSerializable
     public function getNodeTypeName(): string
     {
         return $this->nodeTypeName;
+    }
+
+    public function getNodeOrderIndex(): int
+    {
+        return $this->nodeOrderIndex;
     }
 
     public function getFilename(): string
@@ -125,12 +137,12 @@ final class FindImageData implements JsonSerializable
         return $this->alternativeTextPropertyValue;
     }
 
-    public function gettitleTextPropertyName(): ?string
+    public function getTitleTextPropertyName(): ?string
     {
         return $this->titleTextPropertyName;
     }
 
-    public function gettitleTextPropertyValue(): ?string
+    public function getTitleTextPropertyValue(): ?string
     {
         return $this->titleTextPropertyValue;
     }
@@ -139,6 +151,7 @@ final class FindImageData implements JsonSerializable
         return [
             'nodeContextPath' => $this->nodeContextPath,
             'nodeTypeName' => $this->nodeTypeName,
+            'nodeOrderIndex' => $this->nodeOrderIndex,
             'filename' => $this->filename,
             'fullsizeUri' => $this->fullsizeUri,
             'thumbnailUri' => $this->thumbnailUri,

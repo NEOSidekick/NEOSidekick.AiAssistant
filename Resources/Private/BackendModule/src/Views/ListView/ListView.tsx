@@ -95,8 +95,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     nodeContextPathWithProperty: image.nodeContextPath + '#' + image.imagePropertyName,
                     imagePropertyName: image.imagePropertyName,
                     filename: image.filename,
-                    fullsizeUri: image.fullsizeUri,
-                    thumbnailUri: image.thumbnailUri
+                    fullsizeUri: this.prependConfiguredDomainToImageUri(image.fullsizeUri),
+                    thumbnailUri: this.prependConfiguredDomainToImageUri(image.thumbnailUri)
                 } as ListItemImage;
                 if (image.alternativeTextPropertyName) {
                     newImage.alternativeTextProperty = {
@@ -122,6 +122,20 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 return accumulator;
             }, {})
         };
+    }
+
+    private prependConfiguredDomainToImageUri(imageUri: string) {
+        // Make sure that the imageUri has a domain prepended
+        // Get instance domain from configuration
+        const instanceDomain = this.context.domain;
+        // Remove the scheme and split URL into parts
+        const imageUriParts = imageUri.replace('http://', '').replace('https://', '').split('/');
+        // Remove the domain
+        imageUriParts.shift();
+        // Add the domain from configuration
+        imageUriParts.unshift(instanceDomain);
+        // Re-join the array to a URL and return
+        return imageUriParts.join('/');
     }
 
     private renderLoadingIndicator() {

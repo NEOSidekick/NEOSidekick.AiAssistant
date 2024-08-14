@@ -71,6 +71,7 @@ class FindImageDataFactory
         return new FindImageData(
             $node->getContextPath(),
             $node->getNodeType()->getName(),
+            $node->getIndex(),
             $asset->getResource()->getFilename(),
             $fullsizeUri,
             $thumbnailUri,

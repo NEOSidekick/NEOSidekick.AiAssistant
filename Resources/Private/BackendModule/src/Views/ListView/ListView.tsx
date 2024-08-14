@@ -93,6 +93,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     nodeTypeName: image.nodeTypeName,
                     nodeContextPath: image.nodeContextPath,
                     nodeContextPathWithProperty: image.nodeContextPath + '#' + image.imagePropertyName,
+                    nodeOrderIndex: image.nodeOrderIndex,
                     imagePropertyName: image.imagePropertyName,
                     filename: image.filename,
                     fullsizeUri: this.prependConfiguredDomainToImageUri(image.fullsizeUri),
@@ -118,9 +119,14 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                         state: ListItemPropertyState.Initial,
                     } as ListItemProperty;
                 }
-                accumulator[newImage.nodeContextPathWithProperty] = newImage;
+                accumulator.push(newImage);
                 return accumulator;
-            }, {})
+            }, []).sort((a: ListItemImage, b: ListItemImage) => {
+                // todo this does not necessarily resemble the original order on the page, because nested elements could come first but have a longer node context path
+                const aWeighted = a.nodeContextPath.length * 1000 + a.nodeOrderIndex;
+                const bWeighted = b.nodeContextPath.length * 1000 + b.nodeOrderIndex;
+                return aWeighted - bWeighted;
+            })
         };
     }
 

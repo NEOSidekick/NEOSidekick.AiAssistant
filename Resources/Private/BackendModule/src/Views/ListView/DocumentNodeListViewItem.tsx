@@ -76,9 +76,10 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         updateItem((state: Readonly<ListViewState>) => {
             const item = getItemByIdentifier(state, documentNodeIdentifier);
             return produce(item, (draft: Draft<DocumentNodeListItem>) => {
-                draft.images[nodeWithImageContextPathAndPropertyName][nodeWithImagePropertyName] = {
-                    ...draft.images[nodeWithImageContextPathAndPropertyName][nodeWithImagePropertyName],
-                    state: (nodeWithImageNewPropertyState !== ListItemPropertyState.Generating && draft.images[nodeWithImageContextPathAndPropertyName][nodeWithImagePropertyName].initialValue === nodeWithImageNewPropertyValue) ? ListItemPropertyState.Initial : nodeWithImageNewPropertyState,
+                const index = draft.images.findIndex((image: ListItemImage) => image.nodeContextPathWithProperty === nodeWithImageContextPathAndPropertyName);
+                draft.images[index][nodeWithImagePropertyName] = {
+                    ...draft.images[index][nodeWithImagePropertyName],
+                    state: (nodeWithImageNewPropertyState !== ListItemPropertyState.Generating && draft.images[index][nodeWithImagePropertyName].initialValue === nodeWithImageNewPropertyValue) ? ListItemPropertyState.Initial : nodeWithImageNewPropertyState,
                     currentValue: nodeWithImageNewPropertyValue
                 } as ListItemProperty;
             });

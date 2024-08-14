@@ -50,6 +50,10 @@
                 <source>An error occurred while persisting an item</source>
                 <target>Es ist ein Fehler beim Speichern eines Eintrags aufgetreten</target>
             </trans-unit>
+            <trans-unit id="1723668241635">
+                <source>Unfortunately, the analysis took too long and led to a timeout, please try again.</source>
+                <target>Das Analysieren hat leider zu lange gedauert und zu einem Timeout geführt, bitte probiere es noch einmal.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

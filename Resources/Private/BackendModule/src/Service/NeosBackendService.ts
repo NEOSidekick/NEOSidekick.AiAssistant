@@ -73,7 +73,12 @@ export default class NeosBackendService {
             return [];
         }
         if (response.status < 200 || response.status >= 400) {
-            throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037', await response.text());
+            if (response.headers.get('Content-Type') === 'application/json') {
+                const error: {error: string, code: string} = await response.json();
+                throw new AiAssistantError(error.error, error.code);
+            } else {
+                throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037', await response.text());
+            }
         }
         return await response.json().catch((e) => {
             throw new AiAssistantError('An error occurred while fetching the items that need processing', '1709650151037', e);

@@ -19,9 +19,11 @@ use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
 use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
+use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksTimeoutException;
 use NEOSidekick\AiAssistant\Service\AssetService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use Psr\Http\Client\ClientExceptionInterface;
+use Throwable;
 
 /**
  * @noinspection PhpUnused
@@ -137,7 +139,11 @@ class BackendServiceController extends ActionController
     public function findDocumentNodesAction(FindDocumentNodesFilter $configuration): string|bool
     {
         if ($configuration->getFilter() === 'important-pages') {
-            $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext);
+            try {
+                $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext);
+            } catch (GetMostRelevantInternalSeoLinksTimeoutException $e) {
+                return $this->handleException($e);
+            }
         } else {
             $resultCollection = $this->nodeService->find($configuration, $this->controllerContext);
         }
@@ -170,5 +176,15 @@ class BackendServiceController extends ActionController
         $this->nodeService->updatePropertiesOnNodes($updateItems);
         return json_encode(array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems),
             JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * @throws JsonException
+     */
+    protected function handleException(Throwable $exception): string
+    {
+        $this->response->setStatusCode(500);
+        $this->response->setContentType('application/json');
+        return json_encode(['error' => $exception->getMessage(), 'code' => $exception->getCode()], JSON_THROW_ON_ERROR);
     }
 }

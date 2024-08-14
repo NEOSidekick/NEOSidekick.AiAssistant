@@ -38,6 +38,10 @@
             <trans-unit id="1709648035592">
                 <source>An error occurred while persisting an item</source>
             </trans-unit>
+            <trans-unit id="1723668241635">
+                <source>Unfortunately, the analysis took too long and led to a timeout, please try again.</source>
+                <target>Das Analysieren hat leider zu lange gedauert und zu einem Timeout geführt, bitte probiere es noch einmal.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

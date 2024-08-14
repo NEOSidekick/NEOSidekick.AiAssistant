@@ -5,6 +5,7 @@ namespace NEOSidekick\AiAssistant\Infrastructure;
 use GuzzleHttp\Psr7\Uri;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
+use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksTimeoutException;
 use Psr\Http\Client\ClientExceptionInterface;
 
 class ApiFacade
@@ -20,6 +21,7 @@ class ApiFacade
      * @return Uri[]
      * @throws ClientExceptionInterface
      * @throws JsonException
+     * @throws GetMostRelevantInternalSeoLinksTimeoutException
      */
     public function getMostRelevantInternalSeoUrisByHosts(array $hosts): array
     {

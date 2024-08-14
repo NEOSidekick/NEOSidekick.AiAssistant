@@ -9,6 +9,8 @@ use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Client\Browser;
 use Neos\Flow\Http\Client\CurlEngine;
+use Neos\Flow\Http\Client\CurlEngineException;
+use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksTimeoutException;
 use Psr\Http\Client\ClientExceptionInterface;
 use RuntimeException;
 
@@ -53,7 +55,13 @@ class ApiClient
     }
 
     /**
-     * @throws JsonException|ClientExceptionInterface
+     * @param array $hosts
+     *
+     * @return array
+     * @throws ClientExceptionInterface
+     * @throws CurlEngineException
+     * @throws JsonException
+     * @throws GetMostRelevantInternalSeoLinksTimeoutException
      */
     public function getMostRelevantInternalSeoLinksByHosts(array $hosts): array
     {
@@ -63,7 +71,16 @@ class ApiClient
         $request = $request->withAddedHeader('Content-Type', 'application/json');
         /** @var Request $request */
         $request = $request->withBody(self::streamFor(json_encode(['uris' => $hosts], JSON_THROW_ON_ERROR)));
-        $response = $this->browser->sendRequest($request);
+        try {
+            $response = $this->browser->sendRequest($request);
+        } catch (CurlEngineException $e) {
+            // cURL error 28 stands for operation timed out aka the API did not answer within the given time
+            if (str_starts_with($e->getMessage(), 'cURL reported error code 28')) {
+                throw new GetMostRelevantInternalSeoLinksTimeoutException();
+            }
+
+            throw $e;
+        }
         if ($response->getStatusCode() !== 200) {
             throw new RuntimeException(sprintf('Invalid status code from NEOSidekick API: %s', $response->getStatusCode()));
         }

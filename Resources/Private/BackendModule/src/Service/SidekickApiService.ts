@@ -67,6 +67,7 @@ export class SidekickApiService {
             const response = await fetch(`${this.apiDomain}/api/v1/backend-notification?name=${name}&language=${this.interfaceLanguage}`, {
                 headers: {
                     "Content-Type": "application/json",
+                    "Authorization": `Bearer ${this.apiKey}`,
                     "Accept": "application/json"
                 }
             });

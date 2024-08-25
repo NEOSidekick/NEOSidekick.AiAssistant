@@ -56,6 +56,7 @@ class ApiClient
 
     /**
      * @param array $hosts
+     * @param string $interfaceLanguage
      *
      * @return array
      * @throws ClientExceptionInterface
@@ -63,14 +64,14 @@ class ApiClient
      * @throws JsonException
      * @throws GetMostRelevantInternalSeoLinksTimeoutException
      */
-    public function getMostRelevantInternalSeoLinksByHosts(array $hosts): array
+    public function getMostRelevantInternalSeoLinksByHosts(array $hosts, string $interfaceLanguage): array
     {
         $request = new ServerRequest('POST', $this->apiDomain . '/api/v1/find-most-relevant-internal-seo-links');
         $request = $request->withAddedHeader('Accept', 'application/json');
         $request = $request->withAddedHeader('Authorization', 'Bearer ' . $this->apiKey);
         $request = $request->withAddedHeader('Content-Type', 'application/json');
         /** @var Request $request */
-        $request = $request->withBody(self::streamFor(json_encode(['uris' => $hosts], JSON_THROW_ON_ERROR)));
+        $request = $request->withBody(self::streamFor(json_encode(['language' => $interfaceLanguage, 'uris' => $hosts], JSON_THROW_ON_ERROR)));
         try {
             $response = $this->browser->sendRequest($request);
         } catch (CurlEngineException $e) {

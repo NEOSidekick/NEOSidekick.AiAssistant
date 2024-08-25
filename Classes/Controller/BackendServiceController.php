@@ -15,6 +15,7 @@ use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Flow\Property\PropertyMappingConfiguration;
 use Neos\Neos\Routing\Exception\NoSiteException;
+use Neos\Neos\Service\UserService;
 use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
 use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
@@ -46,6 +47,12 @@ class BackendServiceController extends ActionController
      * @var string[]
      */
     protected $supportedMediaTypes = ['application/json'];
+
+    /**
+     * @Flow\Inject
+     * @var UserService
+     */
+    protected $userService;
 
     public function initializeAction(): void
     {
@@ -140,7 +147,7 @@ class BackendServiceController extends ActionController
     {
         if ($configuration->getFilter() === 'important-pages') {
             try {
-                $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext);
+                $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext, $this->userService->getInterfaceLanguage());
             } catch (GetMostRelevantInternalSeoLinksTimeoutException $e) {
                 return $this->handleException($e);
             }

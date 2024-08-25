@@ -23,9 +23,9 @@ class ApiFacade
      * @throws JsonException
      * @throws GetMostRelevantInternalSeoLinksTimeoutException
      */
-    public function getMostRelevantInternalSeoUrisByHosts(array $hosts): array
+    public function getMostRelevantInternalSeoUrisByHosts(array $hosts, string $interfaceLanguage): array
     {
-        $apiResponse = $this->apiClient->getMostRelevantInternalSeoLinksByHosts($hosts);
+        $apiResponse = $this->apiClient->getMostRelevantInternalSeoLinksByHosts($hosts, $interfaceLanguage);
 
         return self::deduplicateArrayOfUriStrings($apiResponse);
     }

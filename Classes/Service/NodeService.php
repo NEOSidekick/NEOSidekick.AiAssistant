@@ -113,7 +113,7 @@ class NodeService
      * @throws MissingActionNameException
      * @throws IllegalObjectTypeException
      */
-    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext): array
+    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage): array
     {
         $currentRequestUri = $controllerContext->getRequest()->getHttpRequest()->getUri();
         $hosts = [];
@@ -126,7 +126,7 @@ class NodeService
         } else {
             $hosts = [$currentRequestUri->getScheme() . '://' . $currentRequestUri->getHost()];
         }
-        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts);
+        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts, $interfaceLanguage ?? 'en');
 
         $result = [];
         foreach ($mostRelevantInternalSeoUris as $uri) {

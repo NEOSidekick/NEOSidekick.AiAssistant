@@ -231,7 +231,7 @@ class BackendServiceController extends ActionController
     {
         if ($configuration->getFilter() === 'important-pages') {
             try {
-                $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext);
+                $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext, $this->userService->getInterfaceLanguage());
             } catch (GetMostRelevantInternalSeoLinksApiException $e) {
                 return $this->handleException($e);
             }

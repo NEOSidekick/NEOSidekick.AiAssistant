@@ -20,6 +20,7 @@ use Neos\Neos\Exception as NeosException;
 use Neos\Neos\Routing\Exception\NoSiteException;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
+use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
 use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use PDO;
@@ -88,6 +89,7 @@ class NodeService extends AbstractNodeService
      * @throws ClientExceptionInterface
      * @throws MissingActionNameException
      * @throws IllegalObjectTypeException
+     * @throws GetMostRelevantInternalSeoLinksApiException
      */
     public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage): array
     {

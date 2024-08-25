@@ -10,7 +10,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Client\Browser;
 use Neos\Flow\Http\Client\CurlEngine;
 use Neos\Flow\Http\Client\CurlEngineException;
-use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksTimeoutException;
+use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
 use Psr\Http\Client\ClientExceptionInterface;
 use RuntimeException;
 
@@ -62,7 +62,7 @@ class ApiClient
      * @throws ClientExceptionInterface
      * @throws CurlEngineException
      * @throws JsonException
-     * @throws GetMostRelevantInternalSeoLinksTimeoutException
+     * @throws GetMostRelevantInternalSeoLinksApiException
      */
     public function getMostRelevantInternalSeoLinksByHosts(array $hosts, string $interfaceLanguage): array
     {
@@ -77,7 +77,7 @@ class ApiClient
         } catch (CurlEngineException $e) {
             // cURL error 28 stands for operation timed out aka the API did not answer within the given time
             if (str_starts_with($e->getMessage(), 'cURL reported error code 28')) {
-                throw new GetMostRelevantInternalSeoLinksTimeoutException();
+                throw new GetMostRelevantInternalSeoLinksApiException('Analyzing your website with NEOSidekick took too long. Please try again, typically this succeeds the second time. <br><br>We are here to help, you can reach us at <a style="text-decoration: underline;" href="mailto:support@neosidekick.com">support@neosidekick.com</a>');
             }
 
             throw $e;
@@ -86,16 +86,16 @@ class ApiClient
         $responseBodyContents = $response->getBody()->getContents();
         $responseBodyContentsFromJson = json_decode($responseBodyContents, true);
         if ($responseBodyContentsFromJson === null) {
-            throw new RuntimeException(sprintf('Invalid JSON response from NEOSidekick API: %s', $responseBodyContents));
+            throw new GetMostRelevantInternalSeoLinksApiException(sprintf('Invalid JSON response from NEOSidekick find-most-relevant-internal-seo-links API: %s<br><br>We are here to help, you can reach us at <a style="text-decoration: underline;" href="mailto:support@neosidekick.com">support@neosidekick.com</a>', $responseBodyContents));
         }
         if ($response->getStatusCode() !== 200) {
             if (isset($responseBodyContentsFromJson['message'])) {
-                throw new RuntimeException($responseBodyContentsFromJson['message']);
+                throw new GetMostRelevantInternalSeoLinksApiException($responseBodyContentsFromJson['message']);
             }
-            throw new RuntimeException(sprintf('Invalid status code from NEOSidekick API %s and message: %s', $response->getStatusCode(), $responseBodyContents));
+            throw new GetMostRelevantInternalSeoLinksApiException(sprintf('Invalid status code from NEOSidekick API %s and message: %s<br><br>We are here to help, you can reach us at <a style="text-decoration: underline;" href="mailto:support@neosidekick.com">support@neosidekick.com</a>', $response->getStatusCode(), $responseBodyContents));
         }
         if (!isset($responseBodyContentsFromJson['data']['uris'])) {
-            throw new RuntimeException(sprintf('Invalid response from NEOSidekick API, "data.uris" is missing: %s', $responseBodyContents));
+            throw new GetMostRelevantInternalSeoLinksApiException(sprintf('Invalid response from NEOSidekick API, "data.uris" is missing in response: %s<br><br>We are here to help, you can reach us at <a style="text-decoration: underline;" href="mailto:support@neosidekick.com">support@neosidekick.com</a>', $responseBodyContents));
         }
         return $responseBodyContentsFromJson['data']['uris'];
     }

@@ -20,7 +20,7 @@ use NEOSidekick\AiAssistant\Dto\FindAssetsFilterDto;
 use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
-use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksTimeoutException;
+use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
 use NEOSidekick\AiAssistant\Service\AssetService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use Psr\Http\Client\ClientExceptionInterface;
@@ -148,7 +148,7 @@ class BackendServiceController extends ActionController
         if ($configuration->getFilter() === 'important-pages') {
             try {
                 $resultCollection = $this->nodeService->findImportantPages($configuration, $this->controllerContext, $this->userService->getInterfaceLanguage());
-            } catch (GetMostRelevantInternalSeoLinksTimeoutException $e) {
+            } catch (GetMostRelevantInternalSeoLinksApiException $e) {
                 return $this->handleException($e);
             }
         } else {

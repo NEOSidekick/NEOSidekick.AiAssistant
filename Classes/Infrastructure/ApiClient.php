@@ -81,11 +81,18 @@ class ApiClient
 
             throw $e;
         }
-        if ($response->getStatusCode() !== 200) {
-            throw new RuntimeException(sprintf('Invalid status code from NEOSidekick API: %s', $response->getStatusCode()));
-        }
+
         $responseBodyContents = $response->getBody()->getContents();
-        $responseBodyContentsFromJson = json_decode($responseBodyContents, true, 512, JSON_THROW_ON_ERROR);
+        $responseBodyContentsFromJson = json_decode($responseBodyContents, true);
+        if ($responseBodyContentsFromJson === null) {
+            throw new RuntimeException(sprintf('Invalid JSON response from NEOSidekick API: %s', $responseBodyContents));
+        }
+        if ($response->getStatusCode() !== 200) {
+            if (isset($responseBodyContentsFromJson['message'])) {
+                throw new RuntimeException($responseBodyContentsFromJson['message']);
+            }
+            throw new RuntimeException(sprintf('Invalid status code from NEOSidekick API %s and message: %s', $response->getStatusCode(), $responseBodyContents));
+        }
         if (!isset($responseBodyContentsFromJson['data']['uris'])) {
             throw new RuntimeException(sprintf('Invalid response from NEOSidekick API, "data.uris" is missing: %s', $responseBodyContents));
         }

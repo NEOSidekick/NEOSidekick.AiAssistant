@@ -45,8 +45,8 @@ final class UpdateAssetData implements JsonSerializable
     public static function fromArray(array $array): self
     {
         return new self(
-            $array['filename'],
-            $array['identifier']
+            $array['identifier'],
+            $array['properties']
         );
     }
 

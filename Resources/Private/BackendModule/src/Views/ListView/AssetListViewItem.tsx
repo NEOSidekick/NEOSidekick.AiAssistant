@@ -146,7 +146,7 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
     private prependConfiguredDomainToImageUri(imageUri: string) {
         // Make sure that the imageUri has a domain prepended
         // Get instance domain from configuration
-        const hostWithScheme = this.context.domain;
+        const hostWithScheme = this.context.domain.endsWith('/') ? this.context.domain : this.context.domain + '/';
         // Remove the scheme and split URL into parts
         // noinspection HttpUrlsUsage
         const imageUriParts = imageUri

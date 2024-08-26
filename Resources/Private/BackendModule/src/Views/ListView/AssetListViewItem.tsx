@@ -10,6 +10,7 @@ import {Draft, produce} from "immer";
 import {SidekickApiService} from "../../Service/SidekickApiService";
 import {AssetModuleConfiguration} from "../../Model/ModuleConfiguration";
 import AppContext, {AppContextType} from "../../AppContext";
+import {getItemByIdentifier, ListViewState} from "./ListView";
 
 export interface AssetListViewItemProps extends ListItemProps {
     item: AssetListItem
@@ -75,15 +76,18 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
         this.updateItemProperty(property.propertyName, event.target.value, ListItemPropertyState.UserManipulated);
     }
 
-    private updateItemProperty(propertyName: string, propertyValue: any, state: ListItemPropertyState) {
-        const {updateItem, item} = this.props;
-        updateItem(produce(item, (draft: Draft<DocumentNodeListItem>) => {
-            draft.editableProperties[propertyName] = {
-                ...draft.editableProperties[propertyName],
-                state: (state !== ListItemPropertyState.Generating && draft.editableProperties[propertyName].initialValue === propertyValue) ? ListItemPropertyState.Initial : state,
-                currentValue: propertyValue
-            } as ListItemProperty;
-        }));
+    private updateItemProperty(assetPropertyName: string, assetNewPropertyValue: any, assetNewPropertyState: ListItemPropertyState) {
+        const {updateItem} = this.props;
+        updateItem((state: Readonly<ListViewState>) => {
+            const item = getItemByIdentifier(state, this.props.item.identifier) as AssetListItem;
+            return produce(item, (draft: Draft<DocumentNodeListItem>) => {
+                draft.editableProperties[assetPropertyName] = {
+                    ...draft.editableProperties[assetPropertyName],
+                    state: (assetNewPropertyState !== ListItemPropertyState.Generating && draft.editableProperties[assetPropertyName].initialValue === assetNewPropertyValue) ? ListItemPropertyState.Initial : assetNewPropertyState,
+                    currentValue: assetNewPropertyValue
+                } as ListItemProperty;
+            })
+        });
     }
 
     private discard(): void {

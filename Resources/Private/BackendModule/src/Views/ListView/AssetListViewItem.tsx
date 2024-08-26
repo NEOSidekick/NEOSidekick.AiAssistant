@@ -91,17 +91,20 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
     }
 
     private discard(): void {
-        const {updateItem, item} = this.props;
-        updateItem(produce(item, (draft: Draft<DocumentNodeListItem>) => {
-            draft.editableProperties = Object.keys(draft.editableProperties).reduce((accumulator, propertyName) => {
-                accumulator[propertyName] = {
-                    ...draft.editableProperties[propertyName],
-                    state: ListItemPropertyState.Initial,
-                    currentValue: draft.editableProperties[propertyName].initialValue,
-                } as ListItemProperty;
-                return accumulator;
-            }, {});
-        }));
+        const {updateItem} = this.props;
+        updateItem((state: Readonly<ListViewState>) => {
+            const item = getItemByIdentifier(state, this.props.item.identifier) as AssetListItem;
+            return produce(item, (draft: Draft<DocumentNodeListItem>) => {
+                draft.editableProperties = Object.keys(draft.editableProperties).reduce((accumulator, propertyName) => {
+                    accumulator[propertyName] = {
+                        ...draft.editableProperties[propertyName],
+                        state: ListItemPropertyState.Initial,
+                        currentValue: draft.editableProperties[propertyName].initialValue,
+                    } as ListItemProperty;
+                    return accumulator;
+                }, {});
+            })
+        });
     }
 
     private canChangeValue(): boolean

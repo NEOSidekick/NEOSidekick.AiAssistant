@@ -97,7 +97,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
         return (
             <div style={{marginBottom: '32px'}}>
                 <label><strong>{this.getLabel()}</strong></label>
-                <div style={{backgroundColor: '#3f3f3f', marginBottom: '16px', display: 'flex'}}>
+                <div style={{backgroundColor: '#ffffff', marginBottom: '16px', display: 'flex'}}>
                     <img src={imageProperty.thumbnailUri} alt="" style={{maxHeight: '300px', maxWidth: '100%', margin: 'auto'}}/>
                 </div>
                 {alternativeTextSidekickConfiguration ? <TextAreaEditor

@@ -87,32 +87,35 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
     }
 
     private discard(): void {
-        const {updateItem, item} = this.props;
-        updateItem(produce(item, (draft: Draft<DocumentNodeListItem>) => {
-            draft.editableProperties = Object.keys(draft.editableProperties).reduce((accumulator, propertyName) => {
-                accumulator[propertyName] = {
-                    ...draft.editableProperties[propertyName],
-                    state: ListItemPropertyState.Initial,
-                    currentValue: draft.editableProperties[propertyName].initialValue,
-                } as ListItemProperty;
-                return accumulator;
-            }, {});
-            draft.images = Object.keys(draft.images).reduce((accumulator, contextPath) => {
-                let image = {
-                    ...draft.images[contextPath]
-                } as ListItemImage;
-                if (image.alternativeTextProperty) {
-                    image.alternativeTextProperty.state = ListItemPropertyState.Initial;
-                    image.alternativeTextProperty.currentValue = image.alternativeTextProperty.initialValue;
-                }
-                if (image.titleTextProperty) {
-                    image.titleTextProperty.state = ListItemPropertyState.Initial;
-                    image.titleTextProperty.currentValue = image.titleTextProperty.initialValue;
-                }
-                accumulator[contextPath] = image;
-                return accumulator;
-            }, {})
-        }));
+        const {updateItem} = this.props;
+        updateItem((state: Readonly<ListViewState>) => {
+            const item = getItemByIdentifier(state, this.props.item.identifier);
+            return produce(item, (draft: Draft<DocumentNodeListItem>) => {
+                draft.editableProperties = Object.keys(draft.editableProperties).reduce((accumulator, propertyName) => {
+                    accumulator[propertyName] = {
+                        ...draft.editableProperties[propertyName],
+                        state: ListItemPropertyState.Initial,
+                        currentValue: draft.editableProperties[propertyName].initialValue,
+                    } as ListItemProperty;
+                    return accumulator;
+                }, {});
+                draft.images = Object.keys(draft.images).reduce((accumulator, contextPath) => {
+                    let image = {
+                        ...draft.images[contextPath]
+                    } as ListItemImage;
+                    if (image.alternativeTextProperty) {
+                        image.alternativeTextProperty.state = ListItemPropertyState.Initial;
+                        image.alternativeTextProperty.currentValue = image.alternativeTextProperty.initialValue;
+                    }
+                    if (image.titleTextProperty) {
+                        image.titleTextProperty.state = ListItemPropertyState.Initial;
+                        image.titleTextProperty.currentValue = image.titleTextProperty.initialValue;
+                    }
+                    accumulator[contextPath] = image;
+                    return accumulator;
+                }, {})
+            })
+        });
     }
 
     private canDiscardAndPersist(): boolean {

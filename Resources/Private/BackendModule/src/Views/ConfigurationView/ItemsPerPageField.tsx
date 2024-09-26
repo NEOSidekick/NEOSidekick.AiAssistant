@@ -23,7 +23,7 @@ export default class ItemsPerPageField extends PureComponent<ItemsPerPageFieldPr
                     20: '20',
                     25: '25',
                 }}
-                onChange={e => updateModuleConfiguration({itemsPerPage: e.target.value})}
+                onChange={e => updateModuleConfiguration({itemsPerPage: e.target.value * 1})}
             />
         )
     }

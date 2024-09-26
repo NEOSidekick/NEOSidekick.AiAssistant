@@ -198,7 +198,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
                         onChange={(e) => this.handleChange(e)}
                         disabled={disabled}
                         maxLength={maxlength}
-                        placeholder={property.state != ListItemPropertyState.Generating && placeholder}
+                        placeholder={!disabled && property.state != ListItemPropertyState.Generating && placeholder}
                     />
                     {(generatedChoices || []).map((suggestion, index) => (
                         <button

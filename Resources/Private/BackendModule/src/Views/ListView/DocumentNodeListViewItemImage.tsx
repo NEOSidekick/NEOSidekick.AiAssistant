@@ -12,6 +12,7 @@ interface DocumentNodeListViewItemImageProps {
     item: DocumentNodeListItem;
     imageProperty: ListItemImage;
     htmlContent: string;
+
     updateItemProperty(propertyName: string, value: string, state: ListItemPropertyState): void;
 }
 
@@ -19,26 +20,45 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
     static contextType = AppContext;
     context: AppContextType;
 
-    private canChangeAlternativeTextValue(): boolean
-    {
+    private canChangeAlternativeTextValue(): boolean {
         const {item, imageProperty} = this.props;
         return item.state === ListItemState.Initial && imageProperty.alternativeTextProperty?.state !== ListItemPropertyState.Generating;
     }
 
-    private canChangeTitleTextValue(): boolean
-    {
+    private canChangeTitleTextValue(): boolean {
         const {item, imageProperty} = this.props;
         return item.state === ListItemState.Initial && imageProperty.titleTextProperty?.state !== ListItemPropertyState.Generating;
     }
 
-    private getLabel(): string
-    {
+    private getLabel(): string {
         const {imageProperty} = this.props;
         const nodeTypeSchema = this.context.nodeTypes[imageProperty.nodeTypeName];
         const imagePropertySchema = this.context.nodeTypes[imageProperty.nodeTypeName]?.properties?.[imageProperty.imagePropertyName] as PropertySchema;
         const nodeTypeLabelTranslation = this.translationService.translate(nodeTypeSchema.label, nodeTypeSchema.label);
         const imagePropertyLabelTranslation = this.translationService.translate(imagePropertySchema.ui?.label, imagePropertySchema.ui?.label);
         return `${nodeTypeLabelTranslation} / ${imagePropertyLabelTranslation}`;
+    }
+
+    /* Since the image does not have an inherent sidekick configuration, we need to create one */
+    private createSidekickConfigurationForImageProperty(sidekickModuleName): TextAreaEditorSidekickConfiguration {
+        const {htmlContent, imageProperty} = this.props;
+        return {
+            module: sidekickModuleName,
+            userInput: [
+                {
+                    identifier: 'url',
+                    value: [imageProperty.fullsizeUri, imageProperty.thumbnailUri]
+                },
+                {
+                    identifier: 'filename',
+                    value: imageProperty.filename
+                },
+                {
+                    identifier: 'content',
+                    value: htmlContent
+                }
+            ]
+        };
     }
 
     render() {
@@ -50,78 +70,37 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
             return; // ignore properties that do not exist on this node type
         }
 
-        // todo this truncates all other sidekick configuration options, refactor!
-        let alternativeTextSidekickConfiguration: TextAreaEditorSidekickConfiguration | null = null;
-        if (alternativeTextPropertySchema) {
-            alternativeTextSidekickConfiguration = produce(alternativeTextPropertySchema.ui.inspector.editorOptions, (draft: any) => ({
-                module: draft.module,
-                userInput: [
-                    {
-                        'identifier': 'url',
-                        'value': [imageProperty.fullsizeUri, imageProperty.thumbnailUri]
-                    },
-                    {
-                        'identifier': 'filename',
-                        'value': imageProperty.filename
-                    },
-                    {
-                        'identifier': 'content',
-                        'value': this.props.htmlContent
-                    }
-                ]
-            }));
-        }
-
-        // todo sidekick configuration for title properties
-        let titleTextSidekickConfiguration: TextAreaEditorSidekickConfiguration | null = null;
-        if (titleTextPropertySchema) {
-            titleTextSidekickConfiguration = produce(titleTextPropertySchema.ui.inspector.editorOptions, (draft: any) => ({
-                module: draft.module,
-                userInput: [
-                    {
-                        'identifier': 'url',
-                        'value': [imageProperty.fullsizeUri, imageProperty.thumbnailUri]
-                    },
-                    {
-                        'identifier': 'filename',
-                        'value': imageProperty.filename
-                    },
-                    {
-                        'identifier': 'content',
-                        'value': this.props.htmlContent
-                    }
-                ]
-            }));
-        }
-
         return (
             <div style={{marginBottom: '32px'}}>
                 <label><strong>{this.getLabel()}</strong></label>
                 <div style={{backgroundColor: '#ffffff', marginBottom: '16px', display: 'flex'}}>
-                    <img src={imageProperty.thumbnailUri} alt="" style={{maxHeight: '300px', maxWidth: '100%', margin: 'auto'}}/>
+                    <img src={imageProperty.thumbnailUri} alt=""
+                         style={{maxHeight: '300px', maxWidth: '100%', margin: 'auto'}}/>
                 </div>
-                {alternativeTextSidekickConfiguration ? <TextAreaEditor
+
+                {alternativeTextPropertySchema ? <TextAreaEditor
                     disabled={!this.canChangeAlternativeTextValue()}
                     property={imageProperty.alternativeTextProperty}
                     propertySchema={alternativeTextPropertySchema}
                     item={item}
                     htmlContent={this.props.htmlContent}
-                    sidekickConfiguration={alternativeTextSidekickConfiguration}
+                    sidekickConfiguration={this.createSidekickConfigurationForImageProperty(alternativeTextPropertySchema.ui.inspector.editorOptions.module)}
                     autoGenerateIfActionsMatch={true}
                     showGenerateButton={true}
                     showResetButton={true}
                     updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('alternativeTextProperty', value, state)}/> : null}
-                {titleTextSidekickConfiguration ? <TextAreaEditor
+
+                {titleTextPropertySchema ? <TextAreaEditor
                     disabled={!this.canChangeTitleTextValue()}
                     property={imageProperty.titleTextProperty}
                     propertySchema={titleTextPropertySchema}
                     item={item}
                     htmlContent={this.props.htmlContent}
-                    sidekickConfiguration={titleTextSidekickConfiguration}
+                    sidekickConfiguration={this.createSidekickConfigurationForImageProperty(titleTextPropertySchema.ui.inspector.editorOptions.module)}
                     autoGenerateIfActionsMatch={true}
                     showGenerateButton={true}
                     showResetButton={true}
-                    updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('titleTextProperty', value, state)} /> : null}
+                    updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('titleTextProperty', value, state)}/> : null}
             </div>
         )
     }

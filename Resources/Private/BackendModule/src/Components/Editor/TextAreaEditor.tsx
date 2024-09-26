@@ -243,5 +243,5 @@ export interface TextAreaEditorSidekickConfiguration {
 
 export interface TextAreaEditorSidekickConfigurationSingleUserInput {
     identifier: string,
-    value: string
+    value: string | string[]
 }

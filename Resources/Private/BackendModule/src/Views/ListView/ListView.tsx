@@ -195,7 +195,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         const totalPages = Math.ceil(Object.values(this.state.items).length / this.state.itemsPerPage);
         return [
             (totalPages <= 10 ? <ProgressCircles currentPage={this.state.currentPage} totalPages={totalPages} /> : <ProgressBar currentPage={this.state.currentPage} totalPages={totalPages} />),
-            this.paginatedItems().map((item: ListItem) =>
+            paginatedItems.map((item: ListItem) =>
                 <ListViewItem
                     key={item.identifier}
                     item={item}
@@ -294,7 +294,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                         throw new Error('Unknown item type ' + item.type);
                 }
             })
-            .filter(item => (Object.keys(item.properties).length > 0 || Object.keys(item.images).length > 0))
+            .filter(item => (Object.keys(item.properties).length > 0 || Object.keys(item.images || {}).length > 0))
         );
         itemsToPersist.forEach(item => {
             this.updateItem((state: Readonly<ListViewState>) => {

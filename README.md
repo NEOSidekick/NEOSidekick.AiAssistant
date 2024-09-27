@@ -80,6 +80,11 @@ roles:
     privileges:
       - privilegeTarget: NEOSidekick.AiAssistant:CanUse
         permission: GRANT
+
+  'Neos.Neos:Administrator':
+    privileges:
+      - privilegeTarget: NEOSidekick.AiAssistant:CanUse
+        permission: GRANT
 ```
 
 Of course, you can also define the privilege for any

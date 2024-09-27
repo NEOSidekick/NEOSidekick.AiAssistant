@@ -78,4 +78,4 @@ NEOSidekick:
       alternativeTextPropertyFilter: null
       # Predefines how many images should be processed per page, to avoid generate too many in parallel
       # Allowed: 5, 10, 15, 20, 25
-      itemsPerPage: 20
+      itemsPerPage: 10

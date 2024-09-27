@@ -27,9 +27,16 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         super(props)
         this.state = {
             listState: ListState.Loading,
+            listStateIsSlowLoading: false,
             currentPage: 1,
             itemsPerPage: 10,
         }
+
+        setTimeout(() => {
+            this.setState((state, props) => {
+                return {...state, listStateIsSlowLoading: true};
+            });
+        }, 5000);
     }
 
     async componentDidMount() {
@@ -86,6 +93,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             <span>
                 <FontAwesomeIcon icon={faSpinner} spin={true}/>&nbsp;
                 {this.translationService.translate('NEOSidekick.AiAssistant:Main:loading', 'Loading...')}
+                {this.state.listStateIsSlowLoading && <div style={{marginTop: '2.5rem', maxWidth: '500px'}}><Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:slowLoadingMessage', 'Large websites sometimes take a few seconds to calculate the relevant content. Please be patient.')}/></div>}
             </span>
         )
     }
@@ -258,6 +266,7 @@ export interface ListViewProps {}
 
 export interface ListViewState {
     listState: ListState,
+    listStateIsSlowLoading: boolean,
     items?: ListItems,
     itemsPerPage?: number,
     currentPage?: number

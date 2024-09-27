@@ -56,6 +56,9 @@
             <trans-unit id="returnToOverview">
                 <source>Return to overview</source>
             </trans-unit>
+            <trans-unit id="slowLoadingMessage">
+                <source>Large websites sometimes take a few seconds to calculate the relevant content. Please be patient.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

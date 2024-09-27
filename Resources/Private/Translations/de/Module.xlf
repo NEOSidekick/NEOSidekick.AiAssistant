@@ -74,6 +74,10 @@
                 <source>Return to overview</source>
                 <target>Zurück zur Übersicht</target>
             </trans-unit>
+            <trans-unit id="slowLoadingMessage">
+                <source>Large websites sometimes take a few seconds to calculate the relevant content. Please be patient.</source>
+                <target>Große Webseiten benötigen manchmal einige Sekunden zum Berechnen der relevanten Inhalte. Bitte habe kurz Geduld.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

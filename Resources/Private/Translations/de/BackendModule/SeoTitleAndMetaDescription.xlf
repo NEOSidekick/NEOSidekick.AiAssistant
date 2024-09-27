@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="label">
+                <source>SEO titles &amp; meta descriptions Generator</source>
+                <target xml:lang="de">SEO-Titel &amp; Meta-Beschreibungen Generator</target>
+            </trans-unit>
+            <trans-unit id="stepName">
+                <source>Write SEO Titles and Meta Descriptions</source>
+                <target xml:lang="de">SEO-Titel und Meta-Beschreibungen schreiben</target>
+            </trans-unit>
+            <trans-unit id="description">
+                <source><![CDATA[You can use this tool to create search engine optimized page titles and meta descriptions. In many cases, the menu title ("Title") is not the optimal SEO title (HTML &lt;title&gt; tag), which is why we create this separately as an "Override title". You will get the best results if you <a href="/neos/ai-assistant/focus-keyword-generator" style="text-decoration: underline;">set focus keywords for all pages beforehand</a>.]]></source>
+                <target><![CDATA[Mit diesem Tool kannst du suchmaschinenoptimierte Seitentitel und Metabeschreibungen erstellen. In vielen Fällen ist der Menü-Titel ("Titel") nicht der optimale SEO-Titel (HTML &lt;title&gt;-Tag), deshalb erstellen wir diesen separat als "Titel überschreiben". Die besten Ergebnisse hast du, wenn du vorher <a href="/neos/ai-assistant/focus-keyword-generator" style="text-decoration: underline;">für alle Seiten Fokus-Keywords setzt</a>.]]></target>
+            </trans-unit>
+            <trans-unit id="seoDirectivesLabel">
+                <source>SEO Directives</source>
+                <target>SEO-Direktiven</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

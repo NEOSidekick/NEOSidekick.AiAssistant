@@ -1,4 +1,8 @@
 Neos:
+  Fusion:
+    defaultContext:
+      # Only used for altTextGeneratorModule recommendNeosAssetCachePackage
+      'NEOSidekick.AiAssistant': 'NEOSidekick\AiAssistant\EelHelper'
   Neos:
     fusion:
       autoInclude:
@@ -7,10 +11,12 @@ Neos:
       translation:
         autoInclude:
           NEOSidekick.AiAssistant:
-            - 'Main'
-            - 'Error'
+            - 'BackendModule/*'
+            - 'Editors/*'
             - 'AiModal'
-            - 'AssetModule'
+            - 'Error'
+            - 'Main'
+            - 'Module'
             - 'Editors/*'
             - 'NodeTypes/*'
     Ui:
@@ -35,20 +41,64 @@ Neos:
           defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
           chatSidebarEnabled: '${NEOSidekick.AiAssistant.chatSidebarEnabled()}'
           modifyTextModalPreferCustomPrompt: '${NEOSidekick.AiAssistant.modifyTextModalPreferCustomPrompt()}'
-          altTextGeneratorModule: '${NEOSidekick.AiAssistant.altTextGeneratorModuleConfiguration()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
+          contentDimensions: '${Neos.Ui.ContentDimensions.contentDimensionsByName()}'
     modules:
-      management:
+      ai-assistant:
+        label: 'NEOSidekick.AiAssistant:Module:label'
+        controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController'
+        description: 'NEOSidekick.AiAssistant:Module:description'
+        icon: fas fa-magic
+        mainStylesheet: 'Lite'
+        privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
         submodules:
-          neosidekickAiassistantAssets:
-            label: 'NEOSidekick.AiAssistant:AssetModule:label'
-            icon: 'fas fa-magic'
-            controller: 'NEOSidekick\AiAssistant\Controller\AssetModuleController'
+          alternate-image-text-generator:
+            label: 'NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:label'
+            description: 'NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:description'
+            icon: 'fas fa-images'
+            controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController'
             privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
             mainStylesheet: Lite
             additionalResources:
               javaScripts:
                 module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+          focus-keyword-generator:
+            label: 'NEOSidekick.AiAssistant:BackendModule.FocusKeyword:label'
+            description: 'NEOSidekick.AiAssistant:BackendModule.FocusKeyword:description'
+            icon: 'fas fa-search'
+            controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
+            additionalResources:
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+          seo-title-and-meta-description-generator:
+            label: 'NEOSidekick.AiAssistant:BackendModule.SeoTitleAndMetaDescription:label'
+            description: 'NEOSidekick.AiAssistant:BackendModule.SeoTitleAndMetaDescription:description'
+            icon: 'fas fa-tachometer-alt'
+            controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
+            additionalResources:
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+          seo-image-alt-text-generator:
+            label: 'NEOSidekick.AiAssistant:BackendModule.SeoImageAlternativeText:label'
+            description: 'NEOSidekick.AiAssistant:BackendModule.SeoImageAlternativeText:description'
+            icon: 'fas fa-images'
+            controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
+            additionalResources:
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+          configuration:
+            label: 'NEOSidekick.AiAssistant:BackendModule.Configuration:label'
+            description: 'NEOSidekick.AiAssistant:BackendModule.Configuration:description'
+            icon: 'fas fa-cog'
+            controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
   Flow:
     mvc:
       routes:

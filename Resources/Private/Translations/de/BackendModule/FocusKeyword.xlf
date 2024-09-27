@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="label">
+                <source>Focus-Keyword Generator</source>
+                <target xml:lang="de">Fokus-Keywords Generator</target>
+            </trans-unit>
+            <trans-unit id="stepName">
+                <source>Define Focus Keywords</source>
+                <target xml:lang="de">Fokus-Keywords definieren</target>
+            </trans-unit>
+            <trans-unit id="description">
+                <source>You can use this tool to set a focus keyword for each page. This is the first step in creating search engine optimized page titles and meta descriptions.</source>
+                <target>Mit diesem Tool kannst du pro Seite ein Fokus-Keyword setzen. Das ist der erste Schritt um suchmaschinenoptimierte Seitentitel und Metabeschreibungen zu erstellen.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

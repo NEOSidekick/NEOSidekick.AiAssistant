@@ -4,6 +4,9 @@ NEOSidekick:
     developmentBuild: false
     defaultLanguage: 'en'
     chatSidebarEnabled: true
+    # The language dimension is usually called "language" in most Neos projects
+    # If your project has a different name for the language dimension, please adapt it here
+    languageDimensionName: 'language'
     modifyTextModal:
       # If set to true, the custom prompt will be focused when the modal opens
       preferCustomPrompt: false
@@ -16,6 +19,51 @@ NEOSidekick:
       propertyName: null
       # Predefines how many images should be processed per page, to avoid generate too many in parallel
       # Allowed: 5, 10, 15, 20, 25
-      limit: 10
+      itemsPerPage: 20
       # The language to write the text in, see allowed language keys in README
       language: null
+    focusKeywordGeneratorModule:
+      # If you want to use custom filters, change this property to 'custom'
+      filter: 'important-pages'
+      # The workspace name where the nodes are taken from and saved to
+      # Allowed: null, live, ... (any other workspace name)
+      workspace: null
+      # The property filter for the focusKeyword property
+      # Allowed:
+      #  - none: Both nodes with an empty and non-empty focusKeyword property are shown
+      #  - only-empty-focus-keywords: Only nodes with an empty focusKeyword property are shown
+      #  - only-existing-focus-keywords: Only nodes with a non-empty focusKeyword property are shown
+      focusKeywordPropertyFilter: null
+      # Restrict the node selection to a specific document node type
+      # BEWARE: the node type needs to inherit from NEOSidekick.AiAssistant:Mixin.AiPageBriefing
+      nodeTypeFilter: null
+      # Predefines how many images should be processed per page, to avoid generate too many in parallel
+      # Allowed: 5, 10, 15, 20, 25
+      itemsPerPage: 20
+    seoTitleAndMetaDescriptionModule:
+      # If you want to use custom filters, change this property to 'custom'
+      filter: 'important-pages'
+      # The workspace name where the nodes are taken from and saved to
+      # Allowed: null, live, ... (any other workspace name)
+      workspace: null
+      # The property filter for the titleOverride and metaDescription properties
+      # Allowed:
+      #  - none: All nodes are shown
+      #  - only-empty-seo-titles-or-meta-descriptions: Only nodes with an empty titleOverride or metaDescription property are shown
+      #  - only-empty-seo-titles: Only nodes with an empty titleOverride property are shown
+      #  - only-empty-meta-descriptions: Only nodes with an empty metaDescription property are shown
+      #  - only-existing-seo-titles: Only nodes with a non-empty titleOverride property are shown
+      #  - only-existing-meta-descriptions: Only nodes with a non-empty metaDescription property are shown
+      seoPropertiesFilter: null
+      # The property filter for the focusKeyword property
+      # Allowed:
+      #  - none: Both nodes with an empty and non-empty focusKeyword property are shown
+      #  - only-empty-focus-keywords: Only nodes with an empty focusKeyword property are shown
+      #  - only-existing-focus-keywords: Only nodes with a non-empty focusKeyword property are shown
+      focusKeywordPropertyFilter: null
+      # Restrict the node selection to a specific document node type
+      # BEWARE: the node type needs to inherit from NEOSidekick.AiAssistant:Mixin.AiPageBriefing
+      nodeTypeFilter: null
+      # Predefines how many images should be processed per page, to avoid generate too many in parallel
+      # Allowed: 5, 10, 15, 20, 25
+      itemsPerPage: 20

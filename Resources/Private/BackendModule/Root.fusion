@@ -1,52 +1,99 @@
 include: resource://Neos.Fusion/Private/Fusion/Root.fusion
 include: resource://Neos.Neos.Ui/Private/Fusion/Prototypes/RenderConfiguration.fusion
 include: resource://Sitegeist.FusionLinkPrototypes/Private/Fusion/Root.fusion
+include: ./BackendModule.fusion
 
-NEOSidekick.AiAssistant.AssetModuleController.index = Neos.Fusion:Component {
-    endpoints = Neos.Fusion:DataStructure {
-        translations = Sitegeist.FusionLinkPrototypes:ActionUri {
-            package = 'Neos.Neos'
-            controller = 'Backend\\Backend'
-            action = 'xliffAsJson'
-            absolute = true
-            arguments = Neos.Fusion:DataStructure {
-                locale = ${interfaceLanguage}
+NEOSidekick.AiAssistant.BackendModule.ImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
+    getAction = 'findAssets'
+    updateAction = 'updateAssets'
+    moduleConfiguration = Neos.Fusion:Value {
+        defaults = Neos.Fusion:DataStructure {
+            itemType = 'Asset'
+            onlyAssetsInUse = false
+            propertyName = 'title'
+            itemsPerPage = 10
+            language = ${Configuration.setting('NEOSidekick.AiAssistant.defaultLanguage')}
+            recommendNeosAssetCachePackage = ${NEOSidekick.AiAssistant.recommendNeosAssetCachePackage()}
+        }
+        config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.altTextGeneratorModule'), (value, key) => value != null)}
+        enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
+        editableProperties = ${this.config.propertyName ? [this.config.propertyName] : ['title']}
+        value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs}, {editableProperties: this.editableProperties})}
+    }
+}
 
-                # TODO: dirty hack to not have to re-implement neos:backend.configurationCacheVersion VH
-                version = Neos.Fusion:Template {
-                    templatePath = 'resource://Neos.Neos.Ui/Private/Templates/Backend/ConfigurationVersion.html'
-                    @process.trim = ${String.trim(value)}
-                }
+NEOSidekick.AiAssistant.BackendModule.FocusKeywordController.index = NEOSidekick.AiAssistant:BackendModule {
+    getAction = 'findDocumentNodes'
+    updateAction = 'updateNodeProperties'
+    moduleConfiguration = Neos.Fusion:Value {
+        defaults = Neos.Fusion:DataStructure {
+            // moduleName is only used for the configuration form text
+            moduleName = 'FocusKeyword'
+            filter = 'important-pages'
+            itemType = 'DocumentNode'
+            workspace = 'live'
+            focusKeywordPropertyFilter = null
+            focusKeywordPropertyFilterOptions = ${['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords']}
+            languageDimensionFilter = ${Array.keys(Configuration.setting('Neos.ContentRepository.contentDimensions.' + Configuration.setting('NEOSidekick.AiAssistant.languageDimensionName') + '.presets'))}
+            nodeTypeFilter = null
+            baseNodeTypeFilter = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing'
+            itemsPerPage = 10
+            editableProperties = ${['focusKeyword']}
+            actions = Neos.Fusion:DataStructure
+        }
+        config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.focusKeywordGeneratorModule'), (value, key) => value != null)}
+        enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
+        value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs})}
+    }
+}
+
+NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index = NEOSidekick.AiAssistant:BackendModule {
+    getAction = 'findDocumentNodes'
+    updateAction = 'updateNodeProperties'
+    moduleConfiguration = Neos.Fusion:Value {
+        defaults = Neos.Fusion:DataStructure {
+            // moduleName is only used for the configuration form text
+            moduleName = 'SeoTitleAndMetaDescription'
+            filter = 'important-pages'
+            itemType = 'DocumentNode'
+            workspace = 'live'
+            seoPropertiesFilter = null
+            seoPropertiesFilterOptions = ${['none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions']}
+            focusKeywordPropertyFilter = null
+            focusKeywordPropertyFilterOptions = ${['none', 'only-empty-focus-keywords', 'only-existing-focus-keywords']}
+            languageDimensionFilter = ${Array.keys(Configuration.setting('Neos.ContentRepository.contentDimensions.' + Configuration.setting('NEOSidekick.AiAssistant.languageDimensionName') + '.presets'))}
+            nodeTypeFilter = null
+            baseNodeTypeFilter = 'Neos.Seo:SeoMetaTagsMixin'
+            itemsPerPage = 10
+            readonlyProperties = ${['focusKeyword']}
+            editableProperties = ${['titleOverride', 'metaDescription']}
+            showSeoDirectives = true
+            actions = Neos.Fusion:DataStructure {
+                'autoGenerateEmptySeoTitles' = ${{'active': true, 'propertyName': 'titleOverride', 'clientEval': 'ClientEval: !node.properties.titleOverride'}}
+                'autoGenerateEmptyMetaDescriptions' = ${{'active': true, 'propertyName': 'metaDescription', 'clientEval': 'ClientEval: !node.properties.metaDescription'}}
+                'autoGenerateExistingSeoTitles' = ${{'active': false, 'propertyName': 'titleOverride', 'clientEval': 'ClientEval: node.properties.titleOverride'}}
+                'autoGenerateExistingMetaDescriptions' = ${{'active': false, 'propertyName': 'metaDescription', 'clientEval': 'ClientEval: node.properties.metaDescription'}}
             }
         }
-        getAssets = Sitegeist.FusionLinkPrototypes:ActionUri {
-            package = 'NEOSidekick.AiAssistant'
-            controller = 'BackendService'
-            action = 'index'
-            absolute = true
-            format = 'json'
-        }
-        updateAssets = Sitegeist.FusionLinkPrototypes:ActionUri {
-            package = 'NEOSidekick.AiAssistant'
-            controller = 'BackendService'
-            action = 'update'
-            absolute = true
-            format = 'json'
-        }
-        @process.json = ${Json.stringify(value)}
+        config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.seoTitleAndMetaDescriptionModule'), (value, key) => value != null)}
+        enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
+        value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs})}
     }
-    // TODO: maybe refactor this and not use prototypes
-    // from Neos.Neos.Ui to avoid polluting the UI configuration
-    // in Neos.Neos.Ui
-    frontendConfiguration = Neos.Neos.Ui:RenderConfiguration {
-        path = 'frontendConfiguration'
-        context.user = ${user}
-        @process.subset = ${value['NEOSidekick.AiAssistant']}
-        @process.json = ${Json.stringify(value)}
+}
+
+NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
+    getAction = 'findDocumentNodes'
+    updateAction = 'updateNodeProperties'
+    moduleConfiguration = Neos.Fusion:DataStructure {
+        moduleName = 'SeoImageAlternativeText'
+        itemType = 'DocumentNode'
     }
+}
+
+NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusion:Component {
+    apiDomain = ${developmentBuild ? 'https://api-staging.neosidekick.com' : 'https://api.neosidekick.com'}
     renderer = afx`
-        <script>{'_NEOSIDEKICK_AIASSISTANT_endpoints = ' + props.endpoints}</script>
-        <script>{'_NEOSIDEKICK_AIASSISTANT_configuration = ' + props.frontendConfiguration}</script>
-        <div id="appContainer" data-csrf-token={csrfToken}></div>
+        <div @if={developmentBuild} style="font-size: 1.5em; font-weight: bold; background: orange; padding: 1rem; margin-bottom: 1rem;">You are using the Development Version of the API</div>
+        <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey}></iframe>
     `
 }

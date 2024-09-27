@@ -1,0 +1,83 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="label">
+                <source>NEOSidekick AI-Assistant</source>
+                <target xml:lang="de">NEOSidekick AI-Assistent</target>
+            </trans-unit>
+            <trans-unit id="selectionFilter" xml:space="preserve">
+                <source>Selection filter</source>
+                <target xml:lang="de">Auswahl-Filter</target>
+            </trans-unit>
+            <trans-unit id="actions" xml:space="preserve">
+                <source>Actions</source>
+                <target xml:lang="de">Aktionen</target>
+            </trans-unit>
+            <trans-unit id="listEmpty">
+                <source>There are no items that match the filter!</source>
+                <target xml:lang="de">Es gibt keine Ergebnisse, die den Filtern entsprechen!</target>
+            </trans-unit>
+            <trans-unit id="listEndReached">
+                <source>Congratulations. You have reached the end of the list. You have gone through {0} entries.</source>
+                <target xml:lang="de">Gratuliere. Du hast das Ende der Liste erreicht. Dabei bist du {0} Einträge durchgegangen.</target>
+            </trans-unit>
+            <trans-unit id="listLimitReached">
+                <source>This tool can currently process a maximum of 10,000 entries at the same time. All your changes are saved, please start a new search.</source>
+                <target xml:lang="de">Dieses Tool kann aktuell maximal 10.000 Einträge gleichzeitig verarbeiten. Alle deine Änderungen sind gespeichert, bitte starte eine neue Suche.</target>
+            </trans-unit>
+            <trans-unit id="error.configuration">
+                <source>This module is not configured correctly. Please consult the documentation!</source>
+                <target xml:lang="de">Dieses Modul ist nicht korrekt konfiguriert. Bitte konsultiere die Dokumentation!</target>
+            </trans-unit>
+            <trans-unit id="error.noApiKey">
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+                <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
+            </trans-unit>
+            <trans-unit id="saveAndNextPage" xml:space="preserve">
+                <source>Save all and get next page</source>
+                <target xml:lang="de" state="translated">Alle Speichern und nächste Seite</target>
+            </trans-unit>
+            <trans-unit id="nextPage" xml:space="preserve">
+                <source>Next page</source>
+                <target xml:lang="de" state="translated">Nächste Seite</target>
+            </trans-unit>
+            <trans-unit id="discard">
+                <source>Discard</source>
+                <target xml:lang="de">Verwerfen</target>
+            </trans-unit>
+            <trans-unit id="persist">
+                <source>Save</source>
+                <target xml:lang="de">Speichern</target>
+            </trans-unit>
+            <trans-unit id="persisted">
+                <source>Saved</source>
+                <target xml:lang="de">Gespeichert</target>
+            </trans-unit>
+            <trans-unit id="persisting">
+                <source>Saving...</source>
+                <target xml:lang="de">Speichert...</target>
+            </trans-unit>
+            <trans-unit id="generating">
+                <source>Generating...</source>
+                <target xml:lang="de">Wird generiert...</target>
+            </trans-unit>
+            <trans-unit id="generate" xml:space="preserve">
+                <source>Generate</source>
+                <target xml:lang="de" state="translated">Generieren</target>
+            </trans-unit>
+            <trans-unit id="startModule">
+                <source>Start generation</source>
+                <target xml:lang="de">Generierung starten</target>
+            </trans-unit>
+            <trans-unit id="returnToOverview">
+                <source>Return to overview</source>
+                <target>Zurück zur Übersicht</target>
+            </trans-unit>
+            <trans-unit id="slowLoadingMessage">
+                <source>Large websites sometimes take a few seconds to calculate the relevant content. Please be patient.</source>
+                <target>Große Webseiten benötigen manchmal einige Sekunden zum Berechnen der relevanten Inhalte. Bitte habe kurz Geduld.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

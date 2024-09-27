@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="error.configuration">
+                <source>This module is not configured correctly. Please consult the documentation!</source>
+            </trans-unit>
+            <trans-unit id="error.noApiKey">
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+            </trans-unit>
+            <trans-unit id="configuration.filter.custom">
+                <source>I know what I'm doing and would prefer to set individual filters</source>
+            </trans-unit>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.label">
+                <source>Restrict by focus keyword</source>
+            </trans-unit>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.none">
+                <source>None</source>
+            </trans-unit>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.only-empty-focus-keywords">
+                <source>Only without focus keyword</source>
+            </trans-unit>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.only-existing-focus-keywords">
+                <source>Only with focus keyword</source>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.label">
+                <source>Restrict by SEO properties</source>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.none">
+                <source>None</source>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-seo-titles-or-meta-descriptions">
+                <source>Only without seo title or meta description</source>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-seo-titles">
+                <source>Only without seo title</source>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-meta-descriptions">
+                <source>Only without meta description</source>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-existing-seo-titles">
+                <source>Only with seo title</source>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-existing-meta-descriptions">
+                <source>Only with meta description</source>
+            </trans-unit>
+            <trans-unit id="configuration.nodeTypeFilter.label">
+                <source>Restrict to page type</source>
+            </trans-unit>
+            <trans-unit id="configuration.nodeTypeFilter.all">
+                <source>All page types</source>
+            </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.label">
+                <source>Select languages</source>
+            </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.all">
+                <source>All languages</source>
+            </trans-unit>
+            <trans-unit id="configuration.itemsPerPage.label">
+                <source>Number of generations per page</source>
+            </trans-unit>
+            <trans-unit id="configuration.workspace.label">
+                <source>Workspace (read and write)</source>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptySeoTitles">
+                <source>Automatically generate empty SEO titles</source>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyMetaDescriptions">
+                <source>Automatically generate empty meta descriptions</source>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingSeoTitles">
+                <source>Automatically regenerate existing SEO titles</source>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingMetaDescriptions">
+                <source>Automatically regenerate existing meta descriptions</source>
+            </trans-unit>
+            <trans-unit id="listItem.label">
+                <source>Page »{0}«</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

@@ -5,6 +5,7 @@ namespace NEOSidekick\AiAssistant;
 use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Package\PackageManager;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
 use Neos\Flow\Security\Cryptography\HashService;
@@ -55,6 +56,12 @@ class EelHelper implements ProtectedContextAwareInterface
      * @var PrivilegeManagerInterface
      */
     protected $privilegeManager;
+
+    /**
+     * @Flow\Inject
+     * @var PackageManager
+     */
+    protected $packageManager;
 
     public function isEnabled(): bool
     {
@@ -129,10 +136,15 @@ class EelHelper implements ProtectedContextAwareInterface
         return $this->settings['altTextGeneratorModule'] ?? null;
     }
 
+    public function recommendNeosAssetCachePackage() : bool
+    {
+        return !$this->packageManager->isPackageAvailable('Webandco.AssetUsageCache');
+    }
+
     /**
      * @inheritDoc
      */
-    public function allowsCallOfMethod($methodName)
+    public function allowsCallOfMethod($methodName): bool
     {
         return true;
     }

@@ -1,3 +1,9 @@
+/*
+ * This file is copied from Neos.Neos.Ui,
+ * and extended with fromError method.
+ */
+import AiAssistantError from "../AiAssistantError";
+
 const getTranslationAddress = function (id, packageKey, sourceName) {
     if (id && id.indexOf(':') !== -1) {
         return id.split(':');
@@ -100,5 +106,13 @@ export default class TranslationService {
         }
 
         return fallback;
+    }
+
+    public fromError(e: Error) {
+        if (e instanceof AiAssistantError) {
+            return this.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage});
+        } else {
+            return e.message;
+        }
     }
 }

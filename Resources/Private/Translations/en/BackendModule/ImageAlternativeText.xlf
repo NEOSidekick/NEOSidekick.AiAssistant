@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="label">
+                <source>Image Alternative Text Generator</source>
+            </trans-unit>
+            <trans-unit id="description">
+                <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility.]]></source>
+            </trans-unit>
+            <trans-unit id="intro">
+                <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>]]></source>
+            </trans-unit>
+            <trans-unit id="assetListItemLabel">
+                <source>File »{0}«</source>
+            </trans-unit>
+            <trans-unit id="configuration.onlyAssetsInUse.label">
+                <source>Selection of images</source>
+            </trans-unit>
+            <trans-unit id="configuration.onlyAssetsInUse.0">
+                <source>All images</source>
+            </trans-unit>
+            <trans-unit id="configuration.onlyAssetsInUse.1">
+                <source>Only images in use</source>
+            </trans-unit>
+            <trans-unit id="configuration.recommendNeosAssetCachePackage">
+                <source><![CDATA[Calculating asset usage on large websites can take a long time. We strongly recommend to install <a href="https://github.com/webandco/neos-asset-usage-cache" style="text-decoration:underline">webandco/neos-asset-usage-cache</a> in those cases.]]></source>
+            </trans-unit>
+            <trans-unit id="configuration.propertyName.label">
+                <source>Field to save the description in</source>
+            </trans-unit>
+            <trans-unit id="configuration.itemsPerPage.label">
+                <source>Number of entries per page</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.label">
+                <source>Language for the description</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.en">
+                <source>English</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.de">
+                <source>German</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.fr">
+                <source>French</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.es">
+                <source>Spanish</source>
+            </trans-unit>
+            <trans-unit id="configuration.language.it">
+                <source>Italian</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

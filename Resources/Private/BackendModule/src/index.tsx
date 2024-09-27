@@ -1,72 +1,75 @@
 import React from 'react';
-import {Root} from './Components'
-import createStore from "./Store";
-import { createRoot } from 'react-dom/client';
-import EndpointsInterface from "./Model/EndpointsInterface";
-import BackendService from "./Service/BackendService";
+import RootView from './Views/RootView'
+import {createRoot} from 'react-dom/client';
+import {Endpoints} from "./Model/Endpoints";
+import NeosBackendService from "./Service/NeosBackendService";
 import TranslationService from "./Service/TranslationService";
-import {ExternalService} from "./Service/ExternalService";
-import {omitBy, isNull} from "lodash"
+import {SidekickApiService} from "./Service/SidekickApiService";
+import {ModuleConfiguration} from "./Model/ModuleConfiguration";
+import Alert from "./Components/Alert";
+import Workspaces from "./Model/Workspaces";
+
 document.addEventListener('DOMContentLoaded', async() => {
-    const endpoints: EndpointsInterface = window['_NEOSIDEKICK_AIASSISTANT_endpoints']
-    const configuration: {
+    const csrfToken = window['_NEOSIDEKICK_AIASSISTANT_csrfToken'];
+    const endpoints: Endpoints = window['_NEOSIDEKICK_AIASSISTANT_endpoints']
+    const frontendConfiguration: {
         apiDomain: string,
         apiKey: string,
         defaultLanguage: string,
-        altTextGeneratorModule: object|null,
-        userInterfaceLanguage: string
-    } = window['_NEOSIDEKICK_AIASSISTANT_configuration']
+        userInterfaceLanguage: string,
+        domain: string,
+        contentDimensions: {
+            [dimensionName: string]: {
+                label: string,
+                icon: string,
+                default: string,
+                presets: {
+                    [preset: string]: {
+                        label: string,
+                        values: string[],
+                        uriSegment: string
+                    }
+                }
+            }
+        }
+    } = window['_NEOSIDEKICK_AIASSISTANT_frontendConfiguration'];
+    const moduleConfiguration = window['_NEOSIDEKICK_AIASSISTANT_moduleConfiguration'] as ModuleConfiguration;
+    const workspaces = window['_NEOSIDEKICK_AIASSISTANT_workspaces'] as Workspaces;
+
+    const backend = NeosBackendService.getInstance()
+    backend.configure(endpoints, csrfToken)
+
+    const translationService = TranslationService.getInstance();
+    const translations = await backend.getTranslations();
+    translationService.configure(translations);
 
     const appContainer = document.getElementById('appContainer');
-
-    const backend = BackendService.getInstance()
-    backend.configure(endpoints, appContainer.dataset.csrfToken)
-
-    const translationService = TranslationService.getInstance()
-    const translations = await backend.getTranslations()
-    translationService.configure(translations)
-
     const root = createRoot(appContainer)
 
-    if (!endpoints || !configuration) {
+    if (!csrfToken || !endpoints || !frontendConfiguration || !moduleConfiguration || !workspaces) {
         root.render(
-            <p dangerouslySetInnerHTML={{ __html: translationService.translate('NEOSidekick.AiAssistant:AssetModule:error.configuration', 'This module is not configured correctly. Please consult the documentation!') }} />
+            <Alert message={translationService.translate('NEOSidekick.AiAssistant:Module:error.configuration', 'This module is not configured correctly. Please consult the documentation!')} />
         )
         return
     }
 
-    if (!configuration.apiKey) {
+    if (!frontendConfiguration.apiKey) {
         root.render(
-            <p dangerouslySetInnerHTML={{ __html: translationService.translate('NEOSidekick.AiAssistant:AssetModule:error.noApiKey', 'This feature is not available in the free version!') }} />
+            <Alert message={translationService.translate('NEOSidekick.AiAssistant:Module:error.noApiKey', 'This feature is not available in the free version!')} />
         )
         return
     }
 
-    const externalService = ExternalService.getInstance()
-    externalService.configure(configuration.apiDomain, configuration.apiKey, configuration.userInterfaceLanguage)
-
-    // Set default configuration
-    const initialModuleConfiguration = omitBy(configuration?.altTextGeneratorModule || {}, isNull);
-    const moduleConfiguration = {
-        onlyAssetsInUse: false,
-        propertyName: 'title',
-        limit: 5,
-        language: configuration.defaultLanguage,
-        ...initialModuleConfiguration
-    }
-    const store = createStore({
-        app: {
-            moduleConfiguration,
-            initialModuleConfiguration,
-            loading: true,
-            started: false,
-            busy: false,
-            items: {},
-            backendMessage: await externalService.getBackendNotification('bulk-image-generation')
-        }
-    })
+    const sidekickApiService = SidekickApiService.getInstance()
+    sidekickApiService.configure(frontendConfiguration.apiDomain, frontendConfiguration.apiKey, frontendConfiguration.userInterfaceLanguage)
 
     root.render(
-        <Root store={store} />
+        <RootView
+            endpoints={endpoints}
+            moduleConfiguration={moduleConfiguration}
+            workspaces={workspaces}
+            languageDimensionConfiguration={frontendConfiguration.contentDimensions.language ?? null}
+            domain={frontendConfiguration.domain}
+        />
     )
 })

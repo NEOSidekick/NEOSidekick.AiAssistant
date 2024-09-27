@@ -12,6 +12,7 @@ interface DocumentNodeListViewItemImageProps {
     item: DocumentNodeListItem;
     imageProperty: ListItemImage;
     htmlContent: string;
+    iframeRef: React.RefObject<HTMLIFrameElement>;
 
     updateItemProperty(propertyName: string, value: string, state: ListItemPropertyState): void;
 }
@@ -37,6 +38,16 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
         const nodeTypeLabelTranslation = this.translationService.translate(nodeTypeSchema.label, nodeTypeSchema.label);
         const imagePropertyLabelTranslation = this.translationService.translate(imagePropertySchema.ui?.label, imagePropertySchema.ui?.label);
         return `Element ${nodeTypeLabelTranslation} – ${imagePropertyLabelTranslation}`;
+    }
+
+    private scrollToImageInIframe(): void {
+        const {imageProperty} = this.props;
+        const message = {
+            type: 'scrollToImage',
+            imageUris: [imageProperty.fullsizeUri, imageProperty.thumbnailUri]
+        };
+        const iframe = this.props.iframeRef.current;
+        iframe.contentWindow.postMessage(message, location.origin);
     }
 
     /* Since the image does not have an inherent sidekick configuration, we need to create one */
@@ -74,8 +85,8 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
             <div style={{backgroundColor: '#323232', padding: '16px 16px 1px', marginBottom: '32px'}}>
                 <label style={{fontWeight: 'bold'}}>{this.getLabel()}</label>
                 <div style={{backgroundColor: '#ffffff', marginBottom: '16px', display: 'flex'}}>
-                    <img src={imageProperty.thumbnailUri} alt=""
-                         style={{maxHeight: '300px', maxWidth: '100%', margin: 'auto'}}/>
+                    <img src={imageProperty.thumbnailUri} alt="" onClick={() => this.scrollToImageInIframe()}
+                         style={{maxHeight: '300px', maxWidth: '100%', margin: 'auto', cursor: 'pointer'}}/>
                 </div>
 
                 {alternativeTextPropertySchema ? <TextAreaEditor

@@ -13,6 +13,7 @@ interface DocumentNodeListViewItemImageProps {
     imageProperty: ListItemImage;
     htmlContent: string;
     iframeRef: React.RefObject<HTMLIFrameElement>;
+    lazyGenerate: boolean
 
     updateItemProperty(propertyName: string, value: string, state: ListItemPropertyState): void;
 }
@@ -73,7 +74,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
     }
 
     render() {
-        const {item, imageProperty} = this.props;
+        const {item, imageProperty, lazyGenerate} = this.props;
         const alternativeTextPropertySchema = imageProperty.alternativeTextProperty?.propertyName ? this.context.nodeTypes[imageProperty.nodeTypeName]?.properties?.[imageProperty.alternativeTextProperty.propertyName] as PropertySchema : null;
         const titleTextPropertySchema = imageProperty.titleTextProperty?.propertyName ? this.context.nodeTypes[item.nodeTypeName]?.properties?.[imageProperty.titleTextProperty.propertyName] as PropertySchema : null;
 
@@ -99,6 +100,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
                     autoGenerateIfActionsMatch={true}
                     showGenerateButton={true}
                     showResetButton={true}
+                    lazyGenerate={lazyGenerate}
                     updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('alternativeTextProperty', value, state)}/> : null}
 
                 {titleTextPropertySchema ? <TextAreaEditor
@@ -111,6 +113,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
                     autoGenerateIfActionsMatch={true}
                     showGenerateButton={true}
                     showResetButton={true}
+                    lazyGenerate={lazyGenerate}
                     updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('titleTextProperty', value, state)}/> : null}
             </div>
         )

@@ -20,9 +20,10 @@ export interface TextAreaEditorProps {
     sidekickConfiguration?: TextAreaEditorSidekickConfiguration,
     autoGenerateIfActionsMatch?: boolean,
     showGenerateButton?: boolean,
+    showResetButton?: boolean,
+    lazyGenerate?: boolean,
     rows?: number,
     marginBottom?: string,
-    showResetButton?: boolean,
 }
 
 export interface TextAreaEditorState {
@@ -57,7 +58,11 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
                 }
             }
             if (matches) {
-                this.generateValue().then(() => {});
+                if (this.props.lazyGenerate) {
+                    setTimeout(() => this.generateValue().then(() => {}), 500);
+                } else {
+                    this.generateValue().then(() => {});
+                }
             }
         }
     }

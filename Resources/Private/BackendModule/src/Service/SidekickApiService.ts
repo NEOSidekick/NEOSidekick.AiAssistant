@@ -51,7 +51,11 @@ export class SidekickApiService {
         if (response.status === 401) {
             throw new AiAssistantError('The NEOSidekick api key provided is not valid.', '1688158193038')
         } else if (response.status < 200 || response.status >= 400) {
-            throw new AiAssistantError('An error occurred while asking NEOSidekick', '1688158257149', jsonData?.message)
+            let message = jsonData?.message;
+            if (jsonData?.errors) {
+                message += '<br>' + Object.values(jsonData.errors).join('<br>');
+            }
+            throw new AiAssistantError('An error occurred while asking NEOSidekick', '1688158257149', message)
         }
 
         let message = jsonData?.data?.message?.message

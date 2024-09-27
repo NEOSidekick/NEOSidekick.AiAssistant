@@ -36,7 +36,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
         const imagePropertySchema = this.context.nodeTypes[imageProperty.nodeTypeName]?.properties?.[imageProperty.imagePropertyName] as PropertySchema;
         const nodeTypeLabelTranslation = this.translationService.translate(nodeTypeSchema.label, nodeTypeSchema.label);
         const imagePropertyLabelTranslation = this.translationService.translate(imagePropertySchema.ui?.label, imagePropertySchema.ui?.label);
-        return `${nodeTypeLabelTranslation} / ${imagePropertyLabelTranslation}`;
+        return `Element ${nodeTypeLabelTranslation} – ${imagePropertyLabelTranslation}`;
     }
 
     /* Since the image does not have an inherent sidekick configuration, we need to create one */
@@ -71,8 +71,8 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
         }
 
         return (
-            <div style={{marginBottom: '32px'}}>
-                <label><strong>{this.getLabel()}</strong></label>
+            <div style={{backgroundColor: '#323232', padding: '16px 16px 1px', marginBottom: '32px'}}>
+                <label style={{fontWeight: 'bold'}}>{this.getLabel()}</label>
                 <div style={{backgroundColor: '#ffffff', marginBottom: '16px', display: 'flex'}}>
                     <img src={imageProperty.thumbnailUri} alt=""
                          style={{maxHeight: '300px', maxWidth: '100%', margin: 'auto'}}/>

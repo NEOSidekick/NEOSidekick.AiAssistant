@@ -153,11 +153,47 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         }
     }
 
+    injectScrollScriptIntoDocument(htmlContent) {
+        const script = `
+                <script>
+                    window.addEventListener('message', function(event) {
+                        if (event.data.type === 'scrollToImage') {
+                            let img;
+                            // find by full uri
+                            event.data.imageUris.forEach(function(imageUri) {
+                                if (imageUri.indexOf('_Resources/Static/Packages/Neos.Media/IconSets/vivid/') !== -1) return;
+                                img = img || document.querySelector('img[src*="' + imageUri + '"],img[srcset*="' + imageUri + '"],img[data-srcset*="' + imageUri + '"]');
+                            });
+                            if (img) {
+                                img.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                return;
+                            }
+                            // find by file name
+                            event.data.imageUris.forEach(function(imageUri) {
+                                if (imageUri.indexOf('_Resources/Static/Packages/Neos.Media/IconSets/vivid/') !== -1) return;
+                                let filename = imageUri.split('/').pop();
+                                filename = filename.split('.').slice(0, -1).join('.');
+                                let filenameParts = filename.split('-');
+                                if (filenameParts.length > 1 && filenameParts.pop().match(/^\\d+x\\d+$/)) {
+                                    filename = filenameParts.join('-');
+                                }
+                                img = img || document.querySelector('img[src*="' + filename + '"],img[srcset*="' + filename + '"],img[data-srcset*="' + filename + '"]');
+                            });
+                            if (img) {
+                                img.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }
+                    }, false);
+                </script>
+            `;
+        return htmlContent.replace('</head>', script + '</head>');
+    }
+
     componentDidUpdate(prevProps: Readonly<ListItemProps>, prevState: Readonly<DocumentNodeListItemState>) {
         if (!prevState.htmlContent && this.state.htmlContent) {
             const iframe = this.iframeRef.current
             iframe.contentWindow.document.open()
-            iframe.contentWindow.document.write(this.state.htmlContent)
+            iframe.contentWindow.document.write(this.injectScrollScriptIntoDocument(this.state.htmlContent))
             iframe.contentWindow.document.close()
         }
     }
@@ -209,6 +245,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                                 item={item}
                                 imageProperty={imageProperty}
                                 htmlContent={htmlContent}
+                                iframeRef={this.iframeRef}
                                 updateItemProperty={(propertyName: string, propertyValue: string, propertyState: ListItemPropertyState) => this.updateItemImageProperty(imageProperty.nodeContextPathWithProperty, propertyName, propertyValue, propertyState)}
                             />
                         )

@@ -12,6 +12,7 @@ import AppContext, {AppContextType} from "../../AppContext";
 import DocumentNodeListViewItemImage from "./DocumentNodeListViewItemImage";
 import {ListItemImage} from "../../Model/ListItemImage";
 import {getItemByIdentifier, ListViewState} from "./ListView";
+import {DocumentNodeModuleConfiguration} from "../../Model/ModuleConfiguration";
 
 export interface DocumentNodeListViewItemProps extends ListItemProps {
     item: DocumentNodeListItem
@@ -212,7 +213,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                             />
                         )
                     })}
-                    {this.context.moduleConfiguration.showSeoDirectives && (item.properties.canonicalLink || item.properties.metaRobotsNoindex || item.properties.metaRobotsNofollow) && (
+                    {(this.context.moduleConfiguration as DocumentNodeModuleConfiguration).showSeoDirectives && (item.properties.canonicalLink || item.properties.metaRobotsNoindex || item.properties.metaRobotsNofollow) && (
                         <div style={{backgroundColor: 'var(--warning)', marginBottom: '1.5rem', padding: '12px', fontWeight: 400, fontSize: '14px', lineHeight: 1.4}}>
                             <h3>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule:SeoTitleAndMetaDescription:seoDirectivesLabel', 'SEO Directives')}</h3>
                             {item.properties.canonicalLink && (

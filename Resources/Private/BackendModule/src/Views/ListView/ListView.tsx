@@ -17,7 +17,7 @@ import ProgressBar from "../../Components/ProgressBar";
 import {ListItemImage} from "../../Model/ListItemImage";
 import {has} from "lodash";
 
-export function getItemByIdentifier(state: ListViewState, identifier: string) {
+export function getItemByIdentifier(state: ListViewState, identifier: string): ListItem|undefined {
     return Object.values(state.items).find(item => item.identifier === identifier);
 }
 

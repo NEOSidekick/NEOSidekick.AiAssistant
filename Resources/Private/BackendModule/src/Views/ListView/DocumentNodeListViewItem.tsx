@@ -199,7 +199,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
     }
 
     render() {
-        const {item, persistItem} = this.props;
+        const {item, persistItem, lazyGenerate} = this.props;
         const {htmlContent} = this.state;
         const propertySchemas: { [key: string]: PropertySchema } = this.context.nodeTypes[item.nodeTypeName]?.properties;
 
@@ -246,6 +246,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                                 imageProperty={imageProperty}
                                 htmlContent={htmlContent}
                                 iframeRef={this.iframeRef}
+                                lazyGenerate={lazyGenerate}
                                 updateItemProperty={(propertyName: string, propertyValue: string, propertyState: ListItemPropertyState) => this.updateItemImageProperty(imageProperty.nodeContextPathWithProperty, propertyName, propertyValue, propertyState)}
                             />
                         )

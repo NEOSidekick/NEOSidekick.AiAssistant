@@ -29,7 +29,7 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
         this.state = {};
         // noinspection JSIgnoredPromiseFromCall
         // we need to wait for the context to be set
-        setTimeout(() => this.generateValue(), 100);
+        setTimeout(() => this.generateValue(), props.lazyGenerate ? 500 : 100);
     }
 
     private getProperty(): ListItemProperty {

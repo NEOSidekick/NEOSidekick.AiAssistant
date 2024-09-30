@@ -21,6 +21,8 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
+use Neos\Media\Domain\Model\ImageInterface;
+use Neos\Media\Domain\Model\ImageVariant;
 use NEOSidekick\AiAssistant\Service\AssetService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Service\NodeWithImageService;
@@ -249,5 +251,27 @@ class BackendServiceController extends ActionController
         $this->response->setStatusCode(500);
         $this->response->setContentType('application/json');
         return json_encode(['error' => $exception->getMessage(), 'code' => $exception->getCode()], JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Fetch the metadata for a given image
+     *
+     * @param ImageInterface $image
+     *
+     * @return string JSON encoded response
+     * @throws JsonException
+     */
+    public function imageTitleAndCaptionAction(ImageInterface $image): string
+    {
+        $this->response->setContentType('application/json');
+        if ($image instanceof ImageVariant) {
+            $originalImage = $image->getOriginalAsset();
+        } else {
+            $originalImage = $image;
+        }
+        return json_encode([
+            'title' => $originalImage->getTitle(),
+            'caption' => $originalImage->getCaption(),
+        ], JSON_THROW_ON_ERROR);
     }
 }

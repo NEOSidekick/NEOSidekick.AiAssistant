@@ -18,6 +18,42 @@ interface DocumentNodeListViewItemImageProps {
     updateItemProperty(propertyName: string, value: string, state: ListItemPropertyState): void;
 }
 
+/**
+ * If the first image fails to load, it will try the fallback and then a generic image
+ */
+function ImageWithFallback({src, fallback, ...rest} : {src: string, fallback: string}) {
+    const [imageSrc, setImageSrc] = React.useState(src);
+    const [fallbackType, setFallbackType] = React.useState<'none' | 'fallback' | 'srcFileExtension' | 'fallbackFileExtension' | 'genericIcon'>('none');
+
+    const onError = () => {
+        switch (fallbackType) {
+            case 'none':
+                setFallbackType('fallback');
+                setImageSrc(fallback);
+                break;
+            case 'fallback':
+                setFallbackType('srcFileExtension');
+                setImageSrc('/_Resources/Static/Packages/Neos.Media/IconSets/vivid/' + src.split('.').pop().toLowerCase() + '.svg');
+                break;
+            case 'srcFileExtension':
+                setFallbackType('fallbackFileExtension');
+                setImageSrc('/_Resources/Static/Packages/Neos.Media/IconSets/vivid/' + fallback.split('.').pop().toLowerCase() + '.svg');
+                break;
+            case 'fallbackFileExtension':
+                setFallbackType('genericIcon');
+                setImageSrc('/_Resources/Static/Packages/Neos.Media/IconSets/vivid/image.svg');
+                break;
+        }
+    };
+
+    return <img
+        src={imageSrc}
+        alt=""
+        onError={onError}
+        {...rest}
+    />
+}
+
 export default class DocumentNodeListViewItemImage extends PureComponent<DocumentNodeListViewItemImageProps, {}> {
     static contextType = AppContext;
     context: AppContextType;
@@ -86,8 +122,12 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
             <div style={{backgroundColor: '#323232', padding: '16px 16px 1px', marginBottom: '32px'}}>
                 <label style={{fontWeight: 'bold'}}>{this.getLabel()}</label>
                 <div style={{backgroundColor: '#ffffff', marginBottom: '16px', display: 'flex'}}>
-                    <img src={imageProperty.thumbnailUri} alt="" onClick={() => this.scrollToImageInIframe()}
-                         style={{maxHeight: '300px', maxWidth: '100%', margin: 'auto', cursor: 'pointer'}}/>
+                    <ImageWithFallback
+                        src={imageProperty.thumbnailUri}
+                        fallback={imageProperty.fullsizeUri}
+                        onClick={() => this.scrollToImageInIframe()}
+                        style={{maxHeight: '300px', maxWidth: '100%', margin: 'auto', cursor: 'pointer'}}
+                    />
                 </div>
 
                 {alternativeTextPropertySchema ? <TextAreaEditor

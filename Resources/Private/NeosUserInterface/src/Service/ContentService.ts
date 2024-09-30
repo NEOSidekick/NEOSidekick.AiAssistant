@@ -109,8 +109,8 @@ export class ContentService {
                 }
                 // Functions
                 const AssetUri = this.getImageMetadata
-                const AssetTitle = (assetObjectArray: any, fallbackValue: string) => this.getAssetProperty('title', assetObjectArray, fallbackValue)
-                const AssetCaption = (assetObjectArray: any, fallbackValue: string) => this.getAssetProperty('caption', assetObjectArray, fallbackValue)
+                const AssetTitle = (assetObjectArray: any, fallbackValue?: string) => this.getAssetProperty('title', assetObjectArray, fallbackValue || '')
+                const AssetCaption = (assetObjectArray: any, fallbackValue?: string) => this.getAssetProperty('caption', assetObjectArray, fallbackValue || '')
                 const AsyncFunction = Object.getPrototypeOf(async function () {
                 }).constructor
                 const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri,AssetTitle,AssetCaption', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));

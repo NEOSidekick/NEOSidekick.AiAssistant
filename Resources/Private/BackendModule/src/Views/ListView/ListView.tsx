@@ -332,7 +332,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                         <FontAwesomeIcon icon={faChevronLeft}/>&nbsp;
                         {this.translationService.translate('NEOSidekick.AiAssistant:Module:returnToOverview', 'Return to overview')}
                     </a>
-                    {this.state.listState === ListState.Result ? <button
+                    {this.state.listState === ListState.Result && this.paginatedItems().length !== 0 ? <button
                         onClick={() => this.saveCurrentItemsAndNextPage()}
                         className={'neos-button neos-button-success'}>
                         {this.showSaveButtonSpinner() ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : <FontAwesomeIcon icon={this.hasUnsavedChanges() ? faCheckDouble : faCheck}/>}&nbsp;

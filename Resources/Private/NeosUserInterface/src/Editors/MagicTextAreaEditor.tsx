@@ -108,19 +108,27 @@ export default class MagicTextAreaEditor extends Component<any, any> {
 
         const pattern = /node\.properties\.(\w+)/g;
         const matches = options.placeholder.match(pattern);
-        const properties = matches.map((match: string) => {
-            const [, property]: RegExpMatchArray = match.match(/node\.properties\.(.*)/);
-            return property;
+        if (!matches) {
+            return;
+        }
+
+        const mentionedPropertyNames = matches
+            .map((match: string) => {
+                const propertyMatch = match.match(/node\.properties\.(.*)/);
+                return propertyMatch ? propertyMatch[1] : null;
+            })
+            .filter((property): property is string => property !== null);
+
+        const shouldUpdate = mentionedPropertyNames.some((property: string) => {
+            return (
+                transientValues?.[property] !== prevProps.transientValues?.[property] ||
+                node?.properties?.[property] !== prevProps.node?.properties?.[property]
+            );
         });
 
-        let shouldUpdate = false;
-        properties.forEach((property: string) => {
-            if (transientValues?.[property] !== prevProps.transientValues?.[property] || node.properties[property] !== prevProps.node.properties[property]) {
-                shouldUpdate = true;
-            }
-        });
-
-        shouldUpdate && this.fetchAndUpdatePlaceholder();
+        if (shouldUpdate) {
+            await this.fetchAndUpdatePlaceholder();
+        }
     }
 
     private fetchAndUpdatePlaceholder = async () => {

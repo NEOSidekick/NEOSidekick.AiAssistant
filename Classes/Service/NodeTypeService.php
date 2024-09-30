@@ -15,7 +15,9 @@ use NEOSidekick\AiAssistant\Dto\NodeTypeWithImageMetadataSchemaDto;
 class NodeTypeService
 {
     public const ASSET_URI_EXPRESSION = '/SidekickClientEval:\s*AssetUri\(node\.properties\.(\w+)\)/';
-    private const ALT_TAG_GENERATOR_MODULE = 'alt_tag_generator';
+    private const IMAGE_ALTERNATIVE_TEXT_MODULE_NAME = 'image_alt_text';
+    private const IMAGE_ALTERNATIVE_TEXT_MODULE_NAME_LEGACY = 'alt_tag_generator';
+    private const IMAGE_TITLE_TEXT_MODULE_NAME = 'image_title';
     private const CACHE_ENTRY_IDENTIFIER = 'nodeTypesWithImageAlternativeTextOrTitleConfiguration';
 
     /**
@@ -83,18 +85,21 @@ class NodeTypeService
     private function processPropertyConfiguration($nodeType, string $propertyName, array $propertyConfiguration, array &$matchingNodeTypes): void
     {
         $module = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.module');
-        if ($module === self::ALT_TAG_GENERATOR_MODULE) {
-            $this->processAltTagGeneratorModule($nodeType, $propertyName, $propertyConfiguration, $matchingNodeTypes);
+        if ($module === self::IMAGE_ALTERNATIVE_TEXT_MODULE_NAME || $module === self::IMAGE_ALTERNATIVE_TEXT_MODULE_NAME_LEGACY) {
+            $this->processImageTextGeneratorModule($nodeType, 'alternativeTextPropertyName', $propertyName, $propertyConfiguration, $matchingNodeTypes);
+        }
+        if ($module === self::IMAGE_TITLE_TEXT_MODULE_NAME) {
+            $this->processImageTextGeneratorModule($nodeType, 'titleTextPropertyName', $propertyName, $propertyConfiguration, $matchingNodeTypes);
         }
     }
 
-    private function processAltTagGeneratorModule($nodeType, string $propertyName, array $propertyConfiguration, array &$matchingNodeTypes): void
+    private function processImageTextGeneratorModule($nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration, array &$matchingNodeTypes): void
     {
         $matches = [];
         preg_match(self::ASSET_URI_EXPRESSION, Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.arguments.url'), $matches);
         $imageProperty = $matches[1] ?? null;
         if ($imageProperty && array_key_exists($imageProperty, $nodeType->getProperties())) {
-            $matchingNodeTypes[$nodeType->getName()][$imageProperty]['alternativeTextPropertyName'] = $propertyName;
+            $matchingNodeTypes[$nodeType->getName()][$imageProperty][$nodeTypeKey] = $propertyName;
         }
     }
 
@@ -107,8 +112,8 @@ class NodeTypeService
                     $nodeTypeWithImageMetadataSchemaDtos[$nodeTypeName][$imagePropertyName] = new NodeTypeWithImageMetadataSchemaDto(
                         $nodeTypeName,
                         $imagePropertyName,
-                        $propertyConfiguration['alternativeTextPropertyName'],
-                        null
+                        $propertyConfiguration['alternativeTextPropertyName'] ?? null,
+                        $propertyConfiguration['titleTextPropertyName'] ?? null
                     );
                 }
             }

@@ -112,7 +112,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
     render() {
         const {item, imageProperty, lazyGenerate} = this.props;
         const alternativeTextPropertySchema = imageProperty.alternativeTextProperty?.propertyName ? this.context.nodeTypes[imageProperty.nodeTypeName]?.properties?.[imageProperty.alternativeTextProperty.propertyName] as PropertySchema : null;
-        const titleTextPropertySchema = imageProperty.titleTextProperty?.propertyName ? this.context.nodeTypes[item.nodeTypeName]?.properties?.[imageProperty.titleTextProperty.propertyName] as PropertySchema : null;
+        const titleTextPropertySchema = imageProperty.titleTextProperty?.propertyName ? this.context.nodeTypes[imageProperty.nodeTypeName]?.properties?.[imageProperty.titleTextProperty.propertyName] as PropertySchema : null;
 
         if (!alternativeTextPropertySchema && !titleTextPropertySchema) {
             return; // ignore properties that do not exist on this node type

@@ -27,6 +27,7 @@ const defaultOptions = {
     return {
         activeContentDimensions: selectors.CR.ContentDimensions.active(state),
         node: node,
+        transientValues: selectors.UI.Inspector.transientValues(state),
         parentNode: selectors.CR.Nodes.nodeByContextPath(state)(node.parent),
     };
 }, {
@@ -35,7 +36,14 @@ const defaultOptions = {
 export default class MagicTextAreaEditor extends Component<any, any> {
     constructor(props: any) {
         super(props);
-        this.state = {loading: false}
+        let initialPlaceholder = '';
+        if (props.options?.placeholder?.startsWith('SidekickClientEval')) {
+            this.fetchAndUpdatePlaceholder();
+        } else if (props.options?.placeholder) {
+            // Placeholder text must be unescaped in case html entities were used
+            initialPlaceholder = props.i18nRegistry.translate(unescape(props.options.placeholder));
+        }
+        this.state = {loading: false, placeholder: initialPlaceholder};
     }
     static propTypes = {
         className: PropTypes.string,
@@ -47,6 +55,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         activeContentDimensions: PropTypes.object.isRequired,
         node: PropTypes.object,
         parentNode: PropTypes.object,
+        transientValues: PropTypes.object,
 
         i18nRegistry: PropTypes.object.isRequired,
         externalService: PropTypes.object.isRequired,
@@ -58,6 +67,10 @@ export default class MagicTextAreaEditor extends Component<any, any> {
     static defaultProps = {
         options: {}
     };
+
+    componentDidUpdate(prevProps) {
+        this.fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged(prevProps);
+    }
 
     renderIcon(loading: boolean) {
         if (loading) {
@@ -91,11 +104,49 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         }
     }
 
+    private fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged = async (prevProps) => {
+        const {node, transientValues, options} = this.props;
+
+        if (!options?.placeholder?.startsWith('SidekickClientEval')) {
+            return;
+        }
+
+        const pattern = /node\.properties\.(\w+)/g;
+        const matches = options.placeholder.match(pattern);
+        if (!matches) {
+            return;
+        }
+
+        const mentionedPropertyNames = matches
+            .map((match: string) => {
+                const propertyMatch = match.match(/node\.properties\.(.*)/);
+                return propertyMatch ? propertyMatch[1] : null;
+            })
+            .filter((property): property is string => property !== null);
+
+        const shouldUpdate = mentionedPropertyNames.some((property: string) => {
+            return (
+                transientValues?.[property] !== prevProps.transientValues?.[property] ||
+                node?.properties?.[property] !== prevProps.node?.properties?.[property]
+            );
+        });
+
+        if (shouldUpdate) {
+            await this.fetchAndUpdatePlaceholder();
+        }
+    }
+
+    private fetchAndUpdatePlaceholder = async () => {
+        const {contentService, node, parentNode, options} = this.props;
+        contentService
+            .processClientEval(options.placeholder, node, parentNode)
+            .then((placeholder: string) => this.setState({placeholder}));
+    }
+
     render () {
         const {id, value, className, commit, options, i18nRegistry} = this.props;
+        const {placeholder} = this.state;
 
-        // Placeholder text must be unescaped in case html entities were used
-        const placeholder = options && options.placeholder && i18nRegistry.translate(unescape(options.placeholder));
         const finalOptions = Object.assign({}, defaultOptions, options);
         const showGenerateButton = !finalOptions.readonly && !finalOptions.disabled;
 

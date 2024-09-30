@@ -1,11 +1,12 @@
 import React from "react";
 import PureComponent from "../../Components/PureComponent";
-import {ListItemProperty, ListItemPropertyState, PropertySchema} from "../../Model/ListItemProperty";
+import {EditorOptions, ListItemProperty, ListItemPropertyState, PropertySchema} from "../../Model/ListItemProperty";
 import TextAreaEditor from "../../Components/Editor/TextAreaEditor";
 import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
 import AppContext, {AppContextType} from "../../AppContext";
 import Alert from "../../Components/Alert";
 import FocusKeywordEditor from "../../Components/Editor/FocusKeywordEditor";
+import {Draft, produce} from "immer";
 
 interface DocumentNodeListItemPropertyProps {
     item: DocumentNodeListItem;
@@ -32,6 +33,7 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
             return; // ignore properties that no not exist on this node type
         }
 
+        let finalPropertySchema = propertySchema;
         switch (propertySchema?.ui?.inspector?.editor) {
             case 'NEOSidekick.AiAssistant/Inspector/Editors/FocusKeywordEditor':
                 if (readonly) {
@@ -68,9 +70,17 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                         updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty(value, state)}
                     />
                 )
+            case 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor':
+            case 'NEOSidekick.AiAssistant/Inspector/Editors/ImageTitleEditor':
+                if (!propertySchema?.ui?.inspector?.editorOptions?.imagePropertyName) {
+                    return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>Incorrect YAML Configuration: Image Text Editor requires an editorOption <i>imagePropertyName</i></div>;
+                }
+
+                let module = propertySchema.ui.inspector.editor === 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor' ? 'image_alt_text' : 'image_title';
+                finalPropertySchema = createMagicTextAreaEditorPropsForImageTextEditor(propertySchema, module);
+                // fall through
             case 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor':
             case 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor':
-                let finalPropertySchema = propertySchema;
                 if (propertySchema?.ui?.inspector?.editorOptions?.module === 'meta_description') {
                     // For the meta description we always want to prefer quality to speed in the bulk module
                     finalPropertySchema = JSON.parse(JSON.stringify(propertySchema));
@@ -97,4 +107,42 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                 }
         }
     }
+}
+
+
+// Keep in sync with Resources/Private/NeosUserInterface/src/Editors/ImageAltTextEditor.tsx
+export function createMagicTextAreaEditorPropsForImageTextEditor(propertySchema: any, module: string, supportsPlaceholder: boolean = true): any {
+    Object.keys(propertySchema?.ui?.inspector?.editorOptions).forEach(key => {
+        if (!['imagePropertyName', 'fallbackAssetPropertyName'].includes(key)) {
+            console.warn('[NEOSidekick.AiAssistant]: Image text editor does not support editorOption "' + key + '".');
+        }
+    });
+
+    return produce(propertySchema, (draft: Draft<any>) => {
+        let options = draft.ui.inspector.editorOptions as EditorOptions;
+        let imagePropertyName = options.imagePropertyName;
+        let fallbackAssetPropertyName = options.fallbackAssetPropertyName;
+
+        options = options || {};
+        draft.ui.inspector.editorOptions.module = options.module || module;
+
+        if (!imagePropertyName) {
+            console.warn('[NEOSidekick.AiAssistant]: Could not find inspector editors registry.');
+            console.warn('[NEOSidekick.AiAssistant]: Skipping registration of InspectorEditor...');
+            throw new Error('imagePropertyName is required');
+        }
+
+        if (fallbackAssetPropertyName) {
+            options.arguments = options.arguments || {};
+            options.arguments.url = options.arguments.url || `SidekickClientEval: AssetUri(node.properties.${imagePropertyName})`;
+            switch (supportsPlaceholder && fallbackAssetPropertyName) {
+                case 'title':
+                    options.placeholder = options.placeholder || `SidekickClientEval: AssetTitle(node.properties.${imagePropertyName})`;
+                    break;
+                case 'caption':
+                    options.placeholder = options.placeholder || `SidekickClientEval: AssetCaption(node.properties.${imagePropertyName})`;
+                    break;
+            }
+        }
+    });
 }

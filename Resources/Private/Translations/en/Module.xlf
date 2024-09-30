@@ -59,6 +59,9 @@
             <trans-unit id="slowLoadingMessage">
                 <source>Large websites sometimes take a few seconds to calculate the relevant content. Please be patient.</source>
             </trans-unit>
+            <trans-unit id="slowLoadingMessage2">
+                <source>Please be patient a little longer. The query is still running. If an error occurs, you will see it here.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

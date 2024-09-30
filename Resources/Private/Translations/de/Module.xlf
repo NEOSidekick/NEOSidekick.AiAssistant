@@ -78,6 +78,10 @@
                 <source>Large websites sometimes take a few seconds to calculate the relevant content. Please be patient.</source>
                 <target>Große Webseiten benötigen manchmal einige Sekunden zum Berechnen der relevanten Inhalte. Bitte habe kurz Geduld.</target>
             </trans-unit>
+            <trans-unit id="slowLoadingMessage2">
+                <source>Please be patient a little longer. The query is still running. If an error occurs, you will see it here.</source>
+                <target>Bitte habe noch etwas Geduld. Die Abfrage läuft noch. Wenn ein Fehler auftritt, wird er hier angezeigt.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

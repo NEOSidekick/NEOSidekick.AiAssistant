@@ -59,10 +59,12 @@ export class ContentService {
                 const AssetUri = () => {
                     throw new Error('ContentService.processClientEval() does not support AssetUri(...)');
                 }
+                const AssetTitle = (assetObjectArray: any, fallbackValue?: string) => this.getAssetProperty('title', assetObjectArray, fallbackValue || '')
+                const AssetCaption = (assetObjectArray: any, fallbackValue?: string) => this.getAssetProperty('caption', assetObjectArray, fallbackValue || '')
                 const AsyncFunction = Object.getPrototypeOf(async function () {
                 }).constructor
-                const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri,property', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
-                return await evaluateFn(node, parentNode, documentTitle, documentContent, AssetUri, property)
+                const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri,AssetTitle,AssetCaption,property', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
+                return await evaluateFn(node, parentNode, documentTitle, documentContent, AssetUri, AssetTitle, AssetCaption, property)
             } catch (e) {
                 if (e instanceof AiAssistantError) {
                     throw e
@@ -73,6 +75,26 @@ export class ContentService {
             }
         }
         return value;
+    }
+
+    private getAssetProperty = async (propertyName: 'title' | 'caption', assetObjectArray: { __identity?: string }, fallbackValue: string = ''): Promise<string> => {
+        if (!assetObjectArray || !assetObjectArray?.__identity) {
+            return fallbackValue;
+        }
+        try {
+            const imagePropertiesAsJson = await fetch('/neosidekick/aiassistant/service/imageTitleAndCaption?image=' + assetObjectArray?.__identity, {
+                method: 'GET',
+                credentials: 'include',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                }
+            });
+            const imageProperties: {title: string, caption: string} = await imagePropertiesAsJson.json();
+            return imageProperties[propertyName] || fallbackValue;
+        } catch (e) {
+            return fallbackValue;
+        }
     }
 
     private createFakePartialNode(item: DocumentNodeListItem) {

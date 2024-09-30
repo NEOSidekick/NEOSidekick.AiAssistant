@@ -7,6 +7,7 @@ import TextAreaEditor, {TextAreaEditorSidekickConfiguration} from "../../Compone
 import {ListItemImage} from "../../Model/ListItemImage";
 import {produce} from "immer";
 import {node} from "prop-types";
+import {createMagicTextAreaEditorPropsForImageTextEditor} from "./DocumentNodeListViewItemProperty";
 
 interface DocumentNodeListViewItemImageProps {
     item: DocumentNodeListItem;
@@ -130,32 +131,69 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
                     />
                 </div>
 
-                {alternativeTextPropertySchema ? <TextAreaEditor
-                    disabled={!this.canChangeAlternativeTextValue()}
-                    property={imageProperty.alternativeTextProperty}
-                    propertySchema={alternativeTextPropertySchema}
-                    item={item}
-                    htmlContent={this.props.htmlContent}
-                    sidekickConfiguration={this.createSidekickConfigurationForImageProperty(alternativeTextPropertySchema.ui.inspector.editorOptions.module)}
-                    autoGenerateIfActionsMatch={true}
-                    showGenerateButton={true}
-                    showResetButton={true}
-                    lazyGenerate={lazyGenerate}
-                    updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('alternativeTextProperty', value, state)}/> : null}
-
-                {titleTextPropertySchema ? <TextAreaEditor
-                    disabled={!this.canChangeTitleTextValue()}
-                    property={imageProperty.titleTextProperty}
-                    propertySchema={titleTextPropertySchema}
-                    item={item}
-                    htmlContent={this.props.htmlContent}
-                    sidekickConfiguration={this.createSidekickConfigurationForImageProperty(titleTextPropertySchema.ui.inspector.editorOptions.module)}
-                    autoGenerateIfActionsMatch={true}
-                    showGenerateButton={true}
-                    showResetButton={true}
-                    lazyGenerate={lazyGenerate}
-                    updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('titleTextProperty', value, state)}/> : null}
+                {this.renderTitleTextEditor(titleTextPropertySchema)}
+                {this.renderAlternativeTextEditor(alternativeTextPropertySchema)}
             </div>
         )
+    }
+
+    renderAlternativeTextEditor(propertySchema) {
+        const {item, imageProperty, lazyGenerate} = this.props;
+        if (!propertySchema) {
+            return;
+        }
+
+        if (propertySchema.ui.inspector.editor === 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor') {
+            if (!propertySchema?.ui?.inspector?.editorOptions?.imagePropertyName) {
+                return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>Incorrect YAML Configuration: Image Text Editor requires an editorOption <i>imagePropertyName</i></div>;
+            }
+
+            // node.properties placeholders are not supported here, since we don't have the full content node
+            propertySchema = createMagicTextAreaEditorPropsForImageTextEditor(propertySchema, 'image_alt_text', false);
+        }
+
+        return <TextAreaEditor
+            disabled={!this.canChangeAlternativeTextValue()}
+            property={imageProperty.alternativeTextProperty}
+            propertySchema={propertySchema}
+            item={item}
+            htmlContent={this.props.htmlContent}
+            sidekickConfiguration={this.createSidekickConfigurationForImageProperty(propertySchema.ui.inspector.editorOptions.module)}
+            autoGenerateIfActionsMatch={true}
+            showGenerateButton={true}
+            showResetButton={true}
+            lazyGenerate={lazyGenerate}
+            updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('alternativeTextProperty', value, state)}
+        />
+    }
+
+    renderTitleTextEditor(propertySchema) {
+        const {item, imageProperty, lazyGenerate} = this.props;
+        if (!propertySchema) {
+            return;
+        }
+
+        if (propertySchema.ui.inspector.editor === 'NEOSidekick.AiAssistant/Inspector/Editors/ImageTitleEditor') {
+            if (!propertySchema?.ui?.inspector?.editorOptions?.imagePropertyName) {
+                return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>Incorrect YAML Configuration: Image Text Editor requires an editorOption <i>imagePropertyName</i></div>;
+            }
+
+            // node.properties placeholders are not supported here, since we don't have the full content node
+            propertySchema = createMagicTextAreaEditorPropsForImageTextEditor(propertySchema, 'image_title', false);
+        }
+
+        return <TextAreaEditor
+            disabled={!this.canChangeTitleTextValue()}
+            property={imageProperty.titleTextProperty}
+            propertySchema={propertySchema}
+            item={item}
+            htmlContent={this.props.htmlContent}
+            sidekickConfiguration={this.createSidekickConfigurationForImageProperty(propertySchema.ui.inspector.editorOptions.module)}
+            autoGenerateIfActionsMatch={true}
+            showGenerateButton={true}
+            showResetButton={true}
+            lazyGenerate={lazyGenerate}
+            updateItemProperty={(value: string, state: ListItemPropertyState) => this.props.updateItemProperty('titleTextProperty', value, state)}
+        />
     }
 }

@@ -20,7 +20,9 @@ class NodeTypeService
 {
     private const ASSET_URI_EXPRESSION = '/SidekickClientEval:\s*AssetUri\(node\.properties\.(\w+)\)/';
     private const IMAGE_ALTERNATIVE_TEXT_MODULE_NAMES = ['image_alt_text', 'alt_tag_generator'];
-    private const IMAGE_TITLE_TEXT_MODULE_NAME = 'image_title';
+    private const IMAGE_TITLE_MODULE_NAME = 'image_title';
+    private const IMAGE_ALTERNATIVE_TEXT_EDITOR_NAME = 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor';
+    private const IMAGE_TITLE_EDITOR_NAME = 'NEOSidekick.AiAssistant/Inspector/Editors/ImageTitleEditor';
     private const CACHE_ENTRY_IDENTIFIER = 'nodeTypesWithImageAlternativeTextOrTitleConfiguration';
 
     /**
@@ -119,17 +121,18 @@ class NodeTypeService
      */
     private function processPropertyConfiguration(NodeType $nodeType, string $propertyName, array $propertyConfiguration): array
     {
+        $editor = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editor');
         $module = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.module');
         $propertyMatches = [];
 
-        if (in_array($module, self::IMAGE_ALTERNATIVE_TEXT_MODULE_NAMES, true)) {
+        if (in_array($module, self::IMAGE_ALTERNATIVE_TEXT_MODULE_NAMES, true) || $editor === self::IMAGE_ALTERNATIVE_TEXT_EDITOR_NAME) {
             $alternativeTextMatch = $this->processImageTextGeneratorModule($nodeType, 'alternativeTextPropertyName', $propertyName, $propertyConfiguration);
             if ($alternativeTextMatch) {
                 $propertyMatches[] = $alternativeTextMatch;
             }
         }
 
-        if ($module === self::IMAGE_TITLE_TEXT_MODULE_NAME) {
+        if ($module === self::IMAGE_TITLE_MODULE_NAME || $editor === self::IMAGE_TITLE_EDITOR_NAME) {
             $titleTextMatch = $this->processImageTextGeneratorModule($nodeType, 'titleTextPropertyName', $propertyName, $propertyConfiguration);
             if ($titleTextMatch) {
                 $propertyMatches[] = $titleTextMatch;

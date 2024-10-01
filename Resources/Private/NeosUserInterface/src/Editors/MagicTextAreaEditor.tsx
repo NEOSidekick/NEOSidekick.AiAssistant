@@ -70,6 +70,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
 
     componentDidUpdate(prevProps) {
         this.fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged(prevProps);
+        this.autoGenerateIfImageChanged(prevProps);
     }
 
     renderIcon(loading: boolean) {
@@ -78,6 +79,12 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         } else {
             return <Icon icon="magic" fixedWidth padded="right" />
         }
+    }
+
+    public generateValue = async () => {
+        const {options} = this.props;
+        const finalOptions = Object.assign({}, defaultOptions, options);
+        await this.fetch(finalOptions.module, finalOptions.arguments ?? {});
     }
 
     fetch = async (module: string, userInput: object) => {
@@ -96,6 +103,29 @@ export default class MagicTextAreaEditor extends Component<any, any> {
             addFlashMessage(e?.code ?? e?.message, e?.code ? i18nRegistry.translate('NEOSidekick.AiAssistant:Error:' + e.code, e.message, {0: e.externalMessage}) : e.message, e?.severity ?? 'error')
         } finally {
             this.setState({loading: false});
+        }
+    }
+
+    /* Only active for Image Text Editors */
+    private autoGenerateIfImageChanged = async (prevProps) => {
+        const {node, transientValues, options, commit} = this.props;
+        const imagePropertyName = options.imagePropertyName;
+        if (!options.autoGenerateIfImageChanged || !imagePropertyName) {
+            return; // not an image text editor
+        }
+
+        const imageDidChange = (
+            transientValues?.[imagePropertyName] !== prevProps.transientValues?.[imagePropertyName] ||
+            node?.properties?.[imagePropertyName] !== prevProps.node?.properties?.[imagePropertyName]
+        );
+
+        if (!imageDidChange) {
+            return;
+        }
+
+        commit(''); // reset
+        if (transientValues?.[imagePropertyName]) {
+            await this.generateValue();
         }
     }
 
@@ -155,7 +185,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
                         disabled={finalOptions.disabled || this.state.loading}
                         maxLength={finalOptions.maxlength}
                         readOnly={finalOptions.readonly}
-                        placeholder={placeholder}
+                        placeholder={this.state.loading ? '' : placeholder}
                         minRows={finalOptions.minRows}
                         expandedRows={finalOptions.expandedRows}
                     />
@@ -169,7 +199,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
                             style="neutral"
                             hoverStyle="clean"
                             disabled={this.state.loading}
-                            onClick={() => this.fetch(finalOptions.module, finalOptions.arguments ?? {})}
+                            onClick={() => this.generateValue()}
                         >
                             {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generateWithSidekick')}&nbsp;
                             {this.renderIcon(this.state.loading)}

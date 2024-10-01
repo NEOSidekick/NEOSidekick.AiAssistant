@@ -12,12 +12,13 @@ export interface EditorOptions {
     },
     imagePropertyName?: string,
     fallbackAssetPropertyName?: string,
+    autoGenerateIfImageChanged?: boolean,
 }
 
 // Keep in sync with Resources/Private/BackendModule/src/Views/ListView/DocumentNodeListViewItemProperty.tsx
 export function createMagicTextAreaEditorPropsForImageTextEditor(props: any, module: string): any {
     Object.keys(props.options).forEach(key => {
-        if (!['imagePropertyName', 'fallbackAssetPropertyName'].includes(key)) {
+        if (!['imagePropertyName', 'fallbackAssetPropertyName', 'autoGenerateIfImageChanged'].includes(key)) {
             console.warn('[NEOSidekick.AiAssistant]: Image text editor does not support editorOption "' + key + '".');
         }
     });
@@ -28,6 +29,7 @@ export function createMagicTextAreaEditorPropsForImageTextEditor(props: any, mod
         let fallbackAssetPropertyName = options.fallbackAssetPropertyName;
 
         options = options || {};
+        options.autoGenerateIfImageChanged = options.autoGenerateIfImageChanged !== false;
         options.module = options.module || module;
 
         if (!imagePropertyName) {

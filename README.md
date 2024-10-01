@@ -5,7 +5,7 @@ Based on the latest findings in artificial intelligence.
 
 ## Installation
 
-`NEOSidekick.AiAssistant` is available via Packagist. Add `"neosidekick/ai-assistant" : "^2.2"` to the require section of the composer.json or run:
+`NEOSidekick.AiAssistant` is available via Packagist. Add `"neosidekick/ai-assistant" : "^2.4"` to the require section of the composer.json or run:
 
 ```bash
 composer require neosidekick/ai-assistant

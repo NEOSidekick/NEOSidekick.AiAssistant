@@ -2,6 +2,18 @@
 <xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
     <file original="" source-language="en" datatype="plaintext">
         <body>
+            <trans-unit id="title">
+                <source>The Essential Toolkit for Effective On-Page SEO</source>
+            </trans-unit>
+            <trans-unit id="intro">
+                <source>On-page SEO is a cornerstone of successful digital marketing. It ensures your content is not only visible but also compelling to search engines. Here’s a streamlined toolkit to enhance your content.</source>
+            </trans-unit>
+            <trans-unit id="filterTypeExplanation">
+                <source>NEOSidekick can identify the most relevant pages for you and provide suggestions for each of these pages.</source>
+            </trans-unit>
+            <trans-unit id="startModule">
+                <source>Start generation for most important pages</source>
+            </trans-unit>
             <trans-unit id="error.configuration">
                 <source>This module is not configured correctly. Please consult the documentation!</source>
             </trans-unit>

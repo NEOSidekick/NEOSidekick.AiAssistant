@@ -111,10 +111,23 @@ We have designed a two-step process to help you create great SEO titles and meta
 We designed a special backend module just to ease the to make it fast and efficient.
 
 In the first step, we look at the pages and suggest a likely focus keyword for this page.
+
 ![Focus-Keyword-Generator.gif](docs%2FFocus-Keyword-Generator.gif)
 
 Next we create SEO titles and meta description optimized for the given focus keyword.
+
 ![SEO-Title-and-Meta-Description-Generator.gif](docs%2FSEO-Title-and-Meta-Description-Generator.gif)
+
+### SEO Image Alternative Text Generator
+
+Images boost user engagement, but search engines can't interpret visuals—they rely on alt text. 
+
+The [Image Alternative Text Generator](#image-description-generator) helps you create effective descriptions for your media. This improves the searchability of extensive media libraries and by serving as a [fallback alternative text for images](https://neosidekick.com/en/product/features/image-description-generator) it makes your site more accessible. To craft SEO-optimized alt texts, it's crucial to understand the page content and context. The same image can need different descriptions depending on how it's used. Since Neos NodeTypes do not automatically link image attributes to alt text properties, you must [configure these details for NEOSidekick in YAML](https://neosidekick.com/produkt/features/property-text-generieren#alt-tags). After this setup, you can generate SEO-friendly alt texts directly in the Neos content editor. Here, you can also systematically apply these alt texts on bulk.
+
+NEOSidekick can identify the most relevant pages for you and provide suggestions for each image title and alternative text of these pages.
+
+![SEO-Image-Alternative-Text-Generator.gif](docs%2FSEO-Image-Alternative-Text-Generator.gif)
+
 
 # License
 

@@ -191,6 +191,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
                     </p>
 
                     {moduleConfiguration.filter === 'important-pages' && (<div style={{marginBottom: '2rem'}}>
+                        {this.renderWorkspaceField()}
                         {this.renderLanguageDimensionField()}
                         <StartModuleButton label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:startModule', 'Start generation for most important pages')} style={{marginTop: '1rem'}}/>
                     </div>)}

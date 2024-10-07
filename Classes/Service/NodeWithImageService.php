@@ -205,11 +205,11 @@ class NodeWithImageService extends AbstractNodeService
         $titleTextPropertyValue = ($titleTextPropertyName && $nodeData->hasProperty($titleTextPropertyName)) ? $nodeData->getProperty($titleTextPropertyName) : null;
         $propertyValuesMatchFilter = match($filter->getImagePropertiesFilter()) {
             'none' => true,
-            'only-empty-alternative-text-or-title-text' => empty($alternativeTextPropertyValue) || empty($titleTextPropertyValue),
-            'only-empty-alternative-text' => empty($alternativeTextPropertyValue),
-            'only-empty-title-text' => empty($titleTextPropertyValue),
-            'only-existing-alternative-text' => !empty($alternativeTextPropertyValue),
-            'only-existing-title-text' => !empty($titleTextPropertyValue),
+            'only-empty-alternative-text-or-title-text' => ($alternativeTextPropertyName && empty($alternativeTextPropertyValue)) || ($titleTextPropertyName && empty($titleTextPropertyValue)),
+            'only-empty-alternative-text' => $alternativeTextPropertyName && empty($alternativeTextPropertyValue),
+            'only-empty-title-text' => $titleTextPropertyName && empty($titleTextPropertyValue),
+            'only-existing-alternative-text' => $alternativeTextPropertyName && !empty($alternativeTextPropertyValue),
+            'only-existing-title-text' => $titleTextPropertyName && !empty($titleTextPropertyValue),
         };
 
         $imagePropertyIsNotEmpty = $nodeData->hasProperty($schema->getImagePropertyName()) && $nodeData->getProperty($schema->getImagePropertyName()) !== null;

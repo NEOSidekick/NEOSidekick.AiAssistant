@@ -17,7 +17,6 @@ use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Media\Exception\AssetServiceException;
 use Neos\Media\Exception\ThumbnailServiceException;
-use NEOSidekick\AiAssistant\Dto\FindContentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\NodeTypeWithImageMetadataSchemaDto;
@@ -53,12 +52,6 @@ class NodeWithImageService extends AbstractNodeService
      * @var NodeTypeManager
      */
     protected $nodeTypeManager;
-
-    /**
-     * @Flow\Inject
-     * @var SiteService
-     */
-    protected $siteService;
 
     /**
      * @Flow\InjectConfiguration(path="languageDimensionName")

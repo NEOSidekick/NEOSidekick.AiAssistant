@@ -103,7 +103,7 @@ class NodeWithImageService extends AbstractNodeService
             throw new InvalidArgumentException('The given workspace does not exist in the database. Please reload the page.', 1713440899886);
         }
 
-        $workspaceChain = [$workspace];
+        $workspaceChain = array_merge([$workspace], array_values($workspace->getBaseWorkspaces()));
         $contentNodesQueryBuilder = $this->createQueryBuilder($workspaceChain);
 
         $contentNodesQueryBuilder->andWhere('n.nodeType IN (:includeNodeTypes)');
@@ -136,25 +136,27 @@ class NodeWithImageService extends AbstractNodeService
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
 
         $result = $findDocumentNodeDataDtos;
-        foreach ($itemsReducedByWorkspaceChain as $item) {
-            $closestAggregate = $this->findClosestAggregate($item);
+        foreach ($itemsReducedByWorkspaceChain as $itemNodeData) {
+            $closestAggregateNodeData = $this->findClosestAggregate($itemNodeData);
 
-            if ($closestAggregate === null) {
+            if ($closestAggregateNodeData === null) {
                 throw new RuntimeException('Nodes must at least have one aggregate ancestor', 1722372387256);
             }
 
-            $findDocumentNodeData = $result[$closestAggregate->getContextPath()] ?? null;
+            $context = $this->createContentContext($filter->getWorkspace(), $itemNodeData->getDimensionValues());
+            $contentNode = new Node($itemNodeData, $context);
+            $closestAggregateNode = $context->getNode($closestAggregateNodeData->getPath());
+
+            $findDocumentNodeData = $result[$closestAggregateNode->getContextPath()] ?? null;
             // Skip if the document closest aggregate is not in the list of filtered document nodes
             if (!$findDocumentNodeData) {
                 continue;
             }
 
-            $context = $this->createContentContext($filter->getWorkspace(), $item->getDimensionValues());
-            $contentNode = new Node($item, $context);
             $imagePropertiesForNodeType = $nodeTypeSchemaDtos[$contentNode->getNodeType()->getName()];
             /** @var NodeTypeWithImageMetadataSchemaDto $schema */
             foreach ($imagePropertiesForNodeType as $schema) {
-                if (!self::nodeMatchesPropertyFilter($item, $filter, $schema)) {
+                if (!self::nodeMatchesPropertyFilter($itemNodeData, $filter, $schema)) {
                     continue;
                 }
 
@@ -162,7 +164,7 @@ class NodeWithImageService extends AbstractNodeService
                 if (!$findImageData) {
                     continue;
                 }
-                $result[$closestAggregate->getContextPath()] = $findDocumentNodeData->withAddedImage($findImageData);
+                $result[$closestAggregateNodeData->getContextPath()] = $findDocumentNodeData->withAddedImage($findImageData);
             }
         }
 

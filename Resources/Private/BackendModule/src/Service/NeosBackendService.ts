@@ -99,6 +99,9 @@ export default class NeosBackendService {
                     case 'SeoTitleAndMetaDescription':
                         seoPropertiesFilter = 'only-empty-seo-titles-or-meta-descriptions';
                         break;
+                    case 'SeoImageAlternativeText':
+                        imagePropertiesFilter = 'only-empty-alternative-text-or-title-text';
+                        break;
                 }
             }
             return {

@@ -4,7 +4,7 @@ import {ListItemProperty, ListItemPropertyState, PropertySchema} from "../../Mod
 import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
 import {faMagic, faSpinner, faUndo} from "@fortawesome/free-solid-svg-icons";
 import {SidekickApiService} from "../../Service/SidekickApiService";
-import { ContentService } from "../../Service/ContentService";
+import {ContentService} from "../../Service/ContentService";
 import {DocumentNodeListItem, ListItemState} from "../../Model/ListItem";
 import Alert from "../Alert";
 import AppContext, {AppContextType} from "../../AppContext";
@@ -20,9 +20,10 @@ export interface TextAreaEditorProps {
     sidekickConfiguration?: TextAreaEditorSidekickConfiguration,
     autoGenerateIfActionsMatch?: boolean,
     showGenerateButton?: boolean,
+    showResetButton?: boolean,
+    lazyGenerate?: boolean,
     rows?: number,
     marginBottom?: string,
-    showResetButton?: boolean,
 }
 
 export interface TextAreaEditorState {
@@ -50,13 +51,18 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
             for (const key in actions) {
                 if (actions.hasOwnProperty(key)) {
                     const action = actions[key];
-                    if (!matches && action.active && action.propertyName === this.props.property.propertyName) {
-                        matches = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(action.clientEval, this.props.item, '');
+                    // todo reconsider: I introduced aliasPropertyName here, because for images we don't know how the actual property is called
+                    if (!matches && action.active && (action.propertyName === this.props.property.propertyName || action.propertyName === this.props.property.aliasPropertyName)) {
+                        matches = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(action.clientEval, this.props.item, this.props.property, this.props.htmlContent);
                     }
                 }
             }
             if (matches) {
-                this.generateValue().then(() => {});
+                if (this.props.lazyGenerate) {
+                    setTimeout(() => this.generateValue().then(() => {}), 500);
+                } else {
+                    this.generateValue().then(() => {});
+                }
             }
         }
     }
@@ -65,7 +71,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
         // need to update on every item.property change
         let placeholder = this.props.propertySchema?.ui?.inspector?.editorOptions?.placeholder;
         if (placeholder && placeholder.includes('ClientEval')) {
-            placeholder = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(placeholder, this.props.item, '');
+            placeholder = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(placeholder, this.props.item, this.props.property, '');
         }
         if (placeholder) {
             placeholder = this.translationService.translate(placeholder, placeholder);
@@ -242,5 +248,5 @@ export interface TextAreaEditorSidekickConfiguration {
 
 export interface TextAreaEditorSidekickConfigurationSingleUserInput {
     identifier: string,
-    value: string
+    value: string | string[]
 }

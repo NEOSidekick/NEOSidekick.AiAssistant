@@ -99,6 +99,21 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
         )
     }
 
+    private renderImagePropertiesFilterField() {
+        const {moduleConfiguration} = this.props;
+        return ((moduleConfiguration.enforceConfigs.includes('imagePropertiesFilter') || !moduleConfiguration.imagePropertiesFilterOptions?.length) ? null :
+                <SelectField
+                    label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.imagePropertiesFilter.label', 'Restrict by image properties')}
+                    value={moduleConfiguration.imagePropertiesFilter}
+                    onChange={e => this.context.updateModuleConfiguration({imagePropertiesFilter: e.target.value})}
+                    options={moduleConfiguration.imagePropertiesFilterOptions.reduce((acc, imagePropertiesFilter) => {
+                        acc[imagePropertiesFilter] = this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.imagePropertiesFilter.' + imagePropertiesFilter, imagePropertiesFilter);
+                        return acc;
+                    }, {})}
+                />
+        )
+    }
+
     private renderActions() {
         const {actions} = this.props.moduleConfiguration;
         if (!Object.keys(actions).length) {
@@ -165,48 +180,43 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
                     ]}/>
                 </div>
 
-                {isSeoImageAlternativeText ? (
-                    <div style={{maxWidth: '80ch'}}>
-                        <p style={{marginBottom: '1rem'}}
-                           dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.' + moduleConfiguration.moduleName + ':description', '')}}/>
-                    </div>
-                ) : (
-                    <div style={{maxWidth: '80ch'}}>
-                        <BackendMessage identifier={moduleNameKebabCase + '-generator'}/>
+                <div style={{maxWidth: '80ch'}}>
+                    <BackendMessage identifier={moduleNameKebabCase + '-generator'}/>
 
-                        <p style={{marginBottom: '1rem'}}
-                           dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.' + moduleConfiguration.moduleName + ':description', '')}}/>
+                    <p style={{marginBottom: '1rem'}}
+                       dangerouslySetInnerHTML={{__html: this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.' + moduleConfiguration.moduleName + ':description', '')}}/>
 
-                        <p style={{marginBottom: '1rem', maxWidth: '80ch'}}>
-                            {this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:filterTypeExplanation', 'NEOSidekick can identify the most relevant pages for you and provide suggestions for each of these pages.')}
-                        </p>
+                    <p style={{marginBottom: '1rem', maxWidth: '80ch'}}>
+                        {this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:filterTypeExplanation', 'NEOSidekick can identify the most relevant pages for you and provide suggestions for each of these pages.')}
+                    </p>
 
-                        {moduleConfiguration.filter === 'important-pages' && (<div style={{marginBottom: '2rem'}}>
+                    {moduleConfiguration.filter === 'important-pages' && (<div style={{marginBottom: '2rem'}}>
+                        {this.renderWorkspaceField()}
+                        {this.renderLanguageDimensionField()}
+                        <StartModuleButton label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:startModule', 'Start generation for most important pages')} style={{marginTop: '1rem'}}/>
+                    </div>)}
+
+                    <CheckboxField
+                        label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.filter.custom', 'I know what I\'m doing and would prefer to set individual filters')}
+                        checked={moduleConfiguration.filter === 'custom'}
+                        onChange={e => this.context.updateModuleConfiguration({filter: e.target.checked ? 'custom' : 'important-pages'})}
+                    />
+
+                    {moduleConfiguration.filter === 'custom' && (
+                        <div style={{marginTop: '1rem', border: '1px solid #3f3f3f', borderRadius: '0.375rem', padding: '1rem', maxWidth: 'calc(80ch - 2rem)'}}>
+                            <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', 'Selection filter')}:</h2>
+                            <br/>
+                            {this.renderWorkspaceField()}
                             {this.renderLanguageDimensionField()}
-                            <StartModuleButton label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:startModule', 'Start generation for most important pages')} style={{marginTop: '1rem'}}/>
+                            {this.renderSeoPropertiesFilterField()}
+                            {this.renderImagePropertiesFilterField()}
+                            {this.renderFocusKeywordFilterField()}
+                            <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>
+                            <ItemsPerPageField moduleConfiguration={moduleConfiguration}
+                                               updateModuleConfiguration={this.context.updateModuleConfiguration}/>
+                            {this.renderActions()}
                         </div>)}
-
-                        <CheckboxField
-                            label={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.filter.custom', 'I know what I\'m doing and would prefer to set individual filters')}
-                            checked={moduleConfiguration.filter === 'custom'}
-                            onChange={e => this.context.updateModuleConfiguration({filter: e.target.checked ? 'custom' : 'important-pages'})}
-                        />
-
-                        {moduleConfiguration.filter === 'custom' && (
-                            <div style={{marginTop: '1rem', border: '1px solid #3f3f3f', borderRadius: '0.375rem', padding: '1rem', maxWidth: 'calc(80ch - 2rem)'}}>
-                                <h2>{this.translationService.translate('NEOSidekick.AiAssistant:Module:selectionFilter', 'Selection filter')}:</h2>
-                                <br/>
-                                {this.renderWorkspaceField()}
-                                {this.renderLanguageDimensionField()}
-                                {this.renderSeoPropertiesFilterField()}
-                                {this.renderFocusKeywordFilterField()}
-                                <NodeTypeFilter moduleConfiguration={moduleConfiguration}/>
-                                <ItemsPerPageField moduleConfiguration={moduleConfiguration}
-                                                   updateModuleConfiguration={this.context.updateModuleConfiguration}/>
-                                {this.renderActions()}
-                            </div>)}
-                    </div>
-                )}
+                </div>
 
                 {moduleConfiguration.filter === 'custom' && (<div className={'neos-footer'}>
                     <StartModuleButton/>

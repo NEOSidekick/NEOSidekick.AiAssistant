@@ -86,32 +86,35 @@ export default class NeosBackendService {
     }
 
     private toFilterDto(moduleConfiguration: ModuleConfiguration): FindFilter {
-        switch (moduleConfiguration.itemType) {
-            case 'Asset':
-                const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
-                return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
-            case 'DocumentNode':
-                let {moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
-                if (filter === 'important-pages') {
-                    switch(moduleName) {
-                        case 'FocusKeyword':
-                            focusKeywordPropertyFilter = 'only-empty-focus-keywords';
-                            break;
-                        case 'SeoTitleAndMetaDescription':
-                            seoPropertiesFilter = 'only-empty-seo-titles-or-meta-descriptions';
-                            break;
-                    }
+        if (moduleConfiguration.itemType === 'Asset') {
+            const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
+            return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
+        } else if (moduleConfiguration.itemType === 'DocumentNode') {
+            let {moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, imagePropertiesFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
+            if (filter === 'important-pages') {
+                switch(moduleName) {
+                    case 'FocusKeyword':
+                        focusKeywordPropertyFilter = 'only-empty-focus-keywords';
+                        break;
+                    case 'SeoTitleAndMetaDescription':
+                        seoPropertiesFilter = 'only-empty-seo-titles-or-meta-descriptions';
+                        break;
+                    case 'SeoImageAlternativeText':
+                        imagePropertiesFilter = 'only-empty-alternative-text-or-title-text';
+                        break;
                 }
-                return {
-                    filter,
-                    workspace,
-                    seoPropertiesFilter: seoPropertiesFilter || 'none',
-                    focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',
-                    languageDimensionFilter: languageDimensionFilter || [],
-                    nodeTypeFilter: nodeTypeFilter || ''
-                } as FindDocumentNodesFilter;
-            default:
-                throw new Error('Unknown item type');
+            }
+            return {
+                filter,
+                workspace,
+                seoPropertiesFilter: seoPropertiesFilter || 'none',
+                focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',
+                imagePropertiesFilter: imagePropertiesFilter || 'none',
+                languageDimensionFilter: languageDimensionFilter || [],
+                nodeTypeFilter: nodeTypeFilter || ''
+            } as FindDocumentNodesFilter;
+        } else {
+            throw new Error('Unknown item type');
         }
     }
 

@@ -1,4 +1,5 @@
 import {ListItemProperty} from "./ListItemProperty";
+import {ListItemImage} from "./ListItemImage";
 
 export enum ListItemState {
     Initial,
@@ -7,7 +8,7 @@ export enum ListItemState {
 }
 
 export interface ListItem {
-    type: 'DocumentNode' | 'Asset',
+    type: 'ContentNode' | 'DocumentNode' | 'Asset',
     state: ListItemState,
     identifier: string,
     readonlyProperties: {
@@ -43,4 +44,7 @@ export interface DocumentNodeListItem extends ListItem {
     editableProperties: {
         [key: string]: ListItemProperty
     },
+    images: {
+        [key: string]: ListItemImage
+    };
 }

@@ -157,7 +157,7 @@ class NodeWithImageService extends AbstractNodeService
                 if (!$findImageData) {
                     continue;
                 }
-                $result[$closestAggregateNodeData->getContextPath()] = $findDocumentNodeData->withAddedImage($findImageData);
+                $result[$findDocumentNodeData->getNodeContextPath()] = $findDocumentNodeData->withAddedImage($findImageData);
             }
         }
 

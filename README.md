@@ -99,9 +99,10 @@ Advanced users can also build their own based on the [NEOSidekick YAML API](http
 
 ### Image Description Generator
 
-Image alternative texts are essential for SEO and accessibility. With good image descriptions, you can help Google and screen readers to understand your images.
+With this tool, you can create image descriptions for the media browser and save them in the title or description field of the media asses. These help you better search for images in the media browser
+and can be used as fallback alternative text for an image. They are optimized as image alternative texts for SEO and accessibility.
 
-[Read the tutorial](https://neosidekick.com/en/product/features/image-description-generator) on how create dozens of image descriptions in no time.
+[Read the tutorial](https://neosidekick.com/en/product/features/image-description-generator) on how create dozens of image descriptions in no time, and use them as image fallback alternative texts.
 
 ![Alternate-Image-Text-Generator.png](docs%2FAlternate-Image-Text-Generator.png)
 
@@ -122,7 +123,7 @@ Next we create SEO titles and meta description optimized for the given focus key
 
 Images boost user engagement, but search engines can't interpret visuals—they rely on alt text. 
 
-The [Image Alternative Text Generator](#image-description-generator) helps you create effective descriptions for your media. This improves the searchability of extensive media libraries and by serving as a [fallback alternative text for images](https://neosidekick.com/en/product/features/image-description-generator) it makes your site more accessible. To craft SEO-optimized alt texts, it's crucial to understand the page content and context. The same image can need different descriptions depending on how it's used. Since Neos NodeTypes do not automatically link image attributes to alt text properties, you must [configure these details for NEOSidekick in YAML](https://neosidekick.com/produkt/features/property-text-generieren#alt-tags). After this setup, you can generate SEO-friendly alt texts directly in the Neos content editor. Here, you can also systematically apply these alt texts on bulk.
+The [Image Description Generator](#image-description-generator) helps you create effective descriptions for your media. This improves the searchability of extensive media libraries and by serving as a [fallback alternative text for images](https://neosidekick.com/en/product/features/image-description-generator) it makes your site more accessible. To craft SEO-optimized alt texts, it's crucial to understand the page content and context. The same image can need different descriptions depending on how it's used. Since Neos NodeTypes do not automatically link image attributes to alt text properties, you must [configure these details for NEOSidekick in YAML](https://neosidekick.com/produkt/features/property-text-generieren#alt-tags). After this setup, you can generate SEO-friendly alt texts directly in the Neos content editor. Here, you can also systematically apply these alt texts on bulk.
 
 NEOSidekick can identify the most relevant pages for you and provide suggestions for each image title and alternative text of these pages.
 

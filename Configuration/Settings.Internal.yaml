@@ -52,10 +52,10 @@ Neos:
         mainStylesheet: 'Lite'
         privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
         submodules:
-          alternate-image-text-generator:
+          alternate-description-generator:
             label: 'NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:label'
             description: 'NEOSidekick.AiAssistant:BackendModule.ImageAlternativeText:description'
-            icon: 'fas fa-images'
+            icon: 'fas fa-camera'
             controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController'
             privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
             mainStylesheet: Lite

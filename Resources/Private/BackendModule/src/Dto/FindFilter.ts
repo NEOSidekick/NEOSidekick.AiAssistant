@@ -13,9 +13,3 @@ export interface FindDocumentNodesFilter extends FindFilter {
     seoPropertiesFilter: string;
     nodeTypeFilter: string;
 }
-
-export interface FindContentNodesFilter extends FindFilter {
-    workspace: string;
-    alternativeTextPropertyFilter: string;
-    languageDimensionFilter: string[];
-}

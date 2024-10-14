@@ -22,19 +22,19 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
     protected string $workspace;
 
     /**
-     * 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'
+     * 'none', 'only-empty-focus-keywords' | 'only-existing-focus-keywords'
      * @var string
      */
     protected string $seoPropertiesFilter;
 
     /**
-     * 'none', 'only-empty-alternative-text', 'only-empty-title-text', 'only-existing-alternative-text', 'only-existing-title-text', 'both'
+     * 'none' | 'only-empty-alternative-text-or-title-text' | 'only-empty-alternative-text' | 'only-empty-title-text' | 'only-existing-alternative-text' | 'only-existing-title-text'
      * @var string
      */
     protected string $imagePropertiesFilter;
 
     /**
-     * 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'
+     * 'none' | 'only-empty-focus-keywords' | 'only-existing-focus-keywords'
      * @var string
      */
     protected string $focusKeywordPropertyFilter;

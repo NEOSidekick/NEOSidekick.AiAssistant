@@ -82,11 +82,33 @@ NEOSidekick.AiAssistant.BackendModule.SeoTitleAndMetaDescriptionController.index
 }
 
 NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
-    getAction = 'findDocumentNodes'
+    getAction = 'findDocumentNodesWithImages'
     updateAction = 'updateNodeProperties'
-    moduleConfiguration = Neos.Fusion:DataStructure {
-        moduleName = 'SeoImageAlternativeText'
-        itemType = 'DocumentNode'
+    moduleConfiguration = Neos.Fusion:Value {
+        defaults = Neos.Fusion:DataStructure {
+            // moduleName is only used for the configuration form text
+            moduleName = 'SeoImageAlternativeText'
+            filter = 'important-pages'
+            itemType = 'DocumentNode'
+            workspace = 'live'
+            imagePropertiesFilter = null
+            imagePropertiesFilterOptions = ${['none', 'only-empty-alternative-text-or-title-text', 'only-empty-alternative-text', 'only-existing-alternative-text', 'only-empty-title-text', 'only-existing-title-text']}
+            languageDimensionFilter = ${Array.keys(Configuration.setting('Neos.ContentRepository.contentDimensions.' + Configuration.setting('NEOSidekick.AiAssistant.languageDimensionName') + '.presets'))}
+            nodeTypeFilter = null
+            baseNodeTypeFilter = 'Neos.Seo:SeoMetaTagsMixin'
+            itemsPerPage = 10
+            readonlyProperties = ${[]}
+            editableProperties = ${[]}
+            actions = Neos.Fusion:DataStructure {
+                'autoGenerateEmptyAlternativeTexts' = ${{'active': true, 'propertyName': 'alternativeText', 'clientEval': 'ClientEval: !property.currentValue'}}
+                'autoGenerateEmptyTitleTexts' = ${{'active': true, 'propertyName': 'titleText', 'clientEval': 'ClientEval: !property.currentValue'}}
+                'autoGenerateExistingAlternativeTexts' = ${{'active': false, 'propertyName': 'alternativeText', 'clientEval': 'ClientEval: property.currentValue'}}
+                'autoGenerateExistingTitleTexts' = ${{'active': false, 'propertyName': 'titleText', 'clientEval': 'ClientEval: property.currentValue'}}
+            }
+        }
+        config = ${Array.filter(Configuration.setting('NEOSidekick.AiAssistant.seoImageAltTextGenerator'), (value, key) => value != null)}
+        enforceConfigs = ${Array.keys(Array.filter(this.config, (value, key) => key != 'itemsPerPage'))}
+        value = ${Array.concat(this.defaults, this.config, {enforceConfigs: this.enforceConfigs})}
     }
 }
 

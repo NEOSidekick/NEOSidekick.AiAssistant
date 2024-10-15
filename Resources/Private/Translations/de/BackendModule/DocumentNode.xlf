@@ -114,9 +114,54 @@
                 <source>Automatically regenerate existing meta descriptions</source>
                 <target>Bestehende Meta-Beschreibungen automatisch neu generieren</target>
             </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyAlternativeTexts">
+                <source>Automatically generate empty alternative texts for images</source>
+                <target>Leere Alternativ-Texte für Bilder automatisch generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyTitleTexts">
+                <source>Automatically generate empty title texts for images</source>
+                <target>Leere Titel-Texte für Bilder automatisch generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingAlternativeTexts">
+                <source>Automatically regenerate existing alternative texts for images</source>
+                <target>Bestehende Alternativ-Texte für Bilder automatisch neu generieren</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingTitleTexts">
+                <source>Automatically regenerate existing title texts for images</source>
+                <target>Bestehende Titel-Texte für Bilder automatisch neu generieren</target>
+            </trans-unit>
             <trans-unit id="listItem.label">
                 <source>Page »{0}«</source>
                 <target>Seite »{0}«</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.label">
+                <source>Restrict by image properties</source>
+                <target>Auf Bild-Eigenschaften einschränken</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.none">
+                <source>None</source>
+                <target>Ohne</target>
+            </trans-unit>
+            <!--  'only-empty-alternative-text-or-title-text', 'only-empty-alternative-text', 'only-existing-alternative-text', 'only-empty-title-text', 'only-existing-title-text'-->
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-alternative-text-or-title-text">
+                <source>Only without alternative text or title text</source>
+                <target>Nur ohne Alternativ-Text oder Titel-Text</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-alternative-text">
+                <source>Only without alternative text</source>
+                <target>Nur ohne Alternativ-Text</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-title-text">
+                <source>Only without title text</source>
+                <target>Nur ohne Titel-Text</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-existing-alternative-text">
+                <source>Only with alternative text</source>
+                <target>Nur mit Alternativ-Text</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-existing-title-text">
+                <source>Only with title text</source>
+                <target>Nur mit Titel-Text</target>
             </trans-unit>
         </body>
     </file>

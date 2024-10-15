@@ -3,13 +3,13 @@
     <file original="" source-language="en" datatype="plaintext">
         <body>
             <trans-unit id="label">
-                <source>Image Alternative Text Generator</source>
+                <source>Image Description Generator</source>
             </trans-unit>
             <trans-unit id="description">
-                <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility.]]></source>
+                <source><![CDATA[With this tool, you can create image descriptions for the media browser and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility.]]></source>
             </trans-unit>
             <trans-unit id="intro">
-                <source><![CDATA[With this tool, you can create image descriptions and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>]]></source>
+                <source><![CDATA[With this tool, you can create image descriptions for the media browser and save them in the title or description field of the media asses. These descriptions are optimized as image alternative texts for SEO and accessibility. <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">Read the tutorial on how a developer can integrate them.</a>]]></source>
             </trans-unit>
             <trans-unit id="assetListItemLabel">
                 <source>File »{0}«</source>

@@ -9,7 +9,10 @@ import {ListItemProps} from "./ListViewItem";
 import DocumentNodeListViewItemProperty from "./DocumentNodeListViewItemProperty";
 import NeosBackendService from "../../Service/NeosBackendService";
 import AppContext, {AppContextType} from "../../AppContext";
+import DocumentNodeListViewItemImage from "./DocumentNodeListViewItemImage";
+import {ListItemImage} from "../../Model/ListItemImage";
 import {getItemByIdentifier, ListViewState} from "./ListView";
+import {DocumentNodeModuleConfiguration} from "../../Model/ModuleConfiguration";
 
 export interface DocumentNodeListViewItemProps extends ListItemProps {
     item: DocumentNodeListItem
@@ -47,6 +50,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         propertyName: string,
         propertyValue: any,
         propertyState: ListItemPropertyState
+
     ) {
         const {updateItem} = this.props;
         const documentNodeIdentifier = this.props.item.identifier;
@@ -60,26 +64,66 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                 } as ListItemProperty;
             })
         });
+    }
 
+    private updateItemImageProperty(
+        nodeWithImageContextPathAndPropertyName: string,
+        nodeWithImagePropertyName: string,
+        nodeWithImageNewPropertyValue: any,
+        nodeWithImageNewPropertyState: ListItemPropertyState
+    ) {
+        const {updateItem} = this.props;
+        const documentNodeIdentifier = this.props.item.identifier;
+        updateItem((state: Readonly<ListViewState>) => {
+            const item = getItemByIdentifier(state, documentNodeIdentifier);
+            return produce(item, (draft: Draft<DocumentNodeListItem>) => {
+                const index = draft.images.findIndex((image: ListItemImage) => image.nodeContextPathWithProperty === nodeWithImageContextPathAndPropertyName);
+                draft.images[index][nodeWithImagePropertyName] = {
+                    ...draft.images[index][nodeWithImagePropertyName],
+                    state: (nodeWithImageNewPropertyState !== ListItemPropertyState.Generating && draft.images[index][nodeWithImagePropertyName].initialValue === nodeWithImageNewPropertyValue) ? ListItemPropertyState.Initial : nodeWithImageNewPropertyState,
+                    currentValue: nodeWithImageNewPropertyValue
+                } as ListItemProperty;
+            });
+        });
     }
 
     private discard(): void {
-        const {updateItem, item} = this.props;
-        updateItem(produce(item, (draft: Draft<DocumentNodeListItem>) => {
-            draft.editableProperties = Object.keys(draft.editableProperties).reduce((accumulator, propertyName) => {
-                accumulator[propertyName] = {
-                    ...draft.editableProperties[propertyName],
-                    state: ListItemPropertyState.Initial,
-                    currentValue: draft.editableProperties[propertyName].initialValue,
-                } as ListItemProperty;
-                return accumulator;
-            }, {});
-        }));
+        const {updateItem} = this.props;
+        updateItem((state: Readonly<ListViewState>) => {
+            const item = getItemByIdentifier(state, this.props.item.identifier);
+            return produce(item, (draft: Draft<DocumentNodeListItem>) => {
+                draft.editableProperties = Object.keys(draft.editableProperties).reduce((accumulator, propertyName) => {
+                    accumulator[propertyName] = {
+                        ...draft.editableProperties[propertyName],
+                        state: ListItemPropertyState.Initial,
+                        currentValue: draft.editableProperties[propertyName].initialValue,
+                    } as ListItemProperty;
+                    return accumulator;
+                }, {});
+                draft.images = Object.keys(draft.images).reduce((accumulator, contextPath) => {
+                    let image = {
+                        ...draft.images[contextPath]
+                    } as ListItemImage;
+                    if (image.alternativeTextProperty) {
+                        image.alternativeTextProperty.state = ListItemPropertyState.Initial;
+                        image.alternativeTextProperty.currentValue = image.alternativeTextProperty.initialValue;
+                    }
+                    if (image.titleTextProperty) {
+                        image.titleTextProperty.state = ListItemPropertyState.Initial;
+                        image.titleTextProperty.currentValue = image.titleTextProperty.initialValue;
+                    }
+                    accumulator[contextPath] = image;
+                    return accumulator;
+                }, {})
+            })
+        });
     }
 
     private canDiscardAndPersist(): boolean {
         const {item} = this.props;
-        return item.state === ListItemState.Initial && !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
+        return item.state === ListItemState.Initial && (
+            !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
+            || !!Object.values(item.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated))
     }
 
     private renderSaveButtonLabel() {
@@ -109,23 +153,59 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
         }
     }
 
+    injectScrollScriptIntoDocument(htmlContent) {
+        const script = `
+                <script>
+                    window.addEventListener('message', function(event) {
+                        if (event.data.type === 'scrollToImage') {
+                            let img;
+                            // find by full uri
+                            event.data.imageUris.forEach(function(imageUri) {
+                                if (imageUri.indexOf('_Resources/Static/Packages/Neos.Media/IconSets/vivid/') !== -1) return;
+                                img = img || document.querySelector('img[src*="' + imageUri + '"],img[srcset*="' + imageUri + '"],img[data-srcset*="' + imageUri + '"]');
+                            });
+                            if (img) {
+                                img.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                return;
+                            }
+                            // find by file name
+                            event.data.imageUris.forEach(function(imageUri) {
+                                if (imageUri.indexOf('_Resources/Static/Packages/Neos.Media/IconSets/vivid/') !== -1) return;
+                                let filename = imageUri.split('/').pop();
+                                filename = filename.split('.').slice(0, -1).join('.');
+                                let filenameParts = filename.split('-');
+                                if (filenameParts.length > 1 && filenameParts.pop().match(/^\\d+x\\d+$/)) {
+                                    filename = filenameParts.join('-');
+                                }
+                                img = img || document.querySelector('img[src*="' + filename + '"],img[srcset*="' + filename + '"],img[data-srcset*="' + filename + '"]');
+                            });
+                            if (img) {
+                                img.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            }
+                        }
+                    }, false);
+                </script>
+            `;
+        return htmlContent.replace('</head>', script + '</head>');
+    }
+
     componentDidUpdate(prevProps: Readonly<ListItemProps>, prevState: Readonly<DocumentNodeListItemState>) {
         if (!prevState.htmlContent && this.state.htmlContent) {
             const iframe = this.iframeRef.current
             iframe.contentWindow.document.open()
-            iframe.contentWindow.document.write(this.state.htmlContent)
+            iframe.contentWindow.document.write(this.injectScrollScriptIntoDocument(this.state.htmlContent))
             iframe.contentWindow.document.close()
         }
     }
 
     render() {
-        const {item, persistItem} = this.props;
+        const {item, persistItem, lazyGenerate} = this.props;
         const {htmlContent} = this.state;
         const propertySchemas: { [key: string]: PropertySchema } = this.context.nodeTypes[item.nodeTypeName]?.properties;
 
         return (
             <div className={'neos-row-fluid'} style={{marginBottom: '2rem', opacity: (item.state === ListItemState.Persisted ? '0.5' : '1')}}>
-                <div className={'neos-span8'} style={{position: 'relative', background: '#3f3f3f'}}>
+                <div className={'neos-span8'} style={{position: 'sticky', top: '50px', background: '#3f3f3f'}}>
                     {htmlContent ? null : <FontAwesomeIcon icon={faSpinner} spin={true} style={{position: 'absolute', left: 'calc(50% - 14px)', top: 'calc(50% - 14px)', width: '28px', height: '28px'}}/>}
                     <iframe ref={this.iframeRef} src="about:blank" style={{aspectRatio: '3 / 2', width: '100%'}} />
                 </div>
@@ -159,7 +239,19 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                             />
                         )
                     })}
-                    {this.context.moduleConfiguration.showSeoDirectives && (item.properties.canonicalLink || item.properties.metaRobotsNoindex || item.properties.metaRobotsNofollow) && (
+                    {Object.values(item.images).map((imageProperty) => {
+                        return (
+                            <DocumentNodeListViewItemImage
+                                item={item}
+                                imageProperty={imageProperty}
+                                htmlContent={htmlContent}
+                                iframeRef={this.iframeRef}
+                                lazyGenerate={lazyGenerate}
+                                updateItemProperty={(propertyName: string, propertyValue: string, propertyState: ListItemPropertyState) => this.updateItemImageProperty(imageProperty.nodeContextPathWithProperty, propertyName, propertyValue, propertyState)}
+                            />
+                        )
+                    })}
+                    {(this.context.moduleConfiguration as DocumentNodeModuleConfiguration).showSeoDirectives && (item.properties.canonicalLink || item.properties.metaRobotsNoindex || item.properties.metaRobotsNofollow) && (
                         <div style={{backgroundColor: 'var(--warning)', marginBottom: '1.5rem', padding: '12px', fontWeight: 400, fontSize: '14px', lineHeight: 1.4}}>
                             <h3>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule:SeoTitleAndMetaDescription:seoDirectivesLabel', 'SEO Directives')}</h3>
                             {item.properties.canonicalLink && (

@@ -1,5 +1,6 @@
 export interface ListItemProperty {
     propertyName: string,
+    aliasPropertyName?: string,
     initialValue: string,
     currentValue: string,
     state: ListItemPropertyState

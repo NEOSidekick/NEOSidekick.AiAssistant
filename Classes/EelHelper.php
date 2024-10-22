@@ -63,6 +63,18 @@ class EelHelper implements ProtectedContextAwareInterface
      */
     protected $packageManager;
 
+    /**
+     * @Flow\InjectConfiguration(path="languageDimensionName")
+     * @var string
+     */
+    protected $languageDimensionName;
+
+    /**
+     * @Flow\InjectConfiguration(package="Neos.ContentRepository", path="contentDimensions")
+     * @var array
+     */
+    protected $contentDimensions;
+
     public function isEnabled(): bool
     {
         return $this->privilegeManager->isPrivilegeTargetGranted('NEOSidekick.AiAssistant:CanUse');
@@ -139,6 +151,15 @@ class EelHelper implements ProtectedContextAwareInterface
     public function recommendNeosAssetCachePackage() : bool
     {
         return !$this->packageManager->isPackageAvailable('Webandco.AssetUsageCache');
+    }
+
+    public function languageDimensionValues(): array
+    {
+        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+            return [];
+        }
+
+        return array_keys($this->contentDimensions[$this->languageDimensionName]['presets']);
     }
 
     /**

@@ -280,6 +280,9 @@ class NodeService extends AbstractNodeService
 
     protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, Node $node): bool
     {
+        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+            return true;
+        }
         $nodeLanguageDimensionValues = $node->getDimensions()[$this->languageDimensionName];
         return sizeof(array_intersect($nodeLanguageDimensionValues, $findDocumentNodesFilter->getLanguageDimensionFilter())) > 0;
     }

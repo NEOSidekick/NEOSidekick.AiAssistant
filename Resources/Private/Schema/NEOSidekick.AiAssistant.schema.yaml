@@ -35,7 +35,16 @@ properties:
       filter: { type: [string, 'null'], enum: ['important-pages', 'custom'] }
       workspace: { type: [string, 'null'] }
       focusKeywordPropertyFilter: { type: [ string, 'null' ], enum: [ 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords' ] }
-      seoPropertiesFilter: { type: [string, 'null'], enum: ['none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions'] }
+      seoPropertiesFilter: { type: [ string, 'null' ], enum: [ 'none', 'only-empty-seo-titles-or-meta-descriptions', 'only-empty-seo-titles', 'only-empty-meta-descriptions', 'only-existing-seo-titles', 'only-existing-meta-descriptions' ] }
+      nodeTypeFilter: { type: [string, 'null'] }
+      itemsPerPage: { type: integer }
+  seoImageAltTextGenerator:
+    type: dictionary
+    additionalProperties: false
+    properties:
+      filter: { type: [string, 'null'], enum: ['important-pages', 'custom'] }
+      workspace: { type: [string, 'null'] }
+      imagePropertiesFilter: { type: [string, 'null'], enum: ['none', 'only-empty-alternative-text-or-title-text', 'only-empty-alternative-text', 'only-empty-title-text', 'only-existing-alternative-text', 'only-existing-title-text'] }
       nodeTypeFilter: { type: [string, 'null'] }
       itemsPerPage: { type: integer }
 

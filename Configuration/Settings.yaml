@@ -67,3 +67,24 @@ NEOSidekick:
       # Predefines how many images should be processed per page, to avoid generate too many in parallel
       # Allowed: 5, 10, 15, 20, 25
       itemsPerPage: 20
+    seoImageAltTextGenerator:
+      # If you want to use custom filters, change this property to 'custom'
+      filter: 'important-pages'
+      # The workspace name where the nodes are taken from and saved to
+      # Allowed: null, live, ... (any other workspace name)
+      workspace: null
+      # The property filter for the alternativeText and titleText properties
+      # Allowed:
+      #  - none: All nodes are shown
+      #  - only-empty-alternative-text-or-title-text: Only show nodes with an empty alternativeText OR empty titleText property
+      #  - only-empty-alternative-text: Only show nodes with an empty alternativeText property
+      #  - only-empty-title-text: Only show nodes with an empty titleText property
+      #  - only-existing-alternative-text: Only show nodes with a non-empty alternativeText property
+      #  - only-existing-title-text: Only show nodes with a non-empty titleText property
+      imagePropertiesFilter: null
+      # Restrict the node selection to a specific document node type
+      # BEWARE: the node type needs to inherit from NEOSidekick.AiAssistant:Mixin.AiPageBriefing
+      nodeTypeFilter: null
+      # Predefines how many images should be processed per page, to avoid generate too many in parallel
+      # Allowed: 5, 10, 15, 20, 25
+      itemsPerPage: 10

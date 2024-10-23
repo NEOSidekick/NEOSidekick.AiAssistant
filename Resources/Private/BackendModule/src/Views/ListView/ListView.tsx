@@ -10,12 +10,14 @@ import {Draft, produce} from "immer";
 import PureComponent from "../../Components/PureComponent";
 import AppContext, {AppContextType} from "../../AppContext";
 import {ModuleConfiguration} from "../../Model/ModuleConfiguration";
-import {FindAssetData, FindDocumentNodeData} from "../../Dto/ListItemDto";
+import {FindAssetData, FindDocumentNodeData, FindImageData} from "../../Dto/ListItemDto";
 import Alert from "../../Components/Alert";
 import ProgressCircles from "../../Components/ProgressCircles";
 import ProgressBar from "../../Components/ProgressBar";
+import {ListItemImage} from "../../Model/ListItemImage";
+import {has} from "lodash";
 
-export function getItemByIdentifier(state: ListViewState, identifier: string) {
+export function getItemByIdentifier(state: ListViewState, identifier: string): ListItem|undefined {
     return Object.values(state.items).find(item => item.identifier === identifier);
 }
 
@@ -27,16 +29,21 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         super(props)
         this.state = {
             listState: ListState.Loading,
-            listStateIsSlowLoading: false,
+            listStateLoadingTimeState: 'normal',
             currentPage: 1,
             itemsPerPage: 10,
         }
 
         setTimeout(() => {
             this.setState((state, props) => {
-                return {...state, listStateIsSlowLoading: true};
+                return {...state, listStateLoadingTimeState: 'slow'};
             });
         }, 5000);
+        setTimeout(() => {
+            this.setState((state, props) => {
+                return {...state, listStateLoadingTimeState: 'slower'};
+            });
+        }, 20000);
     }
 
     async componentDidMount() {
@@ -46,7 +53,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         const backend: NeosBackendService = NeosBackendService.getInstance()
         try {
             const items: FindAssetData[] | FindDocumentNodeData[] = await backend.getItems(this.context.moduleConfiguration);
-            const processedItems = items.reduce<ListItems>((accumulator: ListItems, item: FindAssetData | FindDocumentNodeData) => {
+            const processedItems = Object.values(items).reduce<ListItems>((accumulator: ListItems, item: FindAssetData | FindDocumentNodeData) => {
                 accumulator.push(this.postprocessListItem(item, this.context.moduleConfiguration));
                 return accumulator;
             }, [] as ListItems);
@@ -75,7 +82,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                 } as ListItemProperty;
                 return accumulator;
             }, {}) || {},
-            editableProperties: moduleConfiguration.editableProperties?.reduce((accumulator, propertyName) => {
+            // todo i made a fallback here with an empty array
+            editableProperties: (moduleConfiguration.editableProperties || [])?.reduce((accumulator, propertyName) => {
                 const propertyValue = item.properties[propertyName];
                 accumulator[propertyName] = {
                     propertyName,
@@ -84,8 +92,61 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     state: ListItemPropertyState.Initial,
                 } as ListItemProperty;
                 return accumulator;
-            }, {})
+            }, {}),
+            images: (item.images || []).reduce((accumulator: ListItemImage[], image: FindImageData): ListItemImage[] => {
+                const newImage = {
+                    nodeTypeName: image.nodeTypeName,
+                    nodeContextPath: image.nodeContextPath,
+                    nodeContextPathWithProperty: image.nodeContextPath + '#' + image.imagePropertyName,
+                    nodeOrderIndex: image.nodeOrderIndex,
+                    imagePropertyName: image.imagePropertyName,
+                    filename: image.filename,
+                    fullsizeUri: this.prependConfiguredDomainToImageUri(image.fullsizeUri),
+                    thumbnailUri: this.prependConfiguredDomainToImageUri(image.thumbnailUri)
+                } as ListItemImage;
+                if (image.alternativeTextPropertyName) {
+                    newImage.alternativeTextProperty = {
+                        propertyName: image.alternativeTextPropertyName,
+                        // todo consider this pattern
+                        aliasPropertyName: 'alternativeText',
+                        initialValue: image.alternativeTextPropertyValue,
+                        currentValue: image.alternativeTextPropertyValue,
+                        state: ListItemPropertyState.Initial,
+                    } as ListItemProperty;
+                }
+                if (image.titleTextPropertyName) {
+                    newImage.titleTextProperty = {
+                        propertyName: image.titleTextPropertyName,
+                        // todo consider this pattern
+                        aliasPropertyName: 'titleText',
+                        initialValue: image.titleTextPropertyValue,
+                        currentValue: image.titleTextPropertyValue,
+                        state: ListItemPropertyState.Initial,
+                    } as ListItemProperty;
+                }
+                accumulator.push(newImage);
+                return accumulator;
+            }, []).sort((a: ListItemImage, b: ListItemImage) => {
+                // todo this does not necessarily resemble the original order on the page, because nested elements could come first but have a longer node context path
+                const aWeighted = a.nodeContextPath.length * 1000 + a.nodeOrderIndex;
+                const bWeighted = b.nodeContextPath.length * 1000 + b.nodeOrderIndex;
+                return aWeighted - bWeighted;
+            })
         };
+    }
+
+    private prependConfiguredDomainToImageUri(imageUri: string) {
+        // Make sure that the imageUri has a domain prepended
+        // Get instance domain from configuration
+        const instanceDomain = this.context.domain;
+        // Remove the scheme and split URL into parts
+        const imageUriParts = imageUri.replace('http://', '').replace('https://', '').split('/');
+        // Remove the domain
+        imageUriParts.shift();
+        // Add the domain from configuration
+        imageUriParts.unshift(instanceDomain);
+        // Re-join the array to a URL and return
+        return imageUriParts.join('/');
     }
 
     private renderLoadingIndicator() {
@@ -93,7 +154,8 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             <span>
                 <FontAwesomeIcon icon={faSpinner} spin={true}/>&nbsp;
                 {this.translationService.translate('NEOSidekick.AiAssistant:Main:loading', 'Loading...')}
-                {this.state.listStateIsSlowLoading && <div style={{marginTop: '2.5rem', maxWidth: '500px'}}><Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:slowLoadingMessage', 'Large websites sometimes take a few seconds to calculate the relevant content. Please be patient.')}/></div>}
+                {this.state.listStateLoadingTimeState === 'slow' && <div style={{marginTop: '2.5rem', maxWidth: '500px'}}><Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:slowLoadingMessage', 'Large websites sometimes take a few seconds to calculate the relevant content. Please be patient.')}/></div>}
+                {this.state.listStateLoadingTimeState === 'slower' && <div style={{marginTop: '2.5rem', maxWidth: '500px'}}><Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:slowLoadingMessage2', 'Please be patient for a moment. The query is still running. If an error occurs, you will see it here.')}/></div>}
             </span>
         )
     }
@@ -139,12 +201,13 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         const totalPages = Math.ceil(Object.values(this.state.items).length / this.state.itemsPerPage);
         return [
             (totalPages <= 10 ? <ProgressCircles currentPage={this.state.currentPage} totalPages={totalPages} /> : <ProgressBar currentPage={this.state.currentPage} totalPages={totalPages} />),
-            this.paginatedItems().map((item: ListItem) =>
+            paginatedItems.map((item: ListItem, index) =>
                 <ListViewItem
                     key={item.identifier}
                     item={item}
                     updateItem={(newItemProducer: (state: Readonly<ListViewState>) => ListItem) => this.updateItem(newItemProducer)}
-                    persistItem={(item: ListItem) => this.persistItems([item])}/>)]
+                    persistItem={(item: ListItem) => this.persistItems([item])}
+                    lazyGenerate={index > 0}/>)]
     }
 
     private updateItem(newItemProducer: (state: Readonly<ListViewState>) => ListItem) {
@@ -166,7 +229,9 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
             }
 
             if (item.state === ListItemState.Initial) {
-                hasChanges = hasChanges || !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated);
+                hasChanges = hasChanges
+                    || !!Object.values(item.editableProperties).find(property => property.state === ListItemPropertyState.AiGenerated || property.state === ListItemPropertyState.UserManipulated)
+                    || !!Object.values((item as DocumentNodeListItem)?.images).find((image: ListItemImage) => image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated || image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated);
             }
         }
         return hasChanges;
@@ -203,6 +268,22 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                     return accumulator;
                 }, {});
 
+                let images: {
+                    [key: string]: ListItemImage;
+                };
+                if (item.type === 'DocumentNode') {
+                    images = Object.values((item as DocumentNodeListItem).images).reduce((accumulator, image: ListItemImage) => {
+                        accumulator[image.nodeContextPath] = {};
+                        if (image.alternativeTextProperty?.state === ListItemPropertyState.AiGenerated || image.alternativeTextProperty?.state === ListItemPropertyState.UserManipulated) {
+                            accumulator[image.nodeContextPath][image.alternativeTextProperty.propertyName] = image.alternativeTextProperty.currentValue;
+                        }
+                        if (image.titleTextProperty?.state === ListItemPropertyState.AiGenerated || image.titleTextProperty?.state === ListItemPropertyState.UserManipulated) {
+                            accumulator[image.nodeContextPath][image.titleTextProperty.propertyName] = image.titleTextProperty.currentValue;
+                        }
+                        return accumulator;
+                    }, {});
+                }
+
                 switch (item.type) {
                     case 'Asset':
                         return {
@@ -214,12 +295,13 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                             // @ts-ignore
                             nodeContextPath: item.nodeContextPath,
                             properties,
+                            images
                         }
                     default:
                         throw new Error('Unknown item type ' + item.type);
                 }
             })
-            .filter(item => Object.keys(item.properties).length > 0)
+            .filter(item => (Object.keys(item.properties).length > 0 || Object.keys(item.images || {}).length > 0))
         );
         itemsToPersist.forEach(item => {
             this.updateItem((state: Readonly<ListViewState>) => {
@@ -250,7 +332,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
                         <FontAwesomeIcon icon={faChevronLeft}/>&nbsp;
                         {this.translationService.translate('NEOSidekick.AiAssistant:Module:returnToOverview', 'Return to overview')}
                     </a>
-                    {this.state.listState === ListState.Result ? <button
+                    {this.state.listState === ListState.Result && this.paginatedItems().length !== 0 ? <button
                         onClick={() => this.saveCurrentItemsAndNextPage()}
                         className={'neos-button neos-button-success'}>
                         {this.showSaveButtonSpinner() ? <FontAwesomeIcon icon={faSpinner} spin={true}/> : <FontAwesomeIcon icon={this.hasUnsavedChanges() ? faCheckDouble : faCheck}/>}&nbsp;
@@ -266,7 +348,7 @@ export interface ListViewProps {}
 
 export interface ListViewState {
     listState: ListState,
-    listStateIsSlowLoading: boolean,
+    listStateLoadingTimeState: 'normal' | 'slow' | 'slower',
     items?: ListItems,
     itemsPerPage?: number,
     currentPage?: number

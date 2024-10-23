@@ -8,7 +8,7 @@ use Neos\Flow\Annotations as Flow;
  * @Flow\ValueObject
  * @Flow\Proxy(false)
  */
-final class FindDocumentNodesFilter
+final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
 {
     /**
      * 'important-pages' | 'custom'
@@ -22,13 +22,19 @@ final class FindDocumentNodesFilter
     protected string $workspace;
 
     /**
-     * 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'
+     * 'none', 'only-empty-focus-keywords' | 'only-existing-focus-keywords'
      * @var string
      */
     protected string $seoPropertiesFilter;
 
     /**
-     * 'none', 'only-empty-focus-keywords', 'only-existing-focus-keywords'
+     * 'none' | 'only-empty-alternative-text-or-title-text' | 'only-empty-alternative-text' | 'only-empty-title-text' | 'only-existing-alternative-text' | 'only-existing-title-text'
+     * @var string
+     */
+    protected string $imagePropertiesFilter;
+
+    /**
+     * 'none' | 'only-empty-focus-keywords' | 'only-existing-focus-keywords'
      * @var string
      */
     protected string $focusKeywordPropertyFilter;
@@ -53,15 +59,17 @@ final class FindDocumentNodesFilter
      */
     public function __construct(
         string $filter,
-        ?string  $workspace,
+        ?string $workspace,
         ?string $seoPropertiesFilter = 'none',
         ?string $focusKeywordPropertyFilter = 'none',
+        ?string $imagePropertiesFilter = 'none',
         ?string $languageDimensionFilter = null,
         ?string $nodeTypeFilter = null
     ) {
         $this->filter = $filter;
         $this->workspace = $workspace;
         $this->seoPropertiesFilter = $seoPropertiesFilter;
+        $this->imagePropertiesFilter = $imagePropertiesFilter;
         $this->focusKeywordPropertyFilter = $focusKeywordPropertyFilter;
         $this->languageDimensionFilter = $languageDimensionFilter ? explode(',', $languageDimensionFilter) : [];
         $this->nodeTypeFilter = empty($nodeTypeFilter) ? null : $nodeTypeFilter;
@@ -80,6 +88,11 @@ final class FindDocumentNodesFilter
     public function getSeoPropertiesFilter(): string
     {
         return $this->seoPropertiesFilter;
+    }
+
+    public function getImagePropertiesFilter(): string
+    {
+        return $this->imagePropertiesFilter;
     }
 
     public function getFocusKeywordPropertyFilter(): string
@@ -103,6 +116,7 @@ final class FindDocumentNodesFilter
      *     workspace: string,
      *     seoPropertiesFilter: string,
      *     focusKeywordPropertyFilter: string,
+     *     imagePropertiesFilter: string,
      *     languageDimensionFilter: string[],
      *     nodeTypeFilter: string|null
      * } $array
@@ -116,6 +130,7 @@ final class FindDocumentNodesFilter
             $array['workspace'],
             $array['seoPropertiesFilter'],
             $array['focusKeywordPropertyFilter'],
+            $array['imagePropertiesFilter'],
             $array['languageDimensionFilter'] ?? [],
             $array['nodeTypeFilter'] ?? null
         );

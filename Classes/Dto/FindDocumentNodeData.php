@@ -47,6 +47,11 @@ final class FindDocumentNodeData implements JsonSerializable
     protected string $language;
 
     /**
+     * @var array<FindImageData>
+     */
+    protected array $images;
+
+    /**
      * @param string $identifier
      * @param string $nodeContextPath
      * @param string $nodeTypeName
@@ -54,6 +59,7 @@ final class FindDocumentNodeData implements JsonSerializable
      * @param string $previewUri
      * @param array  $properties
      * @param string $language
+     * @param array $images
      */
     public function __construct(
         string $identifier,
@@ -62,7 +68,8 @@ final class FindDocumentNodeData implements JsonSerializable
         string $publicUri,
         string $previewUri,
         array $properties,
-        string $language
+        string $language,
+        array $images = []
     ) {
         $this->identifier = $identifier;
         $this->nodeContextPath = $nodeContextPath;
@@ -71,6 +78,7 @@ final class FindDocumentNodeData implements JsonSerializable
         $this->previewUri = $previewUri;
         $this->properties = $properties;
         $this->language = $language;
+        $this->images = $images;
     }
 
     public function getIdentifier(): string
@@ -106,6 +114,25 @@ final class FindDocumentNodeData implements JsonSerializable
     public function getLanguage(): string
     {
         return $this->language;
+    }
+
+    public function getImages(): array
+    {
+        return $this->images;
+    }
+
+    public function withAddedImage(FindImageData $findImageData): self
+    {
+        return new self(
+            $this->identifier,
+            $this->nodeContextPath,
+            $this->nodeTypeName,
+            $this->publicUri,
+            $this->previewUri,
+            $this->properties,
+            $this->language,
+            [...$this->images, $findImageData]
+        );
     }
 
     /**
@@ -144,7 +171,8 @@ final class FindDocumentNodeData implements JsonSerializable
             'publicUri' => $this->publicUri,
             'previewUri' => $this->previewUri,
             'properties' => $this->properties,
-            'language' => $this->language
+            'language' => $this->language,
+            'images' => $this->images
         ];
     }
 }

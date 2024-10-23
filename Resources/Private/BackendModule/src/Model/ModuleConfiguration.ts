@@ -1,5 +1,5 @@
 export interface ModuleConfiguration {
-    itemType: 'Asset' | 'DocumentNode';
+    itemType: 'Asset' | 'DocumentNode' | 'ContentNode';
     enforceConfigs: string[];
     itemsPerPage: number;
     readonlyProperties: string[];
@@ -14,6 +14,8 @@ export interface DocumentNodeModuleConfiguration extends ModuleConfiguration {
     seoPropertiesFilter: string|null,
     focusKeywordPropertyFilterOptions: string[],
     focusKeywordPropertyFilter: string|null,
+    imagePropertiesFilterOptions?: string[],
+    imagePropertiesFilter?: string|null,
     baseNodeTypeFilter: string|null,
     languageDimensionFilter: string[],
     nodeTypeFilter: string|null,

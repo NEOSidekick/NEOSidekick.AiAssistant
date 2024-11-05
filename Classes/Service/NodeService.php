@@ -164,14 +164,15 @@ class NodeService extends AbstractNodeService
             $queryBuilder->expr()->eq('n.path', ':currentSitePath'),
             $queryBuilder->expr()->like('n.path', ':currentSitePathWithWildcard')
         ));
-        $queryBuilder->setParameter('currentSitePath', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()));
-        $queryBuilder->setParameter('currentSitePathWithWildcard', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()) . '%');
-        $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
+        $currentSitePath = NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName());
+        $queryBuilder->setParameter('currentSitePath', $currentSitePath);
+        $queryBuilder->setParameter('currentSitePathWithWildcard', $currentSitePath . '%');
+        $includeNodeTypes = $this->getNodeTypeFilter($findDocumentNodesFilter);
+        $queryBuilder->setParameter('includeNodeTypes', $includeNodeTypes);
         $queryBuilder->setParameter('hidden', false, PDO::PARAM_BOOL);
         $queryBuilder->setParameter('removed', false, PDO::PARAM_BOOL);
         if (!empty($findDocumentNodesFilter->getLanguageDimensionFilter())) {
-            $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder,
-                [$this->languageDimensionName => $findDocumentNodesFilter->getLanguageDimensionFilter()]);
+            $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder, [$this->languageDimensionName => $findDocumentNodesFilter->getLanguageDimensionFilter()]);
         }
         $queryBuilder->addOrderBy('LENGTH(n.path)', 'ASC');
         $queryBuilder->addOrderBy('n.index', 'ASC');

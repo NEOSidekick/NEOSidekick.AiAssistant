@@ -1,6 +1,7 @@
 Neos:
   Fusion:
     defaultContext:
+      'NEOSidekick': 'NEOSidekick\AiAssistant\EelHelper\NEOSidekickHelper'
       'NEOSidekickInternal': 'NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper'
   Neos:
     fusion:

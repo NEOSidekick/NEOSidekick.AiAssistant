@@ -43,6 +43,7 @@ class NEOSidekickHelper implements ProtectedContextAwareInterface
         $editorOptions = $propertyConfiguration['ui']['inspector']['editorOptions'] ?? [];
         $imagePropertyName = $editorOptions['imagePropertyName'] ?? null;
         $fallbackAssetPropertyName = $editorOptions['fallbackAssetPropertyName'] ?? null;
+        $fallbackToCleanedFilenameIfNothingIsSet = $editorOptions['fallbackToCleanedFilenameIfNothingIsSet'] !== false;
 
         if ($editor !== $expectedEditor) {
             throw new Exception('NEOSidekick EelHelper expects the editor `' . $expectedEditor . '` for the property `' . $propertyName . '`, instead `' . $editor . '` is configured.');
@@ -66,10 +67,14 @@ class NEOSidekickHelper implements ProtectedContextAwareInterface
                 break;
         }
 
-        // fallback to cleaned filename
-        $resource = $image->getResource();
-        $filename = str_replace('.' . $resource->getFileExtension(), '', $resource->getFilename());
-        return str_replace('_', ' ', $filename);
+        if ($fallbackToCleanedFilenameIfNothingIsSet) {
+            $resource = $image->getResource();
+            $filename = str_replace('.' . $resource->getFileExtension(), '', $resource->getFilename());
+            $filename = str_replace('_', ' ', $filename);
+            return strtoupper(substr($filename, 0, 1)) . substr($filename, 1);
+        }
+
+        return null;
     }
 
     /**

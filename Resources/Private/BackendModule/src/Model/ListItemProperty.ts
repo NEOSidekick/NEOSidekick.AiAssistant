@@ -21,6 +21,8 @@ export interface EditorOptions {
     },
     imagePropertyName?: string,
     fallbackAssetPropertyName?: string,
+    fallbackToCleanedFilenameIfNothingIsSet?: boolean,
+    autoGenerateIfImageChanged?: boolean,
 }
 
 export interface PropertySchema {

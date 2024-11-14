@@ -269,9 +269,15 @@ class BackendServiceController extends ActionController
         } else {
             $originalImage = $image;
         }
+        // fallback to cleaned filename
+        $resource = $image->getResource();
+        $filename = str_replace('.' . $resource->getFileExtension(), '', $resource->getFilename());
+        $filename = str_replace('_', ' ', $filename);
+        $filename = strtoupper(substr($filename, 0, 1)) . substr($filename, 1);
         return json_encode([
             'title' => $originalImage->getTitle(),
             'caption' => $originalImage->getCaption(),
+            'filenameCleaned' => $filename
         ], JSON_THROW_ON_ERROR);
     }
 }

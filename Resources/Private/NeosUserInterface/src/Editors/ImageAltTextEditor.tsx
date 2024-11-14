@@ -12,13 +12,14 @@ export interface EditorOptions {
     },
     imagePropertyName?: string,
     fallbackAssetPropertyName?: string,
+    fallbackToCleanedFilenameIfNothingIsSet?: boolean,
     autoGenerateIfImageChanged?: boolean,
 }
 
 // Keep in sync with Resources/Private/BackendModule/src/Views/ListView/DocumentNodeListViewItemProperty.tsx
 export function createMagicTextAreaEditorPropsForImageTextEditor(props: any, module: string): any {
     Object.keys(props.options).forEach(key => {
-        if (!['imagePropertyName', 'fallbackAssetPropertyName', 'autoGenerateIfImageChanged'].includes(key)) {
+        if (!['imagePropertyName', 'fallbackAssetPropertyName', 'fallbackToCleanedFilenameIfNothingIsSet', 'autoGenerateIfImageChanged'].includes(key)) {
             console.warn('[NEOSidekick.AiAssistant]: Image text editor does not support editorOption "' + key + '".');
         }
     });
@@ -27,6 +28,7 @@ export function createMagicTextAreaEditorPropsForImageTextEditor(props: any, mod
         let options = draft.options as EditorOptions;
         let imagePropertyName = options.imagePropertyName;
         let fallbackAssetPropertyName = options.fallbackAssetPropertyName;
+        let fallbackToCleanedFilenameIfNothingIsSet = options.fallbackToCleanedFilenameIfNothingIsSet !== false;
 
         options = options || {};
         options.autoGenerateIfImageChanged = options.autoGenerateIfImageChanged !== false;
@@ -41,12 +43,13 @@ export function createMagicTextAreaEditorPropsForImageTextEditor(props: any, mod
         if (fallbackAssetPropertyName) {
             options.arguments = options.arguments || {};
             options.arguments.url = options.arguments.url || `SidekickClientEval: AssetUri(node.properties.${imagePropertyName})`;
+            let filenameFallback = fallbackToCleanedFilenameIfNothingIsSet ? 'true' : 'false';
             switch (fallbackAssetPropertyName) {
                 case 'title':
-                    options.placeholder = options.placeholder || `SidekickClientEval: AssetTitle(node.properties.${imagePropertyName})`;
+                    options.placeholder = options.placeholder || `SidekickClientEval: AssetTitle(node.properties.${imagePropertyName}, ${filenameFallback})`;
                     break;
                 case 'caption':
-                    options.placeholder = options.placeholder || `SidekickClientEval: AssetCaption(node.properties.${imagePropertyName})`;
+                    options.placeholder = options.placeholder || `SidekickClientEval: AssetCaption(node.properties.${imagePropertyName}, ${filenameFallback})`;
                     break;
             }
         }

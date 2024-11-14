@@ -59,8 +59,8 @@ export class ContentService {
                 const AssetUri = () => {
                     throw new Error('ContentService.processClientEval() does not support AssetUri(...)');
                 }
-                const AssetTitle = (assetObjectArray: any, fallbackValue?: string) => this.getAssetProperty('title', assetObjectArray, fallbackValue || '')
-                const AssetCaption = (assetObjectArray: any, fallbackValue?: string) => this.getAssetProperty('caption', assetObjectArray, fallbackValue || '')
+                const AssetTitle = (assetObjectArray: any, fallbackToCleanedFilenameIfNothingIsSet?: boolean, fallbackValue?: string) => this.getAssetProperty('title', assetObjectArray, fallbackToCleanedFilenameIfNothingIsSet,  fallbackValue || '')
+                const AssetCaption = (assetObjectArray: any, fallbackToCleanedFilenameIfNothingIsSet?: boolean, fallbackValue?: string) => this.getAssetProperty('caption', assetObjectArray, fallbackToCleanedFilenameIfNothingIsSet,  fallbackValue || '')
                 const AsyncFunction = Object.getPrototypeOf(async function () {
                 }).constructor
                 const evaluateFn = new AsyncFunction('node,parentNode,documentTitle,documentContent,AssetUri,AssetTitle,AssetCaption,property', 'return ' + value.replace('SidekickClientEval:', '').replace('ClientEval:', ''));
@@ -77,7 +77,7 @@ export class ContentService {
         return value;
     }
 
-    private getAssetProperty = async (propertyName: 'title' | 'caption', assetObjectArray: { __identity?: string }, fallbackValue: string = ''): Promise<string> => {
+    private getAssetProperty = async (propertyName: 'title' | 'caption', assetObjectArray: { __identity?: string }, fallbackToCleanedFilenameBeforeFallbackValue?: boolean, fallbackValue: string = ''): Promise<string> => {
         if (!assetObjectArray || !assetObjectArray?.__identity) {
             return fallbackValue;
         }
@@ -90,8 +90,8 @@ export class ContentService {
                     'Accept': 'application/json',
                 }
             });
-            const imageProperties: {title: string, caption: string} = await imagePropertiesAsJson.json();
-            return imageProperties[propertyName] || fallbackValue;
+            const imageProperties: {title: string, caption: string, filenameCleaned: string} = await imagePropertiesAsJson.json();
+            return imageProperties[propertyName] || (fallbackToCleanedFilenameBeforeFallbackValue ? imageProperties.filenameCleaned : '') || fallbackValue;
         } catch (e) {
             return fallbackValue;
         }

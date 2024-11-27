@@ -28,6 +28,7 @@ use Neos\Neos\Domain\Model\Domain;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
+use Neos\Neos\Domain\Service\SiteImportService;
 use NEOSidekick\AiAssistant\Service\SiteService;
 
 abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
@@ -58,9 +59,12 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $this->configureNodeDimensions();
         $this->setUpRootNodeAndRepository();
 
-        foreach($this->siteHosts as $siteHost) {
+        foreach($this->siteHosts as $i => $siteHost) {
             $this->createSite(explode('.', $siteHost)[0], $siteHost);
         }
+
+        $this->saveNodesAndTearDownRootNodeAndRepository();
+        $this->setUpRootNodeAndRepository();
     }
 
     /**
@@ -110,13 +114,18 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
             $this->persistenceManager->persistAll();
         }
 
+        $liveContext = $this->contextFactory->create(['workspaceName' => 'live']);
         $personalContext = $this->contextFactory->create(['workspaceName' => $this->currentUserWorkspace]);
+
+        // todo note behaviour has changed here
+        // the root nodes are created in the live workspace instead
+        // of user workspace
 
         // Make sure the Workspace was created.
         $this->liveWorkspace = $personalContext->getWorkspace()->getBaseWorkspace()->getBaseWorkspace();
         $this->nodeDataRepository = $this->objectManager->get(NodeDataRepository::class);
-        $this->rootNode = $personalContext->getNode('/');
-        $this->sitesNode = $personalContext->getNode('/sites');
+        $this->rootNode = $liveContext->getNode('/');
+        $this->sitesNode = $liveContext->getNode('/sites');
         if ($this->sitesNode === null) {
             $this->sitesNode = $this->rootNode->createNode(NodePaths::getNodeNameFromPath(\Neos\Neos\Domain\Service\SiteService::SITES_ROOT_PATH));
         }
@@ -154,6 +163,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     {
         /** @var Node $documentNode */
         $documentNode = $parentNode->createNodeFromTemplate($this->createDocumentNodeTemplate($title), $nodeName);
+        $documentNode->setProperty('uriPathSegment', $nodeName);
         $mainContentCollection = $documentNode->findNamedChildNode(NodeName::fromString('main'));
         foreach ($imageFixtureFilenames as $imageFixtureFilename) {
             $mainContentCollection->createNodeFromTemplate($this->createImageNodeTemplate($imageFixtureFilename), 'image-' . explode('.', $imageFixtureFilename)[0]);
@@ -205,7 +215,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 
         $domainModel = new Domain();
         $domainModel->setSite($site);
-        $domainModel->setScheme('http');
+        $domainModel->setScheme('https');
         $domainModel->setHostname($domain);
         $domainRepository->add($domainModel);
 
@@ -213,6 +223,8 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $site->setPrimaryDomain($domainModel);
 
         $siteRepository->update($site);
+
+        $this->persistenceManager->persistAll();
 
         return $site;
     }

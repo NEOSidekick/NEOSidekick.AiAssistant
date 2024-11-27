@@ -31,25 +31,21 @@ class NodeService extends AbstractNodeService
     private const BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
 
     /**
-     * @Flow\Inject
      * @var WorkspaceRepository
      */
     protected $workspaceRepository;
 
     /**
-     * @Flow\Inject
      * @var FindDocumentNodeDataFactory
      */
     protected $findDocumentNodeDataFactory;
 
     /**
-     * @Flow\Inject
      * @var NodeTypeManager
      */
     protected $nodeTypeManager;
 
     /**
-     * @Flow\Inject
      * @var SiteService
      */
     protected $siteService;
@@ -67,16 +63,31 @@ class NodeService extends AbstractNodeService
     protected $contentDimensions;
 
     /**
-     * @Flow\Inject
      * @var ApiFacade
      */
     protected $apiFacade;
 
     /**
-     * @Flow\Inject
      * @var NodeFindingService
      */
     protected $nodeFindingService;
+
+    public function __construct(
+        WorkspaceRepository $workspaceRepository,
+        FindDocumentNodeDataFactory $findDocumentNodeDataFactory,
+        NodeTypeManager $nodeTypeManager,
+        SiteService $siteService,
+        ApiFacade $apiFacade,
+        NodeFindingService $nodeFindingService
+    )
+    {
+        $this->workspaceRepository = $workspaceRepository;
+        $this->findDocumentNodeDataFactory = $findDocumentNodeDataFactory;
+        $this->nodeTypeManager = $nodeTypeManager;
+        $this->siteService = $siteService;
+        $this->apiFacade = $apiFacade;
+        $this->nodeFindingService = $nodeFindingService;
+    }
 
     /**
      * @throws NodeException

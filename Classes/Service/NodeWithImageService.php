@@ -22,6 +22,7 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\NodeTypeWithImageMetadataSchemaDto;
 use NEOSidekick\AiAssistant\Factory\FindImageDataFactory;
 use PDO;
+use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
@@ -70,6 +71,12 @@ class NodeWithImageService extends AbstractNodeService
      * @var NodeTypeService
      */
     protected $nodeTypeService;
+
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $systemLogger;
 
     /**
      * @param FindDocumentNodesFilter     $filter
@@ -133,7 +140,8 @@ class NodeWithImageService extends AbstractNodeService
             $closestAggregateNodeData = $this->findClosestAggregate($itemNodeData);
 
             if ($closestAggregateNodeData === null) {
-                throw new RuntimeException(sprintf('Nodes must at least have one aggregate ancestor, found node "%s" without.', $itemNodeData->getContextPath()), 1722372387256);
+                $this->systemLogger->warning(sprintf('Nodes must at least have one aggregate ancestor, found node "%s" without.', $itemNodeData->getContextPath()));
+                continue;
             }
 
             $context = $this->createContentContext($filter->getWorkspace(), $itemNodeData->getDimensionValues());

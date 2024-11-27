@@ -3,10 +3,14 @@
 namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
 use InvalidArgumentException;
+use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
+use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
+use NEOSidekick\AiAssistant\Service\NodeFindingService;
 use NEOSidekick\AiAssistant\Service\NodeService;
+use NEOSidekick\AiAssistant\Service\SiteService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
 use PHPUnit\Framework\MockObject\MockObject;
 
@@ -34,6 +38,9 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $page1a->createVariantForContext($englishContext);
         $page2->createVariantForContext($englishContext);
 
+        // todo hack
+        $page1->getContext()->getWorkspace()->publish($this->liveWorkspace);
+
         $this->saveNodesAndTearDownRootNodeAndRepository();
         $this->setUpRootNodeAndRepository();
     }
@@ -43,13 +50,29 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
      */
     public function itFindsImportantPagesWithEmptyFocusKeyword(): void
     {
+        // TODO maybe not working because nodes are not published to live???
+        // that was true
+        // now the route cannot be generated
         $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
             ->disableOriginalConstructor()
             ->getMock();
+        $apiFacadeMock
+            ->method('getMostRelevantInternalSeoUrisByHosts')
+            ->willReturn([
+//                'https://example.com/',
+                'https://example.com/de/node-wan-kenodi.html',
+            ]);
         /** @var NodeService|MockObject $nodeService */
-        $nodeService = $this->getAccessibleMock(NodeService::class);
+        $nodeService = new NodeService(
+            $this->workspaceRepository,
+            $this->objectManager->get(FindDocumentNodeDataFactory::class),
+            $this->objectManager->get(NodeTypeManager::class),
+            $this->objectManager->get(SiteService::class),
+            $apiFacadeMock,
+            $this->objectManager->get(NodeFindingService::class),
+        );
         $this->inject($nodeService, 'apiFacade', $apiFacadeMock);
-
+        $this->inject($nodeService, 'contentDimensions', []);
 
         $findDocumentNodesFilter = new FindDocumentNodesFilter(
             'important-pages',

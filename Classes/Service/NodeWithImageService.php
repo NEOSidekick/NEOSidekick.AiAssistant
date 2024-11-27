@@ -133,7 +133,7 @@ class NodeWithImageService extends AbstractNodeService
             $closestAggregateNodeData = $this->findClosestAggregate($itemNodeData);
 
             if ($closestAggregateNodeData === null) {
-                throw new RuntimeException('Nodes must at least have one aggregate ancestor', 1722372387256);
+                throw new RuntimeException(sprintf('Nodes must at least have one aggregate ancestor, found node "%s" without.', $itemNodeData->getContextPath()), 1722372387256);
             }
 
             $context = $this->createContentContext($filter->getWorkspace(), $itemNodeData->getDimensionValues());

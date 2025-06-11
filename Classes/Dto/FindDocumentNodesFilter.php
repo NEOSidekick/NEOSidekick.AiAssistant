@@ -119,7 +119,7 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
         return $this->nodeTypeFilter;
     }
 
-    public function getBaseNodeType(): ?string
+    public function getBaseNodeTypeFilter(): ?string
     {
         return $this->baseNodeTypeFilter;
     }

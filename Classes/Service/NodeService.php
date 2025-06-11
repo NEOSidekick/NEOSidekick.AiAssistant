@@ -281,7 +281,7 @@ class NodeService extends AbstractNodeService
     protected function getNodeTypeFilter(FindDocumentNodesFilter $findDocumentNodesFilter): array
     {
         $documentNodeTypeFilter = $findDocumentNodesFilter->getNodeTypeFilter() ?? 'Neos.Neos:Document';
-        $baseNodeTypeFilter = $findDocumentNodesFilter->getBaseNodeType() ?? self::BASE_NODE_TYPE;
+        $baseNodeTypeFilter = $findDocumentNodesFilter->getBaseNodeTypeFilter() ?? self::BASE_NODE_TYPE;
         $baseNodeTypeSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes($baseNodeTypeFilter, false);
         $baseNodeTypeNameWithSubNodeTypeNames = [$baseNodeTypeFilter, ...array_keys($baseNodeTypeSubNodeTypes)];
         $documentSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes($documentNodeTypeFilter, false);

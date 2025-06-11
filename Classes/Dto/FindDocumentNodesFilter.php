@@ -50,12 +50,19 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
     protected ?string $nodeTypeFilter = null;
 
     /**
+     * @var string|null
+     */
+    protected ?string $baseNodeTypeFilter = null;
+
+    /**
      * @param string      $filter
      * @param string|null $workspace
      * @param string|null $seoPropertiesFilter
      * @param string|null $focusKeywordPropertyFilter
+     * @param string|null $imagePropertiesFilter
      * @param string|null $languageDimensionFilter
      * @param string|null $nodeTypeFilter
+     * @param string|null $baseNodeTypeFilter
      */
     public function __construct(
         string $filter,
@@ -64,7 +71,8 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
         ?string $focusKeywordPropertyFilter = 'none',
         ?string $imagePropertiesFilter = 'none',
         ?string $languageDimensionFilter = null,
-        ?string $nodeTypeFilter = null
+        ?string $nodeTypeFilter = null,
+        ?string $baseNodeTypeFilter = null
     ) {
         $this->filter = $filter;
         $this->workspace = $workspace;
@@ -73,6 +81,7 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
         $this->focusKeywordPropertyFilter = $focusKeywordPropertyFilter;
         $this->languageDimensionFilter = $languageDimensionFilter ? explode(',', $languageDimensionFilter) : [];
         $this->nodeTypeFilter = empty($nodeTypeFilter) ? null : $nodeTypeFilter;
+        $this->baseNodeTypeFilter = $baseNodeTypeFilter;
     }
 
     public function getFilter(): string
@@ -110,6 +119,11 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
         return $this->nodeTypeFilter;
     }
 
+    public function getBaseNodeType(): ?string
+    {
+        return $this->baseNodeTypeFilter;
+    }
+
     /**
      * @param array{
      *     filter: string,
@@ -118,7 +132,8 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
      *     focusKeywordPropertyFilter: string,
      *     imagePropertiesFilter: string,
      *     languageDimensionFilter: string[],
-     *     nodeTypeFilter: string|null
+     *     nodeTypeFilter: string|null,
+     *     baseNodeTypeFilter: string|null
      * } $array
      *
      * @return self
@@ -132,7 +147,8 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
             $array['focusKeywordPropertyFilter'],
             $array['imagePropertiesFilter'],
             $array['languageDimensionFilter'] ?? [],
-            $array['nodeTypeFilter'] ?? null
+            $array['nodeTypeFilter'] ?? null,
+            $array['baseNodeTypeFilter'] ?? null
         );
     }
 }

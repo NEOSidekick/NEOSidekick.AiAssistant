@@ -281,12 +281,13 @@ class NodeService extends AbstractNodeService
     protected function getNodeTypeFilter(FindDocumentNodesFilter $findDocumentNodesFilter): array
     {
         $documentNodeTypeFilter = $findDocumentNodesFilter->getNodeTypeFilter() ?? 'Neos.Neos:Document';
-        $mixinSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes(self::BASE_NODE_TYPE, false);
-        $mixinNameWithSubNodeTypes = [self::BASE_NODE_TYPE, ...array_keys($mixinSubNodeTypes)];
+        $baseNodeTypeFilter = $findDocumentNodesFilter->getBaseNodeType() ?? self::BASE_NODE_TYPE;
+        $baseNodeTypeSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes($baseNodeTypeFilter, false);
+        $baseNodeTypeNameWithSubNodeTypeNames = [$baseNodeTypeFilter, ...array_keys($baseNodeTypeSubNodeTypes)];
         $documentSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes($documentNodeTypeFilter, false);
-        $documentNameWithSubNodeTypes = [$documentNodeTypeFilter, ...array_keys($documentSubNodeTypes)];
-        $intersectNodeTypes = array_intersect(array_values($mixinNameWithSubNodeTypes), array_values($documentNameWithSubNodeTypes));
-        return array_values($intersectNodeTypes);
+        $documentNodeTypeNameWithSubNodeTypeNames = [$documentNodeTypeFilter, ...array_keys($documentSubNodeTypes)];
+        $intersectNodeTypeNames = array_intersect(array_values($baseNodeTypeNameWithSubNodeTypeNames), array_values($documentNodeTypeNameWithSubNodeTypeNames));
+        return array_values($intersectNodeTypeNames);
     }
 
     protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, Node $node): bool

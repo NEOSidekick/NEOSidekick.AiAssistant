@@ -90,7 +90,7 @@ export default class NeosBackendService {
             const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
             return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
         } else if (moduleConfiguration.itemType === 'DocumentNode') {
-            let {moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, imagePropertiesFilter, languageDimensionFilter, nodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
+            let {moduleName, filter, workspace, seoPropertiesFilter, focusKeywordPropertyFilter, imagePropertiesFilter, languageDimensionFilter, nodeTypeFilter, baseNodeTypeFilter} = moduleConfiguration as DocumentNodeModuleConfiguration;
             if (filter === 'important-pages') {
                 switch(moduleName) {
                     case 'FocusKeyword':
@@ -111,7 +111,8 @@ export default class NeosBackendService {
                 focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',
                 imagePropertiesFilter: imagePropertiesFilter || 'none',
                 languageDimensionFilter: languageDimensionFilter || [],
-                nodeTypeFilter: nodeTypeFilter || ''
+                nodeTypeFilter: nodeTypeFilter || '',
+                baseNodeTypeFilter: baseNodeTypeFilter || '',
             } as FindDocumentNodesFilter;
         } else {
             throw new Error('Unknown item type');

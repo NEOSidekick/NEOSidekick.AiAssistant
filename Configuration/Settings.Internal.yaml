@@ -93,6 +93,16 @@ Neos:
             additionalResources:
               javaScripts:
                 module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
+          automations:
+            label: 'NEOSidekick.AiAssistant:BackendModule.Automations:label'
+            description: 'NEOSidekick.AiAssistant:BackendModule.Automations:description'
+            icon: 'fas fa-robot'
+            controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\AutomationsController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
+            mainStylesheet: Lite
+            additionalResources:
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/BackendModule.js
           configuration:
             label: 'NEOSidekick.AiAssistant:BackendModule.Configuration:label'
             description: 'NEOSidekick.AiAssistant:BackendModule.Configuration:description'

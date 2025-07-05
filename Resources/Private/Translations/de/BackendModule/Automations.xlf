@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="label" xml:space="preserve">
+                <source>Automations</source>
+                <target>Automatisierungen</target>
+            </trans-unit>
+            <trans-unit id="description" xml:space="preserve">
+                <source>Configure AI-powered automations for your content.</source>
+                <target>Konfigurieren Sie KI-gestützte Automatisierungen für Ihre Inhalte.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

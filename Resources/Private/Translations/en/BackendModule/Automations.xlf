@@ -8,6 +8,78 @@
             <trans-unit id="description" xml:space="preserve">
                 <source>Configure AI-powered automations for your content.</source>
             </trans-unit>
+            <trans-unit id="intro" xml:space="preserve">
+                <source>Make your life easier with AI-powered automations.</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.title" xml:space="preserve">
+                <source>On-Page SEO Automations</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.determineMissingFocusKeywords" xml:space="preserve">
+                <source>Determine missing focus keywords on publication</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.redetermineExistingFocusKeywords" xml:space="preserve">
+                <source>Re-determine existing focus keywords on publication</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.generateEmptySeoTitles" xml:space="preserve">
+                <source>Automatically generate empty SEO titles on publication</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.generateEmptyMetaDescriptions" xml:space="preserve">
+                <source>Automatically generate empty meta descriptions on publication</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.regenerateExistingSeoTitles" xml:space="preserve">
+                <source>Automatically regenerate existing SEO titles on publication</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.regenerateExistingMetaDescriptions" xml:space="preserve">
+                <source>Automatically regenerate existing meta descriptions on publication</source>
+            </trans-unit>
+            <trans-unit id="approvalProcess.label" xml:space="preserve">
+                <source>Approval process:</source>
+            </trans-unit>
+            <trans-unit id="approvalProcess.approveAutomatically" xml:space="preserve">
+                <source>Publish directly</source>
+            </trans-unit>
+            <trans-unit id="approvalProcess.requestViaEmail" xml:space="preserve">
+                <source>Request via email</source>
+            </trans-unit>
+            <trans-unit id="approvalProcess.requestViaSlack" xml:space="preserve">
+                <source>Request via Slack</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.title" xml:space="preserve">
+                <source>Image Alt Text Automation</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.intro" xml:space="preserve">
+                <source>Automatically correct texts and maintain brand integrity.</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.generateEmptyAltTexts" xml:space="preserve">
+                <source>Automatically generate empty alternative texts for images on publication</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.generateEmptyTitleTexts" xml:space="preserve">
+                <source>Automatically generate empty title texts for images on publication</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.approvalProcess" xml:space="preserve">
+                <source>Approval process for SEO automations:</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.title" xml:space="preserve">
+                <source>Brand Guard</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.rules" xml:space="preserve">
+                <source>Rules</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.defaultPrompt" xml:space="preserve">
+                <source>Please correct the following text based on these rules.
+# Rules
+- Correct all spelling and grammar mistakes
+- Always write "Neos CMS" (never "NEOS")</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.includeNeosidekickBriefing" xml:space="preserve">
+                <source>Include NEOSidekick briefing in prompt</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.approvalProcess" xml:space="preserve">
+                <source>Approval process for Brand Guard:</source>
+            </trans-unit>
+            <trans-unit id="save" xml:space="preserve">
+                <source>Save</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

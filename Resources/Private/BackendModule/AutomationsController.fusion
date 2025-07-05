@@ -5,113 +5,110 @@ NEOSidekick.AiAssistant.BackendModule.AutomationsController.index = Neos.Fusion:
 
     renderer = afx`
         <div class="neos-content neos-container-fluid">
-            <h1>Automations</h1>
-            <p>Mache dir dein Leben einfacher mit Automatisierunge mit KI-Support.</p>
+            <h1>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:label')}</h1>
+            <p>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:intro')}</p>
 
             <Neos.Fusion.Form:Form form.target.action="update" form.data.automationsConfiguration={props.automationsConfiguration}>
                 <fieldset>
-                    <legend>On-Page-SEO Automatisierungen</legend>
+                    <legend>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.title')}</legend>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[determineMissingFocusKeywordsOnPublication]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            Bei Veröffentlichungen fehlende Fokus-Keyword ermitteln
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.determineMissingFocusKeywords')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[redetermineExistingFocusKeywordsOnPublication]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            Bei Veröffentlichungen bestehende Fokus-Keyword neu ermitteln
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.redetermineExistingFocusKeywords')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[generateEmptySeoTitlesOnPublication]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            Bei Veröffentlichungen leere SEO-Titel automatisch generieren
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.generateEmptySeoTitles')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[generateEmptyMetaDescriptionsOnPublication]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            Bei Veröffentlichungen leere Meta-Beschreibungen automatisch generieren
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.generateEmptyMetaDescriptions')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[regenerateExistingSeoTitlesOnPublication]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            Bei Veröffentlichungen bestehende SEO-Titel automatisch neu generieren
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.regenerateExistingSeoTitles')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[regenerateExistingMetaDescriptionsOnPublication]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            Bei Veröffentlichungen bestehende Meta-Beschreibungen automatisch neu generieren
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.regenerateExistingMetaDescriptions')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
-                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[seoAutomationsApprovalProcess]" label="Freigabe:">
+                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[seoAutomationsApprovalProcess]" label={Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.label')}>
                         <Neos.Fusion.Form:Select>
-                            <Neos.Fusion.Form:Select.Option option.value="approve-automatically">Direkt veröffentlichen</Neos.Fusion.Form:Select.Option>
-                            <Neos.Fusion.Form:Select.Option option.value="request-via-email">Per E-Mail anfragen</Neos.Fusion.Form:Select.Option>
-                            <Neos.Fusion.Form:Select.Option option.value="request-via-slack">Per Slack anfragen</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="approve-automatically">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.approveAutomatically')}</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="request-via-email">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaEmail')}</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="request-via-slack">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaSlack')}</Neos.Fusion.Form:Select.Option>
                         </Neos.Fusion.Form:Select>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
                 </fieldset>
 
                 <fieldset>
-                    <legend>Automatisierung für Bild-Alt-Texte</legend>
-                    <p>Korrigiere Texte automatisch und bewahre die Markenintegrität.</p>
+                    <legend>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.title')}</legend>
+                    <p>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.intro')}</p>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[generateEmptyImageAltTextsOnPublication]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            Bei Veröffentlichungen leere Alternativ-Texte für Bilder automatisch generieren
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.generateEmptyAltTexts')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[generateEmptyImageTitleTextsOnPublication]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            Bei Veröffentlichungen leere Titel-Texte für Bilder automatisch generieren
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.generateEmptyTitleTexts')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
-                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[imageAltTextAutomationsApprovalProcess]" label="Freigabeprozess für SEO-Automationen:">
+                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[imageAltTextAutomationsApprovalProcess]" label={Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.approvalProcess')}>
                         <Neos.Fusion.Form:Select>
-                            <Neos.Fusion.Form:Select.Option option.value="approve-automatically">Direkt veröffentlichen</Neos.Fusion.Form:Select.Option>
-                            <Neos.Fusion.Form:Select.Option option.value="request-via-email">Per E-Mail fragen</Neos.Fusion.Form:Select.Option>
-                            <Neos.Fusion.Form:Select.Option option.value="request-via-slack">Per Slack fragen</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="approve-automatically">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.approveAutomatically')}</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="request-via-email">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaEmail')}</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="request-via-slack">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaSlack')}</Neos.Fusion.Form:Select.Option>
                         </Neos.Fusion.Form:Select>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
                 </fieldset>
 
                 <fieldset>
-                    <legend>Brand Guard</legend>
+                    <legend>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.title')}</legend>
 
-                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[brandGuardPrompt]" label="Regeln">
+                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[brandGuardPrompt]" label={Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.rules')}>
                         <Neos.Fusion.Form:Textarea attributes.rows="10" attributes.class="neos-span12">
-                            Please correct the following text based on these rules.
-                            # Rules
-                            - Correct all spelling and grammar mistakes
-                            - Always write "Neos CMS" (never "NEOS")
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.defaultPrompt')}
                         </Neos.Fusion.Form:Textarea>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
                     <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[includeNeosidekickBriefingInPrompt]">
                         <Neos.Fusion.Form:Checkbox field.value="1">
-                            NEOSidekick Briefing im Prompt inkludieren
+                            {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.includeNeosidekickBriefing')}
                         </Neos.Fusion.Form:Checkbox>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
-                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[brandGuardApprovalProcess]" label="Freigabeprozess für Brand Guard:">
+                    <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[brandGuardApprovalProcess]" label={Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.approvalProcess')}>
                         <Neos.Fusion.Form:Select>
-                            <Neos.Fusion.Form:Select.Option option.value="approve-automatically">Direkt veröffentlichen</Neos.Fusion.Form:Select.Option>
-                            <Neos.Fusion.Form:Select.Option option.value="request-via-email">Per E-Mail fragen</Neos.Fusion.Form:Select.Option>
-                            <Neos.Fusion.Form:Select.Option option.value="request-via-slack">Per Slack fragen</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="approve-automatically">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.approveAutomatically')}</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="request-via-email">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaEmail')}</Neos.Fusion.Form:Select.Option>
+                            <Neos.Fusion.Form:Select.Option option.value="request-via-slack">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaSlack')}</Neos.Fusion.Form:Select.Option>
                         </Neos.Fusion.Form:Select>
                     </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
                 </fieldset>
 
                 <div class="neos-footer">
                     <Neos.Fusion.Form:Button attributes.class="neos-button neos-button-primary">
-                        Speichern
+                        {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:save')}
                     </Neos.Fusion.Form:Button>
                 </div>
             </Neos.Fusion.Form:Form>

@@ -7,3 +7,13 @@ NEOSidekick\AiAssistant\Service\NodeTypeService:
         arguments:
           1:
             value: NEOSidekick_AiAssistant_NodeTypeServiceCache
+
+NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService:
+  properties:
+    cache:
+      object:
+        factoryObjectName: Neos\Flow\Cache\CacheManager
+        factoryMethodName: getCache
+        arguments:
+          1:
+            value: NEOSidekick_AiAssistant_AutomationsConfigurationCache

@@ -7,6 +7,7 @@ namespace NEOSidekick\AiAssistant\Domain\Repository;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\Repository;
+use Neos\Neos\Domain\Model\Site;
 use NEOSidekick\AiAssistant\Domain\Model\AutomationsConfiguration;
 
 /**
@@ -14,10 +15,10 @@ use NEOSidekick\AiAssistant\Domain\Model\AutomationsConfiguration;
  */
 class AutomationsConfigurationRepository extends Repository
 {
-    public function findActive(): ?AutomationsConfiguration
+    public function findOneBySite(Site $site): ?AutomationsConfiguration
     {
         $query = $this->createQuery();
-        $query->matching($query->equals('identifier', sha1(getenv('FLOW_CONTEXT'))));
+        $query->matching($query->equals('site', $site));
         $query->setLimit(1);
         return $query->execute()->getFirst();
     }

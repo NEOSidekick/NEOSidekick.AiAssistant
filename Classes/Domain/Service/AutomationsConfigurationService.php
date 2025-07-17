@@ -6,6 +6,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Cache\Exception;
 use Neos\Cache\Frontend\VariableFrontend;
 use Neos\Flow\Persistence\Exception\UnknownObjectException;
+use Neos\Neos\Domain\Model\Site;
 use NEOSidekick\AiAssistant\Domain\Model\AutomationsConfiguration;
 use NEOSidekick\AiAssistant\Domain\Repository\AutomationsConfigurationRepository;
 
@@ -25,18 +26,18 @@ class AutomationsConfigurationService
      */
     protected $cache;
 
-    public function getActive(): AutomationsConfiguration
+    public function getActiveForSite(Site $site): AutomationsConfiguration
     {
-        $identifier = sha1(getenv('FLOW_CONTEXT'));
-        $automationsConfiguration = $this->cache->get($identifier);
+        $cacheIdentifier = $site->getNodeName();
+        $automationsConfiguration = $this->cache->get($cacheIdentifier);
         if ($automationsConfiguration !== false) {
             return $automationsConfiguration;
         }
 
-        $automationsConfiguration = $this->repository->findActive();
+        $automationsConfiguration = $this->repository->findOneBySite($site);
         if ($automationsConfiguration !== null) {
             try {
-                $this->cache->set($identifier, $automationsConfiguration);
+                $this->cache->set($cacheIdentifier, $automationsConfiguration);
             } catch (Exception $e) {
                 // Mute the exception to avoid breaking the flow
             }
@@ -44,7 +45,9 @@ class AutomationsConfigurationService
         }
 
         // Create a new default configuration if none exists
-        return new AutomationsConfiguration();
+        $automationsConfiguration = new AutomationsConfiguration();
+        $automationsConfiguration->setSite($site);
+        return $automationsConfiguration;
     }
 
     public function createOrUpdate(AutomationsConfiguration $automationsConfiguration): void
@@ -55,10 +58,11 @@ class AutomationsConfigurationService
             // If the object is not known, we assume it is a new one and persist it
             $this->repository->add($automationsConfiguration);
         }
-        $identifier = sha1(getenv('FLOW_CONTEXT'));
-        $this->cache->remove($identifier);
+
+        $cacheIdentifier = $automationsConfiguration->getSite()->getNodeName();
+        $this->cache->remove($cacheIdentifier);
         try {
-            $this->cache->set($identifier, $automationsConfiguration);
+            $this->cache->set($cacheIdentifier, $automationsConfiguration);
         } catch (Exception $e) {
             // Mute the exception to avoid breaking the flow
         }

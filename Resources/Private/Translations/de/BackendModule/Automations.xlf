@@ -108,6 +108,22 @@
                 <source>Save</source>
                 <target>Speichern</target>
             </trans-unit>
+            <trans-unit id="noSite.title" xml:space="preserve">
+                <source>No Site Detected</source>
+                <target>Keine Website erkannt</target>
+            </trans-unit>
+            <trans-unit id="noSite.message" xml:space="preserve">
+                <source>The automations configuration is site-specific, but no site could be detected for the current hostname. Please check the following:</source>
+                <target>Die Automatisierungskonfiguration ist websitespezifisch, aber für den aktuellen Hostnamen konnte keine Website erkannt werden. Bitte überprüfen Sie Folgendes:</target>
+            </trans-unit>
+            <trans-unit id="noSite.checkDomainAssignment" xml:space="preserve">
+                <source>Make sure your site has a domain assigned in the Neos backend (under Management > Sites)</source>
+                <target>Stellen Sie sicher, dass Ihrer Website im Neos-Backend eine Domain zugewiesen ist (unter Verwaltung > Websites)</target>
+            </trans-unit>
+            <trans-unit id="noSite.accessViaDomain" xml:space="preserve">
+                <source>Access the Neos backend using a hostname that is configured as a domain for one of your sites</source>
+                <target>Greifen Sie auf das Neos-Backend über einen Hostnamen zu, der als Domain für eine Ihrer Websites konfiguriert ist</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

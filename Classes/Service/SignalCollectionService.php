@@ -8,10 +8,12 @@ use Neos\ContentRepository\Domain\Model\Node;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\ServerRequestAttributes;
 use Neos\Flow\Mvc\ActionRequestFactory;
 use Neos\Flow\Mvc\ActionResponse;
 use Neos\Flow\Mvc\Controller\Arguments;
 use Neos\Flow\Mvc\Controller\ControllerContext;
+use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService;
@@ -93,7 +95,6 @@ class SignalCollectionService
                 );
                 // Store the "before" data - get the original node from the target workspace
                 $this->nodePublishingWorkspaceName = $targetWorkspace->getName();
-                $closestDocumentNodeIdentifier = $this->getClosestDocumentNodeIdentifier($node);
                 // Get the original node from the target workspace (before changes)
                 $originalNode = null;
                 try {
@@ -105,6 +106,8 @@ class SignalCollectionService
                     ]);
                 }
 
+                $closestDocumentNodeIdentifier = $this->getClosestDocumentNodeIdentifier($node);
+                $this->systemLogger->debug('ClosestDocumentNodeIdentifier: ' . $closestDocumentNodeIdentifier);
                 $originalDocumentNode = null;
                 try {
                     $context = $this->createContentContext($targetWorkspace->getName(), $node->getDimensions());
@@ -117,11 +120,16 @@ class SignalCollectionService
 
                 $findDocumentNodeFactory = new FindDocumentNodeDataFactory();
                 $actionRequestFactory = new ActionRequestFactory();
-                $actionRequest = $actionRequestFactory->createActionRequest(ServerRequest::fromGlobals());
-                $controllerContext = new ControllerContext($actionRequest, new ActionResponse(), new Arguments(), new UriBuilder());
+                $serverRequest = ServerRequest::fromGlobals();
+                $parameters = $serverRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
+                $serverRequest = $serverRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $parameters->withParameter('requestUriHost', $serverRequest->getUri()->getHost()));
+                $actionRequest = $actionRequestFactory->createActionRequest($serverRequest);
+                $uriBuilder = new UriBuilder();
+                $uriBuilder->setRequest($actionRequest);
+                $controllerContext = new ControllerContext($actionRequest, new ActionResponse(), new Arguments(), $uriBuilder);
                 if (!isset($this->nodePublishingData[$originalDocumentNode->getPath()])) {
                     $this->nodePublishingData[$originalDocumentNode->getPath()] = [
-                        'documentNode' => $findDocumentNodeFactory->createFromNode($originalDocumentNode, $controllerContext),
+                        'documentNode' => $findDocumentNodeFactory->createFromNode($originalDocumentNode, $controllerContext)->jsonSerialize(),
                         'contentChanges' => []
                     ];
                 }
@@ -210,8 +218,24 @@ class SignalCollectionService
         $eventName = 'workspacePublished';
 
         $this->systemLogger->debug('Publishing Data (before sending):', $this->nodePublishingData);
-        $changes = [];
+
+        // Iterate over all document nodes in nodePublishingData
         foreach ($this->nodePublishingData as $documentPath => $documentData) {
+            $documentNode = $documentData['documentNode'] ?? null;
+
+            if ($documentNode === null) {
+                $this->systemLogger->warning('Document node data missing for path: ' . $documentPath, [
+                    'packageKey' => 'NEOSidekick.AiAssistant'
+                ]);
+                continue;
+            }
+
+            $this->systemLogger->debug('Processing document node:', [
+                'path' => $documentPath,
+                'documentNode' => $documentNode
+            ]);
+
+            $changes = [];
             // Process content changes for this document
             foreach ($documentData['contentChanges'] as $nodePath => $states) {
                 $before = $states['before'] ?? null;
@@ -253,18 +277,21 @@ class SignalCollectionService
 
                 $changes[] = $nodeChange->toArray();
             }
+
+            // Create a WorkspacePublishedDto for this document node
+            $workspacePublishedDto = new WorkspacePublishedDto('WorkspacePublished', $this->nodePublishingWorkspaceName, $changes);
+
+            // Log the document node and its changes
+            $this->systemLogger->debug('Document node with changes:', [
+                'documentPath' => $documentPath,
+                'documentNode' => $documentNode,
+                'changes' => $changes,
+                'dto' => $workspacePublishedDto->toArray()
+            ]);
+
+            // In the future, this is where we would send a webhook for this document node
+            // $this->sendWebhookRequests($eventName, $workspacePublishedDto->toArray());
         }
-
-        $this->systemLogger->debug('Changes:', [
-            ...$changes
-        ]);
-
-        $workspacePublishedDto = new WorkspacePublishedDto('WorkspacePublished', $this->nodePublishingWorkspaceName, $changes);
-
-//        $this->sendWebhookRequests(
-//            $eventName,
-//            $workspacePublishedDto->toArray()
-//        );
 
         $this->systemLogger->debug('Publishing Data (before cleanup):', $this->nodePublishingData);
         $this->nodePublishingData = [];
@@ -359,14 +386,15 @@ class SignalCollectionService
     /**
      * @param NodeInterface $node
      *
-     * @return string
+     * @return string|null
      */
-    private function getClosestDocumentNodeIdentifier(NodeInterface $node): string
+    private function getClosestDocumentNodeIdentifier(NodeInterface $node): ?string
     {
+        $closestDocumentNodeIdentifier = null;
         $closestDocumentNode = $node;
         do {
             if ($closestDocumentNode->getNodeType()->isAggregate()) {
-                $closestDocumentNodeIdentifier = $node->getIdentifier();
+                $closestDocumentNodeIdentifier = $closestDocumentNode->getIdentifier();
                 break;
             }
 

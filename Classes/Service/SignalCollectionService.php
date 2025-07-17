@@ -15,7 +15,6 @@ use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService;
-use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
 use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use Psr\Log\LoggerInterface;
@@ -171,7 +170,7 @@ class SignalCollectionService
                 } else {
                     // Node doesn't exist in target workspace yet - might be a newly created node
                     // or a deleted node. For new nodes, use the source node data as fallback
-                    if (!isset($this->nodePublishingData[$node->getIdentifier()]['before'])) {
+                    if (!isset($this->nodePublishingData[$closestDocumentNode->getPath()]['contentChanges'][$node->getPath()]['before'])) {
                         // If there's no 'before' data, this is likely a new node
                         $this->systemLogger->debug('Newly created node, using source node data: ' . $node->getIdentifier(), [
                             'packageKey' => 'NEOSidekick.AiAssistant'
@@ -212,46 +211,53 @@ class SignalCollectionService
 
         $this->systemLogger->debug('Publishing Data (before sending):', $this->nodePublishingData);
         $changes = [];
-        foreach ($this->nodePublishingData as $nodeIdentifier => $states) {
-            $before = $states['before'] ?? null;
-            $after  = $states['after'] ?? null;
+        foreach ($this->nodePublishingData as $documentPath => $documentData) {
+            // Process content changes for this document
+            foreach ($documentData['contentChanges'] as $nodePath => $states) {
+                $before = $states['before'] ?? null;
+                $after  = $states['after'] ?? null;
 
-            // Skip if both before and after are null (shouldn't happen but safety check)
-            if ($before === null && $after === null) {
-                $this->systemLogger->warning('Skipping node with no before/after data: ' . $nodeIdentifier, [
-                    'packageKey' => 'NEOSidekick.AiAssistant'
-                ]);
-                continue;
+                // Skip if both before and after are null (shouldn't happen but safety check)
+                if ($before === null && $after === null) {
+                    $this->systemLogger->warning('Skipping node with no before/after data: ' . $nodePath, [
+                        'packageKey' => 'NEOSidekick.AiAssistant'
+                    ]);
+                    continue;
+                }
+
+                // If there's no "before" => created
+                // If there's no "after" => removed
+                // Otherwise => updated
+                if ($before === null && $after !== null) {
+                    $changeType = 'created';
+                } elseif ($before !== null && $after === null) {
+                    $changeType = 'removed';
+                } else {
+                    $changeType = 'updated';
+                }
+
+                // Create nodeContextPath object from the AFTER node if possible; Fallback to BEFORE if node was removed
+                $nodeContextPath = [
+                    'identifier' => $after['identifier'] ?? $before['identifier'] ?? basename($nodePath),
+                    'path' => $after['path'] ?? $before['path'] ?? $nodePath,
+                    'workspace' => $after['workspace'] ?? $before['workspace'] ?? $this->nodePublishingWorkspaceName ?? 'unknown',
+                    'dimensions' => $after['dimensions'] ?? $before['dimensions'] ?? []
+                ];
+                $name = $after['name'] ?? $before['name'] ?? 'unknown';
+
+                // propertiesBefore/propertiesAfter can be null
+                $propertiesBefore = $before['properties'] ?? null;
+                $propertiesAfter  = $changeType === 'removed' ? null : ($after['properties'] ?? null);
+
+                $nodeChange = new NodeChangeDto($nodeContextPath, $name, $changeType, $propertiesBefore, $propertiesAfter);
+
+                $changes[] = $nodeChange->toArray();
             }
-
-            // If there's no "before" => created
-            // If there's no "after" => removed
-            // Otherwise => updated
-            if ($before === null && $after !== null) {
-                $changeType = 'created';
-            } elseif ($before !== null && $after === null) {
-                $changeType = 'removed';
-            } else {
-                $changeType = 'updated';
-            }
-
-            // Create nodeContextPath object from the AFTER node if possible; Fallback to BEFORE if node was removed
-            $nodeContextPath = [
-                'identifier' => $after['identifier'] ?? $before['identifier'] ?? $nodeIdentifier,
-                'path' => $after['path'] ?? $before['path'] ?? 'unknown',
-                'workspace' => $after['workspace'] ?? $before['workspace'] ?? $this->nodePublishingWorkspaceName ?? 'unknown',
-                'dimensions' => $after['dimensions'] ?? $before['dimensions'] ?? []
-            ];
-            $name = $after['name'] ?? $before['name'] ?? 'unknown';
-
-            // propertiesBefore/propertiesAfter can be null
-            $propertiesBefore = $before['properties'] ?? null;
-            $propertiesAfter  = $changeType === 'removed' ? null : ($after['properties'] ?? null);
-
-            $nodeChange = new NodeChangeDto($nodeContextPath, $name, $changeType, $propertiesBefore, $propertiesAfter);
-
-            $changes[] = $nodeChange->toArray();
         }
+
+        $this->systemLogger->debug('Changes:', [
+            ...$changes
+        ]);
 
         $workspacePublishedDto = new WorkspacePublishedDto('WorkspacePublished', $this->nodePublishingWorkspaceName, $changes);
 

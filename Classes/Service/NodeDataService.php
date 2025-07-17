@@ -46,10 +46,10 @@ class NodeDataService
     }
 
     /**
-     * Render a node as an array with its properties
+     * Render a node as an array with its properties. Only string properties will be included.
      *
      * @param NodeInterface $node The node to render
-     * @param bool $includeProperties Whether to include the node's properties
+     * @param bool $includeProperties Whether to include the node's string properties
      * @return array The node as an array
      */
     public function renderNodeArray(NodeInterface $node, bool $includeProperties = false): array
@@ -64,7 +64,14 @@ class NodeDataService
         ];
 
         if ($includeProperties) {
-            $nodeArray['properties'] = (array) $node->getProperties();
+            $stringProperties = [];
+            $allProperties = $node->getProperties();
+            foreach ($allProperties as $propertyName => $propertyValue) {
+                if (is_string($propertyValue)) {
+                    $stringProperties[$propertyName] = $propertyValue;
+                }
+            }
+            $nodeArray['properties'] = $stringProperties;
         }
 
         return $nodeArray;

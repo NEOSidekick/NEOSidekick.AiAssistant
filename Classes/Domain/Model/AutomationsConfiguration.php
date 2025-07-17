@@ -7,6 +7,7 @@ namespace NEOSidekick\AiAssistant\Domain\Model;
 
 use Doctrine\ORM\Mapping as ORM;
 use Neos\Flow\Annotations as Flow;
+use Neos\Neos\Domain\Model\Site;
 use NEOSidekick\AiAssistant\Domain\Enum\ApprovalProcessType;
 
 /**
@@ -15,10 +16,12 @@ use NEOSidekick\AiAssistant\Domain\Enum\ApprovalProcessType;
 class AutomationsConfiguration
 {
     /**
-     * @Flow\Identity
-     * @var string
+     * The site this configuration belongs to.
+     *
+     * @var Site
+     * @ORM\OneToOne
      */
-    protected string $identifier;
+    protected $site;
 
     /**
      * Determine missing focus keywords on publication
@@ -110,16 +113,23 @@ class AutomationsConfiguration
      * @var string
      * @ORM\Column(type="text")
      */
-    protected string $brandGuardPrompt;
+    protected string $brandGuardPrompt = '';
 
-    public function __construct()
+    /**
+     * @return Site|null
+     */
+    public function getSite(): ?Site
     {
-        $this->identifier = sha1(getenv('FLOW_CONTEXT'));
+        return $this->site;
     }
 
-    public function getIdentifier(): string
+    /**
+     * @param Site $site
+     * @return void
+     */
+    public function setSite(Site $site): void
     {
-        return $this->identifier;
+        $this->site = $site;
     }
 
     /**

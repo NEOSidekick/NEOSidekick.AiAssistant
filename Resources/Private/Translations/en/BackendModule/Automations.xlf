@@ -80,6 +80,18 @@
             <trans-unit id="save" xml:space="preserve">
                 <source>Save</source>
             </trans-unit>
+            <trans-unit id="noSite.title" xml:space="preserve">
+                <source>No Site Detected</source>
+            </trans-unit>
+            <trans-unit id="noSite.message" xml:space="preserve">
+                <source>The automations configuration is site-specific, but no site could be detected for the current hostname. Please check the following:</source>
+            </trans-unit>
+            <trans-unit id="noSite.checkDomainAssignment" xml:space="preserve">
+                <source>Make sure your site has a domain assigned in the Neos backend (under Management > Sites)</source>
+            </trans-unit>
+            <trans-unit id="noSite.accessViaDomain" xml:space="preserve">
+                <source>Access the Neos backend using a hostname that is configured as a domain for one of your sites</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

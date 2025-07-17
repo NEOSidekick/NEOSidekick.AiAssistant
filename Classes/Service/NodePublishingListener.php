@@ -5,14 +5,6 @@ namespace NEOSidekick\AiAssistant\Service;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Http\ServerRequestAttributes;
-use Neos\Flow\Mvc\ActionRequestFactory;
-use Neos\Flow\Mvc\ActionResponse;
-use Neos\Flow\Mvc\Controller\Arguments;
-use Neos\Flow\Mvc\Controller\ControllerContext;
-use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
-use Neos\Flow\Mvc\Routing\UriBuilder;
-use GuzzleHttp\Psr7\ServerRequest;
 use NEOSidekick\AiAssistant\Dto\DocumentChangeSet;
 use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Utility\NodeTreeUtility;
@@ -42,6 +34,12 @@ class NodePublishingListener
      * @var PublishingStateService
      */
     protected $publishingStateService;
+
+    /**
+     * @Flow\Inject
+     * @var FindDocumentNodeDataFactory
+     */
+    protected $findDocumentNodeDataFactory;
 
     /**
      * Handle the beforeNodePublishing signal
@@ -84,19 +82,8 @@ class NodePublishingListener
         // Create a document change set if it doesn't exist yet
         $documentPath = $originalDocumentNode->getPath();
         if (!$publishingState->hasDocumentChangeSet($documentPath)) {
-            // Create a controller context for the FindDocumentNodeDataFactory
-            $findDocumentNodeFactory = new FindDocumentNodeDataFactory();
-            $actionRequestFactory = new ActionRequestFactory();
-            $serverRequest = ServerRequest::fromGlobals();
-            $parameters = $serverRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
-            $serverRequest = $serverRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $parameters->withParameter('requestUriHost', $serverRequest->getUri()->getHost()));
-            $actionRequest = $actionRequestFactory->createActionRequest($serverRequest);
-            $uriBuilder = new UriBuilder();
-            $uriBuilder->setRequest($actionRequest);
-            $controllerContext = new ControllerContext($actionRequest, new ActionResponse(), new Arguments(), $uriBuilder);
-
             // Create document node data and add it to the publishing state
-            $documentNodeData = $findDocumentNodeFactory->createFromNode($originalDocumentNode, $controllerContext)->jsonSerialize();
+            $documentNodeData = $this->findDocumentNodeDataFactory->createFromNodeAndGlobals($originalDocumentNode)->jsonSerialize();
             $documentChangeSet = new DocumentChangeSet($documentNodeData);
             $publishingState->addDocumentChangeSet($documentPath, $documentChangeSet);
         }

@@ -37,22 +37,42 @@ class SignalCollectionService
     protected $systemLogger;
 
     /**
-     * Array to store "before" and "after" states during publishing signals.
+     * Array to store document nodes and their content changes during publishing signals.
      * Example:
      * [
-     *   'some-node-identifier' => [
-     *     'before' => [
+     *   'document-node-path' => [
+     *     'documentNode' => [
      *       'identifier' => '...',
-     *       'name' => '...',
-     *       'properties' => [ ... ]
+     *       'path' => '...',
+     *       'nodeType' => '...',
+     *       'properties' => [ ... ],
+     *       ... (other document node data)
      *     ],
-     *     'after' => [
-     *       'identifier' => '...',
-     *       'name' => '...',
-     *       'properties' => [ ... ]
+     *     'contentChanges' => [
+     *       'content-node-path' => [
+     *         'before' => [
+     *           'identifier' => '...',
+     *           'name' => '...',
+     *           'path' => '...',
+     *           'type' => '...',
+     *           'workspace' => '...',
+     *           'dimensions' => [ ... ],
+     *           'properties' => [ ... ]
+     *         ],
+     *         'after' => [
+     *           'identifier' => '...',
+     *           'name' => '...',
+     *           'path' => '...',
+     *           'type' => '...',
+     *           'workspace' => '...',
+     *           'dimensions' => [ ... ],
+     *           'properties' => [ ... ]
+     *         ]
+     *       ],
+     *       ... (other content nodes)
      *     ]
      *   ],
-     *   ...
+     *   ... (other document nodes)
      * ]
      */
     protected array $nodePublishingData = [];

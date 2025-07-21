@@ -2,8 +2,6 @@
 
 namespace NEOSidekick\AiAssistant\Dto;
 
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\Flow\Annotations as Flow;
 
 /**
  * Data Transfer Object for a document node and its content changes during publishing
@@ -18,7 +16,7 @@ final class DocumentChangeSet
 
     /**
      * Array of content changes, keyed by node path
-     * @var array<string, array>
+     * @var array<string, ContentChangeDto>
      */
     private array $contentChanges = [];
 
@@ -34,16 +32,12 @@ final class DocumentChangeSet
      * Add a content change to this document change set
      *
      * @param string $nodePath The path of the node that changed
-     * @param array|null $beforeState The state of the node before the change
-     * @param array|null $afterState The state of the node after the change
+     * @param ContentChangeDto $change The content change DTO
      * @return void
      */
-    public function addContentChange(string $nodePath, ?array $beforeState, ?array $afterState): void
+    public function addContentChange(string $nodePath, ContentChangeDto $change): void
     {
-        $this->contentChanges[$nodePath] = [
-            'before' => $beforeState,
-            'after' => $afterState
-        ];
+        $this->contentChanges[$nodePath] = $change;
     }
 
     /**
@@ -59,7 +53,7 @@ final class DocumentChangeSet
     /**
      * Get the content changes
      *
-     * @return array<string, array>
+     * @return array<string, ContentChangeDto>
      */
     public function getContentChanges(): array
     {

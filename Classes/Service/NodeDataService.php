@@ -5,6 +5,7 @@ namespace NEOSidekick\AiAssistant\Service;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\CreateContentContextTrait;
+use NEOSidekick\AiAssistant\Dto\NodeDataDto;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -46,22 +47,15 @@ class NodeDataService
     }
 
     /**
-     * Render a node as an array with its properties. Only string properties will be included.
+     * Create a NodeDataDto from a node. Only string properties will be included.
      *
-     * @param NodeInterface $node The node to render
+     * @param NodeInterface $node The node to convert to a DTO
      * @param bool $includeProperties Whether to include the node's string properties
-     * @return array The node as an array
+     * @return NodeDataDto The node as a DTO
      */
-    public function renderNodeArray(NodeInterface $node, bool $includeProperties = false): array
+    public function createNodeDataDto(NodeInterface $node, bool $includeProperties = false): NodeDataDto
     {
-        $nodeArray = [
-            'identifier' => $node->getIdentifier(),
-            'name' => $node->getName(),
-            'path' => $node->getPath(),
-            'type' => $node->getNodeType()->getName(),
-            'workspace' => $node->getWorkspace()->getName(),
-            'dimensions' => $node->getDimensions()
-        ];
+        $properties = null;
 
         if ($includeProperties) {
             $stringProperties = [];
@@ -71,9 +65,16 @@ class NodeDataService
                     $stringProperties[$propertyName] = $propertyValue;
                 }
             }
-            $nodeArray['properties'] = $stringProperties;
+            $properties = $stringProperties;
         }
 
-        return $nodeArray;
+        return new NodeDataDto(
+            $node->getIdentifier(),
+            $node->getPath(),
+            $node->getWorkspace()->getName(),
+            $node->getDimensions(),
+            $node->getName(),
+            $properties
+        );
     }
 }

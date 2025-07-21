@@ -53,62 +53,6 @@ NEOSidekick.AiAssistant.BackendModule.AutomationsController.index = Neos.Fusion:
                                 </Neos.Fusion.Form:Checkbox>
                             </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
 
-                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[seoAutomationsApprovalProcess]" label={Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.label')}>
-                                <Neos.Fusion.Form:Select>
-                                    <Neos.Fusion.Form:Select.Option option.value="approve-automatically">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.approveAutomatically')}</Neos.Fusion.Form:Select.Option>
-                                    <Neos.Fusion.Form:Select.Option option.value="request-via-email">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaEmail')}</Neos.Fusion.Form:Select.Option>
-                                    <Neos.Fusion.Form:Select.Option option.value="request-via-slack">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaSlack')}</Neos.Fusion.Form:Select.Option>
-                                </Neos.Fusion.Form:Select>
-                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.title')}</legend>
-                            <p>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.intro')}</p>
-
-                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[generateEmptyImageAltTextsOnPublication]">
-                                <Neos.Fusion.Form:Checkbox field.value="1">
-                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.generateEmptyAltTexts')}
-                                </Neos.Fusion.Form:Checkbox>
-                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
-
-                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[generateEmptyImageTitleTextsOnPublication]">
-                                <Neos.Fusion.Form:Checkbox field.value="1">
-                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.generateEmptyTitleTexts')}
-                                </Neos.Fusion.Form:Checkbox>
-                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
-
-                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[imageAltTextAutomationsApprovalProcess]" label={Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:imageAltText.approvalProcess')}>
-                                <Neos.Fusion.Form:Select>
-                                    <Neos.Fusion.Form:Select.Option option.value="approve-automatically">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.approveAutomatically')}</Neos.Fusion.Form:Select.Option>
-                                    <Neos.Fusion.Form:Select.Option option.value="request-via-email">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaEmail')}</Neos.Fusion.Form:Select.Option>
-                                    <Neos.Fusion.Form:Select.Option option.value="request-via-slack">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaSlack')}</Neos.Fusion.Form:Select.Option>
-                                </Neos.Fusion.Form:Select>
-                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
-                        </fieldset>
-
-                        <fieldset>
-                            <legend>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.title')}</legend>
-
-                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[brandGuardPrompt]" label={Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.rules')}>
-                                <Neos.Fusion.Form:Textarea attributes.rows="10" attributes.class="neos-span12">
-                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.defaultPrompt')}
-                                </Neos.Fusion.Form:Textarea>
-                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
-
-                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[includeNeosidekickBriefingInPrompt]">
-                                <Neos.Fusion.Form:Checkbox field.value="1">
-                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.includeNeosidekickBriefing')}
-                                </Neos.Fusion.Form:Checkbox>
-                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
-
-                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[brandGuardApprovalProcess]" label={Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:brandGuard.approvalProcess')}>
-                                <Neos.Fusion.Form:Select>
-                                    <Neos.Fusion.Form:Select.Option option.value="approve-automatically">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.approveAutomatically')}</Neos.Fusion.Form:Select.Option>
-                                    <Neos.Fusion.Form:Select.Option option.value="request-via-email">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaEmail')}</Neos.Fusion.Form:Select.Option>
-                                    <Neos.Fusion.Form:Select.Option option.value="request-via-slack">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:approvalProcess.requestViaSlack')}</Neos.Fusion.Form:Select.Option>
-                                </Neos.Fusion.Form:Select>
-                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
                         </fieldset>
 
                         <div class="neos-footer">

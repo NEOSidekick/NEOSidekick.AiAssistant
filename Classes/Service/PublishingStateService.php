@@ -3,7 +3,10 @@
 namespace NEOSidekick\AiAssistant\Service;
 
 use Neos\Flow\Annotations as Flow;
+use NEOSidekick\AiAssistant\Dto\ContentChangeDto;
 use NEOSidekick\AiAssistant\Dto\NodeChangeDto;
+use NEOSidekick\AiAssistant\Dto\NodeContextPathDto;
+use NEOSidekick\AiAssistant\Dto\NodeDataDto;
 use NEOSidekick\AiAssistant\Dto\PublishingState;
 use NEOSidekick\AiAssistant\Dto\WorkspacePublishedDto;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
@@ -90,9 +93,10 @@ class PublishingStateService
 
             $changes = [];
             // Process content changes for this document
-            foreach ($documentChangeSet->getContentChanges() as $nodePath => $states) {
-                $before = $states['before'] ?? null;
-                $after  = $states['after'] ?? null;
+            /** @var ContentChangeDto $contentChange */
+            foreach ($documentChangeSet->getContentChanges() as $nodePath => $contentChange) {
+                $before = $contentChange->before;
+                $after = $contentChange->after;
 
                 // Skip if both before and after are null (shouldn't happen but safety check)
                 if ($before === null && $after === null) {
@@ -113,20 +117,24 @@ class PublishingStateService
                     $changeType = 'updated';
                 }
 
-                // Create nodeContextPath object from the AFTER node if possible; Fallback to BEFORE if node was removed
-                $nodeContextPath = [
-                    'identifier' => $after['identifier'] ?? $before['identifier'] ?? basename($nodePath),
-                    'path' => $after['path'] ?? $before['path'] ?? $nodePath,
-                    'workspace' => $after['workspace'] ?? $before['workspace'] ?? $this->publishingState->getWorkspaceName() ?? 'unknown',
-                    'dimensions' => $after['dimensions'] ?? $before['dimensions'] ?? []
-                ];
-                $name = $after['name'] ?? $before['name'] ?? 'unknown';
+                // Use the DTO from the "after" state if possible; fallback to "before".
+                /** @var NodeDataDto $sourceDto */
+                $sourceDto = $after ?? $before;
+
+                // Create nodeContextPath DTO for type safety.
+                $nodeContextPath = new NodeContextPathDto(
+                    $sourceDto->identifier,
+                    $sourceDto->path,
+                    $sourceDto->workspace,
+                    $sourceDto->dimensions
+                );
+                $name = $sourceDto->name;
 
                 // propertiesBefore/propertiesAfter can be null
-                $propertiesBefore = $before['properties'] ?? null;
-                $propertiesAfter  = $changeType === 'removed' ? null : ($after['properties'] ?? null);
+                $propertiesBefore = $before?->properties;
+                $propertiesAfter = $changeType === 'removed' ? null : $after?->properties;
 
-                $nodeChange = new NodeChangeDto($nodeContextPath, $name, $changeType, $propertiesBefore, $propertiesAfter);
+                $nodeChange = new NodeChangeDto($nodeContextPath->toArray(), $name, $changeType, $propertiesBefore, $propertiesAfter);
 
                 $changes[] = $nodeChange->toArray();
             }

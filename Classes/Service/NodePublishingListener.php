@@ -5,6 +5,7 @@ namespace NEOSidekick\AiAssistant\Service;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\Flow\Annotations as Flow;
+use NEOSidekick\AiAssistant\Dto\ContentChangeDto;
 use NEOSidekick\AiAssistant\Dto\DocumentChangeSet;
 use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Utility\NodeTreeUtility;
@@ -97,8 +98,9 @@ class NodePublishingListener
 
         // Add the content change to the document change set
         $documentChangeSet = $publishingState->getDocumentChangeSet($documentPath);
-        $beforeState = $originalNode ? $this->nodeDataService->renderNodeArray($originalNode, true) : null;
-        $documentChangeSet->addContentChange($node->getPath(), $beforeState, null);
+        $beforeState = $originalNode ? $this->nodeDataService->createNodeDataDto($originalNode, true) : null;
+        $change = new ContentChangeDto($beforeState, null);
+        $documentChangeSet->addContentChange($node->getPath(), $change);
     }
 
     /**
@@ -157,27 +159,21 @@ class NodePublishingListener
             $node->getDimensions()
         );
 
-        // Update the content change with the "after" state
-        if ($nodeExistsInTargetWorkspace) {
-            // Node exists in target workspace - it was created or updated
-            $afterState = $this->nodeDataService->renderNodeArray($nodeExistsInTargetWorkspace, true);
-        } else {
-            // Node doesn't exist in target workspace - it was deleted
-            $afterState = null;
-        }
+        // Check if the node exists in the target workspace after publishing
+        $afterState = $nodeExistsInTargetWorkspace ? $this->nodeDataService->createNodeDataDto($nodeExistsInTargetWorkspace, true) : null;
 
         // Get the existing content change
         $contentChanges = $documentChangeSet->getContentChanges();
         $nodePath = $node->getPath();
 
-        // If there's no existing content change, create one
-        if (!isset($contentChanges[$nodePath])) {
-            // This is a new node that wasn't in the target workspace before
-            $documentChangeSet->addContentChange($nodePath, null, $afterState);
-        } else {
-            // Update the existing content change with the "after" state
-            $beforeState = $contentChanges[$nodePath]['before'];
-            $documentChangeSet->addContentChange($nodePath, $beforeState, $afterState);
-        }
+        // Get the existing change or create a new one
+        $existingChange = $contentChanges[$nodePath] ?? null;
+
+        // Use the "before" state from the initial signal, if it exists
+        $beforeState = $existingChange?->before;
+
+        // Create a new, complete change DTO and update the change set
+        $finalChange = new ContentChangeDto($beforeState, $afterState);
+        $documentChangeSet->addContentChange($nodePath, $finalChange);
     }
 }

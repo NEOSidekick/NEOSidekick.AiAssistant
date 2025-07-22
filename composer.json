@@ -20,7 +20,8 @@
         "neos/neos-ui": "~7.0 || ~8.0 || dev-master",
         "sitegeist/fusionlinkprototypes": "v1.0.1",
         "neos/fusion-form": "*",
-        "neos/seo": "*"
+        "neos/seo": "*",
+        "ramsey/uuid": "^4.2"
     },
     "authors": [
         {

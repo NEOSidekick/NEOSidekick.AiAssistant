@@ -1,0 +1,16 @@
+### Update Node Properties
+@TOKEN=asdf
+POST https://demoaiassistant.ddev.site/neosidekick/aiassistant/api/updateNodeProperties
+Content-Type: application/json
+
+{
+  "token": "{{TOKEN}}",
+  "updateItems": [
+    {
+      "nodeContextPath": "/sites/neosdemo/teaser/node52697bdfee199@live",
+      "properties": {
+        "title": "<h1>Create 💙 testable content.</h1>"
+      }
+    }
+  ]
+}

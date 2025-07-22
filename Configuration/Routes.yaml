@@ -1,4 +1,13 @@
 -
+  name: 'AI Assistant API'
+  uriPattern: 'neosidekick/aiassistant/api/{@action}'
+  defaults:
+    '@package': 'NEOSidekick.AiAssistant'
+    '@controller': 'Service'
+    '@format': 'json'
+  httpMethods: ['POST']
+
+-
   name:  'Backend Service'
   uriPattern: 'neosidekick/aiassistant/service/{@action}'
   defaults:

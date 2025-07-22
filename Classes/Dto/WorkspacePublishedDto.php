@@ -7,7 +7,7 @@ final class WorkspacePublishedDto
     private string $event;
     private string $workspaceName;
 
-    /** @var array NodeChangeDto[] or arrays */
+    /** @var array Arrays from ContentChangeDto->toArray() */
     private array $changes;
 
     public function __construct(string $event, string $workspaceName, array $changes)

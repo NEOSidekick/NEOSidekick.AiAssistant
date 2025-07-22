@@ -3,9 +3,15 @@ privilegeTargets:
     'NEOSidekick.AiAssistant:CanUse':
       label: 'Can use AiAssistant'
       matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\AutomationsController)'
+    'NEOSidekick.AiAssistant:Service.updateNodeProperties':
+      matcher: 'method(NEOSidekick\AiAssistant\Controller\ServiceController->updateNodePropertiesAction())'
 
 roles:
   'Neos.Neos:AbstractEditor':
     privileges:
       - privilegeTarget: NEOSidekick.AiAssistant:CanUse
+        permission: GRANT
+  'Neos.Flow:Anonymous':
+    privileges:
+      - privilegeTarget: 'NEOSidekick.AiAssistant:Service.updateNodeProperties'
         permission: GRANT

@@ -4,9 +4,6 @@ namespace NEOSidekick\AiAssistant\Service;
 
 use Neos\Flow\Annotations as Flow;
 use NEOSidekick\AiAssistant\Dto\ContentChangeDto;
-use NEOSidekick\AiAssistant\Dto\NodeChangeDto;
-use NEOSidekick\AiAssistant\Dto\NodeContextPathDto;
-use NEOSidekick\AiAssistant\Dto\NodeDataDto;
 use NEOSidekick\AiAssistant\Dto\PublishingState;
 use NEOSidekick\AiAssistant\Dto\WorkspacePublishedDto;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
@@ -94,49 +91,11 @@ class PublishingStateService
             $changes = [];
             // Process content changes for this document
             /** @var ContentChangeDto $contentChange */
-            foreach ($documentChangeSet->getContentChanges() as $nodePath => $contentChange) {
-                $before = $contentChange->before;
-                $after = $contentChange->after;
-
-                // Skip if both before and after are null (shouldn't happen but safety check)
-                if ($before === null && $after === null) {
-                    $this->systemLogger->warning('Skipping node with no before/after data: ' . $nodePath, [
-                        'packageKey' => 'NEOSidekick.AiAssistant'
-                    ]);
-                    continue;
+            foreach ($documentChangeSet->getContentChanges() as $contentChange) {
+                $changeArray = $contentChange->toArray();
+                if (!empty($changeArray)) {
+                    $changes[] = $changeArray;
                 }
-
-                // If there's no "before" => created
-                // If there's no "after" => removed
-                // Otherwise => updated
-                if ($before === null && $after !== null) {
-                    $changeType = 'created';
-                } elseif ($before !== null && $after === null) {
-                    $changeType = 'removed';
-                } else {
-                    $changeType = 'updated';
-                }
-
-                // Use the DTO from the "after" state if possible; fallback to "before".
-                /** @var NodeDataDto $sourceDto */
-                $sourceDto = $after ?? $before;
-
-                // Create nodeContextPath DTO for type safety.
-                $nodeContextPath = new NodeContextPathDto(
-                    $sourceDto->identifier,
-                    $sourceDto->path,
-                    $sourceDto->workspace,
-                    $sourceDto->dimensions
-                );
-                $name = $sourceDto->name;
-
-                // propertiesBefore/propertiesAfter can be null
-                $propertiesBefore = $before?->properties;
-                $propertiesAfter = $changeType === 'removed' ? null : $after?->properties;
-
-                $nodeChange = new NodeChangeDto($nodeContextPath->toArray(), $name, $changeType, $propertiesBefore, $propertiesAfter);
-
-                $changes[] = $nodeChange->toArray();
             }
 
             // Create a WorkspacePublishedDto for this document node

@@ -51,6 +51,10 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
                         this.prependConfiguredDomainToImageUri(item.fullsizeUri),
                         this.prependConfiguredDomainToImageUri(item.thumbnailUri)
                     ]
+                },
+                {
+                    identifier: 'filename',
+                    value: item.filename
                 }
             ]);
             this.updateItemProperty(property.propertyName, response, ListItemPropertyState.AiGenerated);

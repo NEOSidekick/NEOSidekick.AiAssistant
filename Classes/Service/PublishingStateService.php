@@ -3,6 +3,8 @@
 namespace NEOSidekick\AiAssistant\Service;
 
 use Neos\Flow\Annotations as Flow;
+use Neos\Neos\Domain\Repository\SiteRepository;
+use NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService;
 use NEOSidekick\AiAssistant\Dto\ContentChangeDto;
 use NEOSidekick\AiAssistant\Dto\PublishingState;
 use NEOSidekick\AiAssistant\Dto\WorkspacePublishedDto;
@@ -27,6 +29,18 @@ class PublishingStateService
      * @var ApiFacade
      */
     protected $apiFacade;
+
+    /**
+     * @Flow\Inject
+     * @var AutomationsConfigurationService
+     */
+    protected $automationsConfigurationService;
+
+    /**
+     * @Flow\Inject
+     * @var SiteRepository
+     */
+    protected $siteRepository;
 
     /**
      * @var PublishingState
@@ -83,9 +97,74 @@ class PublishingStateService
                 continue;
             }
 
+            // Find the site for the current document
+            $siteNodeName = null;
+            $pathParts = explode('/', $documentNode['path']);
+            if (isset($pathParts[1]) && $pathParts[1] === 'sites' && isset($pathParts[2])) {
+                $siteNodeName = $pathParts[2];
+            }
+
+            if ($siteNodeName === null) {
+                $this->systemLogger->warning('Could not determine site from document path: ' . $documentNode['path'], [
+                    'packageKey' => 'NEOSidekick.AiAssistant'
+                ]);
+                continue; // Skip this document change set
+            }
+
+            $site = $this->siteRepository->findOneByNodeName($siteNodeName);
+            if (!$site) {
+                $this->systemLogger->warning('Could not find site with node name: ' . $siteNodeName, [
+                    'packageKey' => 'NEOSidekick.AiAssistant'
+                ]);
+                continue; // Skip this document change set
+            }
+
+            // Get the active automation configuration for this site
+            $automationConfig = $this->automationsConfigurationService->getActiveForSite($site);
+
+            // Find the change DTO for the document node itself to access its properties
+            $documentContentChange = $documentChangeSet->getContentChanges()[$documentNode['path']] ?? null;
+
+            $propertiesBefore = $documentContentChange?->before?->properties ?? $documentNode['properties'] ?? [];
+            $propertiesAfter = $documentContentChange?->after?->properties ?? $documentNode['properties'] ?? [];
+
+            // Evaluate eligibility rules
+            $isEligibleForProcessing = false;
+
+            // Rule 1: Determine missing focus keywords
+            if ($automationConfig->isDetermineMissingFocusKeywordsOnPublication() && empty($propertiesAfter['focusKeyword'])) {
+                $isEligibleForProcessing = true;
+            }
+
+            // Rule 2: Re-determine existing focus keywords
+            if (!$isEligibleForProcessing && $automationConfig->isRedetermineExistingFocusKeywordsOnPublication() && !empty($propertiesAfter['focusKeyword'])) {
+                $isEligibleForProcessing = true;
+            }
+
+            // Rule 3: Generate empty SEO titles
+            if (!$isEligibleForProcessing && $automationConfig->isGenerateEmptySeoTitlesOnPublication() && empty($propertiesAfter['titleOverride'])) {
+                $isEligibleForProcessing = true;
+            }
+
+            // Rule 4: Regenerate existing SEO titles
+            if (!$isEligibleForProcessing && $automationConfig->isRegenerateExistingSeoTitlesOnPublication() && !empty($propertiesAfter['titleOverride'])) {
+                $isEligibleForProcessing = true;
+            }
+
+            // Rule 5: Generate empty meta descriptions
+            if (!$isEligibleForProcessing && $automationConfig->isGenerateEmptyMetaDescriptionsOnPublication() && empty($propertiesAfter['metaDescription'])) {
+                $isEligibleForProcessing = true;
+            }
+
+            // Rule 6: Regenerate existing meta descriptions
+            if (!$isEligibleForProcessing && $automationConfig->isRegenerateExistingMetaDescriptionsOnPublication() && !empty($propertiesAfter['metaDescription'])) {
+                $isEligibleForProcessing = true;
+            }
+
             $this->systemLogger->debug('Processing document node:', [
                 'path' => $documentPath,
-                'documentNode' => $documentNode
+                'documentNode' => $documentNode,
+                'isEligibleForProcessing' => $isEligibleForProcessing
             ]);
 
             $changes = [];
@@ -113,8 +192,8 @@ class PublishingStateService
                 'dto' => $workspacePublishedDto->toArray()
             ]);
 
-            // Send webhook for this document node
-            if (!empty($this->endpoints)) {
+            // Send webhook for this document node only if it's eligible for processing
+            if ($isEligibleForProcessing && !empty($this->endpoints)) {
                 $this->apiFacade->sendWebhookRequests($eventName, $workspacePublishedDto->toArray(), $this->endpoints);
             }
         }

@@ -5,7 +5,6 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\Mvc\View\JsonView;
-use Neos\Flow\Property\PropertyMappingConfiguration;
 use NEOSidekick\AiAssistant\Domain\Repository\AccessTokenRepository;
 use NEOSidekick\AiAssistant\Domain\Model\AccessToken;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
@@ -29,29 +28,16 @@ class ServiceController extends ActionController
 
     protected $defaultViewObjectName = JsonView::class;
 
-    public function initializeUpdateNodePropertiesAction(): void
-    {
-        /** @noinspection PhpUnhandledExceptionInspection */
-        $this->arguments->getArgument('updateItems')
-            ->getPropertyMappingConfiguration()
-            ->skipUnknownProperties()
-            ->forProperty(PropertyMappingConfiguration::PROPERTY_PATH_PLACEHOLDER)
-            ->allowProperties(
-                'nodeContextPath',
-                'properties',
-                'images'
-            );
-    }
-
     /**
-     * @param array<UpdateNodeProperties> $updateItems
+     * @param string $nodeContextPath
+     * @param string $propertyName
      * @param string $token
      *
      * @return void
      * @throws StopActionException
      * @Flow\SkipCsrfProtection
      */
-    public function updateNodePropertiesAction(array $updateItems, string $token): void
+    public function updateNodePropertyAction(string $nodeContextPath, string $propertyName, string $token): void
     {
         if (empty($token)) {
             $this->throwStatus(401); // Unauthorized
@@ -64,7 +50,35 @@ class ServiceController extends ActionController
             $this->throwStatus(403); // Forbidden
         }
 
-        $this->nodeService->updatePropertiesOnNodes($updateItems);
-        $this->view->assign('value',array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems));
+        // Get and decode the JSON request body
+        $requestContent = $this->request->getHttpRequest()->getBody();
+        $decodedBody = json_decode($requestContent, true);
+
+        // Validate the JSON structure
+        if ($decodedBody === null) {
+            $this->throwStatus(400, 'Invalid JSON format'); // Bad Request
+        }
+
+        if (!isset($decodedBody['status']) || $decodedBody['status'] !== 'success') {
+            $this->throwStatus(400, 'Invalid request format: missing or invalid status'); // Bad Request
+        }
+
+        if (!isset($decodedBody['data']['message']['message']) || !is_string($decodedBody['data']['message']['message'])) {
+            $this->throwStatus(400, 'Invalid request format: missing or invalid message'); // Bad Request
+        }
+
+        $newPropertyValue = $decodedBody['data']['message']['message'];
+
+        // Create properties array with the single property to update
+        $propertiesToUpdate = [$propertyName => $newPropertyValue];
+
+        // Create a single UpdateNodeProperties DTO
+        $updateItem = new UpdateNodeProperties($nodeContextPath, $propertiesToUpdate, []);
+
+        // Update the node property
+        $this->nodeService->updatePropertiesOnNodes([$updateItem]);
+
+        // Assign the serialized DTO to the view
+        $this->view->assign('value', $updateItem->jsonSerialize());
     }
 }

@@ -10,11 +10,15 @@ final class WorkspacePublishedDto
     /** @var array Arrays from ContentChangeDto->toArray() */
     private array $changes;
 
-    public function __construct(string $event, string $workspaceName, array $changes)
+    /** @var array List of automation modules to call */
+    private array $modulesToCall;
+
+    public function __construct(string $event, string $workspaceName, array $changes, array $modulesToCall = [])
     {
         $this->event = $event;
         $this->workspaceName = $workspaceName;
         $this->changes = $changes;
+        $this->modulesToCall = $modulesToCall;
     }
 
     public function toArray(): array
@@ -22,7 +26,8 @@ final class WorkspacePublishedDto
         return [
             'event' => $this->event,
             'workspaceName' => $this->workspaceName,
-            'changes' => $this->changes
+            'changes' => $this->changes,
+            'modulesToCall' => $this->modulesToCall
         ];
     }
 }

@@ -169,7 +169,6 @@ class PublishingStateService
 
             $changes = [];
             // Process content changes for this document
-            /** @var ContentChangeDto $contentChange */
             foreach ($documentChangeSet->getContentChanges() as $contentChange) {
                 $changeArray = $contentChange->toArray();
                 if (!empty($changeArray)) {

@@ -99,7 +99,7 @@ class PublishingStateService
 
             // Find the site for the current document
             $siteNodeName = null;
-            $pathParts = explode('/', $documentNode['path']);
+            $pathParts = explode('/', $documentNode['nodeContextPath']);
             if (isset($pathParts[1]) && $pathParts[1] === 'sites' && isset($pathParts[2])) {
                 $siteNodeName = $pathParts[2];
             }
@@ -128,43 +128,52 @@ class PublishingStateService
             $propertiesBefore = $documentContentChange?->before?->properties ?? $documentNode['properties'] ?? [];
             $propertiesAfter = $documentContentChange?->after?->properties ?? $documentNode['properties'] ?? [];
 
-            // Evaluate eligibility rules
-            $isEligibleForProcessing = false;
+            // Initialize array of modules to call
+            $modulesToCall = [];
 
             // Rule 1: Determine missing focus keywords
             if ($automationConfig->isDetermineMissingFocusKeywordsOnPublication() && empty($propertiesAfter['focusKeyword'])) {
-                $isEligibleForProcessing = true;
+                $modulesToCall[] = 'focus_keyword_generator';
             }
 
-            // Rule 2: Re-determine existing focus keywords
-            if (!$isEligibleForProcessing && $automationConfig->isRedetermineExistingFocusKeywordsOnPublication() && !empty($propertiesAfter['focusKeyword'])) {
-                $isEligibleForProcessing = true;
+            // Rule 2: Re-determine existing focus keywords with loop prevention
+            if (!empty($propertiesAfter['focusKeyword']) &&
+                ($propertiesBefore['focusKeyword'] ?? null) === $propertiesAfter['focusKeyword'] &&
+                !in_array('focus_keyword_generator', $modulesToCall, true) &&
+                $automationConfig->isRedetermineExistingFocusKeywordsOnPublication()) {
+                $modulesToCall[] = 'focus_keyword_generator';
             }
 
             // Rule 3: Generate empty SEO titles
-            if (!$isEligibleForProcessing && $automationConfig->isGenerateEmptySeoTitlesOnPublication() && empty($propertiesAfter['titleOverride'])) {
-                $isEligibleForProcessing = true;
+            if ($automationConfig->isGenerateEmptySeoTitlesOnPublication() && empty($propertiesAfter['titleOverride'])) {
+                $modulesToCall[] = 'seo_title';
             }
 
-            // Rule 4: Regenerate existing SEO titles
-            if (!$isEligibleForProcessing && $automationConfig->isRegenerateExistingSeoTitlesOnPublication() && !empty($propertiesAfter['titleOverride'])) {
-                $isEligibleForProcessing = true;
+            // Rule 4: Regenerate existing SEO titles with loop prevention
+            if (!empty($propertiesAfter['titleOverride']) &&
+                ($propertiesBefore['titleOverride'] ?? null) === $propertiesAfter['titleOverride'] &&
+                !in_array('seo_title', $modulesToCall, true) &&
+                $automationConfig->isRegenerateExistingSeoTitlesOnPublication()) {
+                $modulesToCall[] = 'seo_title';
             }
 
             // Rule 5: Generate empty meta descriptions
-            if (!$isEligibleForProcessing && $automationConfig->isGenerateEmptyMetaDescriptionsOnPublication() && empty($propertiesAfter['metaDescription'])) {
-                $isEligibleForProcessing = true;
+            if ($automationConfig->isGenerateEmptyMetaDescriptionsOnPublication() && empty($propertiesAfter['metaDescription'])) {
+                $modulesToCall[] = 'meta_description';
             }
 
-            // Rule 6: Regenerate existing meta descriptions
-            if (!$isEligibleForProcessing && $automationConfig->isRegenerateExistingMetaDescriptionsOnPublication() && !empty($propertiesAfter['metaDescription'])) {
-                $isEligibleForProcessing = true;
+            // Rule 6: Regenerate existing meta descriptions with loop prevention
+            if (!empty($propertiesAfter['metaDescription']) &&
+                ($propertiesBefore['metaDescription'] ?? null) === $propertiesAfter['metaDescription'] &&
+                !in_array('meta_description', $modulesToCall, true) &&
+                $automationConfig->isRegenerateExistingMetaDescriptionsOnPublication()) {
+                $modulesToCall[] = 'meta_description';
             }
 
             $this->systemLogger->debug('Processing document node:', [
                 'path' => $documentPath,
                 'documentNode' => $documentNode,
-                'isEligibleForProcessing' => $isEligibleForProcessing
+                'modulesToCall' => $modulesToCall
             ]);
 
             $changes = [];
@@ -180,7 +189,8 @@ class PublishingStateService
             $workspacePublishedDto = new WorkspacePublishedDto(
                 'WorkspacePublished',
                 $this->publishingState->getWorkspaceName(),
-                $changes
+                $changes,
+                $modulesToCall
             );
 
             // Log the document node and its changes
@@ -191,8 +201,8 @@ class PublishingStateService
                 'dto' => $workspacePublishedDto->toArray()
             ]);
 
-            // Send webhook for this document node only if it's eligible for processing
-            if ($isEligibleForProcessing && !empty($this->endpoints)) {
+            // Send webhook for this document node only if there are modules to call
+            if (!empty($modulesToCall) && !empty($this->endpoints)) {
                 $this->apiFacade->sendWebhookRequests($eventName, $workspacePublishedDto->toArray(), $this->endpoints);
             }
         }

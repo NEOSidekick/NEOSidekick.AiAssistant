@@ -17,3 +17,13 @@ NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService:
         arguments:
           1:
             value: NEOSidekick_AiAssistant_AutomationsConfigurationCache
+
+NEOSidekick\AiAssistant\Security\JwtService:
+  properties:
+    cache:
+      object:
+        factoryObjectName: Neos\Flow\Cache\CacheManager
+        factoryMethodName: getCache
+        arguments:
+          1:
+            value: Flow_Security_Cryptography_HashService

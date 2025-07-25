@@ -21,7 +21,8 @@
         "sitegeist/fusionlinkprototypes": "v1.0.1",
         "neos/fusion-form": "*",
         "neos/seo": "*",
-        "ramsey/uuid": "^4.2"
+        "ramsey/uuid": "^4.2",
+        "firebase/php-jwt": "^6.0.0"
     },
     "authors": [
         {

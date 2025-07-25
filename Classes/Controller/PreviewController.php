@@ -10,7 +10,13 @@ use Neos\Neos\Controller\Frontend\NodeController;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 
 /**
- * Controller for previewing nodes in the NEOSidekick AI Assistant
+ * Controller for previewing nodes in the NEOSidekick AI Assistant.
+ *
+ * This additional controller is necessary because here we can authenticate
+ * with our JtwAuthenticationProvider, without having to tamper with
+ * the Neos.Neos (preview) NodeController.
+ *
+ * IMPORTANT: Keep the use statement for Annotations, otherwise the class extension won't work.
  */
 class PreviewController extends NodeController
 {

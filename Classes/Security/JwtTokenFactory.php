@@ -55,10 +55,11 @@ class JwtTokenFactory
     {
         /** @var JwtAccount $account */
         $account = $this->securityContext->getAccount();
+        $now = new DateTime();
         $payload['username'] = $account->getAccountIdentifier() ?? $account->getUsername();
         $payload['provider'] = $account->getAuthenticationProviderName();
-        $payload['creationDate'] = new DateTime();
-        $payload['expirationDate'] = (new DateTime())->modify('+1 minute');
+        $payload['iat'] = $now->getTimestamp();
+        $payload['exp'] = (clone $now)->modify('+30 minutes')->getTimestamp();
         return $this->jwtService->createJsonWebToken($payload);
     }
 }

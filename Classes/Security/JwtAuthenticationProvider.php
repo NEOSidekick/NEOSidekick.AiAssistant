@@ -2,8 +2,6 @@
 
 namespace NEOSidekick\AiAssistant\Security;
 
-use DateTime;
-use DateTimeZone;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Security\Account;
 use Neos\Flow\Security\Authentication\Provider\AbstractProvider;
@@ -63,14 +61,6 @@ class JwtAuthenticationProvider extends AbstractProvider
             $encoded = $authenticationToken->getEncodedJwt();
             $claims = $this->jwtService->decodeJsonWebToken($encoded);
         } catch (\Exception $err) {
-            $authenticationToken->setAuthenticationStatus(TokenInterface::WRONG_CREDENTIALS);
-            return;
-        }
-
-        // Create DateTime object from stdClass containing date and timezone information
-        $expirationDateObj = $claims->{'expirationDate'};
-        $expirationDate = new DateTime($expirationDateObj->date, new DateTimeZone($expirationDateObj->timezone));
-        if ($expirationDate < $this->now) {
             $authenticationToken->setAuthenticationStatus(TokenInterface::WRONG_CREDENTIALS);
             return;
         }

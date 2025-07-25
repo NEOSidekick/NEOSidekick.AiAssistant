@@ -24,4 +24,5 @@
     '@package': 'NEOSidekick.AiAssistant'
     '@controller': 'Preview'
     '@action': 'preview'
-  httpMethods: ['GET', 'POST']
+  httpMethods: ['GET']
+  appendExceedingArguments: true

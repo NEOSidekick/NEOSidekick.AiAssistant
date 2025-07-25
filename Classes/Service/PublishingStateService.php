@@ -2,13 +2,19 @@
 
 namespace NEOSidekick\AiAssistant\Service;
 
+use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\ServerRequestAttributes;
+use Neos\Flow\Mvc\ActionRequestFactory;
+use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
+use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
+use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService;
 use NEOSidekick\AiAssistant\Dto\ContentChangeDto;
 use NEOSidekick\AiAssistant\Dto\PublishingState;
-use NEOSidekick\AiAssistant\Dto\WorkspacePublishedDto;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
+use NEOSidekick\AiAssistant\Security\JwtTokenFactory;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -54,11 +60,36 @@ class PublishingStateService
     protected $endpoints = [];
 
     /**
+     * @Flow\Inject
+     * @var ActionRequestFactory
+     */
+    protected $actionRequestFactory;
+
+
+    /**
+     * @Flow\Inject
+     * @var JwtTokenFactory
+     */
+    protected $jwtTokenFactory;
+
+    /**
+     * @Flow\Inject
+     * @var UriBuilder
+     */
+    protected $uriBuilder;
+
+    /**
      * Initialize the publishing state
      */
     public function initializeObject(): void
     {
         $this->publishingState = new PublishingState();
+        $serverRequest = ServerRequest::fromGlobals();
+        $parameters = $serverRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
+        $serverRequest = $serverRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $parameters->withParameter('requestUriHost', $serverRequest->getUri()->getHost()));
+        $actionRequest = $this->actionRequestFactory->createActionRequest($serverRequest);
+        $this->uriBuilder->setRequest($actionRequest);
+        $this->uriBuilder->setCreateAbsoluteUri(true);
     }
 
     /**
@@ -73,8 +104,9 @@ class PublishingStateService
 
     /**
      * Called at the end of this object's lifecycle.
-     * We'll send a single "WorkspacePublished" event for each workspace that had publishing.
-     * This includes all nodes that were created, updated, or removed.
+     * We'll build a single batch request containing all documents that had changes.
+     *
+     * @throws MissingActionNameException
      */
     public function shutdownObject(): void
     {
@@ -82,9 +114,14 @@ class PublishingStateService
             return;
         }
 
-        $this->systemLogger->debug('Publishing Data (before sending):', $this->publishingState->toArray());
+        $finalRequests = [];
+        $moduleToPropertyMapping = [
+            'focus_keyword_generator' => 'focusKeyword',
+            'seo_title' => 'titleOverride',
+            'meta_description' => 'metaDescription',
+        ];
 
-        $eventName = 'workspacePublished';
+        $this->systemLogger->debug('Publishing Data (before sending):', $this->publishingState->toArray());
 
         // Iterate over all document nodes in publishingState
         foreach ($this->publishingState->getDocumentChangeSets() as $documentPath => $documentChangeSet) {
@@ -99,8 +136,9 @@ class PublishingStateService
 
             // Find the site for the current document
             $siteNodeName = null;
-            $pathParts = explode('/', $documentNode['nodeContextPath']);
-            if (isset($pathParts[1]) && $pathParts[1] === 'sites' && isset($pathParts[2])) {
+            $documentNodePath = explode('@', $documentNode['nodeContextPath'])[0];
+            $pathParts = explode('/', $documentNodePath);
+            if (isset($pathParts[1], $pathParts[2]) && $pathParts[1] === 'sites') {
                 $siteNodeName = $pathParts[2];
             }
 
@@ -123,7 +161,7 @@ class PublishingStateService
             $automationConfig = $this->automationsConfigurationService->getActiveForSite($site);
 
             // Find the change DTO for the document node itself to access its properties
-            $documentContentChange = $documentChangeSet->getContentChanges()[$documentNode['path']] ?? null;
+            $documentContentChange = $documentChangeSet->getContentChanges()[$documentNodePath] ?? null;
 
             $propertiesBefore = $documentContentChange?->before?->properties ?? $documentNode['properties'] ?? [];
             $propertiesAfter = $documentContentChange?->after?->properties ?? $documentNode['properties'] ?? [];
@@ -176,36 +214,56 @@ class PublishingStateService
                 'modulesToCall' => $modulesToCall
             ]);
 
-            $changes = [];
-            // Process content changes for this document
-            foreach ($documentChangeSet->getContentChanges() as $contentChange) {
-                $changeArray = $contentChange->toArray();
-                if (!empty($changeArray)) {
-                    $changes[] = $changeArray;
+            // If there are modules to call for this document, generate the necessary tokens and URLs
+            if (!empty($modulesToCall)) {
+                $readOnlyToken = $this->jwtTokenFactory->createReadOnlyPreviewToken();
+                $previewUrl = $this->uriBuilder->uriFor(
+                    'preview',
+                    ['node' => $documentNode['nodeContextPath']],
+                    'Preview',
+                    'NEOSidekick.AiAssistant'
+                );
+
+                // Create individual requests for each module
+                foreach ($modulesToCall as $module) {
+                    $propertyName = $moduleToPropertyMapping[$module] ?? null;
+                    if (!$propertyName) {
+                        continue;
+                    }
+
+                    $finalRequests[] = [
+                        'module' => $module,
+                        'user_input' => [
+                            [
+                                'identifier' => 'url',
+                                'value' => $previewUrl . '&token=' . $readOnlyToken,
+                            ],
+                        ],
+                        'request_id' => $documentNode['nodeContextPath'] . '#' . $propertyName,
+                    ];
                 }
             }
-
-            // Create a WorkspacePublishedDto for this document node
-            $workspacePublishedDto = new WorkspacePublishedDto(
-                'WorkspacePublished',
-                $this->publishingState->getWorkspaceName(),
-                $changes,
-                $modulesToCall
-            );
-
-            // Log the document node and its changes
-            $this->systemLogger->debug('Document node with changes:', [
-                'documentPath' => $documentPath,
-                'documentNode' => $documentNode,
-                'changes' => $changes,
-                'dto' => $workspacePublishedDto->toArray()
-            ]);
-
-            // Send webhook for this document node only if there are modules to call
-            if (!empty($modulesToCall) && !empty($this->endpoints)) {
-                $this->apiFacade->sendWebhookRequests($eventName, $workspacePublishedDto->toArray(), $this->endpoints);
-            }
         }
+
+        // If we have requests to send, construct and dispatch the final payload
+        if (empty($finalRequests)) {
+            $this->systemLogger->debug('No requests to send.');
+            $this->publishingState = new PublishingState();
+            return;
+        }
+
+        $writeToken = $this->jwtTokenFactory->getJsonWebToken();
+        $finalPayload = [
+            'requests' => $finalRequests,
+            'webhook_url' => 'https://demoaiassistant.ddev.site/neosidekick/aiassistant/api/TBD',
+            'webhook_authentication_header' => 'Bearer ' . $writeToken,
+        ];
+
+        $this->systemLogger->debug('Sending batch request:', $finalPayload);
+
+//        if (!empty($this->endpoints)) {
+//            $this->apiFacade->sendWebhookRequests('batchSeoAutomations', $finalPayload, $this->endpoints);
+//        }
 
         $this->systemLogger->debug('Publishing Data (before cleanup):', $this->publishingState->toArray());
 

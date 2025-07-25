@@ -119,7 +119,20 @@ Neos:
         providers:
           'Neos.Neos:Backend':
             requestPatterns:
-              'NEOSidekick.AiAssistant:BackendControllers':
+              'NEOSidekick.AiAssistant:BackendModuleControllers':
                 pattern: ControllerObjectName
                 patternOptions:
-                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\.*'
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\BackendModule\.*'
+              'NEOSidekick.AiAssistant:BackendServiceController':
+                pattern: ControllerObjectName
+                patternOptions:
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\BackendServiceController'
+          JwtAuthenticationProvider:
+            provider: 'NEOSidekick\AiAssistant\Security\JwtAuthenticationProvider'
+            token: 'NEOSidekick\AiAssistant\Security\JwtToken'
+            requestPatterns:
+              'NEOSidekick.AiAssistant:Service':
+                pattern: ControllerObjectName
+                patternOptions:
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\ServiceController'
+            entryPoint: NEOSidekick\AiAssistant\Security\JwtEntryPoint

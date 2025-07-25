@@ -8,6 +8,7 @@ use Neos\Flow\Persistence\PersistenceManagerInterface;
 use Neos\Flow\Security\AccountFactory;
 use Neos\Flow\Security\AccountRepository;
 use Neos\Flow\Security\Context;
+use Neos\Flow\Security\Policy\Role;
 
 /**
  * Class TokenFactory
@@ -58,6 +59,24 @@ class JwtTokenFactory
         $now = new DateTime();
         $payload['username'] = $account->getAccountIdentifier() ?? $account->getUsername();
         $payload['provider'] = $account->getAuthenticationProviderName();
+        $payload['roles'] = array_map(static function (Role $role) {
+            return $role->getName();
+        }, $account->getRoles());
+        $payload['iat'] = $now->getTimestamp();
+        $payload['exp'] = (clone $now)->modify('+30 minutes')->getTimestamp();
+        return $this->jwtService->createJsonWebToken($payload);
+    }
+
+    public function createReadOnlyPreviewToken(): string
+    {
+        /** @var JwtAccount $account */
+        $account = $this->securityContext->getAccount();
+        $now = new DateTime();
+        $payload['username'] = $account->getAccountIdentifier() ?? $account->getUsername();
+        $payload['provider'] = $account->getAuthenticationProviderName();
+        $payload['roles'] = [
+            'NEOSidekick.AiAssistant:LivePreview' => 'LivePreview'
+        ];
         $payload['iat'] = $now->getTimestamp();
         $payload['exp'] = (clone $now)->modify('+30 minutes')->getTimestamp();
         return $this->jwtService->createJsonWebToken($payload);

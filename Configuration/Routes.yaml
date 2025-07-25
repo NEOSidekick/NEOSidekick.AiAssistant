@@ -16,3 +16,12 @@
     '@action':     'index'
     '@format':     'json'
   httpMethods: ['GET', 'POST']
+
+-
+  name: 'AI Assistant Preview'
+  uriPattern: 'neosidekick/aiassistant/preview'
+  defaults:
+    '@package': 'NEOSidekick.AiAssistant'
+    '@controller': 'Preview'
+    '@action': 'preview'
+  httpMethods: ['GET', 'POST']

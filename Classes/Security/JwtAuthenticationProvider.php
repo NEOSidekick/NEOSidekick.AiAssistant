@@ -69,8 +69,10 @@ class JwtAuthenticationProvider extends AbstractProvider
         $account->setAccountIdentifier($claims->{'username'});
         $account->setClaims($claims);
         $account->setAuthenticationProviderName($claims->{'provider'});
-        $account->addRole($this->policyService->getRole('NEOSidekick.AiAssistant:Webhook'));
-
+        $roles = (array)$claims->{'roles'};
+        foreach (array_keys($roles) as $role) {
+            $account->addRole($this->policyService->getRole($role));
+        }
         $authenticationToken->setAccount($account);
         $authenticationToken->setAuthenticationStatus(TokenInterface::AUTHENTICATION_SUCCESSFUL);
     }

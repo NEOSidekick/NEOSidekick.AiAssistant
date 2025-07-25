@@ -45,11 +45,15 @@ class JwtToken extends AbstractToken implements SessionlessTokenInterface
 
     protected function getToken(ServerRequestInterface $httpRequest): ?string
     {
-        if (!$httpRequest->hasHeader('Authorization')) {
+        if (!$httpRequest->hasHeader('Authorization') && !isset($httpRequest->getQueryParams()['token'])) {
             return null;
         }
 
-        $token = $httpRequest->getHeader('Authorization')[0];
+        if ($httpRequest->hasHeader('Authorization')) {
+            $token = $httpRequest->getHeader('Authorization')[0];
+        } else {
+            $token = $httpRequest->getQueryParams()['token'];
+        }
 
         if (str_starts_with($token, 'Bearer ')) {
             $token = \substr($token, 7);

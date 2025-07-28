@@ -81,6 +81,17 @@ class ApiFacade
     }
 
     /**
+     * Send a batch request to the modules batch API endpoint
+     *
+     * @param array $payload The payload to send to the batch API
+     * @return void
+     */
+    public function sendBatchModuleRequest(array $payload): void
+    {
+        $this->apiClient->sendBatchModuleRequest($payload);
+    }
+
+    /**
      * @param array $apiResponse
      *
      * @return array

@@ -20,6 +20,15 @@ class WebhookController extends ActionController
 
     protected $defaultViewObjectName = JsonView::class;
 
+    public function initializeProcessSidekickResponseAction(): void
+    {
+        if ($this->request->getHttpRequest()->getMethod() === 'OPTIONS') {
+            $this->response->addHttpHeader('Allow', 'POST');
+            $this->response->setStatusCode(204);
+            throw new StopActionException();
+        }
+    }
+
     /**
      * Process batch responses from the Sidekick AI service
      *

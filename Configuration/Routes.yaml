@@ -1,9 +1,9 @@
 -
   name: 'AI Assistant API'
-  uriPattern: 'neosidekick/aiassistant/api/{@action}'
+  uriPattern: 'neosidekick/aiassistant/webhook/{@action}'
   defaults:
     '@package': 'NEOSidekick.AiAssistant'
-    '@controller': 'Service'
+    '@controller': 'Webhook'
     '@format': 'json'
   httpMethods: ['POST']
 

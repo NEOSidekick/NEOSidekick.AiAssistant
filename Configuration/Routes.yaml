@@ -5,7 +5,7 @@
     '@package': 'NEOSidekick.AiAssistant'
     '@controller': 'Webhook'
     '@format': 'json'
-  httpMethods: ['POST']
+  httpMethods: ['OPTIONS', 'POST']
 
 -
   name:  'Backend Service'

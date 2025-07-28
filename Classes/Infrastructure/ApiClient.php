@@ -2,6 +2,7 @@
 
 namespace NEOSidekick\AiAssistant\Infrastructure;
 
+use Exception;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\ServerRequest;
 use GuzzleHttp\Psr7\Stream;
@@ -158,7 +159,7 @@ class ApiClient
                     'response' => $response->getBody()->getContents()
                 ]);
             }
-        } catch (ClientExceptionInterface | \Exception $e) {
+        } catch (ClientExceptionInterface | Exception $e) {
             $this->systemLogger->error('Batch module request failed: ' . $e->getMessage(), [
                 'packageKey' => 'NEOSidekick.AiAssistant',
                 'exception' => $e

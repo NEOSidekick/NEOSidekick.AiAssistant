@@ -2,9 +2,12 @@
 
 namespace NEOSidekick\AiAssistant\Security;
 
+use BadMethodCallException;
 use Neos\Flow\Security\Account;
 use Neos\Party\Domain\Model\AbstractParty;
 use stdClass;
+use function lcfirst;
+use function substr;
 
 class JwtAccount extends Account
 {
@@ -47,10 +50,10 @@ class JwtAccount extends Account
     public function __call($name, $args)
     {
         if (str_starts_with($name, 'get')) {
-            $name = \lcfirst(\substr($name, 3));
+            $name = lcfirst(substr($name, 3));
             return $this->claims->{$name};
         }
-        throw new \BadMethodCallException($name . ' is not callable on this object');
+        throw new BadMethodCallException($name . ' is not callable on this object');
     }
 
     public function __toString(): string

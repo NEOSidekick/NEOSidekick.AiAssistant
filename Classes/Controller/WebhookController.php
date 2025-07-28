@@ -1,6 +1,7 @@
 <?php
 namespace NEOSidekick\AiAssistant\Controller;
 
+use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Mvc\Exception\StopActionException;
@@ -34,7 +35,7 @@ class WebhookController extends ActionController
      *
      * @return void
      * @throws StopActionException
-     * @throws \JsonException
+     * @throws JsonException
      * @Flow\SkipCsrfProtection
      */
     public function processSidekickResponseAction(): void

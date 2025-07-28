@@ -223,7 +223,7 @@ class PublishingStateService
             'NEOSidekick.AiAssistant'
         );
         $this->uriBuilder->reset();
-        $writeToken = $this->jwtTokenFactory->getJsonWebToken();
+        $writeToken = $this->jwtTokenFactory->createWriteAccessToken();
         $webhookAuthorizationHeader = 'Bearer ' . $writeToken;
 
         $this->systemLogger->debug('Sending batch request:', [

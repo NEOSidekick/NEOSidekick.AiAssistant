@@ -39,48 +39,6 @@ class ApiFacade
     }
 
     /**
-     * Send webhook requests to multiple endpoints
-     *
-     * @param string $eventName The name of the event
-     * @param array $payload The payload to send
-     * @param array $endpoints Array of endpoint URLs to send the webhook to
-     * @return void
-     */
-    public function sendWebhookRequests(string $eventName, array $payload, array $endpoints): void
-    {
-        if (empty($endpoints[$eventName])) {
-            return;
-        }
-
-        $endpointUrls = $endpoints[$eventName];
-        foreach ($endpointUrls as $endpointUrl) {
-            $this->sendWebhookRequest($endpointUrl, $payload);
-        }
-    }
-
-    /**
-     * Send a webhook request to a single endpoint
-     *
-     * @param string $url The URL to send the webhook to
-     * @param array $payload The payload to send
-     * @return void
-     */
-    public function sendWebhookRequest(string $url, array $payload): void
-    {
-        try {
-            $client = new Client();
-            $client->post($url, [
-                'json' => $payload
-            ]);
-        } catch (\Exception $e) {
-            $this->systemLogger->error('Webhook request failed: ' . $e->getMessage(), [
-                'packageKey' => 'NEOSidekick.AiAssistant',
-                'exception' => $e
-            ]);
-        }
-    }
-
-    /**
      * Send a batch request to the modules batch API endpoint
      *
      * @param array $requests The requests to send to the batch API

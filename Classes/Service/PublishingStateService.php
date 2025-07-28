@@ -252,10 +252,19 @@ class PublishingStateService
             return;
         }
 
+        // This is necessary so that it can build an URI
+        $this->uriBuilder->setFormat('json');
+        $webhookUrl = $this->uriBuilder->uriFor(
+            'processSidekickResponse',
+            [],
+            'Webhook',
+            'NEOSidekick.AiAssistant'
+        );
+        $this->uriBuilder->reset();
         $writeToken = $this->jwtTokenFactory->getJsonWebToken();
         $finalPayload = [
             'requests' => $finalRequests,
-            'webhook_url' => 'https://demoaiassistant.ddev.site/neosidekick/aiassistant/api/TBD',
+            'webhook_url' => $webhookUrl,
             'webhook_authentication_header' => 'Bearer ' . $writeToken,
         ];
 

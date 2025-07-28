@@ -48,45 +48,75 @@ class AutomationRulesService
         // Extract the node properties after the publish action
         $propertiesAfter = $documentContentChange?->after?->properties ?? $documentNode['properties'] ?? [];
 
-        // Rule 1: Determine missing focus keywords
-        if ($automationsConfiguration->isDetermineMissingFocusKeywordsOnPublication() && empty($propertiesAfter['focusKeyword'])) {
-            $modulesToCall[] = 'focus_keyword_generator';
-        }
+        $rules = [
+            [
+                'module' => 'focus_keyword_generator',
+                'property' => 'focusKeyword',
+                'generate' => $automationsConfiguration->isDetermineMissingFocusKeywordsOnPublication(),
+                'regenerate' => $automationsConfiguration->isRedetermineExistingFocusKeywordsOnPublication()
+            ],
+            [
+                'module' => 'seo_title',
+                'property' => 'titleOverride',
+                'generate' => $automationsConfiguration->isGenerateEmptySeoTitlesOnPublication(),
+                'regenerate' => $automationsConfiguration->isRegenerateExistingSeoTitlesOnPublication()
+            ],
+            [
+                'module' => 'meta_description',
+                'property' => 'metaDescription',
+                'generate' => $automationsConfiguration->isGenerateEmptyMetaDescriptionsOnPublication(),
+                'regenerate' => $automationsConfiguration->isRegenerateExistingMetaDescriptionsOnPublication()
+            ]
+        ];
 
-        // Rule 2: Re-determine existing focus keywords with loop prevention
-        if (!empty($propertiesAfter['focusKeyword']) &&
-            ($propertiesBefore['focusKeyword'] ?? null) === $propertiesAfter['focusKeyword'] &&
-            !in_array('focus_keyword_generator', $modulesToCall, true) &&
-            $automationsConfiguration->isRedetermineExistingFocusKeywordsOnPublication()) {
-            $modulesToCall[] = 'focus_keyword_generator';
-        }
+        foreach ($rules as $rule) {
+            // Check if this module is already slated for a call to prevent duplicate processing.
+            if (in_array($rule['module'], $modulesToCall, true)) {
+                continue;
+            }
 
-        // Rule 3: Generate empty SEO titles
-        if ($automationsConfiguration->isGenerateEmptySeoTitlesOnPublication() && empty($propertiesAfter['titleOverride'])) {
-            $modulesToCall[] = 'seo_title';
-        }
+            // Ask the helper method if the conditions are met to trigger this module.
+            $shouldTrigger = $this->shouldTriggerModule(
+                $rule['property'],
+                $rule['generate'],
+                $rule['regenerate'],
+                $propertiesBefore,
+                $propertiesAfter
+            );
 
-        // Rule 4: Regenerate existing SEO titles with loop prevention
-        if (!empty($propertiesAfter['titleOverride']) &&
-            ($propertiesBefore['titleOverride'] ?? null) === $propertiesAfter['titleOverride'] &&
-            !in_array('seo_title', $modulesToCall, true) &&
-            $automationsConfiguration->isRegenerateExistingSeoTitlesOnPublication()) {
-            $modulesToCall[] = 'seo_title';
-        }
-
-        // Rule 5: Generate empty meta descriptions
-        if ($automationsConfiguration->isGenerateEmptyMetaDescriptionsOnPublication() && empty($propertiesAfter['metaDescription'])) {
-            $modulesToCall[] = 'meta_description';
-        }
-
-        // Rule 6: Regenerate existing meta descriptions with loop prevention
-        if (!empty($propertiesAfter['metaDescription']) &&
-            ($propertiesBefore['metaDescription'] ?? null) === $propertiesAfter['metaDescription'] &&
-            !in_array('meta_description', $modulesToCall, true) &&
-            $automationsConfiguration->isRegenerateExistingMetaDescriptionsOnPublication()) {
-            $modulesToCall[] = 'meta_description';
+            if ($shouldTrigger) {
+                $modulesToCall[] = $rule['module'];
+            }
         }
 
         return $modulesToCall;
+    }
+
+    /**
+     * Determines if a module should be triggered for a specific property based on a set of rules.
+     *
+     * @param string $propertyName The name of the property to check (e.g., 'focusKeyword').
+     * @param bool $generateForEmpty The configuration setting to generate if the property is empty.
+     * @param bool $regenerateForExisting The configuration setting to regenerate if the property is unchanged.
+     * @param array $propertiesBefore The node's properties before the change.
+     * @param array $propertiesAfter The node's properties after the change.
+     * @return bool True if the module should be triggered, false otherwise.
+     */
+    private function shouldTriggerModule(string $propertyName, bool $generateForEmpty, bool $regenerateForExisting, array $propertiesBefore, array $propertiesAfter): bool
+    {
+        // Rule: Trigger if the "generate for empty" option is on and the property is actually empty.
+        if ($generateForEmpty && empty($propertiesAfter[$propertyName])) {
+            return true;
+        }
+
+        // Rule: Trigger if the "regenerate for existing" option is on, the property is not empty,
+        // and its value has not changed during this publication.
+        if ($regenerateForExisting &&
+            !empty($propertiesAfter[$propertyName]) &&
+            ($propertiesBefore[$propertyName] ?? null) === $propertiesAfter[$propertyName]) {
+            return true;
+        }
+
+        return false;
     }
 }

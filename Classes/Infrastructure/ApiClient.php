@@ -12,7 +12,7 @@ use Neos\Flow\Http\Client\CurlEngine;
 use Neos\Flow\Http\Client\CurlEngineException;
 use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
 use Psr\Http\Client\ClientExceptionInterface;
-use RuntimeException;
+use Psr\Log\LoggerInterface;
 
 /**
  * @Flow\Scope("singleton")
@@ -42,6 +42,12 @@ class ApiClient
      */
     protected $browser;
 
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $systemLogger;
+
     public function initializeObject(): void
     {
         if (isset($this->isDevelopmentBuild) && $this->isDevelopmentBuild === true) {
@@ -70,7 +76,7 @@ class ApiClient
         $request = $request->withAddedHeader('Accept', 'application/json');
         $request = $request->withAddedHeader('Authorization', 'Bearer ' . $this->apiKey);
         $request = $request->withAddedHeader('Content-Type', 'application/json');
-        /** @var Request $request */
+        /** @var ServerRequest $request */
         $request = $request->withBody(self::streamFor(json_encode(['language' => $interfaceLanguage, 'uris' => $hosts], JSON_THROW_ON_ERROR)));
         try {
             $response = $this->browser->sendRequest($request);
@@ -109,5 +115,36 @@ class ApiClient
 
         // Create a StreamInterface from the resource
         return new Stream($resource);
+    }
+    /**
+     * Sends a batch request to the modules batch API endpoint
+     *
+     * @param array $payload The payload to send to the batch API
+     * @return void
+     */
+    public function sendBatchModuleRequest(array $payload): void
+    {
+        $request = new ServerRequest('POST', $this->apiDomain . '/api/v1/modules/batch');
+        $request = $request->withAddedHeader('Accept', 'application/json');
+        $request = $request->withAddedHeader('Authorization', 'Bearer ' . $this->apiKey);
+        $request = $request->withAddedHeader('Content-Type', 'application/json');
+
+        try {
+            /** @var ServerRequest $request */
+            $request = $request->withBody(self::streamFor(json_encode($payload, JSON_THROW_ON_ERROR)));
+            $response = $this->browser->sendRequest($request);
+
+            if ($response->getStatusCode() !== 200) {
+                $this->systemLogger->error('Batch module request failed with status code: ' . $response->getStatusCode(), [
+                    'packageKey' => 'NEOSidekick.AiAssistant',
+                    'response' => $response->getBody()->getContents()
+                ]);
+            }
+        } catch (ClientExceptionInterface | \Exception $e) {
+            $this->systemLogger->error('Batch module request failed: ' . $e->getMessage(), [
+                'packageKey' => 'NEOSidekick.AiAssistant',
+                'exception' => $e
+            ]);
+        }
     }
 }

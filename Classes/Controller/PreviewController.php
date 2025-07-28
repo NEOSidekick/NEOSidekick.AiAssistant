@@ -6,6 +6,8 @@ namespace NEOSidekick\AiAssistant\Controller;
  */
 
 use Neos\Flow\Annotations as Flow;
+use Neos\Neos\Controller\Exception\NodeNotFoundException;
+use Neos\Neos\Controller\Exception\UnresolvableShortcutException;
 use Neos\Neos\Controller\Frontend\NodeController;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 
@@ -25,8 +27,8 @@ class PreviewController extends NodeController
      *
      * @param NodeInterface|null $node
      * @return string
-     * @throws \Neos\Neos\Controller\Exception\NodeNotFoundException
-     * @throws \Neos\Neos\Controller\Exception\UnresolvableShortcutException
+     * @throws NodeNotFoundException
+     * @throws UnresolvableShortcutException
      */
     public function previewAction(NodeInterface $node = null)
     {

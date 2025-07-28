@@ -2,6 +2,7 @@
 
 namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
+use Neos\Error\Messages\Message;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\View\ViewInterface;
 use Neos\Fusion\View\FusionView;
@@ -81,7 +82,7 @@ class AutomationsController extends AbstractModuleController
         $currentSite = $this->getCurrentSite();
 
         if ($currentSite === null) {
-            $this->addFlashMessage('No site could be detected. Configuration not saved.', '', \Neos\Error\Messages\Message::SEVERITY_ERROR);
+            $this->addFlashMessage('No site could be detected. Configuration not saved.', '', Message::SEVERITY_ERROR);
             $this->redirect('index');
             return;
         }

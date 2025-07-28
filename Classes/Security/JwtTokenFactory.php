@@ -90,7 +90,7 @@ class JwtTokenFactory
         /** @var JwtAccount $account */
         $account = $this->securityContext->getAccount();
         $now = new DateTime();
-        $payload['username'] = $account->getAccountIdentifier() ?? $account->getUsername();
+        $payload['username'] = $account->getAccountIdentifier();
         $payload['provider'] = $account->getAuthenticationProviderName();
         $payload['roles'] = $roles;
         $payload['iat'] = $now->getTimestamp();

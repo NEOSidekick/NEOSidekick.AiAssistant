@@ -26,20 +26,22 @@ class WebhookController extends ActionController
      * @return void
      * @throws StopActionException
      * @throws \JsonException
+     * @Flow\SkipCsrfProtection
      */
     public function processSidekickResponseAction(): void
     {
         $requestContent = $this->request->getHttpRequest()->getBody();
-        $results = json_decode($requestContent, true, 512, JSON_THROW_ON_ERROR);
+        $payload = json_decode($requestContent, true, 512, JSON_THROW_ON_ERROR);
 
-        if (!is_array($results)) {
-            $this->throwStatus(400, 'Invalid JSON format or not an array'); // Bad Request
+        if (!isset($payload['status']) || $payload['status'] !== 'success' || !isset($payload['data']) || !is_array($payload['data'])) {
+            $this->throwStatus(400, 'Invalid JSON payload format'); // Bad Request
         }
 
-        $updatesCollection = [];
+        $results = $payload['data'];
+        $groupedUpdates = [];
 
         foreach ($results as $result) {
-            if (!isset($result['status']) || $result['status'] !== 'success' || !isset($result['request_id']) || !isset($result['data']['message']['message'])) {
+            if (!isset($result['request_id']) || !isset($result['message']['message'])) {
                 // Optionally log the malformed result item
                 continue;
             }
@@ -51,9 +53,13 @@ class WebhookController extends ActionController
             }
             [$nodeContextPath, $propertyName] = $requestIdParts;
 
-            $newPropertyValue = $result['data']['message']['message'];
-            $propertiesToUpdate = [$propertyName => $newPropertyValue];
-            $updatesCollection[] = new UpdateNodeProperties($nodeContextPath, $propertiesToUpdate, []);
+            $newPropertyValue = $result['message']['message'];
+            $groupedUpdates[$nodeContextPath][$propertyName] = $newPropertyValue;
+        }
+
+        $updatesCollection = [];
+        foreach ($groupedUpdates as $nodeContextPath => $properties) {
+            $updatesCollection[] = new UpdateNodeProperties($nodeContextPath, $properties, []);
         }
 
         if (!empty($updatesCollection)) {

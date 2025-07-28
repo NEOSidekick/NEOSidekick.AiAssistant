@@ -5,6 +5,7 @@ namespace NEOSidekick\AiAssistant\Infrastructure;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\ServerRequest;
 use GuzzleHttp\Psr7\Stream;
+use InvalidArgumentException;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Client\Browser;
@@ -119,11 +120,29 @@ class ApiClient
     /**
      * Sends a batch request to the modules batch API endpoint
      *
-     * @param array $payload The payload to send to the batch API
+     * @param array $requests The requests to send to the batch API
+     * @param string|null $webhookUrl Optional webhook URL for asynchronous responses
+     * @param string|null $webhookAuthorizationHeader Optional authorization header for the webhook
      * @return void
      */
-    public function sendBatchModuleRequest(array $payload): void
+    public function sendBatchModuleRequest(array $requests, ?string $webhookUrl = null, ?string $webhookAuthorizationHeader = null): void
     {
+        if (empty($webhookUrl) && !empty($webhookAuthorizationHeader)) {
+            throw new InvalidArgumentException('Webhook authorization header cannot be provided without a webhook URL.');
+        }
+
+        $payload = [
+            'requests' => $requests,
+        ];
+
+        if (!empty($webhookUrl)) {
+            $payload['webhook_url'] = $webhookUrl;
+        }
+
+        if (!empty($webhookAuthorizationHeader)) {
+            $payload['webhook_authorization_header'] = $webhookAuthorizationHeader;
+        }
+
         $request = new ServerRequest('POST', $this->apiDomain . '/api/v1/modules/batch');
         $request = $request->withAddedHeader('Accept', 'application/json');
         $request = $request->withAddedHeader('Authorization', 'Bearer ' . $this->apiKey);

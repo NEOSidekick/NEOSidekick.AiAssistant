@@ -233,6 +233,10 @@ class PublishingStateService
                                 'identifier' => 'url',
                                 'value' => $previewUrl . '&token=' . $readOnlyToken,
                             ],
+                            [
+                                'identifier' => 'title',
+                                'value' => $documentNode['properties']['title'],
+                            ]
                         ],
                         'request_id' => $documentNode['nodeContextPath'] . '#' . $propertyName,
                     ];
@@ -261,7 +265,8 @@ class PublishingStateService
 
         $this->systemLogger->debug('Sending batch request:', [
             'requests' => $finalRequests,
-            'webhook_url' => $webhookUrl
+            'webhook_url' => $webhookUrl,
+            'webhookAuthorizationHeader' => $webhookAuthorizationHeader,
         ]);
 
         $this->apiFacade->sendBatchModuleRequest($finalRequests, $webhookUrl, $webhookAuthorizationHeader);

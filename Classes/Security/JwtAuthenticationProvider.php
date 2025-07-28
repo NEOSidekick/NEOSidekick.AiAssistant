@@ -2,6 +2,7 @@
 
 namespace NEOSidekick\AiAssistant\Security;
 
+use Exception;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Security\Account;
 use Neos\Flow\Security\Authentication\Provider\AbstractProvider;
@@ -60,7 +61,7 @@ class JwtAuthenticationProvider extends AbstractProvider
         try {
             $encoded = $authenticationToken->getEncodedJwt();
             $claims = $this->jwtService->decodeJsonWebToken($encoded);
-        } catch (\Exception $err) {
+        } catch (Exception $err) {
             $authenticationToken->setAuthenticationStatus(TokenInterface::WRONG_CREDENTIALS);
             return;
         }

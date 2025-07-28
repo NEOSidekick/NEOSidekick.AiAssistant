@@ -2,6 +2,7 @@
 
 namespace NEOSidekick\AiAssistant\Service;
 
+use Exception;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\CreateContentContextTrait;
@@ -36,7 +37,7 @@ class NodeDataService
         try {
             $context = $this->createContentContext($workspaceName, $dimensions);
             return $context->getNodeByIdentifier($nodeIdentifier);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->systemLogger->warning('Could not fetch node from workspace: ' . $e->getMessage(), [
                 'packageKey' => 'NEOSidekick.AiAssistant',
                 'nodeIdentifier' => $nodeIdentifier,

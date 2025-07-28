@@ -6,6 +6,7 @@ use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Security\Authentication\Token\AbstractToken;
 use Neos\Flow\Security\Authentication\Token\SessionlessTokenInterface;
 use Psr\Http\Message\ServerRequestInterface;
+use function substr;
 
 class JwtToken extends AbstractToken implements SessionlessTokenInterface
 {
@@ -40,7 +41,7 @@ class JwtToken extends AbstractToken implements SessionlessTokenInterface
      */
     public function __toString()
     {
-        return 'JWT: "' . \substr($this->credentials['token'], 0, 30) . '..."';
+        return 'JWT: "' . substr($this->credentials['token'], 0, 30) . '..."';
     }
 
     protected function getToken(ServerRequestInterface $httpRequest): ?string
@@ -56,7 +57,7 @@ class JwtToken extends AbstractToken implements SessionlessTokenInterface
         }
 
         if (str_starts_with($token, 'Bearer ')) {
-            $token = \substr($token, 7);
+            $token = substr($token, 7);
         }
 
         return $token;

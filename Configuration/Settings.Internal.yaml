@@ -133,10 +133,10 @@ Neos:
             token: 'NEOSidekick\AiAssistant\Security\JwtToken'
             entryPoint: NEOSidekick\AiAssistant\Security\JwtEntryPoint
             requestPatterns:
-              'NEOSidekick.AiAssistant:Service':
+              'NEOSidekick.AiAssistant:Webhook':
                 pattern: ControllerObjectName
                 patternOptions:
-                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\ServiceController'
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\WebhookController'
               'NEOSidekick.AiAssistant:Preview':
                 pattern: ControllerObjectName
                 patternOptions:

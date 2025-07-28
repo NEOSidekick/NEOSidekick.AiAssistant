@@ -25,13 +25,14 @@ class WebhookController extends ActionController
      *
      * @return void
      * @throws StopActionException
+     * @throws \JsonException
      */
     public function processSidekickResponseAction(): void
     {
-        $requestContent = $this->request->getHttpRequest()->getContent();
-        $results = json_decode($requestContent, true);
+        $requestContent = $this->request->getHttpRequest()->getBody();
+        $results = json_decode($requestContent, true, 512, JSON_THROW_ON_ERROR);
 
-        if ($results === null || !is_array($results)) {
+        if (!is_array($results)) {
             $this->throwStatus(400, 'Invalid JSON format or not an array'); // Bad Request
         }
 

@@ -11,6 +11,7 @@ use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService;
+use NEOSidekick\AiAssistant\Domain\Service\AutomationRulesService;
 use NEOSidekick\AiAssistant\Dto\ContentChangeDto;
 use NEOSidekick\AiAssistant\Dto\PublishingState;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
@@ -41,6 +42,12 @@ class PublishingStateService
      * @var AutomationsConfigurationService
      */
     protected $automationsConfigurationService;
+
+    /**
+     * @Flow\Inject
+     * @var AutomationRulesService
+     */
+    protected $automationRulesService;
 
     /**
      * @Flow\Inject
@@ -155,53 +162,9 @@ class PublishingStateService
             // Get the active automation configuration for this site
             $automationConfig = $this->automationsConfigurationService->getActiveForSite($site);
 
-            // Find the change DTO for the document node itself to access its properties
-            $documentContentChange = $documentChangeSet->getContentChanges()[$documentNodePath] ?? null;
 
-            $propertiesBefore = $documentContentChange?->before?->properties ?? $documentNode['properties'] ?? [];
-            $propertiesAfter = $documentContentChange?->after?->properties ?? $documentNode['properties'] ?? [];
-
-            // Initialize array of modules to call
-            $modulesToCall = [];
-
-            // Rule 1: Determine missing focus keywords
-            if ($automationConfig->isDetermineMissingFocusKeywordsOnPublication() && empty($propertiesAfter['focusKeyword'])) {
-                $modulesToCall[] = 'focus_keyword_generator';
-            }
-
-            // Rule 2: Re-determine existing focus keywords with loop prevention
-            if (!empty($propertiesAfter['focusKeyword']) &&
-                ($propertiesBefore['focusKeyword'] ?? null) === $propertiesAfter['focusKeyword'] &&
-                !in_array('focus_keyword_generator', $modulesToCall, true) &&
-                $automationConfig->isRedetermineExistingFocusKeywordsOnPublication()) {
-                $modulesToCall[] = 'focus_keyword_generator';
-            }
-
-            // Rule 3: Generate empty SEO titles
-            if ($automationConfig->isGenerateEmptySeoTitlesOnPublication() && empty($propertiesAfter['titleOverride'])) {
-                $modulesToCall[] = 'seo_title';
-            }
-
-            // Rule 4: Regenerate existing SEO titles with loop prevention
-            if (!empty($propertiesAfter['titleOverride']) &&
-                ($propertiesBefore['titleOverride'] ?? null) === $propertiesAfter['titleOverride'] &&
-                !in_array('seo_title', $modulesToCall, true) &&
-                $automationConfig->isRegenerateExistingSeoTitlesOnPublication()) {
-                $modulesToCall[] = 'seo_title';
-            }
-
-            // Rule 5: Generate empty meta descriptions
-            if ($automationConfig->isGenerateEmptyMetaDescriptionsOnPublication() && empty($propertiesAfter['metaDescription'])) {
-                $modulesToCall[] = 'meta_description';
-            }
-
-            // Rule 6: Regenerate existing meta descriptions with loop prevention
-            if (!empty($propertiesAfter['metaDescription']) &&
-                ($propertiesBefore['metaDescription'] ?? null) === $propertiesAfter['metaDescription'] &&
-                !in_array('meta_description', $modulesToCall, true) &&
-                $automationConfig->isRegenerateExistingMetaDescriptionsOnPublication()) {
-                $modulesToCall[] = 'meta_description';
-            }
+            // Determine which modules to call using the AutomationRulesService
+            $modulesToCall = $this->automationRulesService->determineModulesToTrigger($documentChangeSet, $automationConfig);
 
             $this->systemLogger->debug('Processing document node:', [
                 'path' => $documentPath,

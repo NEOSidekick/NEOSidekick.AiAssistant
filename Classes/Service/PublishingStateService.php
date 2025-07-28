@@ -53,11 +53,6 @@ class PublishingStateService
      */
     protected $publishingState;
 
-    /**
-     * @Flow\InjectConfiguration(path="webhooks.endpoints")
-     * @var array
-     */
-    protected $endpoints = [];
 
     /**
      * @Flow\Inject
@@ -270,9 +265,7 @@ class PublishingStateService
 
         $this->systemLogger->debug('Sending batch request:', $finalPayload);
 
-//        if (!empty($this->endpoints)) {
-//            $this->apiFacade->sendWebhookRequests('batchSeoAutomations', $finalPayload, $this->endpoints);
-//        }
+        $this->apiFacade->sendBatchModuleRequest($finalPayload);
 
         $this->systemLogger->debug('Publishing Data (before cleanup):', $this->publishingState->toArray());
 

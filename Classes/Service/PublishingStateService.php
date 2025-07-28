@@ -257,15 +257,14 @@ class PublishingStateService
         );
         $this->uriBuilder->reset();
         $writeToken = $this->jwtTokenFactory->getJsonWebToken();
-        $finalPayload = [
+        $webhookAuthorizationHeader = 'Bearer ' . $writeToken;
+
+        $this->systemLogger->debug('Sending batch request:', [
             'requests' => $finalRequests,
-            'webhook_url' => $webhookUrl,
-            'webhook_authentication_header' => 'Bearer ' . $writeToken,
-        ];
+            'webhook_url' => $webhookUrl
+        ]);
 
-        $this->systemLogger->debug('Sending batch request:', $finalPayload);
-
-        $this->apiFacade->sendBatchModuleRequest($finalPayload);
+        $this->apiFacade->sendBatchModuleRequest($finalRequests, $webhookUrl, $webhookAuthorizationHeader);
 
         $this->systemLogger->debug('Publishing Data (before cleanup):', $this->publishingState->toArray());
 

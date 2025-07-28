@@ -83,12 +83,14 @@ class ApiFacade
     /**
      * Send a batch request to the modules batch API endpoint
      *
-     * @param array $payload The payload to send to the batch API
+     * @param array $requests The requests to send to the batch API
+     * @param string|null $webhookUrl Optional webhook URL for asynchronous responses
+     * @param string|null $webhookAuthorizationHeader Optional authorization header for the webhook
      * @return void
      */
-    public function sendBatchModuleRequest(array $payload): void
+    public function sendBatchModuleRequest(array $requests, ?string $webhookUrl = null, ?string $webhookAuthorizationHeader = null): void
     {
-        $this->apiClient->sendBatchModuleRequest($payload);
+        $this->apiClient->sendBatchModuleRequest($requests, $webhookUrl, $webhookAuthorizationHeader);
     }
 
     /**

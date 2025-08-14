@@ -63,7 +63,14 @@ class WebhookController extends ActionController
             }
             [$nodeContextPath, $propertyName] = $requestIdParts;
 
-            $newPropertyValue = $result['message']['message'];
+            // This is a quick fix because focus_keyword_generator
+            // will give us an array with five possible focus keywords.
+            // In any case if we get multiple options, we can only pick one.
+            if (is_array($result['message']['message'])) {
+                $newPropertyValue = $result['message']['message'][0];
+            } else {
+                $newPropertyValue = $result['message']['message'];
+            }
             $groupedUpdates[$nodeContextPath][$propertyName] = $newPropertyValue;
         }
 

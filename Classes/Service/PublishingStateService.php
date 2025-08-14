@@ -194,7 +194,11 @@ class PublishingStateService
                         'user_input' => [
                             [
                                 'identifier' => 'url',
-                                'value' => $previewUrl . '&token=' . $readOnlyToken,
+                                // We append a timestamp here
+                                // to generate a unique URL
+                                // that will always bypass
+                                // a potential Nginx cache
+                                'value' => $previewUrl . '&token=' . $readOnlyToken . '&timestamp=' . time(),
                             ],
                             [
                                 'identifier' => 'title',

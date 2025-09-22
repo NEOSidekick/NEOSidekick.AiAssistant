@@ -74,6 +74,11 @@ export default class MagicTextFieldEditor extends PureComponent<any, any> {
         try {
             // Process SidekickClientEval und ClientEval
             userInput = await contentService.processObjectWithClientEval(userInput, node, parentNode);
+            // A dirty fix, for image alt text, we need to add the filename
+            if (['image_alt_text', 'alt_tag_generator'].includes(module) && userInput.url && !userInput.filename) {
+                // SidekickClientEval: AssetUri(node.properties.image)
+                userInput.filename = userInput.url[0].substring(userInput.url[0].lastIndexOf('/') + 1);
+            }
             // Map to external format
             // @ts-ignore
             userInput = Object.keys(userInput).map((identifier: string) => ({'identifier': identifier, 'value': userInput[identifier]}));

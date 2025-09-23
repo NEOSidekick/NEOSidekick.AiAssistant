@@ -27,6 +27,7 @@ const defaultOptions = {
     return {
         activeContentDimensions: selectors.CR.ContentDimensions.active(state),
         node: node,
+        transientValues: selectors.UI.Inspector.transientValues(state),
         parentNode: selectors.CR.Nodes.nodeByContextPath(state)(node.parent),
     };
 }, {
@@ -35,7 +36,14 @@ const defaultOptions = {
 export default class MagicTextAreaEditor extends Component<any, any> {
     constructor(props: any) {
         super(props);
-        this.state = {loading: false}
+        let initialPlaceholder = '';
+        if (props.options?.placeholder?.startsWith('SidekickClientEval')) {
+            this.fetchAndUpdatePlaceholder();
+        } else if (props.options?.placeholder) {
+            // Placeholder text must be unescaped in case html entities were used
+            initialPlaceholder = props.i18nRegistry.translate(unescape(props.options.placeholder));
+        }
+        this.state = {loading: false, placeholder: initialPlaceholder};
     }
     static propTypes = {
         className: PropTypes.string,
@@ -47,6 +55,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         activeContentDimensions: PropTypes.object.isRequired,
         node: PropTypes.object,
         parentNode: PropTypes.object,
+        transientValues: PropTypes.object,
 
         i18nRegistry: PropTypes.object.isRequired,
         externalService: PropTypes.object.isRequired,
@@ -59,12 +68,23 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         options: {}
     };
 
+    componentDidUpdate(prevProps) {
+        this.fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged(prevProps);
+        this.autoGenerateIfImageChanged(prevProps);
+    }
+
     renderIcon(loading: boolean) {
         if (loading) {
             return <Icon icon="spinner" fixedWidth padded="right" spin={true} />
         } else {
             return <Icon icon="magic" fixedWidth padded="right" />
         }
+    }
+
+    public generateValue = async () => {
+        const {options} = this.props;
+        const finalOptions = Object.assign({}, defaultOptions, options);
+        await this.fetch(finalOptions.module, finalOptions.arguments ?? {});
     }
 
     fetch = async (module: string, userInput: object) => {
@@ -75,7 +95,6 @@ export default class MagicTextAreaEditor extends Component<any, any> {
             userInput = await contentService.processObjectWithClientEval(userInput, node, parentNode)
             // A dirty fix, for image alt text, we need to add the filename
             if (['image_alt_text', 'alt_tag_generator'].includes(module) && userInput.url && !userInput.filename) {
-                // SidekickClientEval: AssetUri(node.properties.image)
                 userInput.filename = userInput.url[0].substring(userInput.url[0].lastIndexOf('/') + 1);
             }
             // Map to external format
@@ -91,11 +110,72 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         }
     }
 
+    /* Only active for Image Text Editors */
+    private autoGenerateIfImageChanged = async (prevProps) => {
+        const {node, transientValues, options, commit} = this.props;
+        const imagePropertyName = options.imagePropertyName;
+        if (!options.autoGenerateIfImageChanged || !imagePropertyName) {
+            return; // not an image text editor
+        }
+
+        const imageDidChange = (
+            transientValues?.[imagePropertyName] !== prevProps.transientValues?.[imagePropertyName] ||
+            node?.properties?.[imagePropertyName] !== prevProps.node?.properties?.[imagePropertyName]
+        );
+
+        if (!imageDidChange) {
+            return;
+        }
+
+        commit(''); // reset
+        if (transientValues?.[imagePropertyName]) {
+            await this.generateValue();
+        }
+    }
+
+    private fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged = async (prevProps) => {
+        const {node, transientValues, options} = this.props;
+
+        if (!options?.placeholder?.startsWith('SidekickClientEval')) {
+            return;
+        }
+
+        const pattern = /node\.properties\.(\w+)/g;
+        const matches = options.placeholder.match(pattern);
+        if (!matches) {
+            return;
+        }
+
+        const mentionedPropertyNames = matches
+            .map((match: string) => {
+                const propertyMatch = match.match(/node\.properties\.(.*)/);
+                return propertyMatch ? propertyMatch[1] : null;
+            })
+            .filter((property): property is string => property !== null);
+
+        const shouldUpdate = mentionedPropertyNames.some((property: string) => {
+            return (
+                transientValues?.[property] !== prevProps.transientValues?.[property] ||
+                node?.properties?.[property] !== prevProps.node?.properties?.[property]
+            );
+        });
+
+        if (shouldUpdate) {
+            await this.fetchAndUpdatePlaceholder();
+        }
+    }
+
+    private fetchAndUpdatePlaceholder = async () => {
+        const {contentService, node, parentNode, options} = this.props;
+        contentService
+            .processClientEval(options.placeholder, node, parentNode)
+            .then((placeholder: string) => this.setState({placeholder}));
+    }
+
     render () {
         const {id, value, className, commit, options, i18nRegistry} = this.props;
+        const {placeholder} = this.state;
 
-        // Placeholder text must be unescaped in case html entities were used
-        const placeholder = options && options.placeholder && i18nRegistry.translate(unescape(options.placeholder));
         const finalOptions = Object.assign({}, defaultOptions, options);
         const showGenerateButton = !finalOptions.readonly && !finalOptions.disabled;
 
@@ -109,7 +189,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
                         disabled={finalOptions.disabled || this.state.loading}
                         maxLength={finalOptions.maxlength}
                         readOnly={finalOptions.readonly}
-                        placeholder={placeholder}
+                        placeholder={this.state.loading ? '' : placeholder}
                         minRows={finalOptions.minRows}
                         expandedRows={finalOptions.expandedRows}
                     />
@@ -123,7 +203,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
                             style="neutral"
                             hoverStyle="clean"
                             disabled={this.state.loading}
-                            onClick={() => this.fetch(finalOptions.module, finalOptions.arguments ?? {})}
+                            onClick={() => this.generateValue()}
                         >
                             {i18nRegistry.translate('NEOSidekick.AiAssistant:Main:generateWithSidekick')}&nbsp;
                             {this.renderIcon(this.state.loading)}

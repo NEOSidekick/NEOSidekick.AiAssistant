@@ -21,6 +21,8 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateAssetData;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
+use Neos\Media\Domain\Model\ImageInterface;
+use Neos\Media\Domain\Model\ImageVariant;
 use NEOSidekick\AiAssistant\Service\AssetService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Service\NodeWithImageService;
@@ -249,5 +251,33 @@ class BackendServiceController extends ActionController
         $this->response->setStatusCode(500);
         $this->response->setContentType('application/json');
         return json_encode(['error' => $exception->getMessage(), 'code' => $exception->getCode()], JSON_THROW_ON_ERROR);
+    }
+
+    /**
+     * Fetch the metadata for a given image
+     *
+     * @param ImageInterface $image
+     *
+     * @return string JSON encoded response
+     * @throws JsonException
+     */
+    public function imageTitleAndCaptionAction(ImageInterface $image): string
+    {
+        $this->response->setContentType('application/json');
+        if ($image instanceof ImageVariant) {
+            $originalImage = $image->getOriginalAsset();
+        } else {
+            $originalImage = $image;
+        }
+        // fallback to cleaned filename
+        $resource = $image->getResource();
+        $filename = str_replace('.' . $resource->getFileExtension(), '', $resource->getFilename());
+        $filename = str_replace('_', ' ', $filename);
+        $filename = strtoupper(substr($filename, 0, 1)) . substr($filename, 1);
+        return json_encode([
+            'title' => $originalImage->getTitle(),
+            'caption' => $originalImage->getCaption(),
+            'filenameCleaned' => $filename
+        ], JSON_THROW_ON_ERROR);
     }
 }

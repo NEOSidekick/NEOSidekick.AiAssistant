@@ -70,7 +70,7 @@ export default class TextAreaEditor extends PureComponent<TextAreaEditorProps,Te
     async componentDidUpdate(prevProps: Readonly<TextAreaEditorProps>, prevState: Readonly<{}>, snapshot?: any) {
         // need to update on every item.property change
         let placeholder = this.props.propertySchema?.ui?.inspector?.editorOptions?.placeholder;
-        if (placeholder && placeholder.includes('ClientEval')) {
+        if (placeholder && (placeholder.startsWith('ClientEval') || placeholder.startsWith('SidekickClientEval'))) {
             placeholder = await ContentService.getInstance().processClientEvalFromDocumentNodeListItem(placeholder, this.props.item, this.props.property, '');
         }
         if (placeholder) {

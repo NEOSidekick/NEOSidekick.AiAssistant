@@ -1,6 +1,6 @@
 <?php
 
-namespace NEOSidekick\AiAssistant;
+namespace NEOSidekick\AiAssistant\EelHelper;
 
 use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Eel\ProtectedContextAwareInterface;
@@ -13,7 +13,7 @@ use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Service\UserService;
 
-class EelHelper implements ProtectedContextAwareInterface
+class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 {
     /**
      * @Flow\InjectConfiguration()

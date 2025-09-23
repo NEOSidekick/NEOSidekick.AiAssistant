@@ -1,0 +1,246 @@
+<?php
+
+namespace NEOSidekick\AiAssistant\Service;
+
+use GuzzleHttp\Psr7\ServerRequest;
+use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\ServerRequestAttributes;
+use Neos\Flow\Mvc\ActionRequestFactory;
+use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
+use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
+use Neos\Flow\Mvc\Routing\UriBuilder;
+use Neos\Neos\Domain\Repository\SiteRepository;
+use NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService;
+use NEOSidekick\AiAssistant\Domain\Service\AutomationRulesService;
+use NEOSidekick\AiAssistant\Dto\ContentChangeDto;
+use NEOSidekick\AiAssistant\Dto\PublishingState;
+use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
+use NEOSidekick\AiAssistant\Security\JwtTokenFactory;
+use Psr\Log\LoggerInterface;
+
+/**
+ * Service for managing state during the publishing process
+ *
+ * @Flow\Scope("singleton")
+ */
+class PublishingStateService
+{
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $systemLogger;
+
+    /**
+     * @Flow\Inject
+     * @var ApiFacade
+     */
+    protected $apiFacade;
+
+    /**
+     * @Flow\Inject
+     * @var AutomationsConfigurationService
+     */
+    protected $automationsConfigurationService;
+
+    /**
+     * @Flow\Inject
+     * @var AutomationRulesService
+     */
+    protected $automationRulesService;
+
+    /**
+     * @Flow\Inject
+     * @var SiteRepository
+     */
+    protected $siteRepository;
+
+    /**
+     * @var PublishingState
+     */
+    protected $publishingState;
+
+
+    /**
+     * @Flow\Inject
+     * @var ActionRequestFactory
+     */
+    protected $actionRequestFactory;
+
+
+    /**
+     * @Flow\Inject
+     * @var JwtTokenFactory
+     */
+    protected $jwtTokenFactory;
+
+    /**
+     * @Flow\Inject
+     * @var UriBuilder
+     */
+    protected $uriBuilder;
+
+    /**
+     * Initialize the publishing state
+     */
+    public function initializeObject(): void
+    {
+        $this->publishingState = new PublishingState();
+        $serverRequest = ServerRequest::fromGlobals();
+        $parameters = $serverRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
+        $serverRequest = $serverRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $parameters->withParameter('requestUriHost', $serverRequest->getUri()->getHost()));
+        $actionRequest = $this->actionRequestFactory->createActionRequest($serverRequest);
+        $this->uriBuilder->setRequest($actionRequest);
+        $this->uriBuilder->setCreateAbsoluteUri(true);
+    }
+
+    /**
+     * Get the current publishing state
+     *
+     * @return PublishingState
+     */
+    public function getPublishingState(): PublishingState
+    {
+        return $this->publishingState;
+    }
+
+    /**
+     * Called at the end of this object's lifecycle.
+     * We'll build a single batch request containing all documents that had changes.
+     *
+     * @throws MissingActionNameException
+     */
+    public function shutdownObject(): void
+    {
+        if (!$this->publishingState->hasDocumentChangeSets()) {
+            return;
+        }
+
+        $finalRequests = [];
+        $moduleToPropertyMapping = [
+            'focus_keyword_generator' => 'focusKeyword',
+            'seo_title' => 'titleOverride',
+            'meta_description' => 'metaDescription',
+        ];
+
+        $this->systemLogger->debug('Publishing Data (before sending):', $this->publishingState->toArray());
+
+        // Iterate over all document nodes in publishingState
+        foreach ($this->publishingState->getDocumentChangeSets() as $documentPath => $documentChangeSet) {
+            $documentNode = $documentChangeSet->getDocumentNode();
+
+            if ($documentNode === null) {
+                $this->systemLogger->warning('Document node data missing for path: ' . $documentPath, [
+                    'packageKey' => 'NEOSidekick.AiAssistant'
+                ]);
+                continue;
+            }
+
+            // Find the site for the current document
+            $siteNodeName = null;
+            $documentNodePath = explode('@', $documentNode['nodeContextPath'])[0];
+            $pathParts = explode('/', $documentNodePath);
+            if (isset($pathParts[1], $pathParts[2]) && $pathParts[1] === 'sites') {
+                $siteNodeName = $pathParts[2];
+            }
+
+            if ($siteNodeName === null) {
+                $this->systemLogger->warning('Could not determine site from document path: ' . $documentNode['path'], [
+                    'packageKey' => 'NEOSidekick.AiAssistant'
+                ]);
+                continue; // Skip this document change set
+            }
+
+            $site = $this->siteRepository->findOneByNodeName($siteNodeName);
+            if (!$site) {
+                $this->systemLogger->warning('Could not find site with node name: ' . $siteNodeName, [
+                    'packageKey' => 'NEOSidekick.AiAssistant'
+                ]);
+                continue; // Skip this document change set
+            }
+
+            // Get the active automation configuration for this site
+            $automationConfig = $this->automationsConfigurationService->getActiveForSite($site);
+
+
+            // Determine which modules to call using the AutomationRulesService
+            $modulesToCall = $this->automationRulesService->determineModulesToTrigger($documentChangeSet, $automationConfig);
+
+            $this->systemLogger->debug('Processing document node:', [
+                'path' => $documentPath,
+                'documentNode' => $documentNode,
+                'modulesToCall' => $modulesToCall
+            ]);
+
+            // If there are modules to call for this document, generate the necessary tokens and URLs
+            if (!empty($modulesToCall)) {
+                $readOnlyToken = $this->jwtTokenFactory->createReadOnlyPreviewToken();
+                $previewUrl = $this->uriBuilder->uriFor(
+                    'preview',
+                    ['node' => $documentNode['nodeContextPath']],
+                    'Preview',
+                    'NEOSidekick.AiAssistant'
+                );
+
+                // Create individual requests for each module
+                foreach ($modulesToCall as $module) {
+                    $propertyName = $moduleToPropertyMapping[$module] ?? null;
+                    if (!$propertyName) {
+                        continue;
+                    }
+
+                    $finalRequests[] = [
+                        'module' => $module,
+                        'user_input' => [
+                            [
+                                'identifier' => 'url',
+                                // We append a timestamp here
+                                // to generate a unique URL
+                                // that will always bypass
+                                // a potential Nginx cache
+                                'value' => $previewUrl . '&token=' . $readOnlyToken . '&timestamp=' . time(),
+                            ],
+                            [
+                                'identifier' => 'title',
+                                'value' => $documentNode['properties']['title'],
+                            ]
+                        ],
+                        'request_id' => $documentNode['nodeContextPath'] . '#' . $propertyName,
+                    ];
+                }
+            }
+        }
+
+        // If we have requests to send, construct and dispatch the final payload
+        if (empty($finalRequests)) {
+            $this->systemLogger->debug('No requests to send.');
+            $this->publishingState = new PublishingState();
+            return;
+        }
+
+        // This is necessary so that it can build an URI
+        $this->uriBuilder->setFormat('json');
+        $webhookUrl = $this->uriBuilder->uriFor(
+            'processSidekickResponse',
+            [],
+            'Webhook',
+            'NEOSidekick.AiAssistant'
+        );
+        $this->uriBuilder->reset();
+        $writeToken = $this->jwtTokenFactory->createWriteAccessToken();
+        $webhookAuthorizationHeader = 'Bearer ' . $writeToken;
+
+        $this->systemLogger->debug('Sending batch request:', [
+            'requests' => $finalRequests,
+            'webhook_url' => $webhookUrl,
+            'webhookAuthorizationHeader' => $webhookAuthorizationHeader,
+        ]);
+
+        $this->apiFacade->sendBatchModuleRequest($finalRequests, $webhookUrl, $webhookAuthorizationHeader);
+
+        $this->systemLogger->debug('Publishing Data (before cleanup):', $this->publishingState->toArray());
+
+        // Reset the publishing state
+        $this->publishingState = new PublishingState();
+    }
+}

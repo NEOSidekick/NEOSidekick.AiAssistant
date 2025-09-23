@@ -43,6 +43,7 @@ Neos:
           modifyTextModalPreferCustomPrompt: '${NEOSidekickInternal.modifyTextModalPreferCustomPrompt()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
           contentDimensions: '${Neos.Ui.ContentDimensions.contentDimensionsByName()}'
+          syncLanguagePresets: '${NEOSidekickInternal.languageDimensionSyncPresets()}'
     modules:
       ai-assistant:
         label: 'NEOSidekick.AiAssistant:Module:label'

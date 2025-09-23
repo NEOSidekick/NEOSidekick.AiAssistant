@@ -23,6 +23,7 @@ export interface AppContextType {
             }
         }
     };
+    syncLanguagePresets: string[];
     nodeTypes?: object;
     domain: string;
 

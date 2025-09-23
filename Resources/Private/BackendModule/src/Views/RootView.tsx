@@ -25,6 +25,7 @@ export interface RootViewProps {
             }
         }
     },
+    syncLanguagePresets: string[],
     domain: string
 }
 
@@ -35,6 +36,7 @@ export default class RootView extends PureComponent<RootViewProps, AppContextTyp
             endpoints: props.endpoints,
             workspaces: props.workspaces,
             languageDimensionConfiguration: props.languageDimensionConfiguration,
+            syncLanguagePresets: props.syncLanguagePresets,
             nodeTypes: undefined,
             domain: props.domain,
 

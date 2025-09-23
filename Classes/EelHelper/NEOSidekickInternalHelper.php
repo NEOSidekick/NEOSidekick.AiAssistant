@@ -163,6 +163,51 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     }
 
     /**
+     * Sitegeist.LostInTranslation allows automatic transcription into different languages
+     * with `translationStrategy: 'sync'`. We do not want to write automatically synced properties,
+     * but we want to show an explanation in the UI.
+     *
+     * @return array
+     */
+    public function languageDimensionSyncPresets(): array
+    {
+        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+            return [];
+        }
+        $presets = $this->contentDimensions[$this->languageDimensionName]['presets'] ?? [];
+        $result = [];
+        foreach ($presets as $presetIdentifier => $presetConfiguration) {
+            $options = $presetConfiguration['options'] ?? [];
+            if (($options['translationStrategy'] ?? null) === 'sync') {
+                $result[] = $presetIdentifier;
+            }
+        }
+        return $result;
+    }
+
+    /**
+     * Sitegeist.LostInTranslation allows automatic transcription into different languages
+     * with `translationStrategy: 'sync'`. We do not want to write automatically synced properties.
+     *
+     * @return array
+     */
+    public function languageDimensionValuesEnabledForEditing(): array
+    {
+        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+            return [];
+        }
+        $presets = $this->contentDimensions[$this->languageDimensionName]['presets'] ?? [];
+        $result = [];
+        foreach ($presets as $presetIdentifier => $presetConfiguration) {
+            $options = $presetConfiguration['options'] ?? [];
+            if (($options['translationStrategy'] ?? null) !== 'sync') {
+                $result[] = $presetIdentifier;
+            }
+        }
+        return $result;
+    }
+
+    /**
      * @inheritDoc
      */
     public function allowsCallOfMethod($methodName): bool

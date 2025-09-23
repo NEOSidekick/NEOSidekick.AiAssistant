@@ -43,28 +43,34 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
     private renderLanguageDimensionField() {
         const {languageDimensionFilter} = this.props.moduleConfiguration;
         const languageDimensionConfiguration = this.context.languageDimensionConfiguration;
+        const syncLanguagePresets = this.context.syncLanguagePresets || [];
         if (!languageDimensionConfiguration) {
             return null;
         }
         return (
             <div>
                 <p style={{fontWeight: 'bold', marginBottom: '0.5rem'}}>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.languageDimensionFilter.label', 'Select languages')}</p>
-                {Object.keys(languageDimensionConfiguration.presets).map(languageDimensionPreset => (
-                    <CheckboxField
-                        key={languageDimensionPreset}
-                        label={languageDimensionConfiguration['presets'][languageDimensionPreset].label}
-                        checked={languageDimensionFilter.includes(languageDimensionPreset)}
-                        onChange={e => {
-                            let languageDimensionFilter = this.props.moduleConfiguration.languageDimensionFilter;
-                            if (e.target.checked) {
-                                languageDimensionFilter.push(languageDimensionPreset);
-                            } else {
-                                languageDimensionFilter = languageDimensionFilter.filter(preset => preset !== languageDimensionPreset);
-                            }
-                            this.context.updateModuleConfiguration({languageDimensionFilter});
-                        }}
-                    />
-                ))}
+                {Object.keys(languageDimensionConfiguration.presets).map(languageDimensionPreset => {
+                    const isSync = syncLanguagePresets.includes(languageDimensionPreset);
+                    const isChecked = !isSync && languageDimensionFilter.includes(languageDimensionPreset);
+                    return (
+                        <CheckboxField
+                            key={languageDimensionPreset}
+                            label={languageDimensionConfiguration['presets'][languageDimensionPreset].label + (isSync ? ` (${this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:configuration.languageDimensionFilter.syncLabel', 'automatic DeepL translation')})` : '')}
+                            checked={isChecked}
+                            disabled={isSync}
+                            onChange={e => {
+                                let languageDimensionFilter = this.props.moduleConfiguration.languageDimensionFilter;
+                                if (e.target.checked) {
+                                    languageDimensionFilter.push(languageDimensionPreset);
+                                } else {
+                                    languageDimensionFilter = languageDimensionFilter.filter(preset => preset !== languageDimensionPreset);
+                                }
+                                this.context.updateModuleConfiguration({languageDimensionFilter});
+                            }}
+                        />
+                    );
+                })}
             </div>
         );
     }

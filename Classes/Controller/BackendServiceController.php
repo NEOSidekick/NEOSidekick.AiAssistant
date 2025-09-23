@@ -115,6 +115,10 @@ class BackendServiceController extends ActionController
      */
     public function updateAssetsAction(array $updateItems): string
     {
+        if ($this->request->getHttpRequest()->getMethod() !== 'POST') {
+            $this->response->setStatusCode(405);
+            return json_encode(['error' => 'Method Not Allowed'], JSON_THROW_ON_ERROR);
+        }
         $this->assetService->updateMultipleAssets($updateItems);
         return json_encode(array_map(static fn(UpdateAssetData $item) => $item->jsonSerialize(), $updateItems),
             JSON_THROW_ON_ERROR);
@@ -191,6 +195,10 @@ class BackendServiceController extends ActionController
      */
     public function updateNodePropertiesAction(array $updateItems): string
     {
+        if ($this->request->getHttpRequest()->getMethod() !== 'POST') {
+            $this->response->setStatusCode(405);
+            return json_encode(['error' => 'Method Not Allowed'], JSON_THROW_ON_ERROR);
+        }
         $this->nodeService->updatePropertiesOnNodes($updateItems);
         return json_encode(array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems),
             JSON_THROW_ON_ERROR);

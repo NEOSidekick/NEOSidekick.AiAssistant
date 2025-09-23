@@ -63,9 +63,33 @@ class BackendServiceController extends ActionController
      */
     protected $userService;
 
+    /**
+     * Allowed property names for asset updates
+     *
+     * @var string[]
+     */
+    private array $allowedAssetPropertyUpdates = ['title', 'caption'];
+
+    /**
+     * Allowed property names for node updates (applies to all node types)
+     *
+     * @var string[]
+     */
+    private array $allowedNodePropertyUpdates = ['titleOverride', 'metaDescription', 'focusKeyword'];
+
     public function initializeAction(): void
     {
         $this->response->setContentType('application/json');
+    }
+
+    protected function ensureJsonRequestOrReturn415(): ?string
+    {
+        $contentType = $this->request->getHttpRequest()->getHeaderLine('Content-Type');
+        if (stripos($contentType, 'application/json') !== 0) {
+            $this->response->setStatusCode(415);
+            return json_encode(['error' => 'Unsupported Media Type: expected application/json'], JSON_THROW_ON_ERROR);
+        }
+        return null;
     }
 
     public function initializeFindAssetsAction(): void
@@ -119,8 +143,20 @@ class BackendServiceController extends ActionController
             $this->response->setStatusCode(405);
             return json_encode(['error' => 'Method Not Allowed'], JSON_THROW_ON_ERROR);
         }
-        $this->assetService->updateMultipleAssets($updateItems);
-        return json_encode(array_map(static fn(UpdateAssetData $item) => $item->jsonSerialize(), $updateItems),
+        if (($error = $this->ensureJsonRequestOrReturn415()) !== null) {
+            return $error;
+        }
+        // Filter properties against allowlist before updating
+        $filteredItems = array_map(function (UpdateAssetData $item): UpdateAssetData {
+            $filteredProperties = array_intersect_key(
+                $item->getProperties(),
+                array_flip($this->allowedAssetPropertyUpdates)
+            );
+            return new UpdateAssetData($item->getIdentifier(), $filteredProperties);
+        }, $updateItems);
+
+        $this->assetService->updateMultipleAssets($filteredItems);
+        return json_encode(array_map(static fn(UpdateAssetData $item) => $item->jsonSerialize(), $filteredItems),
             JSON_THROW_ON_ERROR);
     }
 
@@ -199,8 +235,20 @@ class BackendServiceController extends ActionController
             $this->response->setStatusCode(405);
             return json_encode(['error' => 'Method Not Allowed'], JSON_THROW_ON_ERROR);
         }
-        $this->nodeService->updatePropertiesOnNodes($updateItems);
-        return json_encode(array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $updateItems),
+        if (($error = $this->ensureJsonRequestOrReturn415()) !== null) {
+            return $error;
+        }
+        // Filter node properties against allowlist before updating
+        $filteredItems = array_map(function (UpdateNodeProperties $item): UpdateNodeProperties {
+            $filteredProperties = array_intersect_key(
+                $item->getProperties(),
+                array_flip($this->allowedNodePropertyUpdates)
+            );
+            return new UpdateNodeProperties($item->getNodeContextPath(), $filteredProperties, $item->getImages());
+        }, $updateItems);
+
+        $this->nodeService->updatePropertiesOnNodes($filteredItems);
+        return json_encode(array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $filteredItems),
             JSON_THROW_ON_ERROR);
     }
 

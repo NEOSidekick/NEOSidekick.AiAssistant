@@ -26,4 +26,5 @@ export NEOS_BACKEND_PASSWORD=admin
 ```bash
 npm test tests/auth.setup.spec.ts
 npm test tests/focusKeyword.editor.spec.ts
+npx playwright test tests/imageEditors.spec.ts
 ```

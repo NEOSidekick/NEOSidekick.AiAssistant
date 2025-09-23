@@ -25,12 +25,24 @@ const defaultOptions = {
     return {
         activeContentDimensions: selectors.CR.ContentDimensions.active(state),
         node: node,
+        transientValues: selectors.UI.Inspector.transientValues(state),
         parentNode: selectors.CR.Nodes.nodeByContextPath(state)(node.parent),
     };
 }, {
     addFlashMessage: actions.UI.FlashMessages.add
 })
 export default class MagicTextFieldEditor extends PureComponent<any, any> {
+    constructor(props: any) {
+        super(props);
+        let initialPlaceholder = '';
+        if (props.options?.placeholder?.startsWith('SidekickClientEval')) {
+            this.fetchAndUpdatePlaceholder();
+        } else if (props.options?.placeholder) {
+            // Placeholder text must be unescaped in case html entities were used
+            initialPlaceholder = props.i18nRegistry.translate(unescape(props.options.placeholder));
+        }
+        this.state = {loading: false, placeholder: initialPlaceholder};
+    }
     static propTypes = {
         // matches TextField
         className: PropTypes.string,
@@ -44,6 +56,7 @@ export default class MagicTextFieldEditor extends PureComponent<any, any> {
         activeContentDimensions: PropTypes.object.isRequired,
         node: PropTypes.object,
         parentNode: PropTypes.object,
+        transientValues: PropTypes.object,
 
         i18nRegistry: PropTypes.object.isRequired,
         externalService: PropTypes.object.isRequired,
@@ -56,8 +69,8 @@ export default class MagicTextFieldEditor extends PureComponent<any, any> {
         options: {}
     };
 
-    state = {
-        loading: false
+    componentDidUpdate(prevProps) {
+        this.fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged(prevProps);
     }
 
     renderIcon(loading: boolean) {
@@ -76,7 +89,6 @@ export default class MagicTextFieldEditor extends PureComponent<any, any> {
             userInput = await contentService.processObjectWithClientEval(userInput, node, parentNode);
             // A dirty fix, for image alt text, we need to add the filename
             if (['image_alt_text', 'alt_tag_generator'].includes(module) && userInput.url && !userInput.filename) {
-                // SidekickClientEval: AssetUri(node.properties.image)
                 userInput.filename = userInput.url[0].substring(userInput.url[0].lastIndexOf('/') + 1);
             }
             // Map to external format
@@ -92,11 +104,49 @@ export default class MagicTextFieldEditor extends PureComponent<any, any> {
         }
     }
 
+    private fetchAndUpdatePlaceholderIfReferencedPropertyHasChanged = async (prevProps) => {
+        const {node, transientValues, options} = this.props;
+
+        if (!options?.placeholder?.startsWith('SidekickClientEval')) {
+            return;
+        }
+
+        const pattern = /node\.properties\.(\w+)/g;
+        const matches = options.placeholder.match(pattern);
+        if (!matches) {
+            return;
+        }
+
+        const properties = matches
+            .map((match: string) => {
+                const propertyMatch = match.match(/node\.properties\.(.*)/);
+                return propertyMatch ? propertyMatch[1] : null;
+            })
+            .filter((property): property is string => property !== null);
+
+        const shouldUpdate = properties.some((property: string) => {
+            return (
+                transientValues?.[property] !== prevProps.transientValues?.[property] ||
+                node?.properties?.[property] !== prevProps.node?.properties?.[property]
+            );
+        });
+
+        if (shouldUpdate) {
+            await this.fetchAndUpdatePlaceholder();
+        }
+    }
+
+    private fetchAndUpdatePlaceholder = async () => {
+        const {contentService, node, parentNode, options} = this.props;
+        contentService
+            .processClientEval(options.placeholder, node, parentNode)
+            .then((placeholder: string) => this.setState({placeholder}));
+    }
+
     render () {
         const {id, value, className, commit, options, i18nRegistry, onKeyPress, onEnterKey} = this.props;
+        const {placeholder} = this.state;
 
-        // Placeholder text must be unescaped in case html entities were used
-        const placeholder = options && options.placeholder && i18nRegistry.translate(unescape(options.placeholder));
         const finalOptions = Object.assign({}, defaultOptions, options);
         const showGenerateButton = !finalOptions.readonly && !finalOptions.disabled;
 

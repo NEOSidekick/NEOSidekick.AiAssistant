@@ -1,8 +1,8 @@
 Neos:
   Fusion:
     defaultContext:
-      # Only used for altTextGeneratorModule recommendNeosAssetCachePackage
-      'NEOSidekick.AiAssistant': 'NEOSidekick\AiAssistant\EelHelper'
+      'NEOSidekick': 'NEOSidekick\AiAssistant\EelHelper\NEOSidekickHelper'
+      'NEOSidekickInternal': 'NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper'
   Neos:
     fusion:
       autoInclude:
@@ -28,19 +28,19 @@ Neos:
           'NEOSidekick.AiAssistant':
             resource: resource://NEOSidekick.AiAssistant/Public/NeosUserInterface/Plugin.css
       configurationDefaultEelContext:
-        NEOSidekick.AiAssistant: NEOSidekick\AiAssistant\EelHelper
+        NEOSidekick: NEOSidekick\AiAssistant\EelHelper\NEOSidekickHelper
       frontendConfiguration:
         NEOSidekick.AiAssistant:
-          enabled: '${NEOSidekick.AiAssistant.isEnabled()}'
-          apiDomain: '${NEOSidekick.AiAssistant.apiDomain()}'
-          apiKey: '${NEOSidekick.AiAssistant.apiKey()}'
-          userId: '${NEOSidekick.AiAssistant.userId(user)}'
-          siteName: '${NEOSidekick.AiAssistant.siteName()}'
-          domain: '${NEOSidekick.AiAssistant.domain()}'
-          referrer: '${NEOSidekick.AiAssistant.referrer()}'
-          defaultLanguage: '${NEOSidekick.AiAssistant.defaultLanguage()}'
-          chatSidebarEnabled: '${NEOSidekick.AiAssistant.chatSidebarEnabled()}'
-          modifyTextModalPreferCustomPrompt: '${NEOSidekick.AiAssistant.modifyTextModalPreferCustomPrompt()}'
+          enabled: '${NEOSidekickInternal.isEnabled()}'
+          apiDomain: '${NEOSidekickInternal.apiDomain()}'
+          apiKey: '${NEOSidekickInternal.apiKey()}'
+          userId: '${NEOSidekickInternal.userId(user)}'
+          siteName: '${NEOSidekickInternal.siteName()}'
+          domain: '${NEOSidekickInternal.domain()}'
+          referrer: '${NEOSidekickInternal.referrer()}'
+          defaultLanguage: '${NEOSidekickInternal.defaultLanguage()}'
+          chatSidebarEnabled: '${NEOSidekickInternal.chatSidebarEnabled()}'
+          modifyTextModalPreferCustomPrompt: '${NEOSidekickInternal.modifyTextModalPreferCustomPrompt()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
           contentDimensions: '${Neos.Ui.ContentDimensions.contentDimensionsByName()}'
     modules:

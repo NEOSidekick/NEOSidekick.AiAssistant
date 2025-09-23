@@ -13,6 +13,18 @@ export enum ListItemPropertyState {
     UserManipulated = 'user-manipulated'
 }
 
+export interface EditorOptions {
+    placeholder?: string
+    module?: string
+    arguments?: {
+        [key: string]: any
+    },
+    imagePropertyName?: string,
+    fallbackAssetPropertyName?: string,
+    fallbackToCleanedFilenameIfNothingIsSet?: boolean,
+    autoGenerateIfImageChanged?: boolean,
+}
+
 export interface PropertySchema {
     validation?: {
         [key: string]: any
@@ -21,13 +33,7 @@ export interface PropertySchema {
         label: string,
         inspector: {
             editor: string,
-            editorOptions: {
-                placeholder?: string
-                module?: string
-                arguments?: {
-                    [key: string]: any
-                }
-            }
+            editorOptions: EditorOptions
         }
     }
 }

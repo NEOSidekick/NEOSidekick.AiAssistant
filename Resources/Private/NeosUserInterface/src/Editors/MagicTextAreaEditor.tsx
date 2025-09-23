@@ -118,17 +118,17 @@ export default class MagicTextAreaEditor extends Component<any, any> {
             return; // not an image text editor
         }
 
-        const imageDidChange = (
-            transientValues?.[imagePropertyName] !== prevProps.transientValues?.[imagePropertyName] ||
-            node?.properties?.[imagePropertyName] !== prevProps.node?.properties?.[imagePropertyName]
-        );
+        // there might be a transient value, or the old property value
+        const prevValue = prevProps.transientValues?.[imagePropertyName] ? prevProps.transientValues?.[imagePropertyName]?.value?.__identity : prevProps.node?.properties?.[imagePropertyName]?.__identity;
+        const newValue = transientValues?.[imagePropertyName] ? transientValues?.[imagePropertyName]?.value?.__identity : node?.properties?.[imagePropertyName]?.__identity;
+        const imageDidChange = prevValue !== newValue;
 
         if (!imageDidChange) {
             return;
         }
 
         commit(''); // reset
-        if (transientValues?.[imagePropertyName]) {
+        if (newValue) {
             await this.generateValue();
         }
     }

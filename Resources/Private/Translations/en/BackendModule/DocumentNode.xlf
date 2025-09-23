@@ -65,6 +65,9 @@
             <trans-unit id="configuration.languageDimensionFilter.label">
                 <source>Select languages</source>
             </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.syncLabel">
+                <source>automatic DeepL translation</source>
+            </trans-unit>
             <trans-unit id="configuration.languageDimensionFilter.all">
                 <source>All languages</source>
             </trans-unit>

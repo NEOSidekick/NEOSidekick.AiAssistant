@@ -90,6 +90,10 @@
                 <source>All languages</source>
                 <target>Alle Sprachen</target>
             </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.syncLabel">
+                <source>automatic DeepL translation</source>
+                <target>automatische DeepL-Übersetzung</target>
+            </trans-unit>
             <trans-unit id="configuration.itemsPerPage.label">
                 <source>Number of generations per page</source>
                 <target xml:lang="de">Anzahl der Generierungen pro Seite</target>

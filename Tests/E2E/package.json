@@ -1,0 +1,14 @@
+{
+  "name": "neosidekick-aiasst-e2e",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.47.2"
+  },
+  "scripts": {
+    "test": "playwright test",
+    "test:install": "playwright install --with-deps",
+    "test:auth": "playwright test tests/auth.setup.ts"
+  }
+}
+
+

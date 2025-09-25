@@ -80,7 +80,15 @@ export class ContentCanvasService {
     }
 
     private handleMessage = (message: ServerStreamMessage): void => {
-        switch (message?.data?.eventName) {
+        const eventName = message?.data?.eventName;
+        // if no eventName is present in the message data,
+        // we assume it's not an event of our own and we ignore it.
+        // This bug was found by using the BitWarden browser extension
+        // which triggered own messages in the iFrame
+        if (!eventName) {
+            return;
+        }
+        switch (eventName) {
             case 'write-content':
                 const {nodePath, propertyName, value, isFinished} = message?.data?.data;
                 // Make sure the handledNodePath is set while we alter the content

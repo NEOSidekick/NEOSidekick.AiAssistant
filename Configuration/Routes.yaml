@@ -1,4 +1,13 @@
 -
+  name: 'AI Assistant API'
+  uriPattern: 'neosidekick/aiassistant/webhook/{@action}'
+  defaults:
+    '@package': 'NEOSidekick.AiAssistant'
+    '@controller': 'Webhook'
+    '@format': 'json'
+  httpMethods: ['OPTIONS', 'POST']
+
+-
   name:  'Backend Service'
   uriPattern: 'neosidekick/aiassistant/service/{@action}'
   defaults:
@@ -7,3 +16,13 @@
     '@action':     'index'
     '@format':     'json'
   httpMethods: ['GET', 'POST']
+
+-
+  name: 'AI Assistant Preview'
+  uriPattern: 'neosidekick/aiassistant/preview'
+  defaults:
+    '@package': 'NEOSidekick.AiAssistant'
+    '@controller': 'Preview'
+    '@action': 'preview'
+  httpMethods: ['GET']
+  appendExceedingArguments: true

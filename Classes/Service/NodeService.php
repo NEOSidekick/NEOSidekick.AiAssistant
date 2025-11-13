@@ -102,7 +102,7 @@ class NodeService extends AbstractNodeService
      * @throws IllegalObjectTypeException
      * @throws GetMostRelevantInternalSeoLinksApiException
      */
-    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage): array
+    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage = 'en'): array
     {
         $currentRequestUri = $controllerContext->getRequest()->getHttpRequest()->getUri();
         $hosts = [];
@@ -115,7 +115,7 @@ class NodeService extends AbstractNodeService
         } else {
             $hosts = [$currentRequestUri->getScheme() . '://' . $currentRequestUri->getHost()];
         }
-        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts, $interfaceLanguage ?? 'en');
+        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts, $interfaceLanguage);
 
         $result = [];
         foreach ($mostRelevantInternalSeoUris as $uri) {

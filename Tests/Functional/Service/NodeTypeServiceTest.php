@@ -7,10 +7,14 @@ use NEOSidekick\AiAssistant\Service\NodeTypeService;
 
 class NodeTypeServiceTest extends FunctionalTestCase
 {
-    public function testGetNodeTypesMatchingConfiguration(): void
+    /**
+     * @test
+     * @return void
+     */
+    public function itFindsTestingNodeTypeWithImageAlternativeTextOrTitleConfiguration(): void
     {
         $nodeTypeService = $this->objectManager->get(NodeTypeService::class);
-        $nodeTypes = $nodeTypeService->getNodeTypesMatchingConfiguration();
-        $this->assertCount(1, $nodeTypes);
+        $nodeTypes = $nodeTypeService->getNodeTypesWithImageAlternativeTextOrTitleConfiguration();
+        $this->assertArrayHasKey('NEOSidekick.AiAssistant.Testing:Image', $nodeTypes);
     }
 }

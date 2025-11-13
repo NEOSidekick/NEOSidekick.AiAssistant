@@ -9,7 +9,6 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeTemplate;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
-use Neos\ContentRepository\Domain\Projection\Content\TraversableNodeInterface;
 use Neos\ContentRepository\Domain\Repository\ContentDimensionRepository;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
@@ -23,13 +22,10 @@ use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Media\Domain\Model\Image;
-use Neos\Neos\Command\SiteCommandController;
 use Neos\Neos\Domain\Model\Domain;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
-use Neos\Neos\Domain\Service\SiteImportService;
-use NEOSidekick\AiAssistant\Service\SiteService;
 
 abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 {
@@ -198,7 +194,9 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $mockHttpRequest = new ServerRequest('GET', 'https://' . $domain);
         $actionRequest = ActionRequest::fromHttpRequest($mockHttpRequest);
         $actionResponse = new ActionResponse();
-        return new ControllerContext($actionRequest, $actionResponse, new Arguments(), new UriBuilder());
+        $uriBuilder = $this->objectManager->get(UriBuilder::class);
+        $uriBuilder->setRequest($actionRequest);
+        return new ControllerContext($actionRequest, $actionResponse, new Arguments(), $uriBuilder);
     }
 
     protected function createSite(string $nodeName, string $domain): Site

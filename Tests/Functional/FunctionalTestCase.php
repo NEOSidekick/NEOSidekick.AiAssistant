@@ -58,6 +58,9 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $this->configureNodeDimensions();
         $this->setUpRootNodeAndRepository();
 
+        // Purge existing sites/domains and content under /sites to ensure tests are isolated
+        $this->purgeSitesDomainsAndContent();
+
         foreach($this->siteHosts as $i => $siteHost) {
             $this->createSite(explode('.', $siteHost)[0], $siteHost);
         }
@@ -143,6 +146,36 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $this->nodeDataRepository = null;
         $this->rootNode = null;
         $this->sitesNode = null;
+    }
+
+    /**
+     * Remove all sites/domains and content under /sites to avoid cross-test interference.
+     */
+    protected function purgeSitesDomainsAndContent(): void
+    {
+        // Remove all domains and sites from repositories
+        /** @var SiteRepository $siteRepository */
+        $siteRepository = $this->objectManager->get(SiteRepository::class);
+        /** @var DomainRepository $domainRepository */
+        $domainRepository = $this->objectManager->get(DomainRepository::class);
+
+        foreach ($domainRepository->findAll() as $domain) {
+            $domainRepository->remove($domain);
+        }
+        foreach ($siteRepository->findAll() as $site) {
+            $siteRepository->remove($site);
+        }
+        $this->persistenceManager->persistAll();
+
+        // Remove all nodes under /sites in the live context
+        $liveContext = $this->contextFactory->create(['workspaceName' => 'live']);
+        $sitesNode = $liveContext->getNode('/sites');
+        if ($sitesNode !== null) {
+            foreach ($sitesNode->getChildNodes() as $child) {
+                $child->remove();
+            }
+        }
+        $this->persistenceManager->persistAll();
     }
 
     /**

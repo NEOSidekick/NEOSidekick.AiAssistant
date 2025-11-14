@@ -79,8 +79,7 @@ class NodeService extends AbstractNodeService
         SiteService $siteService,
         ApiFacade $apiFacade,
         NodeFindingService $nodeFindingService
-    )
-    {
+    ) {
         $this->workspaceRepository = $workspaceRepository;
         $this->findDocumentNodeDataFactory = $findDocumentNodeDataFactory;
         $this->nodeTypeManager = $nodeTypeManager;
@@ -190,7 +189,7 @@ class NodeService extends AbstractNodeService
         $queryBuilder->addOrderBy('n.dimensionsHash', 'DESC');
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
-        $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, static function(NodeData $nodeData) use ($findDocumentNodesFilter) {
+        $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, static function (NodeData $nodeData) use ($findDocumentNodesFilter) {
             return self::nodeMatchesPropertyFilter($nodeData, $findDocumentNodesFilter);
         });
 
@@ -216,11 +215,13 @@ class NodeService extends AbstractNodeService
      */
     public function updatePropertiesOnNodes(array $itemsToUpdate): void
     {
-        foreach($itemsToUpdate as $updateItem) {
+        foreach ($itemsToUpdate as $updateItem) {
             /** @var array{nodePath: string, workspaceName: string, dimensions: array} $contextPathSegments */
             $contextPathSegments = NodePaths::explodeContextPath($updateItem->getNodeContextPath());
-            $context = $this->createContentContext($contextPathSegments['workspaceName'],
-                $contextPathSegments['dimensions']);
+            $context = $this->createContentContext(
+                $contextPathSegments['workspaceName'],
+                $contextPathSegments['dimensions']
+            );
             $node = $context->getNode($contextPathSegments['nodePath']);
             foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
                 $node->setProperty($propertyName, $propertyValue);

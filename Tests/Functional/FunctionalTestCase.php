@@ -15,10 +15,12 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
+use Neos\Flow\Http\ServerRequestAttributes;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Mvc\ActionResponse;
 use Neos\Flow\Mvc\Controller\Arguments;
 use Neos\Flow\Mvc\Controller\ControllerContext;
+use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Media\Domain\Model\Image;
@@ -26,6 +28,7 @@ use Neos\Neos\Domain\Model\Domain;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
+use Neos\Neos\Domain\Service\SiteService;
 
 abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 {
@@ -113,17 +116,13 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $liveContext = $this->contextFactory->create(['workspaceName' => 'live']);
         $personalContext = $this->contextFactory->create(['workspaceName' => $this->currentUserWorkspace]);
 
-        // todo note behaviour has changed here
-        // the root nodes are created in the live workspace instead
-        // of user workspace
-
         // Make sure the Workspace was created.
         $this->liveWorkspace = $personalContext->getWorkspace()->getBaseWorkspace()->getBaseWorkspace();
         $this->nodeDataRepository = $this->objectManager->get(NodeDataRepository::class);
         $this->rootNode = $liveContext->getNode('/');
         $this->sitesNode = $liveContext->getNode('/sites');
         if ($this->sitesNode === null) {
-            $this->sitesNode = $this->rootNode->createNode(NodePaths::getNodeNameFromPath(\Neos\Neos\Domain\Service\SiteService::SITES_ROOT_PATH));
+            $this->sitesNode = $this->rootNode->createNode(NodePaths::getNodeNameFromPath(SiteService::SITES_ROOT_PATH));
         }
 
         $this->persistenceManager->persistAll();
@@ -192,6 +191,8 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     protected function createControllerContextForDomain(string $domain): ControllerContext
     {
         $mockHttpRequest = new ServerRequest('GET', 'https://' . $domain);
+        $parameters = $mockHttpRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
+        $mockHttpRequest = $mockHttpRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $parameters->withParameter('requestUriHost', $domain));
         $actionRequest = ActionRequest::fromHttpRequest($mockHttpRequest);
         $actionResponse = new ActionResponse();
         $uriBuilder = $this->objectManager->get(UriBuilder::class);

@@ -1,0 +1,20 @@
+'NEOSidekick.AiAssistant.Testing:Image':
+  properties:
+    image:
+      type: 'Neos\Flow\Tests\Functional\Persistence\Fixtures\Image'
+    alternativeText:
+      ui:
+        inspector:
+          editor: 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor'
+          editorOptions:
+            module: 'image_alt_text'
+            arguments:
+              url: 'SidekickClientEval: AssetUri(node.properties.image)'
+    titleText:
+      ui:
+        inspector:
+          editor: 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor'
+          editorOptions:
+            module: 'image_title_text'
+            arguments:
+              url: 'SidekickClientEval: AssetUri(node.properties.image)'

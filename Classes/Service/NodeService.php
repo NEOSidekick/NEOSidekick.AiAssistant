@@ -79,8 +79,7 @@ class NodeService extends AbstractNodeService
         SiteService $siteService,
         ApiFacade $apiFacade,
         NodeFindingService $nodeFindingService
-    )
-    {
+    ) {
         $this->workspaceRepository = $workspaceRepository;
         $this->findDocumentNodeDataFactory = $findDocumentNodeDataFactory;
         $this->nodeTypeManager = $nodeTypeManager;
@@ -102,7 +101,7 @@ class NodeService extends AbstractNodeService
      * @throws IllegalObjectTypeException
      * @throws GetMostRelevantInternalSeoLinksApiException
      */
-    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage): array
+    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage = 'en'): array
     {
         $currentRequestUri = $controllerContext->getRequest()->getHttpRequest()->getUri();
         $hosts = [];
@@ -115,7 +114,7 @@ class NodeService extends AbstractNodeService
         } else {
             $hosts = [$currentRequestUri->getScheme() . '://' . $currentRequestUri->getHost()];
         }
-        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts, $interfaceLanguage ?? 'en');
+        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts, $interfaceLanguage);
 
         $result = [];
         foreach ($mostRelevantInternalSeoUris as $uri) {
@@ -175,21 +174,22 @@ class NodeService extends AbstractNodeService
             $queryBuilder->expr()->eq('n.path', ':currentSitePath'),
             $queryBuilder->expr()->like('n.path', ':currentSitePathWithWildcard')
         ));
-        $queryBuilder->setParameter('currentSitePath', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()));
-        $queryBuilder->setParameter('currentSitePathWithWildcard', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()) . '%');
-        $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
+        $currentSitePath = NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName());
+        $queryBuilder->setParameter('currentSitePath', $currentSitePath);
+        $queryBuilder->setParameter('currentSitePathWithWildcard', $currentSitePath . '%');
+        $includeNodeTypes = $this->getNodeTypeFilter($findDocumentNodesFilter);
+        $queryBuilder->setParameter('includeNodeTypes', $includeNodeTypes);
         $queryBuilder->setParameter('hidden', false, PDO::PARAM_BOOL);
         $queryBuilder->setParameter('removed', false, PDO::PARAM_BOOL);
         if (!empty($findDocumentNodesFilter->getLanguageDimensionFilter())) {
-            $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder,
-                [$this->languageDimensionName => $findDocumentNodesFilter->getLanguageDimensionFilter()]);
+            $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder, [$this->languageDimensionName => $findDocumentNodesFilter->getLanguageDimensionFilter()]);
         }
         $queryBuilder->addOrderBy('LENGTH(n.path)', 'ASC');
         $queryBuilder->addOrderBy('n.index', 'ASC');
         $queryBuilder->addOrderBy('n.dimensionsHash', 'DESC');
         $items = $queryBuilder->getQuery()->getResult();
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
-        $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, static function(NodeData $nodeData) use ($findDocumentNodesFilter) {
+        $itemsWithMatchingPropertyFilter = array_filter($itemsReducedByWorkspaceChain, static function (NodeData $nodeData) use ($findDocumentNodesFilter) {
             return self::nodeMatchesPropertyFilter($nodeData, $findDocumentNodesFilter);
         });
 
@@ -215,11 +215,13 @@ class NodeService extends AbstractNodeService
      */
     public function updatePropertiesOnNodes(array $itemsToUpdate): void
     {
-        foreach($itemsToUpdate as $updateItem) {
+        foreach ($itemsToUpdate as $updateItem) {
             /** @var array{nodePath: string, workspaceName: string, dimensions: array} $contextPathSegments */
             $contextPathSegments = NodePaths::explodeContextPath($updateItem->getNodeContextPath());
-            $context = $this->createContentContext($contextPathSegments['workspaceName'],
-                $contextPathSegments['dimensions']);
+            $context = $this->createContentContext(
+                $contextPathSegments['workspaceName'],
+                $contextPathSegments['dimensions']
+            );
             $node = $context->getNode($contextPathSegments['nodePath']);
             foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
                 $node->setProperty($propertyName, $propertyValue);

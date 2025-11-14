@@ -21,6 +21,14 @@
         "sitegeist/fusionlinkprototypes": "v1.0.1",
         "neos/seo": "*"
     },
+    "require-dev": {
+        "phpstan/phpstan": "^1.10.0",
+        "squizlabs/php_codesniffer": "^3.7",
+        "phpunit/phpunit": "^9",
+        "mockery/mockery": "@stable",
+        "mikey179/vfsstream": "@stable",
+        "fakerphp/faker": "^1.23.0"
+    },
     "authors": [
         {
             "name": "Roland Schütz",
@@ -55,5 +63,29 @@
     },
     "suggest": {
         "webandco/neos-asset-usage-cache": "To improve performance of the image alt-text generator when using the 'only-in-usage' filter"
+    },
+    "config": {
+        "bin-dir": "bin",
+        "vendor-dir": "Packages/Libraries",
+        "allow-plugins": {
+            "neos/composer-plugin": true,
+            "php-http/discovery": false
+        }
+    },
+    "scripts": {
+        "fix:style": "phpcbf --colors --standard=PSR12 Classes",
+        "fix": [
+            "@fix:style"
+        ],
+        "test:style": "phpcs --colors -n --standard=PSR12 Classes",
+        "test:stan": "phpstan -v analyse Classes",
+        "test:unit": "bin/phpunit --bootstrap Tests/UnitTestBootstrap.php --configuration Tests/UnitTests.xml",
+        "test:functional": "bin/phpunit --bootstrap Tests/FunctionalTestBootstrap.php --configuration Tests/FunctionalTests.xml",
+        "cc": "phpstan clear cache",
+        "test": [
+            "@test:style",
+            "@test:stan",
+            "@test:unit"
+        ]
     }
 }

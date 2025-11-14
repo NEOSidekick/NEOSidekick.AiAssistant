@@ -19,7 +19,6 @@ use RuntimeException;
  */
 class ApiClient
 {
-
     /**
      * @Flow\InjectConfiguration(path="apikey")
      * @var string

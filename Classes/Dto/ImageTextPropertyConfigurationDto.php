@@ -17,8 +17,7 @@ final class ImageTextPropertyConfigurationDto
         string $imagePropertyName,
         string $nodeTypeKey,
         string $textPropertyName,
-    )
-    {
+    ) {
         $this->imagePropertyName = $imagePropertyName;
         $this->nodeTypeKey = $nodeTypeKey;
         $this->textPropertyName = $textPropertyName;

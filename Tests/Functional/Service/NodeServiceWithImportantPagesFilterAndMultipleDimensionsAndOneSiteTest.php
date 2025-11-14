@@ -2,17 +2,13 @@
 
 namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
-use InvalidArgumentException;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
-use Neos\ContentRepository\Domain\Utility\NodePaths;
+use Neos\Utility\ObjectAccess;
+use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
-use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use NEOSidekick\AiAssistant\Service\NodeFindingService;
 use NEOSidekick\AiAssistant\Service\NodeService;
-use NEOSidekick\AiAssistant\Service\SiteService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
-use PHPUnit\Framework\MockObject\MockObject;
 
 class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
 {
@@ -38,47 +34,119 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $page1a->createVariantForContext($englishContext);
         $page2->createVariantForContext($englishContext);
 
-        // todo hack
+        // Publish site and pages so that routes/URIs can resolve in functional context
+        $exampleSiteNode->getContext()->getWorkspace()->publish($this->liveWorkspace);
         $page1->getContext()->getWorkspace()->publish($this->liveWorkspace);
+        $page1a->getContext()->getWorkspace()->publish($this->liveWorkspace);
+        $page2->getContext()->getWorkspace()->publish($this->liveWorkspace);
 
         $this->saveNodesAndTearDownRootNodeAndRepository();
         $this->setUpRootNodeAndRepository();
     }
 
     /**
+     * Negative case: API returns a page that has a non-empty focus keyword, but filter is "only-empty-focus-keywords".
+     * Expectation: it must NOT be returned.
      * @test
      */
     public function itFindsImportantPagesWithEmptyFocusKeyword(): void
     {
-        // TODO maybe not working because nodes are not published to live???
-        // that was true
-        // now the route cannot be generated
         $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
             ->disableOriginalConstructor()
             ->getMock();
+        // Build public URI according to the current Testing routing configuration
+        /** @var NodeFindingService $nodeFindingService */
+        $nodeFindingService = $this->objectManager->get(NodeFindingService::class);
+        $routesConfiguration = ObjectAccess::getProperty($nodeFindingService, 'routesConfiguration', true);
+        $defaultUriSuffix = $routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'] ?? '';
+
+        $candidates = [];
+        $candidates[] = 'https://example.com/de/node-wan-kenodi' . $defaultUriSuffix;
+        $candidates[] = 'https://example.com/de/node-wan-kenodi/lady-eleonode-rootford' . $defaultUriSuffix;
+        $candidates[] = 'https://example.com/en/node-wan-kenodi' . $defaultUriSuffix;
+        $candidates[] = 'https://example.com/en/node-wan-kenodi/lady-eleonode-rootford' . $defaultUriSuffix;
+
         $apiFacadeMock
             ->method('getMostRelevantInternalSeoUrisByHosts')
-            ->willReturn([
-//                'https://example.com/',
-                'https://example.com/de/node-wan-kenodi.html',
-            ]);
-        /** @var NodeService|MockObject $nodeService */
-        $nodeService = new NodeService(
-            $this->workspaceRepository,
-            $this->objectManager->get(FindDocumentNodeDataFactory::class),
-            $this->objectManager->get(NodeTypeManager::class),
-            $this->objectManager->get(SiteService::class),
-            $apiFacadeMock,
-            $this->objectManager->get(NodeFindingService::class),
-        );
+            ->willReturn($candidates);
+        /** @var NodeService $nodeService */
+        $nodeService = $this->objectManager->get(NodeService::class);
         $this->inject($nodeService, 'apiFacade', $apiFacadeMock);
-        $this->inject($nodeService, 'contentDimensions', []);
 
         $findDocumentNodesFilter = new FindDocumentNodesFilter(
-            'important-pages',
-            $this->currentUserWorkspace,
+            filter: 'important-pages',
+            workspace: 'live',
+            focusKeywordPropertyFilter: 'only-empty-focus-keywords',
+            languageDimensionFilter: 'de'
+        );
+        $controllerContext = $this->createControllerContextForDomain('example.com');
+
+        $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
+
+        $this->assertIsArray($foundNodes);
+        $this->assertCount(1, $foundNodes, 'Pages with non-empty focus keyword must be excluded when filtering for empty focus keyword.');
+    }
+
+    /**
+     * Positive case: API returns a page that has a non-empty focus keyword and filter requires existing focus keyword.
+     * Expectation: the page should be returned.
+     * @test
+     */
+    public function itFindsImportantPagesWithExistingFocusKeyword(): void
+    {
+        $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        // Build public URI according to the current Testing routing configuration
+        /** @var NodeFindingService $nodeFindingService */
+        $nodeFindingService = $this->objectManager->get(NodeFindingService::class);
+        $routesConfiguration = ObjectAccess::getProperty($nodeFindingService, 'routesConfiguration', true);
+        $defaultUriSuffix = $routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'] ?? '';
+
+        $candidates = [];
+        $candidates[] = 'https://example.com/de/node-wan-kenodi' . $defaultUriSuffix;
+        $candidates[] = 'https://example.com/de/node-wan-kenodi/lady-eleonode-rootford' . $defaultUriSuffix;
+        $candidates[] = 'https://example.com/en/node-wan-kenodi' . $defaultUriSuffix;
+        $candidates[] = 'https://example.com/en/node-wan-kenodi/lady-eleonode-rootford' . $defaultUriSuffix;
+
+        $apiFacadeMock
+            ->method('getMostRelevantInternalSeoUrisByHosts')
+            ->willReturn($candidates);
+
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $this->inject($nodeService, 'apiFacade', $apiFacadeMock);
+        // Inject realistic content dimensions and language dimension name for host generation
+        $this->inject($nodeService, 'languageDimensionName', 'language');
+        $this->inject($nodeService, 'contentDimensions', [
+            'language' => [
+                'presets' => [
+                    'de' => [
+                        'values' => ['de'],
+                        'uriSegment' => 'de',
+                    ],
+                    'en' => [
+                        'values' => ['en'],
+                        'uriSegment' => 'en',
+                    ],
+                ],
+            ],
+        ]);
+
+        $findDocumentNodesFilter = new FindDocumentNodesFilter(
+            filter: 'important-pages',
+            workspace: 'live',
+            focusKeywordPropertyFilter: 'only-existing-focus-keywords',
+            languageDimensionFilter: 'de'
         );
         $controllerContext = $this->createControllerContextForDomain('example.com');
         $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
+
+        $this->assertIsArray($foundNodes);
+        $this->assertCount(1, $foundNodes);
+        /** @var FindDocumentNodeData $dto */
+        $dto = reset($foundNodes);
+        $this->assertNotFalse($dto, 'Expected one item to be returned');
+        $this->assertStringContainsString('/sites/example/node-wan-kenodi', $dto->getNodeContextPath());
+        $this->assertStringEndsWith('/de/node-wan-kenodi', parse_url($dto->getPublicUri(), PHP_URL_PATH) ?: '');
     }
 }

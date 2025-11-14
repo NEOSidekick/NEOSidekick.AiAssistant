@@ -178,4 +178,21 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
 
         $nodeService->find($findDocumentNodesFilter, $controllerContext);
     }
+
+    /**
+     * @test
+     */
+    public function itFindsVisiblePagesInEnglishOnly(): void
+    {
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $controllerContext = $this->createControllerContextForDomain('example.com');
+        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: 'en');
+        $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
+
+        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => ['en']]), $foundNodes);
+        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => ['en']]), $foundNodes);
+        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => ['en']]), $foundNodes);
+        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => ['en']]), $foundNodes);
+        $this->assertCount(4, $foundNodes);
+    }
 }

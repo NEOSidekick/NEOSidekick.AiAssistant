@@ -15,14 +15,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        php-versions: ['8.2', '8.3', '8.4']
+        php-versions: ['8.3', '8.4']
         neos-versions: ['8.3', '8.4']
         dependencies: ['locked']
-        include:
-          - php-versions: '8.0'
-            neos-versions: '8.3'
-          - php-versions: '8.1'
-            neos-versions: '8.3'
     runs-on: ubuntu-latest
 
     env:
@@ -40,7 +35,7 @@ jobs:
 
       - name: Install Neos Project and other dependencies
         run: |
-          composer create --no-scripts --no-install neos/neos-base-distribution "${{ env.NEOS_FOLDER }}" "^${{ matrix.neos-versions }}"
+          composer create --no-scripts --no-install neos/neos-base-distribution "${{ env.NEOS_FOLDER }}" "~${{ matrix.neos-versions }}.0"
           cd "${{ env.NEOS_FOLDER }}"
           composer require fakerphp/faker "^1.23.0" --no-install --dev
           composer require phpstan/phpstan "^1.10.0" --no-install --dev

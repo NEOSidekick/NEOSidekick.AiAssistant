@@ -55,7 +55,11 @@ class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
             'https://example2.com/de/site2-page' . $defaultUriSuffix,
         ];
         $apiFacadeMock
+            ->expects($this->once())
             ->method('getMostRelevantInternalSeoUrisByHosts')
+            ->with($this->callback(function(array $hosts) {
+                return $hosts === ['https://example.com/de'];
+            }))
             ->willReturn($candidates);
 
         /** @var NodeService $nodeService */
@@ -74,7 +78,9 @@ class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
         $foundNodes = $nodeService->findImportantPages($filter, $controllerContext, 'de');
 
         $this->assertIsArray($foundNodes);
-        // Current observed behavior: results are not filtered by current domain; documenting for follow-up
-        $this->assertCount(2, $foundNodes, 'Current behavior: nodes from multiple domains are returned; consider filtering by current domain');
+        $this->assertCount(1, $foundNodes, 'Expected only current-domain nodes to be returned');
+        $contextPaths = array_keys($foundNodes);
+        $this->assertCount(1, $contextPaths);
+        $this->assertStringStartsWith('/sites/example/site1-page@', $contextPaths[0], 'Expected node from the /sites/example tree only');
     }
 }

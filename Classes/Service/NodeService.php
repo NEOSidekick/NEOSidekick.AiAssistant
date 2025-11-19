@@ -118,6 +118,11 @@ class NodeService extends AbstractNodeService
 
         $result = [];
         foreach ($mostRelevantInternalSeoUris as $uri) {
+            // Filter out URIs that do not match the current ControllerContext host
+            if (!self::uriMatchesControllerContext((string)$uri, $controllerContext)) {
+                continue;
+            }
+
             $node = $this->nodeFindingService->tryToResolvePublicUriToNode((string)$uri, $findDocumentNodesFilter->getWorkspace());
             if ($node === null) {
                 continue;
@@ -290,6 +295,22 @@ class NodeService extends AbstractNodeService
         $documentNodeTypeNameWithSubNodeTypeNames = [$documentNodeTypeFilter, ...array_keys($documentSubNodeTypes)];
         $intersectNodeTypeNames = array_intersect(array_values($baseNodeTypeNameWithSubNodeTypeNames), array_values($documentNodeTypeNameWithSubNodeTypeNames));
         return array_values($intersectNodeTypeNames);
+    }
+
+    /**
+     * Ensure a candidate public URI belongs to the same host as the current ControllerContext request.
+     * The comparison is case-insensitive and ignores ports (compares host only).
+     */
+    protected static function uriMatchesControllerContext(string $uri, ControllerContext $controllerContext): bool
+    {
+        // parse_url returns host without scheme if missing; we expect absolute URIs from API
+        $parsed = @parse_url($uri);
+        if ($parsed === false || !isset($parsed['host'])) {
+            return false;
+        }
+        $candidateHost = strtolower($parsed['host']);
+        $currentHost = strtolower($controllerContext->getRequest()->getHttpRequest()->getUri()->getHost());
+        return $candidateHost === $currentHost;
     }
 
     protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, Node $node): bool

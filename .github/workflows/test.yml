@@ -67,7 +67,7 @@ jobs:
       - name: Install dependencies
         run: |
           cd ${{ env.NEOS_FOLDER }}
-          composer ${{ matrix.dependencies == 'locked' && 'install' || 'update' }} --no-progress --no-interaction ${{ matrix.dependencies == 'lowest' && '--prefer-lowest' || '' }} ${{ matrix.composer-arguments }}
+          composer ${{ matrix.dependencies == 'locked' && 'install' || 'update' }} --no-progress --no-interaction ${{ matrix.dependencies == 'lowest' && '--prefer-lowest' || '' }}
 
       - name: Set Flow Context
         run: echo "FLOW_CONTEXT=${{ env.FLOW_CONTEXT }}" >> $GITHUB_ENV

@@ -15,6 +15,6 @@
         inspector:
           editor: 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor'
           editorOptions:
-            module: 'image_title_text'
+            module: 'image_title'
             arguments:
               url: 'SidekickClientEval: AssetUri(node.properties.image)'

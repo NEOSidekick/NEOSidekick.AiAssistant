@@ -1,7 +1,7 @@
 'NEOSidekick.AiAssistant.Testing:Image':
   properties:
     image:
-      type: 'Neos\Flow\Tests\Functional\Persistence\Fixtures\Image'
+      type: 'Neos\Media\Domain\Model\ImageInterface'
     alternativeText:
       ui:
         inspector:

@@ -148,7 +148,7 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
         return $this->settings['altTextGeneratorModule'] ?? null;
     }
 
-    public function recommendNeosAssetCachePackage() : bool
+    public function recommendNeosAssetCachePackage(): bool
     {
         return !$this->packageManager->isPackageAvailable('Webandco.AssetUsageCache');
     }

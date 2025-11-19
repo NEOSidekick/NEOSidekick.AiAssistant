@@ -1,2 +1,5 @@
 .idea
 node_modules
+Tests/.phpunit.result.cache
+Tests/Reports/*
+

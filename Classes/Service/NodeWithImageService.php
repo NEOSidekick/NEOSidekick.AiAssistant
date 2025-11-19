@@ -23,7 +23,6 @@ use NEOSidekick\AiAssistant\Dto\NodeTypeWithImageMetadataSchemaDto;
 use NEOSidekick\AiAssistant\Factory\FindImageDataFactory;
 use PDO;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 /**
  * @Flow\Scope("singleton")
@@ -123,8 +122,10 @@ class NodeWithImageService extends AbstractNodeService
         $contentNodesQueryBuilder->andWhere($pathConstraints);
 
         if (!empty($filter->getLanguageDimensionFilter())) {
-            $this->addDimensionJoinConstraintsToQueryBuilder($contentNodesQueryBuilder,
-                [$this->languageDimensionName => $filter->getLanguageDimensionFilter()]);
+            $this->addDimensionJoinConstraintsToQueryBuilder(
+                $contentNodesQueryBuilder,
+                [$this->languageDimensionName => $filter->getLanguageDimensionFilter()]
+            );
         }
 
         $contentNodesQueryBuilder->addOrderBy('LENGTH(n.path)', 'ASC');
@@ -169,7 +170,7 @@ class NodeWithImageService extends AbstractNodeService
             }
         }
 
-        return array_filter($result, static function(FindDocumentNodeData $findDocumentNodeData) {
+        return array_filter($result, static function (FindDocumentNodeData $findDocumentNodeData) {
             return count($findDocumentNodeData->getImages()) > 0;
         });
     }
@@ -206,7 +207,7 @@ class NodeWithImageService extends AbstractNodeService
         $alternativeTextPropertyValue = ($alternativeTextPropertyName && $nodeData->hasProperty($alternativeTextPropertyName)) ? $nodeData->getProperty($alternativeTextPropertyName) : null;
         $titleTextPropertyName = $schema->getTitleTextPropertyName();
         $titleTextPropertyValue = ($titleTextPropertyName && $nodeData->hasProperty($titleTextPropertyName)) ? $nodeData->getProperty($titleTextPropertyName) : null;
-        $propertyValuesMatchFilter = match($filter->getImagePropertiesFilter()) {
+        $propertyValuesMatchFilter = match ($filter->getImagePropertiesFilter()) {
             'none' => true,
             'only-empty-alternative-text-or-title-text' => ($alternativeTextPropertyName && empty($alternativeTextPropertyValue)) || ($titleTextPropertyName && empty($titleTextPropertyValue)),
             'only-empty-alternative-text' => $alternativeTextPropertyName && empty($alternativeTextPropertyValue),

@@ -60,7 +60,7 @@ export default class DocumentNodeConfigurationForm extends PureComponent<Documen
                             checked={isChecked}
                             disabled={isSync}
                             onChange={e => {
-                                let languageDimensionFilter = this.props.moduleConfiguration.languageDimensionFilter;
+                                let languageDimensionFilter = [...this.props.moduleConfiguration.languageDimensionFilter];
                                 if (e.target.checked) {
                                     languageDimensionFilter.push(languageDimensionPreset);
                                 } else {

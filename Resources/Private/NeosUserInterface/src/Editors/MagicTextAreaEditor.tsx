@@ -118,6 +118,12 @@ export default class MagicTextAreaEditor extends Component<any, any> {
             return; // not an image text editor
         }
 
+        // If the property is not in transientValues, it means it's not dirty (reset or unchanged)
+        // So we should not auto-generate
+        if (!transientValues || !transientValues[imagePropertyName]) {
+            return;
+        }
+
         // there might be a transient value, or the old property value
         const prevValue = prevProps.transientValues?.[imagePropertyName] ? prevProps.transientValues?.[imagePropertyName]?.value?.__identity : prevProps.node?.properties?.[imagePropertyName]?.__identity;
         const newValue = transientValues?.[imagePropertyName] ? transientValues?.[imagePropertyName]?.value?.__identity : node?.properties?.[imagePropertyName]?.__identity;

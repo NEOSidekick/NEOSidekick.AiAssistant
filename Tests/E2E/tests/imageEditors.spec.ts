@@ -33,7 +33,7 @@ test.describe('Image Alt/Text Editors', () => {
     });
 
     test('Setting new image auto-fills alt/title (autogeneration check)', async ({ page }) => {
-        // Stub NEOSidekick generate to return empty string (avoid external/network errors)
+        // Stub NEOSidekick generate to return 'example text' (avoid external/network errors)
         await page.route('**/api/v1/chat?language=*', async route => {
             await route.fulfill({
                 status: 200,

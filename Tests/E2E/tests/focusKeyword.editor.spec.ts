@@ -18,7 +18,7 @@ test.describe('Inspector Focus Keyword Editor (real API)', () => {
         await generateButton.click();
 
         // 3. Verify loading state spinner appears
-        await expect(page.locator('.neos-svg-inline--fa.neos-fa-spinner')).toBeVisible({ timeout: 60_000 });
+        await expect(page.locator('[data-icon="spinner"]')).toBeVisible({ timeout: 60_000 });
 
         // Wait for suggestions
         const suggestions = page.locator('button.neosidekick__editor__suggestion-button');

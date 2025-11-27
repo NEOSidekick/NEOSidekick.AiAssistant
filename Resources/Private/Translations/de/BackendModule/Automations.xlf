@@ -3,35 +3,39 @@
     <file original="" source-language="en" target-language="de" datatype="plaintext">
         <body>
             <trans-unit id="label" xml:space="preserve">
-                <source>Automations</source>
-                <target>Automatisierungen</target>
+                <source>NEOSidekick Automations</source>
+                <target>NEOSidekick Automatisierungen</target>
             </trans-unit>
             <trans-unit id="description" xml:space="preserve">
                 <source>Configure AI-powered automations for your content.</source>
-                <target>Konfigurieren Sie KI-gestützte Automatisierungen für Ihre Inhalte.</target>
+                <target>Konfiguriere KI-gestützte Automatisierungen für deine Inhalte.</target>
             </trans-unit>
             <trans-unit id="intro" xml:space="preserve">
-                <source>Make your life easier with AI-powered automations.</source>
-                <target>Mache dir dein Leben einfacher mit Automatisierunge mit KI-Support.</target>
+                <source>Configure AI-powered automations for your content, by adding quality assurance features. All enabled automations will be executed after every publish to live and finish 1-2 minutes after the publish.</source>
+                <target>Konfiguriere KI-gestützte Automatisierungen für deine Inhalte, indem du Qualitätssicherungsfunktionen hinzufügst. Alle aktivierten Automatisierungen werden bei jeder Veröffentlichung nach "live" asynchron ausgeführt, und werden ein bis zwei Minuten nach der Veröffentlichung angewendet.</target>
+            </trans-unit>
+            <trans-unit id="currentlyEditing" xml:space="preserve">
+                <source>Currently automations are applied for the site "{site}".</source>
+                <target>Aktuelle Automatisierungen werden für die Seite "{site}" angewendet.</target>
             </trans-unit>
             <trans-unit id="seoAutomations.title" xml:space="preserve">
                 <source>On-Page SEO Automations</source>
                 <target>On-Page-SEO Automatisierungen</target>
             </trans-unit>
             <trans-unit id="seoAutomations.determineMissingFocusKeywords" xml:space="preserve">
-                <source>Determine missing focus keywords on publication</source>
-                <target>Bei Veröffentlichungen fehlende Fokus-Keyword ermitteln</target>
+                <source>Determine and set missing focus keywords on publication</source>
+                <target>Bei Veröffentlichungen fehlende Fokus-Keyword ermitteln und setzen.</target>
             </trans-unit>
             <trans-unit id="seoAutomations.redetermineExistingFocusKeywords" xml:space="preserve">
                 <source>Re-determine existing focus keywords on publication</source>
                 <target>Bei Veröffentlichungen bestehende Fokus-Keyword neu ermitteln</target>
             </trans-unit>
             <trans-unit id="seoAutomations.generateEmptySeoTitles" xml:space="preserve">
-                <source>Automatically generate empty SEO titles on publication</source>
-                <target>Bei Veröffentlichungen leere SEO-Titel automatisch generieren</target>
+                <source>Automatically create SEO titles on publication when empty </source>
+                <target>Bei Veröffentlichungen leere SEO-Titel automatisch erzeugen</target>
             </trans-unit>
             <trans-unit id="seoAutomations.generateEmptyMetaDescriptions" xml:space="preserve">
-                <source>Automatically generate empty meta descriptions on publication</source>
+                <source>Automatically create meta descriptions on publication when empty </source>
                 <target>Bei Veröffentlichungen leere Meta-Beschreibungen automatisch generieren</target>
             </trans-unit>
             <trans-unit id="seoAutomations.regenerateExistingSeoTitles" xml:space="preserve">
@@ -91,10 +95,10 @@
 # Rules
 - Correct all spelling and grammar mistakes
 - Always write "Neos CMS" (never "NEOS")</source>
-                <target>Please correct the following text based on these rules.
-# Rules
-- Correct all spelling and grammar mistakes
-- Always write "Neos CMS" (never "NEOS")</target>
+                <target>Bitte korrigiere den folgenden Text anhand dieser Regeln.
+# Regeln
+- Korrigiere alle Rechtschreib- und Grammatikfehler
+- Schreibe immer "Neos CMS" (nie "NEOS")</target>
             </trans-unit>
             <trans-unit id="brandGuard.includeNeosidekickBriefing" xml:space="preserve">
                 <source>Include NEOSidekick briefing in prompt</source>
@@ -113,16 +117,16 @@
                 <target>Keine Website erkannt</target>
             </trans-unit>
             <trans-unit id="noSite.message" xml:space="preserve">
-                <source>The automations configuration is site-specific, but no site could be detected for the current hostname. Please check the following:</source>
-                <target>Die Automatisierungskonfiguration ist websitespezifisch, aber für den aktuellen Hostnamen konnte keine Website erkannt werden. Bitte überprüfen Sie Folgendes:</target>
+                <source>The automations are site-specific, and we could not detect a site for the current hostname. Please check the following:</source>
+                <target>Die Automatisierungen sind website-spezifisch, und wir konnten für den aktuellen Hostnamen keine Website erkennen. Bitte prüfe Folgendes:</target>
             </trans-unit>
             <trans-unit id="noSite.checkDomainAssignment" xml:space="preserve">
                 <source>Make sure your site has a domain assigned in the Neos backend (under Management > Sites)</source>
-                <target>Stellen Sie sicher, dass Ihrer Website im Neos-Backend eine Domain zugewiesen ist (unter Verwaltung > Websites)</target>
+                <target>Stelle sicher, dass deiner Website im Neos-Backend eine Domain zugewiesen ist (unter Verwaltung &gt; Websites).</target>
             </trans-unit>
             <trans-unit id="noSite.accessViaDomain" xml:space="preserve">
                 <source>Access the Neos backend using a hostname that is configured as a domain for one of your sites</source>
-                <target>Greifen Sie auf das Neos-Backend über einen Hostnamen zu, der als Domain für eine Ihrer Websites konfiguriert ist</target>
+                <target>Greife auf das Neos-Backend über einen Hostnamen zu, der als Domain für eine deiner Websites konfiguriert ist.</target>
             </trans-unit>
         </body>
     </file>

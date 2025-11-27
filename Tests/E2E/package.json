@@ -7,7 +7,7 @@
   "scripts": {
     "test": "playwright test",
     "test:install": "playwright install --with-deps",
-    "test:auth": "playwright test tests/auth.setup.ts"
+    "test:auth": "playwright test tests/auth.setup.spec.ts"
   }
 }
 

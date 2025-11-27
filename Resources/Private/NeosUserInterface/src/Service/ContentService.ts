@@ -204,6 +204,9 @@ export class ContentService {
                     'Accept': 'application/json',
                 }
             });
+            if (!imagePropertiesAsJson.ok) {
+                return fallbackValue;
+            }
             const imageProperties: {title: string, caption: string, filenameCleaned: string} = await imagePropertiesAsJson.json();
             return imageProperties[propertyName] || (fallbackToCleanedFilenameBeforeFallbackValue ? imageProperties.filenameCleaned : '') || fallbackValue;
         } catch (e) {

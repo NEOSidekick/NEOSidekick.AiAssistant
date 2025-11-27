@@ -48,7 +48,7 @@ test.describe('Image Alt/Text Editors', () => {
         await page.locator('figure[title="hero-image-01.jpg"]').first().click();
 
         // Spinner appears and then disappears
-        const spinners = page.locator('.neos-svg-inline--fa.neos-fa-spinner');
+        const spinners = page.locator('[data-icon="spinner"]');
         await expect(spinners.first()).toBeVisible({ timeout: 60_000 });
         await expect(spinners).toHaveCount(0, { timeout: 60_000 });
 

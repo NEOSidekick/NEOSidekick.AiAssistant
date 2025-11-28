@@ -1,0 +1,83 @@
+include: resource://Neos.Fusion.Form/Private/Fusion/Root.fusion
+
+NEOSidekick.AiAssistant.BackendModule.AutomationsController.index = Neos.Fusion:Component {
+    automationsConfiguration = ${automationsConfiguration}
+    currentSiteName = ${currentSiteName}
+
+    renderer = Neos.Fusion:Case {
+        siteExists {
+            condition = ${props.automationsConfiguration}
+            renderer = afx`
+                <div class="neos-content neos-container-fluid" style="max-width: 90ch;">
+                    <h1 style="font-size: 2rem; margin-top: 3rem; line-height: 1.4;">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:label')}</h1>
+                    <p style="font-weight: bold; margin-bottom: 1.5rem;">{Translation.translate('currentlyEditing', 'Currently automations are applied for the site "{site}"', {site: props.currentSiteName}, 'BackendModule.Automations', 'NEOSidekick.AiAssistant')}</p>
+                    <p style="margin-bottom: 1.0rem;">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:intro')}</p>
+
+                    <Neos.Fusion.Form:Form form.target.action="update" form.data.automationsConfiguration={props.automationsConfiguration}>
+                        <fieldset>
+                            <legend>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.title')}</legend>
+
+                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[determineMissingFocusKeywordsOnPublication]">
+                                <Neos.Fusion.Form:Checkbox field.value="1">
+                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.determineMissingFocusKeywords')}
+                                </Neos.Fusion.Form:Checkbox>
+                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[redetermineExistingFocusKeywordsOnPublication]">
+                                <Neos.Fusion.Form:Checkbox field.value="1">
+                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.redetermineExistingFocusKeywords')}
+                                </Neos.Fusion.Form:Checkbox>
+                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[generateEmptySeoTitlesOnPublication]">
+                                <Neos.Fusion.Form:Checkbox field.value="1">
+                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.generateEmptySeoTitles')}
+                                </Neos.Fusion.Form:Checkbox>
+                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[regenerateExistingSeoTitlesOnPublication]">
+                                <Neos.Fusion.Form:Checkbox field.value="1">
+                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.regenerateExistingSeoTitles')}
+                                </Neos.Fusion.Form:Checkbox>
+                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[generateEmptyMetaDescriptionsOnPublication]">
+                                <Neos.Fusion.Form:Checkbox field.value="1">
+                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.generateEmptyMetaDescriptions')}
+                                </Neos.Fusion.Form:Checkbox>
+                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+                            <Neos.Fusion.Form:Neos.BackendModule.FieldContainer field.name="automationsConfiguration[regenerateExistingMetaDescriptionsOnPublication]">
+                                <Neos.Fusion.Form:Checkbox field.value="1">
+                                    {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:seoAutomations.regenerateExistingMetaDescriptions')}
+                                </Neos.Fusion.Form:Checkbox>
+                            </Neos.Fusion.Form:Neos.BackendModule.FieldContainer>
+
+                        </fieldset>
+
+                        <div class="neos-footer">
+                            <Neos.Fusion.Form:Button attributes.class="neos-button neos-button-primary">
+                                {Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:save')}
+                            </Neos.Fusion.Form:Button>
+                        </div>
+                    </Neos.Fusion.Form:Form>
+                </div>
+            `
+        }
+
+        default {
+            condition = true
+            renderer = afx`
+                <div class="neos-content neos-container-fluid">
+                    <h1 style="font-size: 2rem; margin-top: 3rem; margin-bottom: 1.5rem; line-height: 1.4;">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:noSite.title')}</h1>
+                    <p>{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:noSite.message')}</p>
+                    <ul>
+                        <li style="list-style: inside; padding-top: 0.4rem;">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:noSite.checkDomainAssignment')}</li>
+                        <li style="list-style: inside; padding-top: 0.4rem;">{Translation.translate('NEOSidekick.AiAssistant:BackendModule.Automations:noSite.accessViaDomain')}</li>
+                    </ul>
+                    <br/><br/>
+                </div>
+            `
+        }
+    }
+}

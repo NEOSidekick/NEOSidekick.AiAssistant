@@ -14,12 +14,15 @@
         "writing"
     ],
     "require": {
-        "php": "^8.0",
+        "php": "^8.1",
         "neos/neos": "~7.0 || ~8.0 || dev-master",
         "neos/media": "~7.0 || ~8.0 || dev-master",
         "neos/neos-ui": "~7.0 || ~8.0 || dev-master",
         "sitegeist/fusionlinkprototypes": "v1.0.1",
-        "neos/seo": "*"
+        "neos/fusion-form": "*",
+        "neos/seo": "*",
+        "ramsey/uuid": "^4.2",
+        "firebase/php-jwt": "^6.0.0"
     },
     "authors": [
         {

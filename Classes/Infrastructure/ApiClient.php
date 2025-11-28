@@ -2,9 +2,11 @@
 
 namespace NEOSidekick\AiAssistant\Infrastructure;
 
+use Exception;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\ServerRequest;
 use GuzzleHttp\Psr7\Stream;
+use InvalidArgumentException;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Client\Browser;
@@ -12,7 +14,7 @@ use Neos\Flow\Http\Client\CurlEngine;
 use Neos\Flow\Http\Client\CurlEngineException;
 use NEOSidekick\AiAssistant\Exception\GetMostRelevantInternalSeoLinksApiException;
 use Psr\Http\Client\ClientExceptionInterface;
-use RuntimeException;
+use Psr\Log\LoggerInterface;
 
 /**
  * @Flow\Scope("singleton")
@@ -42,6 +44,12 @@ class ApiClient
      */
     protected $browser;
 
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $systemLogger;
+
     public function initializeObject(): void
     {
         if (isset($this->isDevelopmentBuild) && $this->isDevelopmentBuild === true) {
@@ -70,7 +78,7 @@ class ApiClient
         $request = $request->withAddedHeader('Accept', 'application/json');
         $request = $request->withAddedHeader('Authorization', 'Bearer ' . $this->apiKey);
         $request = $request->withAddedHeader('Content-Type', 'application/json');
-        /** @var Request $request */
+        /** @var ServerRequest $request */
         $request = $request->withBody(self::streamFor(json_encode(['language' => $interfaceLanguage, 'uris' => $hosts], JSON_THROW_ON_ERROR)));
         try {
             $response = $this->browser->sendRequest($request);
@@ -109,5 +117,54 @@ class ApiClient
 
         // Create a StreamInterface from the resource
         return new Stream($resource);
+    }
+    /**
+     * Sends a batch request to the modules batch API endpoint
+     *
+     * @param array $requests The requests to send to the batch API
+     * @param string|null $webhookUrl Optional webhook URL for asynchronous responses
+     * @param string|null $webhookAuthorizationHeader Optional authorization header for the webhook
+     * @return void
+     */
+    public function sendBatchModuleRequest(array $requests, ?string $webhookUrl = null, ?string $webhookAuthorizationHeader = null): void
+    {
+        if (empty($webhookUrl) && !empty($webhookAuthorizationHeader)) {
+            throw new InvalidArgumentException('Webhook authorization header cannot be provided without a webhook URL.');
+        }
+
+        $payload = [
+            'requests' => $requests,
+        ];
+
+        if (!empty($webhookUrl)) {
+            $payload['webhook_url'] = $webhookUrl;
+        }
+
+        if (!empty($webhookAuthorizationHeader)) {
+            $payload['webhook_authorization_header'] = $webhookAuthorizationHeader;
+        }
+
+        $request = new ServerRequest('POST', $this->apiDomain . '/api/v1/modules/batch');
+        $request = $request->withAddedHeader('Accept', 'application/json');
+        $request = $request->withAddedHeader('Authorization', 'Bearer ' . $this->apiKey);
+        $request = $request->withAddedHeader('Content-Type', 'application/json');
+
+        try {
+            /** @var ServerRequest $request */
+            $request = $request->withBody(self::streamFor(json_encode($payload, JSON_THROW_ON_ERROR)));
+            $response = $this->browser->sendRequest($request);
+
+            if ($response->getStatusCode() !== 200) {
+                $this->systemLogger->error('Batch module request failed with status code: ' . $response->getStatusCode(), [
+                    'packageKey' => 'NEOSidekick.AiAssistant',
+                    'response' => $response->getBody()->getContents()
+                ]);
+            }
+        } catch (ClientExceptionInterface | Exception $e) {
+            $this->systemLogger->error('Batch module request failed: ' . $e->getMessage(), [
+                'packageKey' => 'NEOSidekick.AiAssistant',
+                'exception' => $e
+            ]);
+        }
     }
 }

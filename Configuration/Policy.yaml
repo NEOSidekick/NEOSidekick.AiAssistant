@@ -2,10 +2,24 @@ privilegeTargets:
   'Neos\Flow\Security\Authorization\Privilege\Method\MethodPrivilege':
     'NEOSidekick.AiAssistant:CanUse':
       label: 'Can use AiAssistant'
-      matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController)'
+      matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\AutomationsController)'
+    'NEOSidekick.AiAssistant:Webhook.process':
+      matcher: 'method(NEOSidekick\AiAssistant\Controller\WebhookController->processSidekickResponseAction())'
+    'NEOSidekick.AiAssistant:Preview':
+      matcher: 'method(NEOSidekick\AiAssistant\Controller\PreviewController->(show|preview)Action())'
 
 roles:
   'Neos.Neos:AbstractEditor':
     privileges:
       - privilegeTarget: NEOSidekick.AiAssistant:CanUse
+        permission: GRANT
+      - privilegeTarget: 'NEOSidekick.AiAssistant:Webhook.process'
+        permission: GRANT
+      - privilegeTarget: 'NEOSidekick.AiAssistant:Preview'
+        permission: GRANT
+  'NEOSidekick.AiAssistant:LivePreview':
+    privileges:
+      - privilegeTarget: 'Neos.Neos:ContentPreview'
+        permission: GRANT
+      - privilegeTarget: 'NEOSidekick.AiAssistant:Preview'
         permission: GRANT

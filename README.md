@@ -97,6 +97,18 @@ Advanced users can also build their own based on the [NEOSidekick YAML API](http
 
 ![AiPageBriefing.png](docs%2FAiPageBriefing.png)
 
+### ImageAltTextEditor and ImageTitleEditor
+
+With a few simple YAML configurations, you can configure NodeType properties for image alternative text and image titles. In addition to AI generation, it also offers the option to configure classic fallbacks:
+- If no text is set, use the title or description of the asset
+- If that is not set, use the file name
+
+This allows you to easily implement the same behavior in the editor and frontend. And my personal favorite: every time the image changes or is set, it automatically generates new text.
+
+![Image-AltText-Editor.gif](docs%2FImage-AltText-Editor.gif)
+
+[Read the docs](https://neosidekick.com/en/developer-guide/image-description-generator)
+
 ### Image Description Generator
 
 With this tool, you can create image descriptions for the media browser and save them in the title or description field of the media asses. These help you better search for images in the media browser

@@ -1,0 +1,171 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="title">
+                <source>The Essential Toolkit for Effective On-Page SEO</source>
+                <target xml:lang="fr">Ta boîte à outils essentielle pour un SEO on-page performant</target>
+            </trans-unit>
+            <trans-unit id="intro">
+                <source>On-page SEO is a cornerstone of successful digital marketing. It ensures your content is not only visible but also compelling to search engines. Here’s a streamlined toolkit to enhance your content.</source>
+                <target xml:lang="fr">Le SEO on-page est l’un des piliers d’un marketing digital réussi. Il permet à ton contenu d’être non seulement visible, mais aussi irrésistible pour les moteurs de recherche. Voici une boîte à outils simple et puissante pour booster tes pages.</target>
+            </trans-unit>
+            <trans-unit id="filterTypeExplanation">
+                <source>NEOSidekick can identify the most relevant pages for you and provide suggestions for each of these pages.</source>
+                <target xml:lang="fr">NEOSidekick repère pour toi les pages les plus stratégiques et génère des recommandations ciblées pour chacune d’elles.</target>
+            </trans-unit>
+            <trans-unit id="startModule">
+                <source>Start generation for most important pages</source>
+                <target xml:lang="fr">Lancer la génération pour les pages les plus stratégiques</target>
+            </trans-unit>
+            <trans-unit id="error.configuration">
+                <source>This module is not configured correctly. Please consult the documentation!</source>
+                <target xml:lang="fr">Ce module n’est pas encore configuré correctement. Consulte la documentation pour terminer la configuration.</target>
+            </trans-unit>
+            <trans-unit id="error.noApiKey">
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+                <target xml:lang="fr" state="translated">Cette fonctionnalité n’est pas incluse dans la version gratuite de NEOSidekick. Découvre tout son potentiel avec un essai gratuit sur : https://neosidekick.com/en/pricing.</target>
+            </trans-unit>
+            <trans-unit id="configuration.filter.custom">
+                <source>I know what I'm doing and would prefer to set individual filters</source>
+                <target xml:lang="fr">Je maîtrise le sujet et je préfère définir mes filtres moi‑même</target>
+            </trans-unit>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.label">
+                <source>Restrict by focus keyword</source>
+                <target xml:lang="fr">Restreindre au mot-clé principal</target>
+            </trans-unit>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.none">
+                <source>None</source>
+                <target xml:lang="fr">Aucun</target>
+            </trans-unit>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.only-empty-focus-keywords">
+                <source>Only without focus keyword</source>
+                <target xml:lang="fr">Seulement sans mot-clé principal</target>
+            </trans-unit>
+            <trans-unit id="configuration.focusKeywordPropertyFilter.only-existing-focus-keywords">
+                <source>Only with focus keyword</source>
+                <target xml:lang="fr">Seulement avec mot-clé principal</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.label">
+                <source>Restrict by SEO properties</source>
+                <target xml:lang="fr">Restreindre aux propriétés SEO</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.none">
+                <source>None</source>
+                <target xml:lang="fr">Aucun</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-seo-titles-or-meta-descriptions">
+                <source>Only without seo title or meta description</source>
+                <target xml:lang="fr">Seulement sans titre SEO ou méta-description</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-seo-titles">
+                <source>Only without seo title</source>
+                <target xml:lang="fr">Seulement sans titre SEO</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-empty-meta-descriptions">
+                <source>Only without meta description</source>
+                <target xml:lang="fr">Seulement sans méta-description</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-existing-seo-titles">
+                <source>Only with seo title</source>
+                <target xml:lang="fr">Seulement avec titre SEO</target>
+            </trans-unit>
+            <trans-unit id="configuration.seoPropertiesFilter.only-existing-meta-descriptions">
+                <source>Only with meta description</source>
+                <target xml:lang="fr">Seulement avec méta-description</target>
+            </trans-unit>
+            <trans-unit id="configuration.nodeTypeFilter.label">
+                <source>Restrict to page type</source>
+                <target xml:lang="fr">Restreindre au type de page</target>
+            </trans-unit>
+            <trans-unit id="configuration.nodeTypeFilter.all">
+                <source>All page types</source>
+                <target xml:lang="fr">Tous les types de pages</target>
+            </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.label">
+                <source>Select languages</source>
+                <target xml:lang="fr">Sélectionner les langues</target>
+            </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.all">
+                <source>All languages</source>
+                <target xml:lang="fr">Toutes les langues</target>
+            </trans-unit>
+            <trans-unit id="configuration.languageDimensionFilter.syncLabel">
+                <source>automatic DeepL translation</source>
+                <target xml:lang="fr">traduction automatique DeepL</target>
+            </trans-unit>
+            <trans-unit id="configuration.itemsPerPage.label">
+                <source>Number of generations per page</source>
+                <target xml:lang="fr">Nombre de générations par page</target>
+            </trans-unit>
+            <trans-unit id="configuration.workspace.label">
+                <source>Workspace (read and write)</source>
+                <target xml:lang="fr">Espace de travail (lecture et écriture)</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptySeoTitles">
+                <source>Automatically generate empty SEO titles</source>
+                <target xml:lang="fr">Générer automatiquement les titres SEO vides</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyMetaDescriptions">
+                <source>Automatically generate empty meta descriptions</source>
+                <target xml:lang="fr">Générer automatiquement les méta-descriptions vides</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingSeoTitles">
+                <source>Automatically regenerate existing SEO titles</source>
+                <target xml:lang="fr">Régénérer automatiquement les titres SEO existants</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingMetaDescriptions">
+                <source>Automatically regenerate existing meta descriptions</source>
+                <target xml:lang="fr">Régénérer automatiquement les méta-descriptions existantes</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyAlternativeTexts">
+                <source>Automatically generate empty alternative texts for images</source>
+                <target xml:lang="fr">Générer automatiquement les textes alternatifs vides pour les images</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateEmptyTitleTexts">
+                <source>Automatically generate empty title texts for images</source>
+                <target xml:lang="fr">Générer automatiquement les textes de titre vides pour les images</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingAlternativeTexts">
+                <source>Automatically regenerate existing alternative texts for images</source>
+                <target xml:lang="fr">Régénérer automatiquement les textes alternatifs existants pour les images</target>
+            </trans-unit>
+            <trans-unit id="configuration.action.autoGenerateExistingTitleTexts">
+                <source>Automatically regenerate existing title texts for images</source>
+                <target xml:lang="fr">Régénérer automatiquement les textes de titre existants pour les images</target>
+            </trans-unit>
+            <trans-unit id="listItem.label">
+                <source>Page »{0}«</source>
+                <target xml:lang="fr">Page « {0} »</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.label">
+                <source>Restrict by image properties</source>
+                <target xml:lang="fr">Restreindre aux propriétés de l'image</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.none">
+                <source>None</source>
+                <target xml:lang="fr">Aucun</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-alternative-text-or-title-text">
+                <source>Only without alternative text or title text</source>
+                <target xml:lang="fr">Seulement sans texte alternatif ou texte de titre</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-alternative-text">
+                <source>Only without alternative text</source>
+                <target xml:lang="fr">Seulement sans texte alternatif</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-empty-title-text">
+                <source>Only without title text</source>
+                <target xml:lang="fr">Seulement sans texte de titre</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-existing-alternative-text">
+                <source>Only with alternative text</source>
+                <target xml:lang="fr">Seulement avec texte alternatif</target>
+            </trans-unit>
+            <trans-unit id="configuration.imagePropertiesFilter.only-existing-title-text">
+                <source>Only with title text</source>
+                <target xml:lang="fr">Seulement avec texte de titre</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

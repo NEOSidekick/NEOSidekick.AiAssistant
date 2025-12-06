@@ -94,7 +94,7 @@ export default class MagicTextAreaEditor extends Component<any, any> {
             // Process SidekickClientEval und ClientEval
             userInput = await contentService.processObjectWithClientEval(userInput, node, parentNode)
             // A dirty fix, for image alt text, we need to add the filename
-            if (['image_alt_text', 'alt_tag_generator'].includes(module) && userInput.url && !userInput.filename) {
+            if (['image_alt_text', 'alt_tag_generator', 'image_title'].includes(module) && userInput.url && !userInput.filename) {
                 userInput.filename = userInput.url[0].substring(userInput.url[0].lastIndexOf('/') + 1);
             }
             // Map to external format
@@ -116,6 +116,12 @@ export default class MagicTextAreaEditor extends Component<any, any> {
         const imagePropertyName = options.imagePropertyName;
         if (!options.autoGenerateIfImageChanged || !imagePropertyName) {
             return; // not an image text editor
+        }
+
+        // If the property is not in transientValues, it means it's not dirty (reset or unchanged)
+        // So we should not auto-generate
+        if (!transientValues || !transientValues[imagePropertyName]) {
+            return;
         }
 
         // there might be a transient value, or the old property value

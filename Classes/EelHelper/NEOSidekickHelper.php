@@ -43,7 +43,7 @@ class NEOSidekickHelper implements ProtectedContextAwareInterface
         $editorOptions = $propertyConfiguration['ui']['inspector']['editorOptions'] ?? [];
         $imagePropertyName = $editorOptions['imagePropertyName'] ?? null;
         $fallbackAssetPropertyName = $editorOptions['fallbackAssetPropertyName'] ?? null;
-        $fallbackToCleanedFilenameIfNothingIsSet = $editorOptions['fallbackToCleanedFilenameIfNothingIsSet'] !== false;
+        $fallbackToCleanedFilenameIfNothingIsSet = ($editorOptions['fallbackToCleanedFilenameIfNothingIsSet'] ?? true) !== false;
 
         if ($editor !== $expectedEditor) {
             throw new Exception('NEOSidekick EelHelper expects the editor `' . $expectedEditor . '` for the property `' . $propertyName . '`, instead `' . $editor . '` is configured.');
@@ -54,6 +54,9 @@ class NEOSidekickHelper implements ProtectedContextAwareInterface
         }
 
         $image = $node->getProperty($imagePropertyName);
+        if ($image === null) {
+            return null;
+        }
         switch ($fallbackAssetPropertyName) {
             case 'title':
                 if (!empty($image->getTitle())) {
@@ -69,6 +72,9 @@ class NEOSidekickHelper implements ProtectedContextAwareInterface
 
         if ($fallbackToCleanedFilenameIfNothingIsSet) {
             $resource = $image->getResource();
+            if ($resource === null) {
+                return null;
+            }
             $filename = str_replace('.' . $resource->getFileExtension(), '', $resource->getFilename());
             $filename = str_replace('_', ' ', $filename);
             return strtoupper(substr($filename, 0, 1)) . substr($filename, 1);

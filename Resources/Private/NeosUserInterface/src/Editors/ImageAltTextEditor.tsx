@@ -38,11 +38,12 @@ export function createMagicTextAreaEditorPropsForImageTextEditor(props: any, mod
             console.warn('[NEOSidekick.AiAssistant]: Could not find inspector editors registry.');
             console.warn('[NEOSidekick.AiAssistant]: Skipping registration of InspectorEditor...');
             throw new Error('imagePropertyName is required');
+        } else {
+            options.arguments = options.arguments || {};
+            options.arguments.url = options.arguments.url || `SidekickClientEval: AssetUri(node.properties.${imagePropertyName})`;
         }
 
         if (fallbackAssetPropertyName) {
-            options.arguments = options.arguments || {};
-            options.arguments.url = options.arguments.url || `SidekickClientEval: AssetUri(node.properties.${imagePropertyName})`;
             let filenameFallback = fallbackToCleanedFilenameIfNothingIsSet ? 'true' : 'false';
             switch (fallbackAssetPropertyName) {
                 case 'title':

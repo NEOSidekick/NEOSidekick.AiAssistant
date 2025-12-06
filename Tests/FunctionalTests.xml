@@ -25,5 +25,6 @@
     <php>
         <ini name="date.timezone" value="Europe/Vienna"/>
         <env name="FLOW_REWRITEURLS" value="1"/>
+        <env name="FLOW_CONTEXT" value="Testing"/>
     </php>
 </phpunit>

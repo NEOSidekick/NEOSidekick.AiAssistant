@@ -1,0 +1,8 @@
+'NEOSidekick.AiAssistant.Testing:Page':
+  superTypes:
+    'Neos.Neos:Document': true
+    'Neos.Seo:SeoMetaTagsMixin': true
+    'Neos.Seo:TitleTagMixin': true
+  childNodes:
+    main:
+      type: 'Neos.Neos:ContentCollection'

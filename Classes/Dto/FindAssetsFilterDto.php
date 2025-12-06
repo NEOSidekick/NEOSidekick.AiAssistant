@@ -34,12 +34,11 @@ final class FindAssetsFilterDto
      * @param int    $limit
      */
     public function __construct(
-        bool   $onlyAssetsInUse,
+        bool $onlyAssetsInUse,
         string $propertyNameMustBeEmpty = '',
-        int    $firstResult = 0,
-        int    $limit = 10
-    )
-    {
+        int $firstResult = 0,
+        int $limit = 10
+    ) {
         $this->onlyAssetsInUse = $onlyAssetsInUse;
         $this->limit = $limit;
         $this->firstResult = $firstResult;

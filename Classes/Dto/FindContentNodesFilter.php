@@ -29,7 +29,7 @@ final class FindContentNodesFilter implements LanguageDimensionFilterInterface
     public function __construct(
         string $workspace,
         string $alternativeTextFilter = 'none',
-        string $languageDimensionFilter = null
+        ?string $languageDimensionFilter = null
     ) {
         $this->workspace = $workspace;
         $this->alternativeTextFilter = $alternativeTextFilter;

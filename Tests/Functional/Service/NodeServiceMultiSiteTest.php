@@ -64,7 +64,7 @@ class NodeServiceMultiSiteTest extends FunctionalTestCase
         $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/site1-page-a', $this->currentUserWorkspace, ['language' => ['de']]), $foundNodes);
         $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/site1-page-a/site1-sub-a', $this->currentUserWorkspace, ['language' => ['de']]), $foundNodes);
         $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/site1-page-b', $this->currentUserWorkspace, ['language' => ['de']]), $foundNodes);
-        // Assert nodes from /sites/example (not current domain) are not present
+        // Assert nodes from /sites/example2 (not current domain) are not present
         $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example2', $this->currentUserWorkspace, ['language' => ['de']]), $foundNodes);
         $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example2/node-two-wan-kenodi', $this->currentUserWorkspace, ['language' => ['de']]), $foundNodes);
         $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example2/node-two-wan-kenodi/lady-eleonode-rootford-2', $this->currentUserWorkspace, ['language' => ['de']]), $foundNodes);

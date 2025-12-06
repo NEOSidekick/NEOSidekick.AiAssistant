@@ -181,7 +181,7 @@ class NodeService extends AbstractNodeService
         ));
         $currentSitePath = NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName());
         $queryBuilder->setParameter('currentSitePath', $currentSitePath);
-        $queryBuilder->setParameter('currentSitePathWithWildcard', $currentSitePath . '%');
+        $queryBuilder->setParameter('currentSitePathWithWildcard', $currentSitePath . '/%');
         $includeNodeTypes = $this->getNodeTypeFilter($findDocumentNodesFilter);
         $queryBuilder->setParameter('includeNodeTypes', $includeNodeTypes);
         $queryBuilder->setParameter('hidden', false, PDO::PARAM_BOOL);

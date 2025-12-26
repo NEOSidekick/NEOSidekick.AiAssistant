@@ -1,4 +1,5 @@
 <?php
+
 namespace NEOSidekick\AiAssistant\Controller;
 
 /*
@@ -103,7 +104,7 @@ class BackendServiceController extends ActionController
                 'propertyNameMustBeEmpty',
                 'firstResult',
                 'limit'
-                );
+            );
     }
 
     /**
@@ -156,8 +157,10 @@ class BackendServiceController extends ActionController
         }, $updateItems);
 
         $this->assetService->updateMultipleAssets($filteredItems);
-        return json_encode(array_map(static fn(UpdateAssetData $item) => $item->jsonSerialize(), $filteredItems),
-            JSON_THROW_ON_ERROR);
+        return json_encode(
+            array_map(static fn(UpdateAssetData $item) => $item->jsonSerialize(), $filteredItems),
+            JSON_THROW_ON_ERROR
+        );
     }
 
     public function initializeFindDocumentNodesAction(): void
@@ -248,8 +251,10 @@ class BackendServiceController extends ActionController
         }, $updateItems);
 
         $this->nodeService->updatePropertiesOnNodes($filteredItems);
-        return json_encode(array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $filteredItems),
-            JSON_THROW_ON_ERROR);
+        return json_encode(
+            array_map(static fn(UpdateNodeProperties $item) => $item->jsonSerialize(), $filteredItems),
+            JSON_THROW_ON_ERROR
+        );
     }
 
     public function initializeFindDocumentNodesWithImagesAction(): void

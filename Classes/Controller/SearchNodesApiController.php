@@ -7,23 +7,24 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
-use NEOSidekick\AiAssistant\Service\DocumentNodeListExtractor;
+use NEOSidekick\AiAssistant\Service\SearchNodesExtractor;
 
 /**
- * API controller to expose document node list for external consumption.
+ * API controller to search nodes across the content repository.
  *
- * Returns a list of all document nodes (pages) for a given workspace
- * and dimension configuration. Used by LLM agents to discover pages.
+ * Provides grep-like search functionality across all node properties
+ * for a given workspace and dimension configuration. Used by LLM agents
+ * to find specific content.
  *
  * Authentication is done via Bearer token matching the configured API key.
  *
  * @noinspection PhpUnused
  */
-class DocumentNodeListApiController extends ActionController
+class SearchNodesApiController extends ActionController
 {
     /**
      * @Flow\Inject
-     * @var DocumentNodeListExtractor
+     * @var SearchNodesExtractor
      */
     protected $extractor;
 
@@ -47,28 +48,41 @@ class DocumentNodeListApiController extends ActionController
     }
 
     /**
-     * Get all document nodes as JSON.
+     * Search nodes by property values.
      *
+     * Performs a case-insensitive search across all node properties,
+     * similar to grep functionality. Returns matching nodes with their
+     * properties and parent document context.
+     *
+     * @param string $query The search term (required)
      * @param string $workspace The workspace name (default: 'live')
      * @param string $dimensions JSON-encoded dimensions array
-     * @param string $site Site node name (optional, defaults to first site)
-     * @param string $nodeTypeFilter Filter by NodeType (default: all documents)
-     * @param int $depth Maximum traversal depth (-1 = unlimited)
+     * @param string $nodeTypeFilter Filter by NodeType (e.g., 'Neos.Neos:Content')
+     * @param string $pathStartingPoint Limit search to nodes under this path
      * @return string JSON response
      * @throws JsonException
      * @Flow\SkipCsrfProtection
      */
-    public function listAction(
+    public function searchAction(
+        string $query = '',
         string $workspace = 'live',
         string $dimensions = '{}',
-        string $site = '',
-        string $nodeTypeFilter = 'Neos.Neos:Document',
-        int $depth = -1
+        string $nodeTypeFilter = '',
+        string $pathStartingPoint = ''
     ): string {
         // Validate Bearer token authentication
         $authError = $this->validateAuthentication();
         if ($authError !== null) {
             return $authError;
+        }
+
+        // Validate required query parameter
+        if (empty(trim($query))) {
+            $this->response->setStatusCode(400);
+            return json_encode([
+                'error' => 'Bad Request',
+                'message' => 'The "query" parameter is required and cannot be empty'
+            ], JSON_THROW_ON_ERROR);
         }
 
         // Parse dimensions from JSON string
@@ -78,12 +92,12 @@ class DocumentNodeListApiController extends ActionController
         }
 
         try {
-            $result = $this->extractor->extract(
+            $result = $this->extractor->search(
+                query: $query,
                 workspace: $workspace,
                 dimensions: $dimensionsArray,
-                siteNodeName: $site !== '' ? $site : null,
-                nodeTypeFilter: $nodeTypeFilter,
-                depth: $depth
+                nodeTypeFilter: $nodeTypeFilter !== '' ? $nodeTypeFilter : null,
+                pathStartingPoint: $pathStartingPoint !== '' ? $pathStartingPoint : null
             );
 
             return json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);

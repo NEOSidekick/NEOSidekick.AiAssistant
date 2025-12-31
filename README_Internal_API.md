@@ -21,6 +21,12 @@ curl -G "https://your-site.com/neosidekick/api/node-tree" \
   --data-urlencode "nodeId=your-node-uuid" \
   --data-urlencode 'dimensions={"language":["de"]}' \
   -H "Authorization: Bearer your-api-key"
+
+# 4. Search nodes (grep-like search across all properties)
+curl -G "https://your-site.com/neosidekick/api/search-nodes" \
+  --data-urlencode "query=search term" \
+  --data-urlencode 'dimensions={"language":["de"]}' \
+  -H "Authorization: Bearer your-api-key"
 ```
 
 ---
@@ -68,6 +74,7 @@ NEOSidekick:
 | `/neosidekick/api/nodetype-schema` | GET | Get NodeType definitions for LLM agents |
 | `/neosidekick/api/node-tree` | GET | Get node tree starting from a specific node |
 | `/neosidekick/api/document-nodes` | GET | Get list of all document nodes (pages) |
+| `/neosidekick/api/search-nodes` | GET | Search across all node properties (grep-like) |
 | `/neosidekick/aiassistant/service/{action}` | GET/POST | Backend service for UI integration |
 
 ---
@@ -387,7 +394,151 @@ NEOSidekick:
 
 ---
 
-## 4. Backend Service API
+## 4. Search Nodes API
+
+Performs grep-like search across all node properties for a given workspace and dimension. Used by LLM agents to find specific content within the site.
+
+### Endpoint
+
+```
+GET /neosidekick/api/search-nodes
+```
+
+### Query Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | **Yes** | - | Search term (case-insensitive) |
+| `workspace` | string | No | `live` | Workspace name |
+| `dimensions` | string | No | `{}` | JSON-encoded dimensions |
+| `nodeTypeFilter` | string | No | `Neos.Neos:Node` | Filter by NodeType (e.g., `Neos.Neos:Content`) |
+| `pathStartingPoint` | string | No | (all paths) | Limit search to nodes under this path |
+
+### Example Request
+
+```bash
+# Basic search
+curl -G "https://example.com/neosidekick/api/search-nodes" \
+  --data-urlencode "query=welcome" \
+  --data-urlencode 'dimensions={"language":["de"]}' \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Search with NodeType filter (only content nodes)
+curl -G "https://example.com/neosidekick/api/search-nodes" \
+  --data-urlencode "query=hello world" \
+  --data-urlencode "nodeTypeFilter=Neos.Neos:Content" \
+  --data-urlencode 'dimensions={"language":["de"]}' \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Search within a specific path
+curl -G "https://example.com/neosidekick/api/search-nodes" \
+  --data-urlencode "query=product" \
+  --data-urlencode "pathStartingPoint=/sites/my-site/products" \
+  --data-urlencode 'dimensions={"language":["de"]}' \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+```
+
+### Response
+
+```json
+{
+  "generatedAt": "2025-12-31T10:00:00+00:00",
+  "workspace": "live",
+  "dimensions": {
+    "language": ["de"]
+  },
+  "query": "welcome",
+  "nodeTypeFilter": null,
+  "pathStartingPoint": null,
+  "results": [
+    {
+      "identifier": "uuid-1",
+      "nodeType": "CodeQ.Site:Content.Text.Block",
+      "path": "/sites/my-site/main/text-1",
+      "depth": 4,
+      "properties": {
+        "title": "Welcome Message",
+        "text": "<p>Welcome to our website</p>"
+      },
+      "isHidden": false,
+      "parentDocumentIdentifier": "uuid-doc-1",
+      "parentDocumentPath": "/sites/my-site",
+      "parentDocumentTitle": "Homepage"
+    },
+    {
+      "identifier": "uuid-2",
+      "nodeType": "CodeQ.Site:Document.Page",
+      "path": "/sites/my-site/welcome",
+      "depth": 2,
+      "properties": {
+        "title": "Welcome Page"
+      },
+      "isHidden": false
+    }
+  ],
+  "resultCount": 2
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `generatedAt` | string | ISO 8601 timestamp |
+| `workspace` | string | Queried workspace name |
+| `dimensions` | object | Dimension values used |
+| `query` | string | The search term used |
+| `nodeTypeFilter` | string\|null | NodeType filter applied |
+| `pathStartingPoint` | string\|null | Path restriction applied |
+| `results` | array | List of matching nodes |
+| `resultCount` | int | Total results returned |
+
+#### Result Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `identifier` | string | Node UUID |
+| `nodeType` | string | Full NodeType name |
+| `path` | string | Content repository path |
+| `depth` | int | Depth in node tree |
+| `properties` | object | Selected properties (configurable) |
+| `isHidden` | bool | Node visibility |
+| `parentDocumentIdentifier` | string | Parent page UUID (for content nodes) |
+| `parentDocumentPath` | string | Parent page path (for content nodes) |
+| `parentDocumentTitle` | string | Parent page title (for content nodes) |
+
+### Configuration
+
+Configure which properties to include in search results in `Settings.yaml`:
+
+```yaml
+NEOSidekick:
+  AiAssistant:
+    searchNodes:
+      includedProperties:
+        - 'title'
+        - 'text'
+        - 'headline'
+        - 'metaDescription'
+```
+
+### Error Response
+
+**400 Bad Request** - Missing required query parameter:
+
+```json
+{
+  "error": "Bad Request",
+  "message": "The \"query\" parameter is required and cannot be empty"
+}
+```
+
+---
+
+## 5. Backend Service API
 
 Internal service endpoint for the Neos backend UI integration. Used by the NEOSidekick backend module.
 
@@ -505,6 +656,7 @@ API controllers are placed directly in the Controller namespace (not in a subpac
 - `Classes/Controller/NodeTypeSchemaApiController.php` - NodeType schema endpoint
 - `Classes/Controller/NodeTreeSchemaApiController.php` - Node tree endpoint
 - `Classes/Controller/DocumentNodeListApiController.php` - Document list endpoint
+- `Classes/Controller/SearchNodesApiController.php` - Search nodes endpoint
 - `Classes/Controller/BackendServiceController.php` - Backend UI service
 
 ### Services
@@ -514,6 +666,7 @@ Data extraction services that provide raw data to the controllers:
 - `Classes/Service/NodeTypeSchemaExtractor.php` - Extracts NodeType definitions
 - `Classes/Service/NodeTreeExtractor.php` - Traverses and extracts node trees
 - `Classes/Service/DocumentNodeListExtractor.php` - Extracts document node lists
+- `Classes/Service/SearchNodesExtractor.php` - Searches nodes by property values
 
 ### Configuration
 

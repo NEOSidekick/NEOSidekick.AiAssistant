@@ -7,7 +7,7 @@ privilegeTargets:
     # API controllers use Bearer token authentication, grant access to everyone
     'NEOSidekick.AiAssistant:PublicApi':
       label: 'Public API access (authenticated via Bearer token)'
-      matcher: 'within(NEOSidekick\AiAssistant\Controller\NodeTypeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\NodeTreeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\DocumentNodeListApiController)'
+      matcher: 'within(NEOSidekick\AiAssistant\Controller\NodeTypeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\NodeTreeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\DocumentNodeListApiController) || within(NEOSidekick\AiAssistant\Controller\SearchNodesApiController)'
 
 roles:
   'Neos.Neos:AbstractEditor':

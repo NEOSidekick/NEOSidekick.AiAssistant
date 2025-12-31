@@ -7,3 +7,33 @@
     '@action':     'index'
     '@format':     'json'
   httpMethods: ['GET', 'POST']
+
+-
+  name:  'NodeType Schema API'
+  uriPattern: 'neosidekick/api/nodetype-schema'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'NodeTypeSchemaApi'
+    '@action':     'getNodeTypeSchema'
+    '@format':     'json'
+  httpMethods: ['GET']
+
+-
+  name:  'Node Tree API'
+  uriPattern: 'neosidekick/api/node-tree'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'NodeTreeSchemaApi'
+    '@action':     'getNodeTree'
+    '@format':     'json'
+  httpMethods: ['GET']
+
+-
+  name:  'Document Node List API'
+  uriPattern: 'neosidekick/api/document-nodes'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'DocumentNodeListApi'
+    '@action':     'list'
+    '@format':     'json'
+  httpMethods: ['GET']

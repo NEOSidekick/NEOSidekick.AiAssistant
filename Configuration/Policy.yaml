@@ -4,8 +4,19 @@ privilegeTargets:
       label: 'Can use AiAssistant'
       matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController)'
 
+    # API controllers use Bearer token authentication, grant access to everyone
+    'NEOSidekick.AiAssistant:PublicApi':
+      label: 'Public API access (authenticated via Bearer token)'
+      matcher: 'within(NEOSidekick\AiAssistant\Controller\NodeTypeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\NodeTreeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\DocumentNodeListApiController)'
+
 roles:
   'Neos.Neos:AbstractEditor':
     privileges:
       - privilegeTarget: NEOSidekick.AiAssistant:CanUse
+        permission: GRANT
+
+  # Grant API access to everyone (authentication is done via Bearer token in the controller)
+  'Neos.Flow:Everybody':
+    privileges:
+      - privilegeTarget: NEOSidekick.AiAssistant:PublicApi
         permission: GRANT

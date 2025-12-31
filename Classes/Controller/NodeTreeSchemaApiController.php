@@ -125,4 +125,3 @@ class NodeTreeSchemaApiController extends ActionController
         return null;
     }
 }
-

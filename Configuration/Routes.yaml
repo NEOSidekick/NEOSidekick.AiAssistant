@@ -37,3 +37,13 @@
     '@action':     'list'
     '@format':     'json'
   httpMethods: ['GET']
+
+-
+  name:  'Search Nodes API'
+  uriPattern: 'neosidekick/api/search-nodes'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'SearchNodesApi'
+    '@action':     'search'
+    '@format':     'json'
+  httpMethods: ['GET']

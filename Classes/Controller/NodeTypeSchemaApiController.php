@@ -104,4 +104,3 @@ class NodeTypeSchemaApiController extends ActionController
         return null;
     }
 }
-

@@ -66,8 +66,8 @@ class PatchValidator
     /**
      * Validate a createNode patch.
      *
-     * For 'into' position, the parentNodeId is the actual parent.
-     * For 'before'/'after' positions, the parentNodeId is actually a reference sibling node,
+     * For 'into' position, the positionRelativeToNodeId is the actual parent.
+     * For 'before'/'after' positions, the positionRelativeToNodeId is a reference sibling node,
      * and the new node will be created under that sibling's parent.
      *
      * @param CreateNodePatch $patch
@@ -82,10 +82,10 @@ class PatchValidator
         $nodeType = $this->getNodeType($patch->getNodeType(), $patchIndex, 'createNode');
 
         // Validate reference node exists (parent for 'into', sibling for 'before'/'after')
-        $referenceNode = $this->getNodeById($patch->getParentNodeId(), $patchIndex, 'createNode', $context);
+        $referenceNode = $this->getNodeById($patch->getPositionRelativeToNodeId(), $patchIndex, 'createNode', $context);
 
         // Validate position
-        $this->validatePosition($patch->getPosition(), $patchIndex, 'createNode', $patch->getParentNodeId());
+        $this->validatePosition($patch->getPosition(), $patchIndex, 'createNode', $patch->getPositionRelativeToNodeId());
 
         // Determine actual parent based on position
         // For 'into': the referenceNode is the parent
@@ -96,10 +96,10 @@ class PatchValidator
             $actualParent = $referenceNode->getParent();
             if ($actualParent === null) {
                 throw new PatchFailedException(
-                    sprintf('Reference node "%s" has no parent', $patch->getParentNodeId()),
+                    sprintf('Reference node "%s" has no parent', $patch->getPositionRelativeToNodeId()),
                     $patchIndex,
                     'createNode',
-                    $patch->getParentNodeId()
+                    $patch->getPositionRelativeToNodeId()
                 );
             }
         }
@@ -114,7 +114,7 @@ class PatchValidator
                 ),
                 $patchIndex,
                 'createNode',
-                $patch->getParentNodeId()
+                $patch->getPositionRelativeToNodeId()
             );
         }
 

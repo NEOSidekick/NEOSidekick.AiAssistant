@@ -57,7 +57,7 @@ class ApplyPatchesApiController extends ActionController
      *   "dimensions": {"language": ["de"]},
      *   "dryRun": false,
      *   "patches": [
-     *     { "operation": "createNode", "parentNodeId": "uuid", "nodeType": "...", "position": "into", "properties": {...} },
+     *     { "operation": "createNode", "positionRelativeToNodeId": "uuid", "nodeType": "...", "position": "into", "properties": {...} },
      *     { "operation": "updateNode", "nodeId": "uuid", "properties": {...} },
      *     { "operation": "moveNode", "nodeId": "uuid", "targetNodeId": "uuid", "position": "after" },
      *     { "operation": "deleteNode", "nodeId": "uuid" }

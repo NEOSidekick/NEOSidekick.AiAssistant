@@ -24,7 +24,7 @@ abstract class AbstractPatch implements JsonSerializable
     /**
      * Create a patch from an associative array.
      *
-     * @param array{operation: string, nodeId?: string, parentNodeId?: string, nodeType?: string, position?: string, targetNodeId?: string, properties?: array<string, mixed>} $data
+     * @param array{operation: string, nodeId?: string, positionRelativeToNodeId?: string, nodeType?: string, position?: string, targetNodeId?: string, properties?: array<string, mixed>} $data
      * @return AbstractPatch
      * @throws \InvalidArgumentException
      */

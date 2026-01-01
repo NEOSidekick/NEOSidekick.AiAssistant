@@ -27,6 +27,19 @@ curl -G "https://your-site.com/neosidekick/api/search-nodes" \
   --data-urlencode "query=search term" \
   --data-urlencode 'dimensions={"language":["de"]}' \
   -H "Authorization: Bearer your-api-key"
+
+# 5. Apply patches (create, update, move, delete nodes)
+curl -X POST "https://your-site.com/neosidekick/api/apply-patches" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "workspace": "live",
+    "dimensions": {"language": ["de"]},
+    "dryRun": true,
+    "patches": [
+      {"operation": "updateNode", "nodeId": "your-node-uuid", "properties": {"title": "New Title"}}
+    ]
+  }'
 ```
 
 ---
@@ -75,6 +88,7 @@ NEOSidekick:
 | `/neosidekick/api/node-tree` | GET | Get node tree starting from a specific node |
 | `/neosidekick/api/document-nodes` | GET | Get list of all document nodes (pages) |
 | `/neosidekick/api/search-nodes` | GET | Search across all node properties (grep-like) |
+| `/neosidekick/api/apply-patches` | POST | Apply atomic patches (create, update, move, delete nodes) |
 | `/neosidekick/aiassistant/service/{action}` | GET/POST | Backend service for UI integration |
 
 ---
@@ -538,7 +552,263 @@ NEOSidekick:
 
 ---
 
-## 5. Backend Service API
+## 5. Apply Patches API
+
+Apply atomic patches to the content repository. Supports creating, updating, moving, and deleting nodes with transaction-based rollback and dry-run support.
+
+### Endpoint
+
+```
+POST /neosidekick/api/apply-patches
+```
+
+### Request Body
+
+```json
+{
+  "workspace": "user-admin",
+  "dimensions": {"language": ["de"]},
+  "dryRun": false,
+  "patches": [
+    {
+      "operation": "createNode",
+      "parentNodeId": "uuid-parent",
+      "nodeType": "CodeQ.Site:Content.Text",
+      "position": "into",
+      "properties": {"text": "<p>Hello</p>"}
+    },
+    {
+      "operation": "updateNode",
+      "nodeId": "uuid-123",
+      "properties": {"title": "New Title"}
+    },
+    {
+      "operation": "moveNode",
+      "nodeId": "uuid-456",
+      "targetNodeId": "uuid-789",
+      "position": "after"
+    },
+    {
+      "operation": "deleteNode",
+      "nodeId": "uuid-to-delete"
+    }
+  ]
+}
+```
+
+### Request Fields
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `workspace` | string | No | `live` | Workspace name |
+| `dimensions` | object | No | `{}` | Content dimensions |
+| `dryRun` | bool | No | `false` | Validate without persisting changes |
+| `patches` | array | **Yes** | - | Array of patch operations |
+
+### Patch Operations
+
+#### createNode
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `operation` | string | **Yes** | - | Must be `createNode` |
+| `parentNodeId` | string | **Yes** | - | UUID of parent/reference node |
+| `nodeType` | string | **Yes** | - | Full NodeType name |
+| `position` | string | No | `into` | `into`, `before`, or `after` |
+| `properties` | object | No | `{}` | Initial property values |
+
+#### updateNode
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `operation` | string | **Yes** | - | Must be `updateNode` |
+| `nodeId` | string | **Yes** | - | UUID of node to update |
+| `properties` | object | **Yes** | - | Properties to set |
+
+#### moveNode
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `operation` | string | **Yes** | - | Must be `moveNode` |
+| `nodeId` | string | **Yes** | - | UUID of node to move |
+| `targetNodeId` | string | **Yes** | - | UUID of target/reference node |
+| `position` | string | No | `into` | `into`, `before`, or `after` |
+
+#### deleteNode
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `operation` | string | **Yes** | - | Must be `deleteNode` |
+| `nodeId` | string | **Yes** | - | UUID of node to delete |
+
+### Example Request
+
+```bash
+curl -X POST "https://example.com/neosidekick/api/apply-patches" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "workspace": "user-admin",
+    "dimensions": {"language": ["de"]},
+    "dryRun": false,
+    "patches": [
+      {
+        "operation": "updateNode",
+        "nodeId": "abc-123-def",
+        "properties": {
+          "title": "New Title",
+          "text": "<p>Updated content</p>"
+        }
+      },
+      {
+        "operation": "createNode",
+        "parentNodeId": "parent-uuid",
+        "nodeType": "CodeQ.Site:Content.Text",
+        "position": "into",
+        "properties": {
+          "text": "<p>New paragraph</p>"
+        }
+      }
+    ]
+  }'
+```
+
+### Success Response (200)
+
+```json
+{
+  "success": true,
+  "dryRun": false,
+  "results": [
+    {"index": 0, "operation": "updateNode", "nodeId": "abc-123-def"},
+    {
+      "index": 1,
+      "operation": "createNode",
+      "nodeId": "new-uuid-created",
+      "createdNodes": [
+        {
+          "nodeId": "new-uuid-created",
+          "nodeType": "CodeQ.Site:Document.Page",
+          "nodeName": "page-abc12345",
+          "properties": {"title": "New Page", "uriPathSegment": "new-page"},
+          "depth": 0
+        },
+        {
+          "nodeId": "main-collection-uuid",
+          "nodeType": "Neos.Neos:ContentCollection",
+          "nodeName": "main",
+          "properties": {},
+          "depth": 1
+        }
+      ]
+    }
+  ]
+}
+```
+
+#### Extended createNode Response
+
+For `createNode` operations, the response includes a `createdNodes` array with details about all nodes that were created:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `nodeId` | string | Node UUID |
+| `nodeType` | string | Full NodeType name |
+| `nodeName` | string | Node name (path segment) |
+| `properties` | object | Node properties (filtered, serialized) |
+| `depth` | int | Depth relative to main created node (0 = main node) |
+
+This includes:
+- The main node that was explicitly created
+- Auto-created child nodes (fixed children configured in NodeType's `childNodes`)
+- Nodes created by NodeTemplates (if configured in `options.template`)
+
+The MCP tool formats this as JSX matching the `getDocumentContent` tool output:
+
+```
+✓ All patches applied successfully
+
+  [0] createNode: new-uuid-created
+
+      Created structure:
+      ```tsx
+      <CodeQ_Site__Document_Page id="new-uuid-created" title="New Page" uriPathSegment="new-page">
+        <Neos_Neos__ContentCollection id="main-collection-uuid" />
+      </CodeQ_Site__Document_Page>
+      ```
+
+Total: 1 operations applied
+```
+
+### Failure Response (422)
+
+When a patch fails, all changes are rolled back:
+
+```json
+{
+  "success": false,
+  "dryRun": false,
+  "error": {
+    "message": "Property 'invalidProp' is not declared in NodeType",
+    "patchIndex": 1,
+    "operation": "updateNode",
+    "nodeId": "uuid-123"
+  },
+  "rollbackPerformed": true
+}
+```
+
+### Dry-Run Mode
+
+When `dryRun: true`, all patches are validated and executed within a transaction, but the transaction is rolled back regardless of success. This allows you to validate patches without making changes:
+
+```bash
+curl -X POST "https://example.com/neosidekick/api/apply-patches" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "workspace": "user-admin",
+    "dryRun": true,
+    "patches": [...]
+  }'
+```
+
+### Transaction Semantics
+
+- All patches are executed within a single database transaction
+- If any patch fails, all previous changes are rolled back
+- Patches are validated before execution using `Flowpack.NodeTemplates` PropertiesProcessor
+- NodeTemplates configured in `options.template` are automatically applied after `createNode`
+
+### Workspace Limitations
+
+**Important:** Personal workspaces like `user-admin` require a logged-in Neos backend user. This API uses Bearer token authentication which grants access to the API endpoint, but does NOT authenticate as a Neos backend user.
+
+### Error Response
+
+**400 Bad Request** - Invalid request structure:
+
+```json
+{
+  "error": "Bad Request",
+  "message": "Missing required field \"patches\""
+}
+```
+
+**401 Unauthorized** - Authentication failed:
+
+```json
+{
+  "error": "Unauthorized",
+  "message": "Invalid API key"
+}
+```
+
+**422 Unprocessable Entity** - Patch validation or execution failed (see failure response above)
+
+---
+
+## 6. Backend Service API
 
 Internal service endpoint for the Neos backend UI integration. Used by the NEOSidekick backend module.
 
@@ -616,7 +886,7 @@ These API endpoints follow a split architecture pattern:
 │  - LLM Integration               │
 └──────────────────────────────────┘
               │
-              │ HTTP GET
+              │ HTTP GET/POST
               │ Authorization: Bearer {apiKey}
               ▼
 ┌──────────────────────────────────┐
@@ -624,7 +894,8 @@ These API endpoints follow a split architecture pattern:
 │      (NEOSidekick.AiAssistant)   │
 ├──────────────────────────────────┤
 │  - Raw Data Extraction           │
-│  - Minimal Transformation        │
+│  - Atomic Patch Operations       │
+│  - Transaction Management        │
 │  - JSON Responses                │
 └──────────────────────────────────┘
 ```
@@ -657,6 +928,7 @@ API controllers are placed directly in the Controller namespace (not in a subpac
 - `Classes/Controller/NodeTreeSchemaApiController.php` - Node tree endpoint
 - `Classes/Controller/DocumentNodeListApiController.php` - Document list endpoint
 - `Classes/Controller/SearchNodesApiController.php` - Search nodes endpoint
+- `Classes/Controller/ApplyPatchesApiController.php` - Apply patches endpoint
 - `Classes/Controller/BackendServiceController.php` - Backend UI service
 
 ### Services
@@ -667,6 +939,8 @@ Data extraction services that provide raw data to the controllers:
 - `Classes/Service/NodeTreeExtractor.php` - Traverses and extracts node trees
 - `Classes/Service/DocumentNodeListExtractor.php` - Extracts document node lists
 - `Classes/Service/SearchNodesExtractor.php` - Searches nodes by property values
+- `Classes/Service/NodePatchService.php` - Applies atomic patches with transaction support
+- `Classes/Service/PatchValidator.php` - Validates patches using NodeTemplates PropertiesProcessor
 
 ### Configuration
 

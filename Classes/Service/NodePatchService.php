@@ -213,13 +213,13 @@ class NodePatchService
     private function executeCreateNode(CreateNodePatch $patch, int $index, Context $context): array
     {
         try {
-            $parentNode = $context->getNodeByIdentifier($patch->getParentNodeId());
-            if ($parentNode === null) {
+            $referenceNode = $context->getNodeByIdentifier($patch->getPositionRelativeToNodeId());
+            if ($referenceNode === null) {
                 throw new PatchFailedException(
-                    sprintf('Parent node "%s" not found', $patch->getParentNodeId()),
+                    sprintf('Reference node "%s" not found', $patch->getPositionRelativeToNodeId()),
                     $index,
                     'createNode',
-                    $patch->getParentNodeId()
+                    $patch->getPositionRelativeToNodeId()
                 );
             }
 
@@ -227,20 +227,18 @@ class NodePatchService
 
             // Create the node based on position
             if ($patch->getPosition() === 'into') {
-                // Generate unique node name for the target parent
-                $nodeName = $this->generateUniqueNodeName($parentNode, $nodeType);
-                $newNode = $parentNode->createNode($nodeName, $nodeType);
+                // For 'into', the reference node is the parent
+                $nodeName = $this->generateUniqueNodeName($referenceNode, $nodeType);
+                $newNode = $referenceNode->createNode($nodeName, $nodeType);
             } else {
-                // For 'before' or 'after', create as sibling of parent node
-                // The parentNodeId is actually the reference node in this case
-                $referenceNode = $parentNode;
+                // For 'before' or 'after', the reference node is a sibling
                 $actualParent = $referenceNode->getParent();
                 if ($actualParent === null) {
                     throw new PatchFailedException(
-                        sprintf('Reference node "%s" has no parent', $patch->getParentNodeId()),
+                        sprintf('Reference node "%s" has no parent', $patch->getPositionRelativeToNodeId()),
                         $index,
                         'createNode',
-                        $patch->getParentNodeId()
+                        $patch->getPositionRelativeToNodeId()
                     );
                 }
                 // Generate unique node name for the actual parent (not the reference sibling)
@@ -279,7 +277,7 @@ class NodePatchService
                 sprintf('Failed to create node: %s', $e->getMessage()),
                 $index,
                 'createNode',
-                $patch->getParentNodeId(),
+                $patch->getPositionRelativeToNodeId(),
                 $e
             );
         }

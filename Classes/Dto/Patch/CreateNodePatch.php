@@ -20,7 +20,12 @@ final class CreateNodePatch extends AbstractPatch
 
     protected string $operation = 'createNode';
 
-    private string $parentNodeId;
+    /**
+     * The node to position the new node relative to.
+     * For position 'into': this is the parent node.
+     * For position 'before'/'after': this is the sibling reference node.
+     */
+    private string $positionRelativeToNodeId;
 
     private string $nodeType;
 
@@ -35,19 +40,19 @@ final class CreateNodePatch extends AbstractPatch
     private array $properties;
 
     /**
-     * @param string $parentNodeId
+     * @param string $positionRelativeToNodeId The reference node for positioning
      * @param string $nodeType
      * @param string $position
      * @param array<string, mixed> $properties
      */
     public function __construct(
-        string $parentNodeId,
+        string $positionRelativeToNodeId,
         string $nodeType,
         string $position = 'into',
         array $properties = []
     ) {
         self::validatePosition($position);
-        $this->parentNodeId = $parentNodeId;
+        $this->positionRelativeToNodeId = $positionRelativeToNodeId;
         $this->nodeType = $nodeType;
         $this->position = $position;
         $this->properties = $properties;
@@ -71,9 +76,9 @@ final class CreateNodePatch extends AbstractPatch
         }
     }
 
-    public function getParentNodeId(): string
+    public function getPositionRelativeToNodeId(): string
     {
-        return $this->parentNodeId;
+        return $this->positionRelativeToNodeId;
     }
 
     public function getNodeType(): string
@@ -95,20 +100,20 @@ final class CreateNodePatch extends AbstractPatch
     }
 
     /**
-     * @param array{operation: string, parentNodeId: string, nodeType: string, position?: string, properties?: array<string, mixed>} $data
+     * @param array{operation: string, positionRelativeToNodeId: string, nodeType: string, position?: string, properties?: array<string, mixed>} $data
      * @return self
      */
     public static function fromArray(array $data): self
     {
-        if (!isset($data['parentNodeId'])) {
-            throw new \InvalidArgumentException('CreateNodePatch requires "parentNodeId"');
+        if (!isset($data['positionRelativeToNodeId'])) {
+            throw new \InvalidArgumentException('CreateNodePatch requires "positionRelativeToNodeId"');
         }
         if (!isset($data['nodeType'])) {
             throw new \InvalidArgumentException('CreateNodePatch requires "nodeType"');
         }
 
         return new self(
-            $data['parentNodeId'],
+            $data['positionRelativeToNodeId'],
             $data['nodeType'],
             $data['position'] ?? 'into',
             $data['properties'] ?? []
@@ -116,13 +121,13 @@ final class CreateNodePatch extends AbstractPatch
     }
 
     /**
-     * @return array{operation: string, parentNodeId: string, nodeType: string, position: string, properties: array<string, mixed>}
+     * @return array{operation: string, positionRelativeToNodeId: string, nodeType: string, position: string, properties: array<string, mixed>}
      */
     public function jsonSerialize(): array
     {
         return [
             'operation' => $this->operation,
-            'parentNodeId' => $this->parentNodeId,
+            'positionRelativeToNodeId' => $this->positionRelativeToNodeId,
             'nodeType' => $this->nodeType,
             'position' => $this->position,
             'properties' => $this->properties,

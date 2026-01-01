@@ -695,7 +695,7 @@ POST /neosidekick/api/apply-patches
   "patches": [
     {
       "operation": "createNode",
-      "parentNodeId": "uuid-parent",
+      "positionRelativeToNodeId": "uuid-parent",
       "nodeType": "CodeQ.Site:Content.Text",
       "position": "into",
       "properties": {"text": "<p>Hello</p>"}
@@ -735,7 +735,7 @@ POST /neosidekick/api/apply-patches
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `createNode` |
-| `parentNodeId` | string | **Yes** | - | UUID of parent/reference node |
+| `positionRelativeToNodeId` | string | **Yes** | - | UUID of reference node. For position `into`: this is the parent. For `before`/`after`: this is the sibling |
 | `nodeType` | string | **Yes** | - | Full NodeType name |
 | `position` | string | No | `into` | `into`, `before`, or `after` |
 | `properties` | object | No | `{}` | Initial property values |
@@ -785,7 +785,7 @@ curl -X POST "https://example.com/neosidekick/api/apply-patches" \
       },
       {
         "operation": "createNode",
-        "parentNodeId": "parent-uuid",
+        "positionRelativeToNodeId": "parent-uuid",
         "nodeType": "CodeQ.Site:Content.Text",
         "position": "into",
         "properties": {

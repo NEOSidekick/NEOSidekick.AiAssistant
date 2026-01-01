@@ -198,6 +198,26 @@ class ApplyPatchesApiController extends ActionController
             ], JSON_THROW_ON_ERROR);
         }
 
+        // Validate each dimension value is an array (e.g. {"language": ["de"]}, not {"language": "de"})
+        // This prevents TypeError in NodePatchService::createContext() where reset() is called on values
+        if (isset($data['dimensions']) && is_array($data['dimensions'])) {
+            foreach ($data['dimensions'] as $dimensionName => $dimensionValues) {
+                if (!is_array($dimensionValues)) {
+                    $this->response->setStatusCode(400);
+                    $example = is_scalar($dimensionValues) ? (string)$dimensionValues : 'value';
+                    return json_encode([
+                        'error' => 'Bad Request',
+                        'message' => sprintf(
+                            'Dimension "%s" value must be an array (e.g. ["%s"]), got %s',
+                            $dimensionName,
+                            $example,
+                            gettype($dimensionValues)
+                        )
+                    ], JSON_THROW_ON_ERROR);
+                }
+            }
+        }
+
         // Validate dryRun if provided - must be a boolean, not a string
         if (isset($data['dryRun']) && !is_bool($data['dryRun'])) {
             $this->response->setStatusCode(400);

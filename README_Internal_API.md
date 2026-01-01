@@ -53,7 +53,7 @@ curl -X POST "https://your-site.com/neosidekick/api/apply-patches" \
 
 All API endpoints (except Backend Service) require Bearer token authentication:
 
-```
+```http
 Authorization: Bearer {apiKey}
 ```
 
@@ -105,7 +105,7 @@ Returns all NodeType definitions with their properties, childNodes, and constrai
 
 ### Endpoint
 
-```
+```http
 GET /neosidekick/api/nodetype-schema
 ```
 
@@ -185,7 +185,7 @@ Returns the complete node tree starting from a specific node. Used to generate J
 
 ### Endpoint
 
-```
+```http
 GET /neosidekick/api/node-tree
 ```
 
@@ -283,7 +283,7 @@ Returns a list of all document nodes (pages) for a given workspace and dimension
 
 ### Endpoint
 
-```
+```http
 GET /neosidekick/api/document-nodes
 ```
 
@@ -420,7 +420,7 @@ Performs grep-like search across all node properties for a given workspace and d
 
 ### Endpoint
 
-```
+```http
 GET /neosidekick/api/search-nodes
 ```
 
@@ -564,7 +564,7 @@ Search for media assets (images, files) in the Neos Media library. Used by LLM a
 
 ### Endpoint
 
-```
+```http
 GET /neosidekick/api/search-media-assets
 ```
 
@@ -681,7 +681,7 @@ Apply atomic patches to the content repository. Supports creating, updating, mov
 
 ### Endpoint
 
-```
+```http
 POST /neosidekick/api/apply-patches
 ```
 
@@ -937,7 +937,7 @@ Internal service endpoint for the Neos backend UI integration. Used by the NEOSi
 
 ### Endpoint
 
-```
+```http
 GET/POST /neosidekick/aiassistant/service/{action}
 ```
 
@@ -953,7 +953,7 @@ This endpoint supports various actions for the backend UI. Refer to `BackendServ
 
 Dimensions are passed as URL-encoded JSON strings:
 
-```
+```text
 # URL-encoded format (use in actual requests)
 ?dimensions=%7B%22language%22%3A%5B%22de%22%5D%7D
 
@@ -999,7 +999,7 @@ HTTP Status Codes:
 
 These API endpoints follow a split architecture pattern:
 
-```
+```text
 ┌──────────────────────────────────┐
 │   NEOSidekick LLM Agent Platform │
 │          (Laravel)               │

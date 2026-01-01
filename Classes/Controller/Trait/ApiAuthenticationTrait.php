@@ -41,7 +41,7 @@ trait ApiAuthenticationTrait
         }
 
         $token = substr($authHeader, 7);
-        if ($token !== $this->apiKey) {
+        if (!hash_equals($this->apiKey, $token)) {
             $this->response->setStatusCode(401);
             return json_encode([
                 'error' => 'Unauthorized',

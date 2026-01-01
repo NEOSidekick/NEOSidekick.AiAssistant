@@ -9,7 +9,6 @@ use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Asset;
-use Neos\Media\Domain\Model\Image;
 use Neos\Neos\Controller\CreateContentContextTrait;
 
 /**
@@ -34,6 +33,11 @@ class NodeTreeExtractor
     private const CONTENT_COLLECTION_TYPE = 'Neos.Neos:ContentCollection';
 
     /**
+     * Default maximum depth for tree extraction to prevent stack overflow.
+     */
+    private const DEFAULT_MAX_DEPTH = 50;
+
+    /**
      * @Flow\Inject
      * @var NodeTypeManager
      */
@@ -45,10 +49,11 @@ class NodeTreeExtractor
      * @param string $nodeId The node identifier (UUID) to start from
      * @param string $workspace The workspace name
      * @param array $dimensions The dimension values (e.g., ['language' => ['de']])
+     * @param int|null $maxDepth Maximum depth for tree extraction (null uses default, prevents stack overflow)
      * @return array{generatedAt: string, rootNode: array}
      * @throws \InvalidArgumentException When node is not found
      */
-    public function extract(string $nodeId, string $workspace, array $dimensions): array
+    public function extract(string $nodeId, string $workspace, array $dimensions, ?int $maxDepth = null): array
     {
         $context = $this->createContentContext($workspace, $dimensions);
         $node = $context->getNodeByIdentifier($nodeId);
@@ -60,24 +65,29 @@ class NodeTreeExtractor
             );
         }
 
+        $effectiveMaxDepth = $maxDepth ?? self::DEFAULT_MAX_DEPTH;
+
         return [
             'generatedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
-            'rootNode' => $this->extractNode($node),
+            'rootNode' => $this->extractNode($node, 0, $effectiveMaxDepth),
         ];
     }
 
     /**
      * Extract data for a single node including its children.
      *
+     * @param NodeInterface $node The node to extract
+     * @param int $currentDepth Current recursion depth
+     * @param int $maxDepth Maximum allowed depth
      * @return array{id: string, nodeType: string, properties: array, children: array}
      */
-    private function extractNode(NodeInterface $node): array
+    private function extractNode(NodeInterface $node, int $currentDepth, int $maxDepth): array
     {
         return [
             'id' => $node->getIdentifier(),
             'nodeType' => $node->getNodeType()->getName(),
             'properties' => $this->extractProperties($node),
-            'children' => $this->extractChildren($node),
+            'children' => $this->extractChildren($node, $currentDepth, $maxDepth),
         ];
     }
 
@@ -131,16 +141,7 @@ class NodeTreeExtractor
      */
     private function serializePropertyValue(mixed $value): mixed
     {
-        // Handle image assets (check Image first as it extends Asset)
-        if ($value instanceof Image) {
-            return [
-                'identifier' => $value->getIdentifier(),
-                'filename' => $value->getResource()?->getFilename() ?? '',
-                'mediaType' => $value->getResource()?->getMediaType() ?? '',
-            ];
-        }
-
-        // Handle general assets
+        // Handle assets (includes Image, which extends Asset)
         if ($value instanceof Asset) {
             return [
                 'identifier' => $value->getIdentifier(),
@@ -180,10 +181,18 @@ class NodeTreeExtractor
      * - '_self' slot if the node IS a ContentCollection
      * - Named slots for each configured childNode
      *
+     * @param NodeInterface $node The node to extract children from
+     * @param int $currentDepth Current recursion depth
+     * @param int $maxDepth Maximum allowed depth
      * @return array<string, array{allowedTypes: array<string>, nodes: array}>
      */
-    private function extractChildren(NodeInterface $node): array
+    private function extractChildren(NodeInterface $node, int $currentDepth, int $maxDepth): array
     {
+        // Prevent stack overflow on deeply nested trees
+        if ($currentDepth >= $maxDepth) {
+            return [];
+        }
+
         $nodeType = $node->getNodeType();
         $children = [];
 
@@ -201,7 +210,7 @@ class NodeTreeExtractor
                 if ($this->isAutoCreatedChildNode($childNode, $nodeType)) {
                     continue;
                 }
-                $serializedChildren[] = $this->extractNode($childNode);
+                $serializedChildren[] = $this->extractNode($childNode, $currentDepth + 1, $maxDepth);
             }
 
             $children['_self'] = [
@@ -225,7 +234,7 @@ class NodeTreeExtractor
             $slotChildren = $childNode->getChildNodes();
             $serializedSlotChildren = [];
             foreach ($slotChildren as $slotChild) {
-                $serializedSlotChildren[] = $this->extractNode($slotChild);
+                $serializedSlotChildren[] = $this->extractNode($slotChild, $currentDepth + 1, $maxDepth);
             }
 
             // Include the ContentCollection node's id and nodeType

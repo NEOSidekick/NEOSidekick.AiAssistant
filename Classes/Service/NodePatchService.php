@@ -564,9 +564,12 @@ class NodePatchService
         if (!empty($dimensions)) {
             $contextProperties['dimensions'] = $dimensions;
             // Use the first value of each dimension as target dimension
+            // Skip dimensions with empty value arrays to avoid reset() returning false
             $targetDimensions = [];
             foreach ($dimensions as $dimensionName => $dimensionValues) {
-                $targetDimensions[$dimensionName] = reset($dimensionValues);
+                if (!empty($dimensionValues)) {
+                    $targetDimensions[$dimensionName] = reset($dimensionValues);
+                }
             }
             $contextProperties['targetDimensions'] = $targetDimensions;
         }

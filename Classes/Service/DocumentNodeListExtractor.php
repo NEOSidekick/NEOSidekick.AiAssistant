@@ -162,7 +162,7 @@ class DocumentNodeListExtractor
             'properties' => $this->extractSelectedProperties($node),
             'childDocumentCount' => count($childDocuments),
             'isHidden' => $node->isHidden(),
-            'isHiddenInMenu' => (bool)$node->getProperty('_hiddenInIndex'),
+            'isHiddenInMenu' => (bool)$node->isHiddenInIndex(),
         ];
     }
 

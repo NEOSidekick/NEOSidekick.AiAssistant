@@ -81,38 +81,38 @@ class NodePatchService
     {
         // Parse patches from raw data
         $patches = [];
-        try {
-            foreach ($patchesData as $index => $patchData) {
+        foreach ($patchesData as $index => $patchData) {
+            try {
                 $patches[] = AbstractPatch::fromArray($patchData);
+            } catch (\InvalidArgumentException $e) {
+                return PatchResult::failure(
+                    $dryRun,
+                    new PatchError($e->getMessage(), $index, 'unknown'),
+                    false
+                );
             }
-        } catch (\InvalidArgumentException $e) {
-            return PatchResult::failure(
-                $dryRun,
-                new PatchError($e->getMessage(), 0, 'unknown'),
-                false
-            );
         }
 
         // Create content context for the workspace and dimensions
         $context = $this->createContext($workspace, $dimensions);
 
         // Pre-validate all patches before starting the transaction
-        try {
-            foreach ($patches as $index => $patch) {
+        foreach ($patches as $index => $patch) {
+            try {
                 $this->patchValidator->validatePatch($patch, $index, $context);
+            } catch (PatchFailedException $e) {
+                return PatchResult::failure(
+                    $dryRun,
+                    new PatchError($e->getMessage(), $e->getPatchIndex(), $e->getOperation(), $e->getNodeId()),
+                    false
+                );
+            } catch (NodeTypeNotFoundException $e) {
+                return PatchResult::failure(
+                    $dryRun,
+                    new PatchError($e->getMessage(), $index, 'unknown'),
+                    false
+                );
             }
-        } catch (PatchFailedException $e) {
-            return PatchResult::failure(
-                $dryRun,
-                new PatchError($e->getMessage(), $e->getPatchIndex(), $e->getOperation(), $e->getNodeId()),
-                false
-            );
-        } catch (NodeTypeNotFoundException $e) {
-            return PatchResult::failure(
-                $dryRun,
-                new PatchError($e->getMessage(), 0, 'unknown'),
-                false
-            );
         }
 
         // Execute patches within a transaction

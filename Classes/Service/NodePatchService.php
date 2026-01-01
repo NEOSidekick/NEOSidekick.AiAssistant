@@ -225,11 +225,10 @@ class NodePatchService
 
             $nodeType = $this->nodeTypeManager->getNodeType($patch->getNodeType());
 
-            // Generate a unique node name based on nodeType
-            $nodeName = $this->generateUniqueNodeName($parentNode, $nodeType);
-
             // Create the node based on position
             if ($patch->getPosition() === 'into') {
+                // Generate unique node name for the target parent
+                $nodeName = $this->generateUniqueNodeName($parentNode, $nodeType);
                 $newNode = $parentNode->createNode($nodeName, $nodeType);
             } else {
                 // For 'before' or 'after', create as sibling of parent node
@@ -244,6 +243,8 @@ class NodePatchService
                         $patch->getParentNodeId()
                     );
                 }
+                // Generate unique node name for the actual parent (not the reference sibling)
+                $nodeName = $this->generateUniqueNodeName($actualParent, $nodeType);
                 $newNode = $actualParent->createNode($nodeName, $nodeType);
 
                 // Move to correct position

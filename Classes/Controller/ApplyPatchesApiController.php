@@ -107,6 +107,7 @@ class ApplyPatchesApiController extends ActionController
         // Extract parameters with defaults
         $workspace = $data['workspace'] ?? 'live';
         $dimensions = $data['dimensions'] ?? [];
+        // dryRun is validated as boolean in validateRequestData, safe to use directly
         $dryRun = $data['dryRun'] ?? false;
         $patches = $data['patches'];
 
@@ -115,7 +116,7 @@ class ApplyPatchesApiController extends ActionController
             $patches,
             $workspace,
             $dimensions,
-            (bool)$dryRun
+            $dryRun
         );
 
         // Set appropriate HTTP status code
@@ -194,6 +195,15 @@ class ApplyPatchesApiController extends ActionController
             return json_encode([
                 'error' => 'Bad Request',
                 'message' => 'Field "dimensions" must be an object'
+            ], JSON_THROW_ON_ERROR);
+        }
+
+        // Validate dryRun if provided - must be a boolean, not a string
+        if (isset($data['dryRun']) && !is_bool($data['dryRun'])) {
+            $this->response->setStatusCode(400);
+            return json_encode([
+                'error' => 'Bad Request',
+                'message' => 'Field "dryRun" must be a boolean (true or false), not a string'
             ], JSON_THROW_ON_ERROR);
         }
 

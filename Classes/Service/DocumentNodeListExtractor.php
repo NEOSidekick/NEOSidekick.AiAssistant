@@ -9,6 +9,7 @@ use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\Neos\Domain\Service\ContentContext;
+use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
 
 /**
  * Service to extract document node list from Neos.
@@ -21,6 +22,7 @@ use Neos\Neos\Domain\Service\ContentContext;
 class DocumentNodeListExtractor
 {
     use CreateContentContextTrait;
+    use PropertyExtractionTrait;
 
     private const DOCUMENT_TYPE = 'Neos.Neos:Document';
     private const SITE_TYPE = 'Neos.Neos:Site';
@@ -166,18 +168,4 @@ class DocumentNodeListExtractor
         ];
     }
 
-    /**
-     * Extract only the configured properties from a node.
-     */
-    private function extractSelectedProperties(NodeInterface $node): array
-    {
-        $properties = [];
-        foreach ($this->getIncludedProperties() as $propertyName) {
-            $value = $node->getProperty($propertyName);
-            if ($value !== null) {
-                $properties[$propertyName] = $value;
-            }
-        }
-        return $properties;
-    }
 }

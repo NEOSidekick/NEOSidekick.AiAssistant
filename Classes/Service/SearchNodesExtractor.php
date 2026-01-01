@@ -12,6 +12,7 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\CreateContentContextTrait;
+use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
 
 /**
  * Service to search nodes in the Neos content repository.
@@ -24,6 +25,7 @@ use Neos\Neos\Controller\CreateContentContextTrait;
 class SearchNodesExtractor
 {
     use CreateContentContextTrait;
+    use PropertyExtractionTrait;
 
     private const DOCUMENT_TYPE = 'Neos.Neos:Document';
 
@@ -193,21 +195,4 @@ class SearchNodesExtractor
         return null;
     }
 
-    /**
-     * Extract only the configured properties from a node.
-     *
-     * @param NodeInterface $node The node to extract properties from
-     * @return array Extracted properties
-     */
-    private function extractSelectedProperties(NodeInterface $node): array
-    {
-        $properties = [];
-        foreach ($this->getIncludedProperties() as $propertyName) {
-            $value = $node->getProperty($propertyName);
-            if ($value !== null) {
-                $properties[$propertyName] = $value;
-            }
-        }
-        return $properties;
-    }
 }

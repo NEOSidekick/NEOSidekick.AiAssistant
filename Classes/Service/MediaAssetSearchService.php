@@ -114,12 +114,17 @@ class MediaAssetSearchService
             $tags[] = $tag->getLabel();
         }
 
+        // Guard against assets with missing or deleted resources
+        $resource = $asset->getResource();
+        $filename = $resource !== null ? $resource->getFilename() : '';
+        $mediaType = $resource !== null ? $asset->getMediaType() : '';
+
         return new MediaAssetData(
             identifier: $asset->getIdentifier(),
-            filename: $asset->getResource()->getFilename(),
+            filename: $filename,
             title: $asset->getTitle() ?? '',
             caption: $asset->getCaption() ?? '',
-            mediaType: $asset->getMediaType(),
+            mediaType: $mediaType,
             tags: $tags
         );
     }

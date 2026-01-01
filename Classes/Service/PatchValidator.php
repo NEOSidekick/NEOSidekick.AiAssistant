@@ -66,6 +66,10 @@ class PatchValidator
     /**
      * Validate a createNode patch.
      *
+     * For 'into' position, the parentNodeId is the actual parent.
+     * For 'before'/'after' positions, the parentNodeId is actually a reference sibling node,
+     * and the new node will be created under that sibling's parent.
+     *
      * @param CreateNodePatch $patch
      * @param int $patchIndex
      * @param Context $context
@@ -77,19 +81,36 @@ class PatchValidator
         // Validate nodeType exists
         $nodeType = $this->getNodeType($patch->getNodeType(), $patchIndex, 'createNode');
 
-        // Validate parent node exists
-        $parentNode = $this->getNodeById($patch->getParentNodeId(), $patchIndex, 'createNode', $context);
+        // Validate reference node exists (parent for 'into', sibling for 'before'/'after')
+        $referenceNode = $this->getNodeById($patch->getParentNodeId(), $patchIndex, 'createNode', $context);
 
         // Validate position
         $this->validatePosition($patch->getPosition(), $patchIndex, 'createNode', $patch->getParentNodeId());
 
-        // Validate node type is allowed as child of parent
-        if (!$parentNode->getNodeType()->allowsChildNodeType($nodeType)) {
+        // Determine actual parent based on position
+        // For 'into': the referenceNode is the parent
+        // For 'before'/'after': the referenceNode is a sibling, so the actual parent is its parent
+        if ($patch->getPosition() === 'into') {
+            $actualParent = $referenceNode;
+        } else {
+            $actualParent = $referenceNode->getParent();
+            if ($actualParent === null) {
+                throw new PatchFailedException(
+                    sprintf('Reference node "%s" has no parent', $patch->getParentNodeId()),
+                    $patchIndex,
+                    'createNode',
+                    $patch->getParentNodeId()
+                );
+            }
+        }
+
+        // Validate node type is allowed as child of the actual parent
+        if (!$actualParent->getNodeType()->allowsChildNodeType($nodeType)) {
             throw new PatchFailedException(
                 sprintf(
                     'NodeType "%s" is not allowed as child of parent node type "%s"',
                     $nodeType->getName(),
-                    $parentNode->getNodeType()->getName()
+                    $actualParent->getNodeType()->getName()
                 ),
                 $patchIndex,
                 'createNode',

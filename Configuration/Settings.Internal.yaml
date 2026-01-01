@@ -109,7 +109,9 @@ Neos:
         providers:
           'Neos.Neos:Backend':
             requestPatterns:
+              # Backend controllers require Neos backend authentication
               'NEOSidekick.AiAssistant:BackendControllers':
                 pattern: ControllerObjectName
                 patternOptions:
-                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\.*'
+                  # Exclude Api controllers - they use Bearer token authentication
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\Backend.*'

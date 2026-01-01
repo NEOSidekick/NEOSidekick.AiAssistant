@@ -648,7 +648,7 @@ curl -G "https://example.com/neosidekick/api/search-media-assets" \
 
 When setting image/asset properties, you can use **either format**:
 
-**Preferred: Just the identifier string (simpler and faster)**
+#### Preferred: Just the identifier string (simpler and faster)
 ```json
 {
   "operation": "updateNode",
@@ -659,7 +659,7 @@ When setting image/asset properties, you can use **either format**:
 }
 ```
 
-**Also supported: Asset object format (matches search results)**
+#### Also supported: Asset object format (matches search results)
 ```json
 {
   "operation": "updateNode",

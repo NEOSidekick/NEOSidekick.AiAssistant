@@ -49,6 +49,16 @@
   httpMethods: ['GET']
 
 -
+  name:  'Search Media Assets API'
+  uriPattern: 'neosidekick/api/search-media-assets'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'SearchMediaAssetsApi'
+    '@action':     'search'
+    '@format':     'json'
+  httpMethods: ['GET']
+
+-
   name:  'Apply Patches API'
   uriPattern: 'neosidekick/api/apply-patches'
   defaults:

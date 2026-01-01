@@ -71,11 +71,12 @@ class PropertyNormalizer
             return $value;
         }
 
+        // Get the property type from NodeType configuration using proper API
+        $properties = $nodeType->getProperties();
+        $propertyType = $properties[$propertyName]['type'] ?? null;
+
         // Check if this looks like an asset object (has 'identifier' key)
         if (isset($value['identifier']) && is_string($value['identifier'])) {
-            // Get the property type from NodeType configuration
-            $propertyType = $nodeType->getConfiguration('properties.' . $propertyName . '.type');
-
             // Check if this is an asset-type property
             if ($propertyType !== null && $this->isAssetPropertyType($propertyType)) {
                 // Extract just the identifier for the property converter
@@ -85,7 +86,6 @@ class PropertyNormalizer
 
         // Handle arrays of assets (e.g., array<Neos\Media\Domain\Model\Asset>)
         if ($this->isIndexedArray($value)) {
-            $propertyType = $nodeType->getConfiguration('properties.' . $propertyName . '.type');
             if ($propertyType !== null && $this->isAssetArrayPropertyType($propertyType)) {
                 // Normalize each item in the array
                 return array_map(function ($item) {

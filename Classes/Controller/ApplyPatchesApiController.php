@@ -77,13 +77,22 @@ class ApplyPatchesApiController extends ActionController
         // Parse JSON body from request
         // Use php://input as the PSR-7 stream may have already been consumed
         $requestBody = file_get_contents('php://input');
-        $data = json_decode($requestBody, true);
+
+        try {
+            $data = json_decode($requestBody, true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $e) {
+            $this->response->setStatusCode(400);
+            return json_encode([
+                'error' => 'Bad Request',
+                'message' => 'Invalid JSON: ' . $e->getMessage()
+            ], JSON_THROW_ON_ERROR);
+        }
 
         if (!is_array($data)) {
             $this->response->setStatusCode(400);
             return json_encode([
                 'error' => 'Bad Request',
-                'message' => 'Invalid JSON body'
+                'message' => 'Request body must be a JSON object'
             ], JSON_THROW_ON_ERROR);
         }
 

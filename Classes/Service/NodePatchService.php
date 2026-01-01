@@ -123,9 +123,12 @@ class NodePatchService
         // Execute patches within a transaction
         $this->entityManager->beginTransaction();
         $results = [];
+        // Track current patch index for error reporting in case of unexpected exceptions
+        $currentIndex = 0;
 
         try {
             foreach ($patches as $index => $patch) {
+                $currentIndex = $index;
                 $patchResult = $this->executePatch($patch, $index, $context);
                 $results[] = $patchResult;
             }
@@ -154,7 +157,7 @@ class NodePatchService
 
             return PatchResult::failure(
                 $dryRun,
-                new PatchError($e->getMessage(), 0, 'unknown'),
+                new PatchError($e->getMessage(), $currentIndex, 'unknown'),
                 true
             );
         }

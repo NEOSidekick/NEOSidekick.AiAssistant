@@ -79,12 +79,19 @@ class NodeTypeSchemaExtractor
     /**
      * Extract schema data for a single NodeType.
      *
-     * @return array{name: string, isContentCollection: bool, properties: array, childNodes: array, constraints: array}
+     * @return array{name: string, superTypes: array<string>, isContentCollection: bool, properties: array, childNodes: array, constraints: array}
      */
     private function extractNodeType(NodeType $nodeType): array
     {
+        // Get declared superTypes (only the direct ones, not inherited)
+        $superTypes = [];
+        foreach ($nodeType->getDeclaredSuperTypes() as $superType) {
+            $superTypes[] = $superType->getName();
+        }
+
         return [
             'name' => $nodeType->getName(),
+            'superTypes' => $superTypes,
             'isContentCollection' => $nodeType->isOfType(self::CONTENT_COLLECTION_TYPE),
             'properties' => $this->extractProperties($nodeType),
             'childNodes' => $nodeType->getConfiguration('childNodes') ?? [],
@@ -198,5 +205,3 @@ class NodeTypeSchemaExtractor
         }
     }
 }
-
-

@@ -137,7 +137,9 @@ class NodePatchService
                 // Rollback in dry-run mode - validation passed but don't persist
                 $this->entityManager->rollback();
             } else {
-                // Commit the transaction
+                // Flush changes to database and commit the transaction
+                // Note: flush() executes SQL for pending changes; commit() finalizes the transaction
+                $this->entityManager->flush();
                 $this->entityManager->commit();
             }
 

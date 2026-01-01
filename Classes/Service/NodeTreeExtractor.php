@@ -211,6 +211,7 @@ class NodeTreeExtractor
         }
 
         // Handle named childNodes (auto-created slots like 'main', 'fields', etc.)
+        // These are typically ContentCollection nodes with their own UUIDs
         $childNodesConfig = $nodeType->getConfiguration('childNodes') ?? [];
         foreach ($childNodesConfig as $childNodeName => $childNodeConfig) {
             $childNode = $node->getNode($childNodeName);
@@ -221,14 +222,17 @@ class NodeTreeExtractor
             $allowedTypes = $this->resolveChildNodeAllowedTypes($childNodeConfig);
 
             // Get the content inside this named slot
-            // Named childNodes are typically ContentCollections themselves
             $slotChildren = $childNode->getChildNodes();
             $serializedSlotChildren = [];
             foreach ($slotChildren as $slotChild) {
                 $serializedSlotChildren[] = $this->extractNode($slotChild);
             }
 
+            // Include the ContentCollection node's id and nodeType
+            // so it can be represented as a proper node in JSX
             $children[$childNodeName] = [
+                'id' => $childNode->getIdentifier(),
+                'nodeType' => $childNode->getNodeType()->getName(),
                 'allowedTypes' => $allowedTypes,
                 'nodes' => $serializedSlotChildren,
             ];
@@ -281,4 +285,3 @@ class NodeTreeExtractor
         return $allowedTypes;
     }
 }
-

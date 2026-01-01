@@ -12,7 +12,6 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\CreateContentContextTrait;
-use Neos\Neos\Domain\Service\ContentContext;
 
 /**
  * Service to search nodes in the Neos content repository.
@@ -121,7 +120,7 @@ class SearchNodesExtractor
                 continue;
             }
 
-            $results[] = $this->extractNodeData($node, $context);
+            $results[] = $this->extractNodeData($node);
         }
 
         return [
@@ -140,10 +139,9 @@ class SearchNodesExtractor
      * Extract data from a single node.
      *
      * @param NodeInterface $node The node to extract data from
-     * @param ContentContext $context The content context
      * @return array Extracted node data
      */
-    private function extractNodeData(NodeInterface $node, ContentContext $context): array
+    private function extractNodeData(NodeInterface $node): array
     {
         $path = $node->getPath();
         $depth = NodePaths::getPathDepth($path);

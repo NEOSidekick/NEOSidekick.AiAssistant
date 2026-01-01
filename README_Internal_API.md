@@ -848,7 +848,7 @@ This includes:
 
 The MCP tool formats this as JSX matching the `getDocumentContent` tool output:
 
-```
+```text
 ✓ All patches applied successfully
 
   [0] createNode: new-uuid-created

@@ -19,6 +19,7 @@ use NEOSidekick\AiAssistant\Dto\Patch\DeleteNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\MoveNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\UpdateNodePatch;
 use NEOSidekick\AiAssistant\Exception\PatchFailedException;
+use NEOSidekick\AiAssistant\Service\PropertyNormalizer;
 
 /**
  * Validates patches before execution using NodeTemplates' PropertiesProcessor.
@@ -40,6 +41,12 @@ class PatchValidator
      * @var PropertiesProcessor
      */
     protected $propertiesProcessor;
+
+    /**
+     * @Flow\Inject
+     * @var PropertyNormalizer
+     */
+    protected $propertyNormalizer;
 
     /**
      * Validate a patch before execution.
@@ -288,6 +295,9 @@ class PatchValidator
     /**
      * Validate properties using the PropertiesProcessor from NodeTemplates.
      *
+     * Properties are normalized before validation to convert asset objects
+     * (with 'identifier' key) to plain identifier strings.
+     *
      * @param array<string, mixed> $properties
      * @param NodeType $nodeType
      * @param int $patchIndex
@@ -301,6 +311,10 @@ class PatchValidator
             return;
         }
 
+        // Normalize properties before validation
+        // This converts asset objects (with 'identifier' key) to plain identifier strings
+        $normalizedProperties = $this->propertyNormalizer->normalizeProperties($properties, $nodeType);
+
         $processingErrors = ProcessingErrors::create();
 
         // Create a transient node to validate properties
@@ -308,7 +322,7 @@ class PatchValidator
             $nodeType,
             $this->nodeTypeManager,
             $context,
-            $properties
+            $normalizedProperties
         );
 
         // Use PropertiesProcessor to validate and process properties

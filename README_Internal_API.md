@@ -646,8 +646,20 @@ curl -G "https://example.com/neosidekick/api/search-media-assets" \
 
 ### Usage in Patches
 
-Use the asset `identifier` when setting image properties:
+When setting image/asset properties, you can use **either format**:
 
+**Preferred: Just the identifier string (simpler and faster)**
+```json
+{
+  "operation": "updateNode",
+  "nodeId": "node-uuid",
+  "properties": {
+    "image": "edad3d53-f4eb-405b-a8b9-ac8c0094784c"
+  }
+}
+```
+
+**Also supported: Asset object format (matches search results)**
 ```json
 {
   "operation": "updateNode",
@@ -661,6 +673,8 @@ Use the asset `identifier` when setting image properties:
   }
 }
 ```
+
+The API automatically extracts the `identifier` from asset objects. This allows you to use the asset data from search results directly.
 
 ### Error Response
 

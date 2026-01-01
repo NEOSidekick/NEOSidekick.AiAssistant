@@ -15,7 +15,6 @@ use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\Image;
-use Neos\Utility\Arrays;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\CreatedNodeInfo;
 use NEOSidekick\AiAssistant\Dto\Patch\CreateNodePatch;
@@ -63,6 +62,12 @@ class NodePatchService
      * @var TemplateNodeCreationHandler
      */
     protected $templateNodeCreationHandler;
+
+    /**
+     * @Flow\Inject
+     * @var PropertyNormalizer
+     */
+    protected $propertyNormalizer;
 
     /**
      * Apply a batch of patches to the content repository.
@@ -253,8 +258,10 @@ class NodePatchService
                 }
             }
 
-            // Set properties
-            foreach ($patch->getProperties() as $propertyName => $propertyValue) {
+            // Normalize and set properties
+            // This converts asset objects (with 'identifier' key) to plain identifier strings
+            $normalizedProperties = $this->propertyNormalizer->normalizeProperties($patch->getProperties(), $nodeType);
+            foreach ($normalizedProperties as $propertyName => $propertyValue) {
                 $newNode->setProperty($propertyName, $propertyValue);
             }
 
@@ -419,8 +426,10 @@ class NodePatchService
                 );
             }
 
-            // Update properties
-            foreach ($patch->getProperties() as $propertyName => $propertyValue) {
+            // Normalize and update properties
+            // This converts asset objects (with 'identifier' key) to plain identifier strings
+            $normalizedProperties = $this->propertyNormalizer->normalizeProperties($patch->getProperties(), $node->getNodeType());
+            foreach ($normalizedProperties as $propertyName => $propertyValue) {
                 $node->setProperty($propertyName, $propertyValue);
             }
 

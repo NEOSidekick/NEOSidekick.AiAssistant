@@ -47,3 +47,13 @@
     '@action':     'search'
     '@format':     'json'
   httpMethods: ['GET']
+
+-
+  name:  'Apply Patches API'
+  uriPattern: 'neosidekick/api/apply-patches'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'ApplyPatchesApi'
+    '@action':     'applyPatches'
+    '@format':     'json'
+  httpMethods: ['POST']

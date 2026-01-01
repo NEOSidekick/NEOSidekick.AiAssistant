@@ -70,18 +70,18 @@ class NodePatchService
     protected $propertyNormalizer;
 
     /**
-     * Apply a batch of patches to the content repository.
-     *
-     * All patches are executed within a database transaction. If any patch
-     * fails, all changes are rolled back. In dry-run mode, changes are
-     * validated and then rolled back regardless of success.
-     *
-     * @param array<int, array<string, mixed>> $patchesData Raw patch data from API request
-     * @param string $workspace The workspace name to apply patches in
-     * @param array<string, array<int, string>> $dimensions Content dimensions
-     * @param bool $dryRun If true, validate and rollback without persisting
-     * @return PatchResult
-     */
+         * Apply a batch of content patches to the specified workspace and dimensions.
+         *
+         * Validates the provided patches, executes them inside a single database transaction,
+         * and returns a PatchResult describing per-patch outcomes and overall success.
+         * When $dryRun is true, patches are validated and executed but all changes are rolled back.
+         *
+         * @param array<int, array<string, mixed>> $patchesData Raw patch data from API request
+         * @param string $workspace The workspace name to apply patches in
+         * @param array<string, array<int, string>> $dimensions Content dimensions
+         * @param bool $dryRun If true, validate and rollback without persisting
+         * @return PatchResult PatchResult with per-patch results on success or a PatchError describing the failure (includes patch index, operation, and node identifier when available)
+         */
     public function applyPatches(array $patchesData, string $workspace, array $dimensions, bool $dryRun = false): PatchResult
     {
         // Parse patches from raw data
@@ -164,14 +164,16 @@ class NodePatchService
     }
 
     /**
-     * Execute a single patch operation.
-     *
-     * @param AbstractPatch $patch The patch to execute
-     * @param int $index The index of the patch in the batch
-     * @param Context $context The content context
-     * @return array<string, mixed> The result of the patch operation
-     * @throws PatchFailedException
-     */
+         * Execute a single patch and return its result.
+         *
+         * Executes the provided patch and returns an associative array describing the outcome.
+         *
+         * @param AbstractPatch $patch The patch to execute.
+         * @param int $index The index of the patch in the batch.
+         * @param Context $context The content repository context to apply the patch in.
+         * @return array<string,mixed> Associative array containing at minimum `index` and `operation`. For update/move/delete patches includes `nodeId`; for create patches includes `nodeId` and `createdNodes` with details of the created node tree.
+         * @throws PatchFailedException If the patch cannot be applied or the patch type is unknown.
+         */
     private function executePatch(AbstractPatch $patch, int $index, Context $context): array
     {
         if ($patch instanceof CreateNodePatch) {
@@ -207,17 +209,19 @@ class NodePatchService
     }
 
     /**
-     * Execute a createNode patch.
-     *
-     * Returns extended information about all nodes that were created,
-     * including auto-created child nodes and nodes from NodeTemplates.
-     *
-     * @param CreateNodePatch $patch
-     * @param int $index
-     * @param Context $context
-     * @return array<string, mixed> The result with all created node details
-     * @throws PatchFailedException
-     */
+         * Create a new node according to the provided CreateNodePatch and return detailed information
+         * about the created node(s).
+         *
+         * The result includes the patch index, the operation name, the identifier of the main created node,
+         * and an array of created node details that covers the main node, any auto-created children, and
+         * nodes added by NodeTemplates.
+         *
+         * @param CreateNodePatch $patch The create-node patch describing position, node type and properties.
+         * @param int $index The zero-based index of the patch in the batch.
+         * @param Context $context The content repository context to perform creation in.
+         * @return array<string,mixed> Array with keys `index`, `operation`, `nodeId`, and `createdNodes`.
+         * @throws PatchFailedException If the reference node or parent cannot be found or the creation fails.
+         */
     private function executeCreateNode(CreateNodePatch $patch, int $index, Context $context): array
     {
         try {
@@ -329,14 +333,14 @@ class NodePatchService
     }
 
     /**
-     * Extract properties from a node, filtering internal properties.
-     *
-     * Excludes properties starting with underscore (except _hidden),
-     * and serializes assets appropriately.
-     *
-     * @param NodeInterface $node
-     * @return array<string, mixed>
-     */
+         * Return the node's properties with internal fields removed and values serialized.
+         *
+         * Filters out properties whose names start with "_" except for "_hidden", then serializes each value
+         * into a JSON-friendly representation (assets, dates, arrays, objects, scalars).
+         *
+         * @param NodeInterface $node The node to extract properties from.
+         * @return array<string, mixed> An associative array mapping property names to their serialized values.
+         */
     private function extractNodeProperties(NodeInterface $node): array
     {
         $properties = $node->getProperties();
@@ -356,12 +360,20 @@ class NodePatchService
     }
 
     /**
-     * Serialize a property value to a JSON-compatible format.
+     * Serialize a content property value into a JSON-friendly representation.
      *
-     * Handles special types like images and assets.
+     * Converts known domain types and complex values into serializable forms so
+     * they can be included in API responses or patch result payloads.
      *
-     * @param mixed $value The property value
-     * @return mixed The serialized value
+     * @param mixed $value The property value to serialize.
+     * @return mixed A JSON-serializable representation:
+     *               - For Image and Asset objects: an associative array with keys
+     *                 `identifier`, `filename`, and `mediaType`.
+     *               - For arrays: an array with each item serialized recursively.
+     *               - For DateTimeInterface: an ISO-8601 formatted string.
+     *               - For objects implementing `__toString`: the string cast.
+     *               - For other objects that cannot be stringified: `null`.
+     *               - For scalars and `null`: the original value.
      */
     private function serializePropertyValue(mixed $value): mixed
     {
@@ -408,14 +420,16 @@ class NodePatchService
     }
 
     /**
-     * Execute an updateNode patch.
-     *
-     * @param UpdateNodePatch $patch
-     * @param int $index
-     * @param Context $context
-     * @return string The node's identifier
-     * @throws PatchFailedException
-     */
+         * Update properties on the node targeted by the given patch.
+         *
+         * Normalizes the patch's properties according to the node type and applies them to the resolved node.
+         *
+         * @param UpdateNodePatch $patch Patch containing the target node identifier and properties to apply.
+         * @param int $index Patch index used for error context.
+         * @param Context $context Content context used to resolve the node by identifier.
+         * @return string The identifier of the updated node.
+         * @throws PatchFailedException If the target node cannot be found or the update fails.
+         */
     private function executeUpdateNode(UpdateNodePatch $patch, int $index, Context $context): string
     {
         try {
@@ -451,13 +465,13 @@ class NodePatchService
     }
 
     /**
-     * Execute a moveNode patch.
+     * Moves a node relative to a target node according to the provided MoveNodePatch.
      *
-     * @param MoveNodePatch $patch
-     * @param int $index
-     * @param Context $context
-     * @return string The node's identifier
-     * @throws PatchFailedException
+     * @param MoveNodePatch $patch Contains the source node identifier, target node identifier, and position ('into', 'before', 'after').
+     * @param int $index Index of the patch in the batch, used for error reporting.
+     * @param Context $context Content context used to resolve nodes.
+     * @return string The moved node's identifier.
+     * @throws PatchFailedException If the source or target node cannot be found or the move operation fails.
      */
     private function executeMoveNode(MoveNodePatch $patch, int $index, Context $context): string
     {
@@ -510,14 +524,14 @@ class NodePatchService
     }
 
     /**
-     * Execute a deleteNode patch.
-     *
-     * @param DeleteNodePatch $patch
-     * @param int $index
-     * @param Context $context
-     * @return string The node's identifier
-     * @throws PatchFailedException
-     */
+         * Delete the node referenced by the patch and return its identifier.
+         *
+         * @param DeleteNodePatch $patch The delete-node patch containing the target node identifier.
+         * @param int $index The patch index within the batch (used for error context).
+         * @param Context $context The content context used to resolve and modify the node.
+         * @return string The identifier of the removed node.
+         * @throws PatchFailedException If the target node is not found or deletion fails.
+         */
     private function executeDeleteNode(DeleteNodePatch $patch, int $index, Context $context): string
     {
         try {
@@ -549,12 +563,15 @@ class NodePatchService
     }
 
     /**
-     * Create a content context for the given workspace and dimensions.
-     *
-     * @param string $workspace
-     * @param array<string, array<int, string>> $dimensions
-     * @return Context
-     */
+         * Builds a content Context for the specified workspace and dimension sets.
+         *
+         * If $dimensions is non-empty the context will include the full dimensions map and a
+         * `targetDimensions` entry derived by taking the first value of each non-empty dimension.
+         *
+         * @param string $workspace The workspace name to use for the context.
+         * @param array<string, array<int, string>> $dimensions Map of dimension names to ordered value lists; empty value arrays are ignored when deriving `targetDimensions`.
+         * @return Context The created content Context configured with the provided workspace and dimensions.
+         */
     private function createContext(string $workspace, array $dimensions): Context
     {
         $contextProperties = [
@@ -581,11 +598,11 @@ class NodePatchService
     }
 
     /**
-     * Generate a unique node name based on the node type.
+     * Create a unique, human-friendly node name derived from the given node type and guaranteed not to conflict with existing children of the parent node.
      *
-     * @param NodeInterface $parentNode
-     * @param NodeType $nodeType
-     * @return string
+     * @param NodeInterface $parentNode Parent node under which the name must be unique.
+     * @param NodeType $nodeType Node type used to derive the base name.
+     * @return string A unique node name suitable for creating a child node under $parentNode.
      */
     private function generateUniqueNodeName(NodeInterface $parentNode, NodeType $nodeType): string
     {

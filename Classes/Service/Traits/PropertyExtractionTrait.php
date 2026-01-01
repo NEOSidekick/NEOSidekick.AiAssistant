@@ -15,23 +15,19 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 trait PropertyExtractionTrait
 {
     /**
-     * Get the list of properties to include in extraction.
-     *
-     * Must be implemented by the using class to provide
-     * the configured property names.
-     *
-     * @return array<string> Property names to extract
-     */
+ * Provide the names of node properties to extract.
+ *
+ * Implementing classes must return an array of property names that should be extracted from a node.
+ *
+ * @return string[] The node property names to extract.
+ */
     abstract protected function getIncludedProperties(): array;
 
     /**
-     * Extract only the configured properties from a node.
+     * Return the properties configured by getIncludedProperties() from the given node when their values are not null.
      *
-     * Iterates over the configured property names and returns
-     * only those with non-null values.
-     *
-     * @param NodeInterface $node The node to extract properties from
-     * @return array<string, mixed> Extracted properties (key => value)
+     * @param NodeInterface $node The node to extract properties from.
+     * @return array<string,mixed> Map of property names to their non-null values.
      */
     protected function extractSelectedProperties(NodeInterface $node): array
     {
@@ -45,4 +41,3 @@ trait PropertyExtractionTrait
         return $properties;
     }
 }
-

@@ -49,15 +49,18 @@ class DocumentNodeListApiController extends ActionController
     }
 
     /**
-     * Get all document nodes as JSON.
+     * Produce a JSON representation of document nodes for the specified workspace and dimension configuration.
      *
-     * @param string $workspace The workspace name (default: 'live')
-     * @param string $dimensions JSON-encoded dimensions array
-     * @param string $site Site node name (optional, defaults to first site)
-     * @param string $nodeTypeFilter Filter by NodeType (default: all documents)
-     * @param int $depth Maximum traversal depth (-1 = unlimited)
-     * @return string JSON response
-     * @throws JsonException
+     * Decodes the provided dimensions JSON string and returns the extractor's result as a JSON string.
+     * If authentication fails the method returns the authentication error payload; on extraction errors the response status is set to 400 and an error payload is returned.
+     *
+     * @param string $workspace The workspace name to query (e.g., "live").
+     * @param string $dimensions JSON-encoded dimensions map (e.g., '{"language":"en"}').
+     * @param string $site Optional site node name; when empty the first site is used.
+     * @param string $nodeTypeFilter NodeType filter to apply (e.g., "Neos.Neos:Document").
+     * @param int $depth Maximum traversal depth; use -1 for unlimited.
+     * @return string JSON containing the document nodes on success, or an authentication/error payload on failure.
+     * @throws JsonException When encoding the response fails.
      * @Flow\SkipCsrfProtection
      */
     public function listAction(

@@ -24,12 +24,14 @@ use Neos\Flow\Annotations as Flow;
 final class MediaAssetData implements JsonSerializable
 {
     /**
-     * @param string $identifier Asset UUID for use in update patches
-     * @param string $filename Original file name
-     * @param string $title Editorial title (may be empty)
-     * @param string $caption Description/alt text (may be empty)
-     * @param string $mediaType MIME type (e.g., "image/png")
-     * @param array<string> $tags Tag labels for categorization
+     * Create a MediaAssetData DTO containing identifying, descriptive and classification details for a media asset.
+     *
+     * @param string $identifier Asset UUID used for updates and identification.
+     * @param string $filename Original file name.
+     * @param string $title Editorial title (may be empty).
+     * @param string $caption Description or alt text for the asset (may be empty).
+     * @param string $mediaType MIME type of the asset (e.g., "image/png").
+     * @param array<string> $tags List of tag labels for categorization and semantic context.
      */
     public function __construct(
         private readonly string $identifier,
@@ -41,33 +43,60 @@ final class MediaAssetData implements JsonSerializable
     ) {
     }
 
+    /**
+     * Media asset identifier (UUID) used for update patches.
+     *
+     * @return string The asset UUID identifying the media asset for updates.
+     */
     public function getIdentifier(): string
     {
         return $this->identifier;
     }
 
+    /**
+     * Retrieve the original filename of the media asset.
+     *
+     * @return string The original filename.
+     */
     public function getFilename(): string
     {
         return $this->filename;
     }
 
+    /**
+     * Retrieve the asset's editorial title.
+     *
+     * @return string The editorial title of the media asset.
+     */
     public function getTitle(): string
     {
         return $this->title;
     }
 
+    /**
+     * Retrieves the media asset's caption (description or alt text).
+     *
+     * @return string The caption text (description/alt text).
+     */
     public function getCaption(): string
     {
         return $this->caption;
     }
 
+    /**
+     * Gets the media MIME type of the asset.
+     *
+     * @return string The asset's MIME type (for example, "image/png" or "video/mp4").
+     */
     public function getMediaType(): string
     {
         return $this->mediaType;
     }
 
     /**
-     * @return array<string>
+     * Retrieve the tag labels associated with the media asset.
+     *
+     * @return array<string> The tag labels associated with the media asset.
      */
     public function getTags(): array
     {
@@ -75,7 +104,9 @@ final class MediaAssetData implements JsonSerializable
     }
 
     /**
-     * @return array{identifier: string, filename: string, title: string, caption: string, mediaType: string, tags: array<string>}
+     * Provides a structured representation of the media asset for JSON serialization.
+     *
+     * @return array{identifier: string, filename: string, title: string, caption: string, mediaType: string, tags: array<string>} Associative array containing the asset's identifier, filename, title, caption, MIME type, and tags.
      */
     public function jsonSerialize(): array
     {
@@ -89,4 +120,3 @@ final class MediaAssetData implements JsonSerializable
         ];
     }
 }
-

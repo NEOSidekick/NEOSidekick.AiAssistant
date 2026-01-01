@@ -29,6 +29,14 @@ final class MoveNodePatch extends AbstractPatch
      */
     private string $position;
 
+    /**
+     * Create a patch representing moving a node to a target node at a specified position.
+     *
+     * @param string $nodeId The identifier of the node to move.
+     * @param string $targetNodeId The identifier of the target node.
+     * @param string $position Placement relative to the target: 'into', 'before', or 'after'.
+     * @throws \InvalidArgumentException If `$position` is not one of the allowed values.
+     */
     public function __construct(string $nodeId, string $targetNodeId, string $position = 'into')
     {
         self::validatePosition($position);
@@ -38,9 +46,10 @@ final class MoveNodePatch extends AbstractPatch
     }
 
     /**
-     * Validate that the position is one of the allowed values.
+     * Ensure the provided position is one of the allowed placement values.
      *
-     * @throws \InvalidArgumentException
+     * @param string $position The placement position; allowed values: 'into', 'before', 'after'.
+     * @throws \InvalidArgumentException If $position is not one of the allowed values.
      */
     private static function validatePosition(string $position): void
     {
@@ -55,24 +64,42 @@ final class MoveNodePatch extends AbstractPatch
         }
     }
 
+    /**
+     * Retrieve the identifier of the node being moved.
+     *
+     * @return string The identifier of the node to move.
+     */
     public function getNodeId(): string
     {
         return $this->nodeId;
     }
 
+    /**
+     * Gets the target node identifier.
+     *
+     * @return string The UUID or identifier of the target node.
+     */
     public function getTargetNodeId(): string
     {
         return $this->targetNodeId;
     }
 
+    /**
+     * Gets the placement position used when moving the node.
+     *
+     * @return string One of 'into', 'before', or 'after' indicating how the node should be placed relative to the target node.
+     */
     public function getPosition(): string
     {
         return $this->position;
     }
 
     /**
-     * @param array{operation: string, nodeId: string, targetNodeId: string, position?: string} $data
-     * @return self
+     * Create a MoveNodePatch from an associative array.
+     *
+     * @param array{operation: string, nodeId: string, targetNodeId: string, position?: string} $data Associative array containing 'nodeId' and 'targetNodeId' (required) and optional 'position' (one of 'into', 'before', 'after').
+     * @return self A MoveNodePatch instance populated from the provided data.
+     * @throws \InvalidArgumentException If 'nodeId' or 'targetNodeId' is not present in $data.
      */
     public static function fromArray(array $data): self
     {
@@ -91,7 +118,9 @@ final class MoveNodePatch extends AbstractPatch
     }
 
     /**
-     * @return array{operation: string, nodeId: string, targetNodeId: string, position: string}
+     * Serialize the patch into an associative array for JSON encoding.
+     *
+     * @return array{operation: string, nodeId: string, targetNodeId: string, position: string} Associative array with keys 'operation', 'nodeId', 'targetNodeId', and 'position'.
      */
     public function jsonSerialize(): array
     {

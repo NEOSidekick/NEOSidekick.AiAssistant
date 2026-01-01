@@ -39,7 +39,7 @@ class NodeTypeSchemaApiController extends ActionController
     protected $supportedMediaTypes = ['application/json'];
 
     /**
-     * Initialize action - set JSON content type.
+     * Set the HTTP response Content-Type header to "application/json" for this controller's responses.
      */
     public function initializeAction(): void
     {
@@ -47,12 +47,12 @@ class NodeTypeSchemaApiController extends ActionController
     }
 
     /**
-     * Get the complete NodeType schema as JSON.
+     * Return the NodeType schema encoded as JSON.
      *
-     * @param bool $includeAbstract Include abstract NodeTypes in output
-     * @param string $filter Filter by NodeType prefix (e.g., "CodeQ.Site:")
-     * @return string JSON response
-     * @throws JsonException
+     * @param bool $includeAbstract Whether to include abstract NodeTypes.
+     * @param string $filter NodeType prefix to filter by (e.g., "CodeQ.Site:"); empty string for no filtering.
+     * @return string JSON-encoded NodeType schema.
+     * @throws JsonException If JSON encoding fails.
      * @Flow\SkipCsrfProtection
      */
     public function getNodeTypeSchemaAction(bool $includeAbstract = false, string $filter = ''): string

@@ -57,9 +57,11 @@ class SearchNodesExtractor
     protected ?array $includedProperties = null;
 
     /**
-     * Get the list of properties to include in results.
+     * Return the configured property names to include in extracted node results.
      *
-     * @return array
+     * If no properties are configured, returns the default list: ['title', 'text', 'headline', 'metaDescription'].
+     *
+     * @return string[] List of property names to include.
      */
     protected function getIncludedProperties(): array
     {
@@ -68,17 +70,17 @@ class SearchNodesExtractor
     }
 
     /**
-     * Search nodes by property values.
+     * Find nodes whose properties match a query and return a structured result set with context.
      *
-     * Performs a case-insensitive search across all node properties,
-     * returning matching nodes with their context information.
+     * Searches nodes using the given workspace, dimensions, optional node type filter and optional path
+     * restriction, and returns metadata plus extracted per-node data for each matching node.
      *
-     * @param string $query The search term
-     * @param string $workspace Workspace name (default: 'live')
-     * @param array $dimensions Content dimensions
-     * @param string|null $nodeTypeFilter Filter by NodeType
-     * @param string|null $pathStartingPoint Limit search to nodes under this path
-     * @return array Search results
+     * @param string $query The search term to match against node properties.
+     * @param string $workspace Workspace name to run the search in (e.g. "live").
+     * @param array $dimensions Content dimensions to resolve nodes in (dimension name => value).
+     * @param string|null $nodeTypeFilter Optional NodeType identifier to limit the search.
+     * @param string|null $pathStartingPoint Optional path to restrict the search to nodes beneath.
+     * @return array An associative array with keys: `generatedAt` (ISO 8601 timestamp), `workspace`, `dimensions`, `query`, `nodeTypeFilter`, `pathStartingPoint`, `results` (array of extracted node data), and `resultCount`.
      */
     public function search(
         string $query,
@@ -138,11 +140,22 @@ class SearchNodesExtractor
     }
 
     /**
-     * Extract data from a single node.
-     *
-     * @param NodeInterface $node The node to extract data from
-     * @return array Extracted node data
-     */
+         * Builds a structured array of metadata and selected properties for the given node.
+         *
+         * The result always includes:
+         * - `identifier`: node identifier
+         * - `nodeType`: node type name
+         * - `path`: node path
+         * - `depth`: depth of the node path
+         * - `properties`: array of selected node properties
+         * - `isHidden`: whether the node is hidden
+         *
+         * If a closest document node exists and is not the node itself, the result also includes:
+         * - `parentDocumentIdentifier`, `parentDocumentPath`, `parentDocumentTitle`
+         *
+         * @param NodeInterface $node The node to extract data from.
+         * @return array Associative array with node metadata, selected properties, and optional parent document details.
+         */
     private function extractNodeData(NodeInterface $node): array
     {
         $path = $node->getPath();

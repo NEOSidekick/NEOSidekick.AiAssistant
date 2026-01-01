@@ -49,14 +49,15 @@ class PatchValidator
     protected $propertyNormalizer;
 
     /**
-     * Validate a patch before execution.
-     *
-     * @param AbstractPatch $patch The patch to validate
-     * @param int $patchIndex The index of the patch in the batch
-     * @param Context $context The content context
-     * @throws PatchFailedException If validation fails
-     * @throws NodeTypeNotFoundException If the node type doesn't exist
-     */
+         * Validate a patch according to its specific type before execution.
+         *
+         * Delegates validation to the appropriate type-specific validator (create, update, move, delete).
+         *
+         * @param AbstractPatch $patch The patch to validate.
+         * @param int $patchIndex The index of the patch in the batch, used for contextual error messages.
+         * @param Context $context The content context used to resolve nodes and types.
+         * @throws PatchFailedException If validation fails for any reason.
+         */
     public function validatePatch(AbstractPatch $patch, int $patchIndex, Context $context): void
     {
         if ($patch instanceof CreateNodePatch) {
@@ -71,17 +72,15 @@ class PatchValidator
     }
 
     /**
-     * Validate a createNode patch.
+     * Validate a create-node patch's target node type, reference node, position, parent-child constraints, and properties.
      *
-     * For 'into' position, the positionRelativeToNodeId is the actual parent.
-     * For 'before'/'after' positions, the positionRelativeToNodeId is a reference sibling node,
-     * and the new node will be created under that sibling's parent.
+     * For position "into" the reference node is treated as the parent; for "before" and "after" the reference node is treated as a sibling and the new node's parent is the sibling's parent.
      *
-     * @param CreateNodePatch $patch
-     * @param int $patchIndex
-     * @param Context $context
-     * @throws PatchFailedException
-     * @throws NodeTypeNotFoundException
+     * @param CreateNodePatch $patch The create-node patch to validate.
+     * @param int $patchIndex Numeric index of the patch used for contextual error reporting.
+     * @param Context $context Context used to resolve referenced nodes.
+     * @throws PatchFailedException If the reference node is missing, the position is invalid, the computed parent disallows the node type, or property validation fails.
+     * @throws NodeTypeNotFoundException If the referenced node type does not exist.
      */
     private function validateCreateNodePatch(CreateNodePatch $patch, int $patchIndex, Context $context): void
     {
@@ -130,12 +129,12 @@ class PatchValidator
     }
 
     /**
-     * Validate an updateNode patch.
+     * Validate that the target node exists and that the patch's properties are valid for the node's type.
      *
-     * @param UpdateNodePatch $patch
-     * @param int $patchIndex
-     * @param Context $context
-     * @throws PatchFailedException
+     * @param UpdateNodePatch $patch The update patch to validate.
+     * @param int $patchIndex The index of the patch in the batch, used for error context.
+     * @param Context $context Execution context used to resolve nodes.
+     * @throws PatchFailedException If the target node is not found or property validation fails.
      */
     private function validateUpdateNodePatch(UpdateNodePatch $patch, int $patchIndex, Context $context): void
     {
@@ -147,12 +146,15 @@ class PatchValidator
     }
 
     /**
-     * Validate a moveNode patch.
+     * Validate that a MoveNodePatch can be applied.
      *
-     * @param MoveNodePatch $patch
-     * @param int $patchIndex
-     * @param Context $context
-     * @throws PatchFailedException
+     * Ensures the source and target nodes exist, the requested position is one of "into", "before", or "after",
+     * determines the effective new parent for the moved node, and verifies the new parent allows the moved node's type.
+     *
+     * @param MoveNodePatch $patch The move patch to validate (must contain nodeId, targetNodeId, and position).
+     * @param int $patchIndex The index of the patch used for contextual error reporting.
+     * @param Context $context Context used to resolve node identifiers.
+     * @throws PatchFailedException If validation fails (missing nodes, invalid position, missing parent for positional move, or disallowed child node type).
      */
     private function validateMoveNodePatch(MoveNodePatch $patch, int $patchIndex, Context $context): void
     {
@@ -197,12 +199,9 @@ class PatchValidator
     }
 
     /**
-     * Validate a deleteNode patch.
+     * Ensure the node referenced by a deleteNode patch exists.
      *
-     * @param DeleteNodePatch $patch
-     * @param int $patchIndex
-     * @param Context $context
-     * @throws PatchFailedException
+     * @throws PatchFailedException If the target node cannot be found.
      */
     private function validateDeleteNodePatch(DeleteNodePatch $patch, int $patchIndex, Context $context): void
     {
@@ -243,14 +242,16 @@ class PatchValidator
     }
 
     /**
-     * Get a node by identifier, throwing PatchFailedException if not found.
+     * Retrieve a node by its identifier.
      *
-     * @param string $nodeId
-     * @param int $patchIndex
-     * @param string $operation
-     * @param Context $context
-     * @return NodeInterface
-     * @throws PatchFailedException
+     * Throws PatchFailedException if the node cannot be resolved.
+     *
+     * @param string $nodeId The node identifier to resolve.
+     * @param int $patchIndex Patch index used for error context.
+     * @param string $operation Operation name used for error context.
+     * @param Context $context Context used to resolve the node.
+     * @return NodeInterface The resolved node.
+     * @throws PatchFailedException If no node with the given identifier exists.
      */
     private function getNodeById(string $nodeId, int $patchIndex, string $operation, Context $context): NodeInterface
     {
@@ -267,13 +268,13 @@ class PatchValidator
     }
 
     /**
-     * Validate the position parameter.
+     * Ensure the provided position is one of the allowed placement values for a node.
      *
-     * @param string $position
-     * @param int $patchIndex
-     * @param string $operation
-     * @param string|null $nodeId
-     * @throws PatchFailedException
+     * @param string $position The placement value to validate; allowed values: "into", "before", "after".
+     * @param int $patchIndex Index of the patch being validated (used for error context).
+     * @param string $operation The patch operation name (used for error context).
+     * @param string|null $nodeId Identifier of the reference node (used for error context).
+     * @throws PatchFailedException If $position is not "into", "before", or "after".
      */
     private function validatePosition(string $position, int $patchIndex, string $operation, ?string $nodeId): void
     {
@@ -293,17 +294,18 @@ class PatchValidator
     }
 
     /**
-     * Validate properties using the PropertiesProcessor from NodeTemplates.
+     * Validates and processes property values for a given NodeType using NodeTemplates' PropertiesProcessor.
      *
-     * Properties are normalized before validation to convert asset objects
-     * (with 'identifier' key) to plain identifier strings.
+     * Properties are first normalized (e.g., asset objects with an `identifier` key are converted to identifier strings),
+     * then applied to a transient node and validated. If any processing errors are produced, a PatchFailedException is
+     * thrown with the first error message and the provided patch context.
      *
-     * @param array<string, mixed> $properties
-     * @param NodeType $nodeType
-     * @param int $patchIndex
-     * @param string $operation
-     * @param Context $context
-     * @throws PatchFailedException
+     * @param array<string, mixed> $properties The property values to validate.
+     * @param NodeType $nodeType The node type whose property definitions are used for validation.
+     * @param int $patchIndex Index of the patch for error context.
+     * @param string $operation Human-readable operation name for error context.
+     * @param Context $context Execution context used to create the transient node.
+     * @throws PatchFailedException When property processing yields validation errors; message contains the first error. 
      */
     private function validateProperties(array $properties, NodeType $nodeType, int $patchIndex, string $operation, Context $context): void
     {

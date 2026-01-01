@@ -42,7 +42,7 @@ class SearchNodesApiController extends ActionController
     protected $supportedMediaTypes = ['application/json'];
 
     /**
-     * Initialize action - set JSON content type.
+     * Configure the response to use the application/json content type for this action.
      */
     public function initializeAction(): void
     {
@@ -52,17 +52,16 @@ class SearchNodesApiController extends ActionController
     /**
      * Search nodes by property values.
      *
-     * Performs a case-insensitive search across all node properties,
-     * similar to grep functionality. Returns matching nodes with their
-     * properties and parent document context.
+     * Performs a case-insensitive search across node properties and returns matching nodes
+     * with their properties and parent document context.
      *
      * @param string $query The search term (required)
      * @param string $workspace The workspace name (default: 'live')
-     * @param string $dimensions JSON-encoded dimensions array
-     * @param string $nodeTypeFilter Filter by NodeType (e.g., 'Neos.Neos:Content')
-     * @param string $pathStartingPoint Limit search to nodes under this path
-     * @return string JSON response
-     * @throws JsonException
+     * @param string $dimensions JSON-encoded dimensions array (e.g., '{}')
+     * @param string $nodeTypeFilter Optional NodeType filter (e.g., 'Neos.Neos:Content')
+     * @param string $pathStartingPoint Optional path to limit the search scope
+     * @return string JSON-encoded response body containing the search results or an error object
+     * @throws \JsonException If encoding the response fails
      * @Flow\SkipCsrfProtection
      */
     public function searchAction(

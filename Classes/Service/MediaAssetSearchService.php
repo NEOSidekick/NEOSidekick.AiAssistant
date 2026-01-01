@@ -39,16 +39,17 @@ class MediaAssetSearchService
     protected $reflectionService;
 
     /**
-     * Search for assets matching a query string.
-     *
-     * Searches across title, filename, and caption fields.
-     * Results can be filtered by media type (e.g., "image/*").
-     *
-     * @param string $searchTerm The search term to match
-     * @param string $mediaTypeFilter Filter by media type (e.g., "image/*", "application/pdf")
-     * @param int $limit Maximum number of results to return (1-50)
-     * @return MediaAssetSearchResult Search results with assets and total count
-     */
+         * Search assets by matching the given term against title, resource filename, and caption.
+         *
+         * The result set can be restricted by a wildcard media type (for example "image/*").
+         * The provided $limit is clamped to the range 1–50 and the returned total count reflects
+         * the number of matching assets before the limit is applied.
+         *
+         * @param string $searchTerm The term to search for in title, resource filename, and caption.
+         * @param string $mediaTypeFilter Media type filter using wildcards (e.g., "image/*", "application/pdf"). Use an empty string or "*/*" to skip media type filtering.
+         * @param int $limit Maximum number of results to return; values are clamped to the range 1–50.
+         * @return MediaAssetSearchResult A result object containing the timestamp, original search term, applied media type filter, an array of MediaAssetData DTOs, and the total count of matches before limiting.
+         */
     public function search(
         string $searchTerm,
         string $mediaTypeFilter = 'image/*',
@@ -103,7 +104,13 @@ class MediaAssetSearchService
     }
 
     /**
-     * Transform an Asset entity to a MediaAssetData DTO.
+     * Convert an Asset entity into a MediaAssetData DTO.
+     *
+     * Collects the asset's tag labels and maps identifier, filename, title, caption, media type, and tags into the DTO.
+     * If the asset's resource is missing or deleted, filename and mediaType are returned as empty strings.
+     *
+     * @param Asset $asset The asset entity to convert.
+     * @return MediaAssetData The resulting MediaAssetData DTO containing identifier, filename, title, caption, mediaType, and tags.
      */
     private function transformToDto(Asset $asset): MediaAssetData
     {
@@ -130,9 +137,13 @@ class MediaAssetSearchService
     }
 
     /**
-     * Add media type filter to query constraints.
+     * Add a media-type constraint to the query, supporting wildcard filters (e.g., "image/*").
      *
-     * Supports wildcards like "image/*" which matches "image/png", "image/jpeg", etc.
+     * Converts a wildcard pattern by replacing `*` with `%` and constrains `resource.mediaType`
+     * to match that pattern, merging the constraint with the query's existing constraints using logical AND.
+     *
+     * @param \Neos\Flow\Persistence\QueryInterface $query The query to which the media-type constraint will be added.
+     * @param string $mediaTypeFilter A media type filter, possibly containing a `*` wildcard (for example "image/*").
      */
     private function addMediaTypeToQueryConstraints(Query $query, string $mediaTypeFilter): void
     {
@@ -146,10 +157,15 @@ class MediaAssetSearchService
     }
 
     /**
-     * Filter out asset variants from query results.
+     * Excludes asset variant entities from the given query's results.
      *
-     * Taken from Neos\Media\Domain\Repository\AssetRepository to exclude
-     * image variants and other derived assets from search results.
+     * Adds `NOT INSTANCE OF` constraints for every class that implements
+     * AssetVariantInterface and is annotated as an entity, and merges those
+     * constraints with the query's existing constraint using logical AND.
+     *
+     * Non-entity implementations are skipped to avoid schema-related errors.
+     *
+     * @param Query $query The query to modify by adding variant-exclusion constraints.
      */
     private function addAssetVariantToQueryConstraints(Query $query): void
     {
@@ -168,4 +184,3 @@ class MediaAssetSearchService
         $query->matching($query->logicalAnd([$constraints, $query->logicalAnd($variantsConstraints)]));
     }
 }
-

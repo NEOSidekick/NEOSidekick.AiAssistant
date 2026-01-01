@@ -41,7 +41,7 @@ class SearchMediaAssetsApiController extends ActionController
     protected $supportedMediaTypes = ['application/json'];
 
     /**
-     * Initialize action - set JSON content type.
+     * Set the HTTP response Content-Type header to `application/json` for this controller's actions.
      */
     public function initializeAction(): void
     {
@@ -49,16 +49,15 @@ class SearchMediaAssetsApiController extends ActionController
     }
 
     /**
-     * Search for media assets by text query.
+     * Perform a text search for media assets and return the results as a JSON string.
      *
-     * Searches across asset title, filename, and caption fields.
-     * Returns extended asset details optimized for LLM consumption.
+     * Validates Bearer authentication and the required $query parameter; searches title, filename, and caption fields and applies a media type filter and result limit.
      *
-     * @param string $query The search term (required)
-     * @param string $mediaType Filter by media type pattern (default: "image/*")
-     * @param int $limit Maximum results to return (default: 10, max: 50)
-     * @return string JSON response
-     * @throws JsonException
+     * @param string $query The search term to match against asset title, filename, or caption.
+     * @param string $mediaType Media type pattern to filter results (e.g., "image/*").
+     * @param int $limit Maximum number of results to return (default 10, enforced maximum 50).
+     * @return string JSON-encoded search results on success, or a JSON-encoded error object with `error` and `message` keys on failure.
+     * @throws JsonException If JSON encoding fails.
      * @Flow\SkipCsrfProtection
      */
     public function searchAction(
@@ -99,4 +98,3 @@ class SearchMediaAssetsApiController extends ActionController
     }
 
 }
-

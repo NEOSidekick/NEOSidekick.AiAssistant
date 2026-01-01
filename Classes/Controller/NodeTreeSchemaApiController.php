@@ -42,7 +42,7 @@ class NodeTreeSchemaApiController extends ActionController
     protected $supportedMediaTypes = ['application/json'];
 
     /**
-     * Initialize action - set JSON content type.
+     * Prepare the HTTP response for JSON output by setting its Content-Type header.
      */
     public function initializeAction(): void
     {
@@ -50,17 +50,16 @@ class NodeTreeSchemaApiController extends ActionController
     }
 
     /**
-     * Get the node tree as JSON starting from a given node.
+     * Get the node tree as a JSON string starting from the specified node.
      *
-     * This endpoint returns the complete node tree with all properties
-     * and children. The data is structured using the unified children model
-     * (_self for ContentCollections, named slots for childNodes).
+     * The JSON contains the complete node tree including properties and children
+     * (using the unified children model: `_self` for ContentCollections and named slots for childNodes).
      *
-     * @param string $nodeId The node identifier (UUID) to start from
-     * @param string $workspace The workspace name (default: 'live')
-     * @param string $dimensions JSON-encoded dimensions array
-     * @return string JSON response
-     * @throws JsonException
+     * @param string $nodeId The node identifier (UUID) to start from.
+     * @param string $workspace The workspace name (defaults to "live").
+     * @param string $dimensions JSON-encoded dimensions object; invalid or non-object input will be treated as an empty array.
+     * @return string JSON string containing the node tree or an error object with `error` and `message` keys.
+     * @throws JsonException If JSON encoding of the result or error payload fails.
      * @Flow\SkipCsrfProtection
      */
     public function getNodeTreeAction(string $nodeId, string $workspace = 'live', string $dimensions = '{}'): string

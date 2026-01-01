@@ -15,13 +15,12 @@ use JsonException;
 trait ApiAuthenticationTrait
 {
     /**
-     * Validate Bearer token authentication.
+     * Validate the incoming request's Bearer token against the configured API key.
      *
-     * Ensures the API key is configured and the provided Bearer token matches.
-     * Rejects authentication when API key is empty to prevent bypass attacks.
+     * Sets an appropriate HTTP status code and returns a JSON-encoded error payload when validation fails.
      *
-     * @return string|null Error response JSON if authentication fails, null if valid
-     * @throws JsonException
+     * @return string|null JSON-encoded error payload on failure; `null` when authentication succeeds.
+     * @throws JsonException If encoding the error payload fails.
      */
     protected function validateAuthentication(): ?string
     {
@@ -66,4 +65,3 @@ trait ApiAuthenticationTrait
         return null;
     }
 }
-

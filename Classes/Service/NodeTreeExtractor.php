@@ -44,15 +44,15 @@ class NodeTreeExtractor
     protected $nodeTypeManager;
 
     /**
-     * Extract the node tree starting from a given node.
-     *
-     * @param string $nodeId The node identifier (UUID) to start from
-     * @param string $workspace The workspace name
-     * @param array $dimensions The dimension values (e.g., ['language' => ['de']])
-     * @param int|null $maxDepth Maximum depth for tree extraction (null uses default, prevents stack overflow)
-     * @return array{generatedAt: string, rootNode: array}
-     * @throws \InvalidArgumentException When node is not found
-     */
+         * Extract the node tree starting from a given node.
+         *
+         * @param string $nodeId The node identifier (UUID) to start from.
+         * @param string $workspace The workspace name.
+         * @param array $dimensions Dimension values (e.g., ['language' => ['de']]).
+         * @param int|null $maxDepth Maximum depth for tree extraction; when null the class default is used.
+         * @return array{generatedAt: string, rootNode: array} Payload containing an ATOM timestamp (`generatedAt`) and the serialized root node (`rootNode`).
+         * @throws \InvalidArgumentException When the node identified by `$nodeId` cannot be found in the specified workspace.
+         */
     public function extract(string $nodeId, string $workspace, array $dimensions, ?int $maxDepth = null): array
     {
         $context = $this->createContentContext($workspace, $dimensions);
@@ -92,12 +92,13 @@ class NodeTreeExtractor
     }
 
     /**
-     * Extract properties from a node, filtering internal properties.
+     * Extract properties from a node, filtering internal properties and serializing values.
      *
-     * Excludes properties starting with underscore (except _hidden),
-     * and serializes assets appropriately.
+     * Filters out properties whose names start with '_' except for '_hidden', and converts
+     * property values into JSON-friendly representations (e.g., assets, DateTime, arrays,
+     * objects with __toString, and scalars).
      *
-     * @return array<string, mixed>
+     * @return array<string, mixed> Map of property name to serialized property value.
      */
     private function extractProperties(NodeInterface $node): array
     {
@@ -118,10 +119,13 @@ class NodeTreeExtractor
     }
 
     /**
-     * Determine if a property should be included in the output.
+     * Decides whether a node property should be included in the serialized output.
      *
-     * Internal properties (starting with underscore) are excluded,
-     * except for _hidden which is user-editable.
+     * Internal properties whose names start with `_` are excluded, except for `_hidden`
+     * which is allowed.
+     *
+     * @param string $propertyName The property name to evaluate.
+     * @return bool `true` if the property should be included, `false` otherwise.
      */
     private function shouldIncludeProperty(string $propertyName): bool
     {
@@ -132,13 +136,16 @@ class NodeTreeExtractor
     }
 
     /**
-     * Serialize a property value to a JSON-compatible format.
-     *
-     * Handles special types like images and assets.
-     *
-     * @param mixed $value The property value
-     * @return mixed The serialized value
-     */
+         * Convert a node property value into a JSON-friendly representation.
+         *
+         * Assets (including Images) are represented as an associative array with `identifier`, `filename`, and `mediaType`.
+         * Arrays are recursively converted element-by-element. Date/time values are formatted using the ATOM timestamp.
+         * Objects implementing `__toString()` are converted to their string form; other objects become `null`.
+         * Scalars and `null` are returned unchanged.
+         *
+         * @param mixed $value The property value to serialize.
+         * @return mixed The serialized representation suitable for JSON encoding.
+         */
     private function serializePropertyValue(mixed $value): mixed
     {
         // Handle assets (includes Image, which extends Asset)
@@ -175,17 +182,22 @@ class NodeTreeExtractor
     }
 
     /**
-     * Extract children from a node using the unified children model.
-     *
-     * Returns an object with named slots:
-     * - '_self' slot if the node IS a ContentCollection
-     * - Named slots for each configured childNode
-     *
-     * @param NodeInterface $node The node to extract children from
-     * @param int $currentDepth Current recursion depth
-     * @param int $maxDepth Maximum allowed depth
-     * @return array<string, array{allowedTypes: array<string>, nodes: array}>
-     */
+         * Produce a unified children structure for a node, including a `_self` slot for content collections and named slots for configured childNodes.
+         *
+         * If `currentDepth` is greater than or equal to `maxDepth`, an empty array is returned to stop recursion.
+         * For a ContentCollection node a `_self` slot is produced with:
+         * - `allowedTypes`: allowed node type names derived from the node type constraints
+         * - `nodes`: serialized child nodes (excluding auto-created named children)
+         * For each configured named childNode a slot is produced with:
+         * - `id`: the named child node's identifier
+         * - `nodeType`: the named child node's type name
+         * - `allowedTypes`: allowed node type names from the child node configuration
+         * - `nodes`: serialized child nodes contained in that named slot
+         *
+         * @param NodeInterface $node The node to extract children from.
+         * @param int $currentDepth Current recursion depth used to enforce the `maxDepth` guard.
+         * @param int $maxDepth Maximum allowed recursion depth; when reached children extraction stops.
+         * @return array<string, array{allowedTypes: array<string>, nodes: array}> Mapping of slot name to slot payload. Named slots additionally include `id` and `nodeType`.
     private function extractChildren(NodeInterface $node, int $currentDepth, int $maxDepth): array
     {
         // Prevent stack overflow on deeply nested trees
@@ -251,10 +263,13 @@ class NodeTreeExtractor
     }
 
     /**
-     * Check if a child node is an auto-created named childNode.
+     * Determine whether the given child node is defined as an auto-created named child in the parent's node type configuration.
      *
-     * Auto-created childNodes are configured in the NodeType's childNodes
-     * config and should be handled as named slots, not as _self content.
+     * Auto-created named child nodes are entries present in the parent node type's `childNodes` configuration and should be treated as named slots rather than regular _self content.
+     *
+     * @param NodeInterface $childNode The child node to check.
+     * @param NodeType $parentNodeType The parent node type whose `childNodes` configuration will be inspected.
+     * @return bool `true` if the child node is configured as an auto-created named child, `false` otherwise.
      */
     private function isAutoCreatedChildNode(NodeInterface $childNode, NodeType $parentNodeType): bool
     {
@@ -263,9 +278,10 @@ class NodeTreeExtractor
     }
 
     /**
-     * Resolve allowed types from a childNode configuration.
+     * Determine which node types are permitted for a configured child node slot.
      *
-     * @return array<string>
+     * @param array<string,mixed> $childNodeConfig Child node configuration array (expected to contain a `constraints.nodeTypes` mapping).
+     * @return array<string> List of allowed node type names extracted from `constraints.nodeTypes` (wildcard entries are ignored).
      */
     private function resolveChildNodeAllowedTypes(array $childNodeConfig): array
     {
@@ -274,10 +290,13 @@ class NodeTreeExtractor
     }
 
     /**
-     * Extract allowed types from a constraints configuration.
-     *
-     * @return array<string>
-     */
+         * Collect node type names that are marked allowed in a constraints mapping.
+         *
+         * Skips wildcard ('*') entries.
+         *
+         * @param array<string,bool> $constraints Mapping of node type name to a boolean indicating allowance.
+         * @return array<string> Node type names whose constraint value is `true`, excluding the wildcard entry.
+         */
     private function extractAllowedTypesFromConstraints(array $constraints): array
     {
         $allowedTypes = [];

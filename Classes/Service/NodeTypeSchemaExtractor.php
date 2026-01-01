@@ -50,11 +50,11 @@ class NodeTypeSchemaExtractor
     protected string $defaultLanguage = 'en';
 
     /**
-     * Extract raw NodeType schema for all NodeTypes.
+     * Build a raw, translatable schema representation for registered NodeTypes.
      *
-     * @param bool $includeAbstract Include abstract NodeTypes in output
-     * @param string $filter Filter by NodeType prefix (e.g., "CodeQ.Site:")
-     * @return array{generatedAt: string, nodeTypes: array<array>}
+     * @param bool $includeAbstract If true, include abstract NodeTypes in the result.
+     * @param string $filter If non-empty, only include NodeTypes whose name starts with this prefix.
+     * @return array{generatedAt: string, nodeTypes: array<array>} Array with `generatedAt` (ISO 8601 timestamp) and `nodeTypes` (list of per-NodeType schema entries).
      */
     public function extract(bool $includeAbstract = false, string $filter = ''): array
     {
@@ -77,8 +77,12 @@ class NodeTypeSchemaExtractor
     }
 
     /**
-     * Extract schema data for a single NodeType.
+     * Build a serializable schema entry for the given NodeType.
      *
+     * The entry includes the NodeType name, its directly declared super types, whether it is a content collection,
+     * the extracted properties (with translated UI labels), and the childNodes and constraints configurations.
+     *
+     * @param NodeType $nodeType The NodeType to extract (should be a fully resolved NodeType from NodeTypeManager).
      * @return array{name: string, superTypes: array<string>, isContentCollection: bool, properties: array, childNodes: array, constraints: array}
      */
     private function extractNodeType(NodeType $nodeType): array
@@ -135,13 +139,13 @@ class NodeTypeSchemaExtractor
     private const TRANSLATABLE_KEYS = ['label', 'placeholder', 'helpMessage'];
 
     /**
-     * Recursively translate translatable keys in a configuration array.
+     * Recursively translates translatable keys in a configuration array.
      *
-     * Neos labels follow the format: PackageKey:SourceName:TranslationId
-     * Example: Neos.Seo:NodeTypes.XmlSitemapMixin:properties.xmlSitemapChangeFrequency
+     * Searches for keys listed in self::TRANSLATABLE_KEYS and, when their values are strings,
+     * replaces them with the result of translateLabel(). Any nested arrays are processed recursively.
      *
-     * @param array<string, mixed> $config
-     * @return array<string, mixed>
+     * @param array<string, mixed> $config Configuration data that may contain translatable entries.
+     * @return array<string, mixed> The configuration with translated strings for translatable keys.
      */
     private function translateLabelsInConfig(array $config): array
     {
@@ -157,16 +161,14 @@ class NodeTypeSchemaExtractor
     }
 
     /**
-     * Translate a label string using the Neos I18n system.
+     * Translates a label using Neos I18n when it follows the PackageKey:SourceName:TranslationId format.
      *
-     * Labels follow the format: PackageKey:SourceName:TranslationId
-     * Example: Neos.Seo:NodeTypes.XmlSitemapMixin:properties.xmlSitemapChangeFrequency
+     * If $label matches that format the method attempts a translation using the configured default language.
+     * The SourceName portion may use dots in the key and is converted to a path (dots -> slashes) before lookup.
+     * If the label is not a translation key, the translation is not found, or an error occurs, the original label is returned.
      *
-     * The sourceName uses dots in the label but the translation files use slashes
-     * (e.g., NodeTypes.XmlSitemapMixin -> NodeTypes/XmlSitemapMixin)
-     *
-     * @param string $label The label to translate
-     * @return string The translated label or original if translation not found
+     * @param string $label The label or translation key to translate (e.g. "Neos.Seo:NodeTypes.XmlSitemapMixin:properties.xmlSitemapChangeFrequency").
+     * @return string The translated label if available, otherwise the original $label.
      */
     private function translateLabel(string $label): string
     {

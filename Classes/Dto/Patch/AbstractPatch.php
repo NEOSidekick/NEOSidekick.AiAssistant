@@ -16,17 +16,24 @@ abstract class AbstractPatch implements JsonSerializable
 {
     protected string $operation;
 
+    /**
+     * Return the patch operation type.
+     *
+     * The operation identifies the concrete patch action and will be one of:
+     * `createNode`, `updateNode`, `moveNode`, or `deleteNode`.
+     *
+     * @return string The operation type.
     public function getOperation(): string
     {
         return $this->operation;
     }
 
     /**
-     * Create a patch from an associative array.
+     * Create a concrete patch instance from an associative array.
      *
-     * @param array{operation: string, nodeId?: string, positionRelativeToNodeId?: string, nodeType?: string, position?: string, targetNodeId?: string, properties?: array<string, mixed>} $data
-     * @return AbstractPatch
-     * @throws \InvalidArgumentException
+     * @param array{operation: string, nodeId?: string, positionRelativeToNodeId?: string, nodeType?: string, position?: string, targetNodeId?: string, properties?: array<string, mixed>} $data Associative array describing the patch; must include the `operation` key.
+     * @return AbstractPatch An AbstractPatch instance representing the parsed patch.
+     * @throws \InvalidArgumentException If the `operation` key is missing or contains an unknown operation value.
      */
     public static function fromArray(array $data): AbstractPatch
     {
@@ -44,7 +51,9 @@ abstract class AbstractPatch implements JsonSerializable
     }
 
     /**
-     * @return array<string, mixed>
-     */
+ * Produce an associative array representation of the patch.
+ *
+ * @return array<string, mixed> Associative array representing the patch data.
+ */
     abstract public function jsonSerialize(): array;
 }

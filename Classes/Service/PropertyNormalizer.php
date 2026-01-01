@@ -35,14 +35,14 @@ class PropertyNormalizer
     ];
 
     /**
-     * Normalize properties for a given NodeType.
+     * Normalize property values according to a NodeType's property types.
      *
-     * Converts asset objects (with 'identifier' key) to plain identifier strings
-     * for asset-type properties. This allows LLMs to use either format.
+     * Converts asset-shaped values (arrays containing an 'identifier' key) to identifier strings for properties declared as asset types.
+     * For properties declared as arrays of assets, each item is normalized similarly. Non-asset values are returned unchanged.
      *
-     * @param array<string, mixed> $properties The properties to normalize
-     * @param NodeType $nodeType The NodeType to check property types against
-     * @return array<string, mixed> Normalized properties
+     * @param array<string, mixed> $properties Map of property names to values to normalize.
+     * @param NodeType $nodeType NodeType metadata used to determine each property's configured type.
+     * @return array<string, mixed> Normalized properties with asset values converted to identifier strings where applicable.
      */
     public function normalizeProperties(array $properties, NodeType $nodeType): array
     {
@@ -54,15 +54,18 @@ class PropertyNormalizer
     }
 
     /**
-     * Normalize a single property value.
+     * Normalize a single node property value to a Neos-compatible format.
      *
-     * If the value is an asset object (array with 'identifier' key) and the
-     * property type is an asset type, extract just the identifier string.
+     * When the value represents an asset (an array containing an `identifier`) and the
+     * NodeType declares the property as an asset type, returns the identifier string.
+     * When the value is an indexed array and the NodeType declares an array of assets,
+     * returns a new array where each asset-like item is replaced by its `identifier`
+     * when present; other values are left unchanged. Non-asset shapes are returned as-is.
      *
-     * @param mixed $value The property value to normalize
-     * @param string $propertyName The property name
-     * @param NodeType $nodeType The NodeType containing the property definition
-     * @return mixed The normalized value
+     * @param mixed $value The property value to normalize.
+     * @param string $propertyName The name of the property on the node type.
+     * @param NodeType $nodeType The NodeType defining the property's type information.
+     * @return mixed The normalized property value (possibly an identifier string, an array of identifiers, or the original value).
      */
     private function normalizePropertyValue(mixed $value, string $propertyName, NodeType $nodeType): mixed
     {
@@ -102,10 +105,10 @@ class PropertyNormalizer
     }
 
     /**
-     * Check if a property type represents a media asset.
+     * Determines whether a NodeType property type represents a media asset.
      *
-     * @param string $propertyType The property type from NodeType configuration
-     * @return bool
+     * @param string $propertyType Property type string from NodeType configuration.
+     * @return bool `true` if the property type matches one of the asset-related types, `false` otherwise.
      */
     private function isAssetPropertyType(string $propertyType): bool
     {
@@ -143,4 +146,3 @@ class PropertyNormalizer
         return array_keys($array) === range(0, count($array) - 1);
     }
 }
-

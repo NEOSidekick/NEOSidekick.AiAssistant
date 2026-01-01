@@ -41,7 +41,7 @@ class ApplyPatchesApiController extends ActionController
     protected $supportedMediaTypes = ['application/json'];
 
     /**
-     * Initialize action - set JSON content type.
+     * Set the HTTP response Content-Type to "application/json" for the controller's responses.
      */
     public function initializeAction(): void
     {
@@ -49,25 +49,16 @@ class ApplyPatchesApiController extends ActionController
     }
 
     /**
-     * Apply patches to the content repository.
-     *
-     * Accepts a JSON body with the following structure:
-     * {
-     *   "workspace": "user-admin",
-     *   "dimensions": {"language": ["de"]},
-     *   "dryRun": false,
-     *   "patches": [
-     *     { "operation": "createNode", "positionRelativeToNodeId": "uuid", "nodeType": "...", "position": "into", "properties": {...} },
-     *     { "operation": "updateNode", "nodeId": "uuid", "properties": {...} },
-     *     { "operation": "moveNode", "nodeId": "uuid", "targetNodeId": "uuid", "position": "after" },
-     *     { "operation": "deleteNode", "nodeId": "uuid" }
-     *   ]
-     * }
-     *
-     * @return string JSON response
-     * @throws JsonException
-     * @Flow\SkipCsrfProtection
-     */
+         * Apply atomic patches to nodes in the content repository.
+         *
+         * Accepts a JSON request body with optional keys `workspace` (string, defaults to "live"),
+         * `dimensions` (object of arrays), `dryRun` (boolean), and required `patches` (non-empty array
+         * of patch objects describing operations like createNode, updateNode, moveNode, deleteNode).
+         *
+         * @return string A JSON-encoded response describing the result of the patch application.
+         * @throws JsonException If encoding or decoding JSON fails.
+         * @Flow\SkipCsrfProtection
+         */
     public function applyPatchesAction(): string
     {
         // Validate Bearer token authentication

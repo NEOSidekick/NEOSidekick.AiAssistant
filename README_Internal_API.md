@@ -28,7 +28,12 @@ curl -G "https://your-site.com/neosidekick/api/search-nodes" \
   --data-urlencode 'dimensions={"language":["de"]}' \
   -H "Authorization: Bearer your-api-key"
 
-# 5. Apply patches (create, update, move, delete nodes)
+# 5. Search media assets (find images by title, filename, or caption)
+curl -G "https://your-site.com/neosidekick/api/search-media-assets" \
+  --data-urlencode "query=logo" \
+  -H "Authorization: Bearer your-api-key"
+
+# 6. Apply patches (create, update, move, delete nodes)
 curl -X POST "https://your-site.com/neosidekick/api/apply-patches" \
   -H "Authorization: Bearer your-api-key" \
   -H "Content-Type: application/json" \
@@ -88,6 +93,7 @@ NEOSidekick:
 | `/neosidekick/api/node-tree` | GET | Get node tree starting from a specific node |
 | `/neosidekick/api/document-nodes` | GET | Get list of all document nodes (pages) |
 | `/neosidekick/api/search-nodes` | GET | Search across all node properties (grep-like) |
+| `/neosidekick/api/search-media-assets` | GET | Search media assets by title, filename, or caption |
 | `/neosidekick/api/apply-patches` | POST | Apply atomic patches (create, update, move, delete nodes) |
 | `/neosidekick/aiassistant/service/{action}` | GET/POST | Backend service for UI integration |
 
@@ -552,7 +558,124 @@ NEOSidekick:
 
 ---
 
-## 5. Apply Patches API
+## 5. Search Media Assets API
+
+Search for media assets (images, files) in the Neos Media library. Used by LLM agents to find appropriate images for content creation.
+
+### Endpoint
+
+```
+GET /neosidekick/api/search-media-assets
+```
+
+### Query Parameters
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `query` | string | **Yes** | - | Search term (searches title, filename, caption) |
+| `mediaType` | string | No | `image/*` | Filter by media type (e.g., `image/*`, `application/pdf`) |
+| `limit` | int | No | 10 | Max results to return (1-50) |
+
+### Example Request
+
+```bash
+# Basic search for images
+curl -G "https://example.com/neosidekick/api/search-media-assets" \
+  --data-urlencode "query=logo" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Search with media type filter
+curl -G "https://example.com/neosidekick/api/search-media-assets" \
+  --data-urlencode "query=document" \
+  --data-urlencode "mediaType=application/pdf" \
+  --data-urlencode "limit=5" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+```
+
+### Response
+
+```json
+{
+  "generatedAt": "2026-01-01T10:00:00+00:00",
+  "query": "logo",
+  "mediaType": "image/*",
+  "assets": [
+    {
+      "identifier": "edad3d53-f4eb-405b-a8b9-ac8c0094784c",
+      "filename": "AI Sidekick Logo.png",
+      "title": "NEOSidekick Logo",
+      "caption": "The official NEOSidekick AI assistant logo",
+      "mediaType": "image/png",
+      "tags": ["logo", "branding"]
+    },
+    {
+      "identifier": "abc12345-1234-5678-9abc-def012345678",
+      "filename": "company-logo-dark.svg",
+      "title": "Company Logo (Dark)",
+      "caption": "",
+      "mediaType": "image/svg+xml",
+      "tags": ["logo"]
+    }
+  ],
+  "totalCount": 15
+}
+```
+
+### Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `generatedAt` | string | ISO 8601 timestamp |
+| `query` | string | The search term used |
+| `mediaType` | string | Media type filter applied |
+| `assets` | array | List of matching assets |
+| `totalCount` | int | Total matching assets (may exceed `limit`) |
+
+#### Asset Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `identifier` | string | Asset UUID (use in `image` property values) |
+| `filename` | string | Original file name |
+| `title` | string | Editorial title (may be empty) |
+| `caption` | string | Description/alt text (may be empty) |
+| `mediaType` | string | MIME type (e.g., `image/png`) |
+| `tags` | array | Tag labels for categorization |
+
+### Usage in Patches
+
+Use the asset `identifier` when setting image properties:
+
+```json
+{
+  "operation": "updateNode",
+  "nodeId": "node-uuid",
+  "properties": {
+    "image": {
+      "identifier": "edad3d53-f4eb-405b-a8b9-ac8c0094784c",
+      "filename": "AI Sidekick Logo.png",
+      "mediaType": "image/png"
+    }
+  }
+}
+```
+
+### Error Response
+
+**400 Bad Request** - Missing required query parameter:
+
+```json
+{
+  "error": "Bad Request",
+  "message": "The \"query\" parameter is required and cannot be empty"
+}
+```
+
+---
+
+## 6. Apply Patches API
 
 Apply atomic patches to the content repository. Supports creating, updating, moving, and deleting nodes with transaction-based rollback and dry-run support.
 
@@ -808,7 +931,7 @@ curl -X POST "https://example.com/neosidekick/api/apply-patches" \
 
 ---
 
-## 6. Backend Service API
+## 7. Backend Service API
 
 Internal service endpoint for the Neos backend UI integration. Used by the NEOSidekick backend module.
 
@@ -928,6 +1051,7 @@ API controllers are placed directly in the Controller namespace (not in a subpac
 - `Classes/Controller/NodeTreeSchemaApiController.php` - Node tree endpoint
 - `Classes/Controller/DocumentNodeListApiController.php` - Document list endpoint
 - `Classes/Controller/SearchNodesApiController.php` - Search nodes endpoint
+- `Classes/Controller/SearchMediaAssetsApiController.php` - Search media assets endpoint
 - `Classes/Controller/ApplyPatchesApiController.php` - Apply patches endpoint
 - `Classes/Controller/BackendServiceController.php` - Backend UI service
 
@@ -939,6 +1063,7 @@ Data extraction services that provide raw data to the controllers:
 - `Classes/Service/NodeTreeExtractor.php` - Traverses and extracts node trees
 - `Classes/Service/DocumentNodeListExtractor.php` - Extracts document node lists
 - `Classes/Service/SearchNodesExtractor.php` - Searches nodes by property values
+- `Classes/Service/MediaAssetSearchService.php` - Searches media assets by title, filename, caption
 - `Classes/Service/NodePatchService.php` - Applies atomic patches with transaction support
 - `Classes/Service/PatchValidator.php` - Validates patches using NodeTemplates PropertiesProcessor
 

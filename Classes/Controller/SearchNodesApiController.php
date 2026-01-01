@@ -7,6 +7,7 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
+use NEOSidekick\AiAssistant\Controller\Trait\ApiAuthenticationTrait;
 use NEOSidekick\AiAssistant\Service\SearchNodesExtractor;
 
 /**
@@ -22,6 +23,7 @@ use NEOSidekick\AiAssistant\Service\SearchNodesExtractor;
  */
 class SearchNodesApiController extends ActionController
 {
+    use ApiAuthenticationTrait;
     /**
      * @Flow\Inject
      * @var SearchNodesExtractor
@@ -110,41 +112,4 @@ class SearchNodesApiController extends ActionController
         }
     }
 
-    /**
-     * Validate Bearer token authentication.
-     *
-     * @return string|null Error response JSON if authentication fails, null if valid
-     * @throws JsonException
-     */
-    protected function validateAuthentication(): ?string
-    {
-        $authHeader = $this->request->getHttpRequest()->getHeaderLine('Authorization');
-
-        if (empty($authHeader)) {
-            $this->response->setStatusCode(401);
-            return json_encode([
-                'error' => 'Unauthorized',
-                'message' => 'Missing Authorization header'
-            ], JSON_THROW_ON_ERROR);
-        }
-
-        if (!str_starts_with($authHeader, 'Bearer ')) {
-            $this->response->setStatusCode(401);
-            return json_encode([
-                'error' => 'Unauthorized',
-                'message' => 'Invalid Authorization header format, expected Bearer token'
-            ], JSON_THROW_ON_ERROR);
-        }
-
-        $token = substr($authHeader, 7);
-        if ($token !== $this->apiKey) {
-            $this->response->setStatusCode(401);
-            return json_encode([
-                'error' => 'Unauthorized',
-                'message' => 'Invalid API key'
-            ], JSON_THROW_ON_ERROR);
-        }
-
-        return null;
-    }
 }

@@ -13,6 +13,11 @@ use Neos\Flow\Annotations as Flow;
  */
 final class CreateNodePatch extends AbstractPatch
 {
+    /**
+     * Valid position values for node placement.
+     */
+    private const VALID_POSITIONS = ['into', 'before', 'after'];
+
     protected string $operation = 'createNode';
 
     private string $parentNodeId;
@@ -41,10 +46,29 @@ final class CreateNodePatch extends AbstractPatch
         string $position = 'into',
         array $properties = []
     ) {
+        self::validatePosition($position);
         $this->parentNodeId = $parentNodeId;
         $this->nodeType = $nodeType;
         $this->position = $position;
         $this->properties = $properties;
+    }
+
+    /**
+     * Validate that the position is one of the allowed values.
+     *
+     * @throws \InvalidArgumentException
+     */
+    private static function validatePosition(string $position): void
+    {
+        if (!in_array($position, self::VALID_POSITIONS, true)) {
+            throw new \InvalidArgumentException(
+                sprintf(
+                    'Invalid position "%s". Must be one of: %s',
+                    $position,
+                    implode(', ', self::VALID_POSITIONS)
+                )
+            );
+        }
     }
 
     public function getParentNodeId(): string

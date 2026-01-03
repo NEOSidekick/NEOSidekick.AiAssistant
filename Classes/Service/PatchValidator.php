@@ -88,6 +88,15 @@ class PatchValidator
         // Validate nodeType exists
         $nodeType = $this->getNodeType($patch->getNodeType(), $patchIndex, 'createNode');
 
+        // Validate nodeType is not abstract (abstract types cannot be instantiated)
+        if ($nodeType->isAbstract()) {
+            throw new PatchFailedException(
+                sprintf('Cannot create node of abstract NodeType "%s"', $nodeType->getName()),
+                $patchIndex,
+                'createNode'
+            );
+        }
+
         // Validate reference node exists (parent for 'into', sibling for 'before'/'after')
         $referenceNode = $this->getNodeById($patch->getPositionRelativeToNodeId(), $patchIndex, 'createNode', $context);
 

@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="configuration.onlyAssetsInUse.label">
+                <source>Selection of images</source>
+                <target xml:lang="fr">Sélection des images</target>
+            </trans-unit>
+            <trans-unit id="configuration.onlyAssetsInUse.0">
+                <source>All images</source>
+                <target xml:lang="fr">Toutes les images</target>
+            </trans-unit>
+            <trans-unit id="configuration.onlyAssetsInUse.1">
+                <source>Only images in use</source>
+                <target xml:lang="fr">Seulement les images utilisées</target>
+            </trans-unit>
+            <trans-unit id="configuration.recommendNeosAssetCachePackage">
+                <source><![CDATA[Calculating asset usage on large websites can take a long time. We strongly recommend to install <a href="https://github.com/webandco/neos-asset-usage-cache" style="text-decoration:underline">webandco/neos-asset-usage-cache</a> in those cases.]]></source>
+                <target xml:lang="fr"><![CDATA[Le calcul de l'utilisation des images sur les grands sites web peut prendre du temps. Nous recommandons dans ces cas d'installer <a href="https://github.com/webandco/neos-asset-usage-cache" style="text-decoration:underline">webandco/neos-asset-usage-cache</a>.]]></target>
+            </trans-unit>
+            <trans-unit id="configuration.propertyName.label">
+                <source>Field to save the description in</source>
+                <target xml:lang="fr">Enregistrer la description dans</target>
+            </trans-unit>
+            <trans-unit id="configuration.itemsPerPage.label">
+                <source>Number of entries per page</source>
+                <target xml:lang="fr">Nombre d'éléments par page</target>
+            </trans-unit>
+            <trans-unit id="configuration.language.label">
+                <source>Language for the description</source>
+                <target xml:lang="fr">Langue de la description</target>
+            </trans-unit>
+            <trans-unit id="configuration.language.en">
+                <source>English</source>
+                <target xml:lang="fr">Anglais</target>
+            </trans-unit>
+            <trans-unit id="configuration.language.de">
+                <source>German</source>
+                <target xml:lang="fr">Allemand</target>
+            </trans-unit>
+            <trans-unit id="configuration.language.fr">
+                <source>French</source>
+                <target xml:lang="fr">Français</target>
+            </trans-unit>
+            <trans-unit id="configuration.language.es">
+                <source>Spanish</source>
+                <target xml:lang="fr">Espagnol</target>
+            </trans-unit>
+            <trans-unit id="configuration.language.it">
+                <source>Italian</source>
+                <target xml:lang="fr">Italien</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

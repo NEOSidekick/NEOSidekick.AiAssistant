@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="suggestionsIntro">
+                <source>Our page content analysis points one of the following phrases as focus keyword. If this does not fit at all, customising the text for SEO could be helpful.</source>
+                <target xml:lang="fr">Notre analyse du contenu de la page met en avant l’une des expressions suivantes comme mot-clé principal. Si aucune ne convient, retravailler légèrement ton texte pour le SEO peut faire toute la différence.</target>
+            </trans-unit>
+            <trans-unit id="suggestionsFailed">
+                <source>Could not calculate focus keyword suggestions for the page.</source>
+                <target xml:lang="fr">Les suggestions de mots-clés principaux de la page n'ont pas pu être calculées.</target>
+            </trans-unit>
+            <trans-unit id="checkSearchVolume">
+                <source>Check search volume:</source>
+                <target xml:lang="fr">Vérifier le volume de recherche :</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

@@ -1,0 +1,95 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="modify-text-title" xml:space="preserve">
+                <source>Revise text</source>
+                <target xml:lang="fr" state="translated">Réviser le texte</target>
+            </trans-unit>
+            <trans-unit id="create-text-title" xml:space="preserve">
+                <source>Generate text with AI</source>
+                <target xml:lang="fr" state="translated">Générer du texte avec l'IA</target>
+            </trans-unit>
+            <trans-unit id="regenerate-text" xml:space="preserve">
+                <source>Regenerate</source>
+                <target xml:lang="fr" state="translated">Régénérer</target>
+            </trans-unit>
+            <trans-unit id="apply-modify-text" xml:space="preserve">
+                <source>Use text</source>
+                <target xml:lang="fr" state="translated">Utiliser le texte</target>
+            </trans-unit>
+            <trans-unit id="apply-create-text" xml:space="preserve">
+                <source>Insert text</source>
+                <target xml:lang="fr" state="translated">Insérer le texte</target>
+            </trans-unit>
+            <trans-unit id="apply-modify-text" xml:space="preserve">
+                <source>Use text</source>
+                <target xml:lang="fr" state="translated">Utiliser le texte</target>
+            </trans-unit>
+            <trans-unit id="configured-button" xml:space="preserve">
+                <source>Configured instruction</source>
+                <target xml:lang="fr" state="translated">Instruction configurée</target>
+            </trans-unit>
+            <trans-unit id="intro-button" xml:space="preserve">
+                <source>Introduction</source>
+                <target xml:lang="fr" state="translated">Introduction</target>
+            </trans-unit>
+            <trans-unit id="page-conclusion-button" xml:space="preserve">
+                <source>Page Conclusion</source>
+                <target xml:lang="fr" state="translated">Conclusion de la page</target>
+            </trans-unit>
+            <trans-unit id="rephrase-button" xml:space="preserve">
+                <source>Rephrase</source>
+                <target xml:lang="fr" state="translated">Reformuler</target>
+            </trans-unit>
+            <trans-unit id="longer-button-short" xml:space="preserve">
+                <source>Longer</source>
+                <target xml:lang="fr" state="translated">Plus long</target>
+            </trans-unit>
+            <trans-unit id="longer-button" xml:space="preserve">
+                <source>Make it longer</source>
+                <target xml:lang="fr" state="translated">Rallonge-le</target>
+            </trans-unit>
+            <trans-unit id="shorter-button-short" xml:space="preserve">
+                <source>Shorter</source>
+                <target xml:lang="fr" state="translated">Plus court</target>
+            </trans-unit>
+            <trans-unit id="shorter-button" xml:space="preserve">
+                <source>Make it shorter</source>
+                <target xml:lang="fr" state="translated">Raccourcis-le</target>
+            </trans-unit>
+            <trans-unit id="fix-text-button" xml:space="preserve">
+                <source>Fix spelling</source>
+                <target xml:lang="fr" state="translated">Orthographe</target>
+            </trans-unit>
+            <trans-unit id="custom-prompt-button" xml:space="preserve">
+                <source>Custom prompt</source>
+                <target xml:lang="fr" state="translated">Instruction personnalisée</target>
+            </trans-unit>
+            <trans-unit id="change-tone" xml:space="preserve">
+                <source>Change tone</source>
+                <target xml:lang="fr" state="translated">Changer le ton</target>
+            </trans-unit>
+            <trans-unit id="selected-text" xml:space="preserve">
+                <source>Selected Text</source>
+                <target xml:lang="fr" state="translated">Texte sélectionné</target>
+            </trans-unit>
+            <trans-unit id="new-text" xml:space="preserve">
+                <source>New Text</source>
+                <target xml:lang="fr" state="translated">Nouveau texte</target>
+            </trans-unit>
+            <trans-unit id="custom-prompt-modify-placeholder" xml:space="preserve">
+                <source>How should the text be changed?</source>
+                <target xml:lang="fr" state="translated">Comment le texte doit-il être modifié ?</target>
+            </trans-unit>
+            <trans-unit id="custom-prompt-create-placeholder" xml:space="preserve">
+                <source>Briefly describe what text you want and its length</source>
+                <target xml:lang="fr" state="translated">Décris brièvement quel texte tu souhaites générer et sa longueur</target>
+            </trans-unit>
+            <trans-unit id="disclaimer" xml:space="preserve">
+                <source>GenAI models can make mistakes. Check important information.</source>
+                <target xml:lang="fr" state="translated">Les modèles GenAI peuvent faire des erreurs. Vérifie les informations importantes.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

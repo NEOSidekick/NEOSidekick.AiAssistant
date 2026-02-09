@@ -1,7 +1,6 @@
 <?php
 namespace NEOSidekick\AiAssistant\Controller;
 
-use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Mvc\Exception\StopActionException;
@@ -35,15 +34,13 @@ class WebhookController extends ActionController
      *
      * @return void
      * @throws StopActionException
-     * @throws JsonException
      * @Flow\SkipCsrfProtection
      */
     public function processSidekickResponseAction(): void
     {
-        $requestContent = $this->request->getHttpRequest()->getBody();
-        $payload = json_decode($requestContent, true, 512, JSON_THROW_ON_ERROR);
+        $payload = $this->request->getHttpRequest()->getParsedBody();
 
-        if (!isset($payload['status']) || $payload['status'] !== 'success' || !isset($payload['data']) || !is_array($payload['data'])) {
+        if (!is_array($payload) || !isset($payload['status']) || $payload['status'] !== 'success' || !isset($payload['data']) || !is_array($payload['data'])) {
             $this->throwStatus(400, 'Invalid JSON payload format'); // Bad Request
         }
 
@@ -67,7 +64,10 @@ class WebhookController extends ActionController
             // will give us an array with five possible focus keywords.
             // In any case if we get multiple options, we can only pick one.
             if (is_array($result['message']['message'])) {
-                $newPropertyValue = $result['message']['message'][0];
+                if (empty($result['message']['message'])) {
+                    continue;
+                }
+                $newPropertyValue = reset($result['message']['message']);
             } else {
                 $newPropertyValue = $result['message']['message'];
             }

@@ -117,5 +117,5 @@ Neos:
               'NEOSidekick.AiAssistant:BackendControllers':
                 pattern: ControllerObjectName
                 patternOptions:
-                  # Exclude Api controllers - they use Bearer token authentication
-                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\Backend.*'
+                  # Include Agent controller for backend session access; exclude other Api controllers (Bearer token auth)
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\(Backend.*|AgentController)'

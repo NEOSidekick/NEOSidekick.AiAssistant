@@ -10,6 +10,7 @@ use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Domain\Model\Domain;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\DomainRepository;
+use Neos\Neos\Domain\Repository\SiteRepository;
 use NEOSidekick\AiAssistant\Domain\Model\AutomationsConfiguration;
 use NEOSidekick\AiAssistant\Domain\Service\AutomationsConfigurationService;
 
@@ -40,6 +41,12 @@ class AutomationsController extends AbstractModuleController
      * @var DomainRepository
      */
     protected $domainRepository;
+
+    /**
+     * @Flow\Inject
+     * @var SiteRepository
+     */
+    protected $siteRepository;
 
     /**
      * @param FusionView $view
@@ -102,13 +109,20 @@ class AutomationsController extends AbstractModuleController
         $httpRequest = $this->controllerContext->getRequest()->getHttpRequest();
         $hostname = $httpRequest->getUri()->getHost();
 
+        // Try to find site by hostname first (existing logic)
         $matchingDomains = $this->domainRepository->findByHost($hostname, true);
-        if (!isset($matchingDomains[0])) {
-            return null;
+        if (isset($matchingDomains[0])) {
+            /** @var Domain $domain */
+            $domain = $matchingDomains[0];
+            return $domain->getSite();
         }
-        /** @var Domain $domain */
-        $domain = $matchingDomains[0];
-        return $domain->getSite();
 
+        // If no domain matches, check if there's only one site
+        $allSites = $this->siteRepository->findAll();
+        if ($allSites->count() === 1) {
+            return $allSites->getFirst();
+        }
+
+        return null;
     }
 }

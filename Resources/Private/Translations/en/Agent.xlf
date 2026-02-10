@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="authorizationTitle" xml:space="preserve">
+                <source>NEOSidekick Agent Authorization</source>
+            </trans-unit>
+            <trans-unit id="authorizationMessage" xml:space="preserve">
+                <source>You need to authorize NEOSidekick Agent so it can write to your user workspace</source>
+            </trans-unit>
+            <trans-unit id="authorizeButton" xml:space="preserve">
+                <source>Authorize</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

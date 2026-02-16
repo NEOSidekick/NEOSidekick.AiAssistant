@@ -3,6 +3,7 @@
 namespace NEOSidekick\AiAssistant\Service;
 
 use GuzzleHttp\Psr7\ServerRequest;
+use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\ServerRequestAttributes;
 use Neos\Flow\Mvc\ActionRequestFactory;
@@ -123,6 +124,10 @@ class PublishingStateService
             'meta_description' => 'metaDescription',
         ];
 
+        // The document node data may still reference the source workspace in context paths.
+        // Fix them to use the target workspace before sending to the external service.
+        $this->fixWorkspaceReferencesForExternalService();
+
         $this->systemLogger->debug('Publishing Data (before sending):', $this->publishingState->toArray());
 
         // Iterate over all document nodes in publishingState
@@ -242,5 +247,51 @@ class PublishingStateService
 
         // Reset the publishing state
         $this->publishingState = new PublishingState();
+    }
+
+    /**
+     * Fix workspace references in DocumentChangeSets before sending to the external service.
+     *
+     * During publishing, nodes retain their source workspace context (e.g. @user-admin)
+     * even though they are being published to the target workspace (e.g. live).
+     * This method corrects the nodeContextPath and any URIs that embed context paths
+     * so the external service and webhook use the correct target workspace.
+     */
+    private function fixWorkspaceReferencesForExternalService(): void
+    {
+        $targetWorkspace = $this->publishingState->getWorkspaceName();
+
+        foreach ($this->publishingState->getDocumentChangeSets() as $documentChangeSet) {
+            $documentNode = $documentChangeSet->getDocumentNode();
+
+            if (empty($documentNode) || empty($documentNode['nodeContextPath'])) {
+                continue;
+            }
+
+            $contextPathSegments = NodePaths::explodeContextPath($documentNode['nodeContextPath']);
+            if ($contextPathSegments['workspaceName'] === $targetWorkspace) {
+                continue;
+            }
+
+            // Fix the nodeContextPath
+            $originalContextPath = $documentNode['nodeContextPath'];
+            $correctedContextPath = NodePaths::generateContextPath(
+                $contextPathSegments['nodePath'],
+                $targetWorkspace,
+                $contextPathSegments['dimensions']
+            );
+            $documentNode['nodeContextPath'] = $correctedContextPath;
+
+            // Fix URIs that embed context paths (e.g. preview-style URLs with __contextNodePath)
+            $encodedOriginalContextPath = urlencode($originalContextPath);
+            $encodedCorrectedContextPath = urlencode($correctedContextPath);
+            foreach (['publicUri', 'previewUri'] as $uriField) {
+                if (!empty($documentNode[$uriField]) && strpos($documentNode[$uriField], 'contextNodePath') !== false) {
+                    $documentNode[$uriField] = str_replace($encodedOriginalContextPath, $encodedCorrectedContextPath, $documentNode[$uriField]);
+                }
+            }
+
+            $documentChangeSet->setDocumentNode($documentNode);
+        }
     }
 }

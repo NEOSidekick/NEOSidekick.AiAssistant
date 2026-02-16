@@ -2,7 +2,6 @@
 
 namespace NEOSidekick\AiAssistant\Dto;
 
-
 /**
  * Data Transfer Object for a document node and its content changes during publishing
  */
@@ -48,6 +47,17 @@ final class DocumentChangeSet
     public function getDocumentNode(): array
     {
         return $this->documentNode;
+    }
+
+    /**
+     * Update the document node data
+     *
+     * @param array $documentNode The document node data
+     * @return void
+     */
+    public function setDocumentNode(array $documentNode): void
+    {
+        $this->documentNode = $documentNode;
     }
 
     /**

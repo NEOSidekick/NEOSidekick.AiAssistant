@@ -14,6 +14,10 @@ use Psr\Log\LoggerInterface;
 /**
  * Listener for node publishing signals
  *
+ * Collects document change sets during publishing:
+ * - beforeNodePublishing: Records the "before" state and initializes DocumentChangeSets
+ * - afterNodePublishing: Refreshes document node data and records the "after" state
+ *
  * @Flow\Scope("singleton")
  */
 class NodePublishingListener
@@ -45,135 +49,221 @@ class NodePublishingListener
     /**
      * Handle the beforeNodePublishing signal
      *
+     * Initializes a DocumentChangeSet with preliminary document node data from the target workspace
+     * and records the "before" state of the node being published.
+     *
+     * For new documents (not yet in target workspace), an empty DocumentChangeSet is created
+     * as a placeholder — it will be populated in afterNodePublishing.
+     *
      * @param NodeInterface $node The node being published
      * @param Workspace $targetWorkspace The workspace the node is being published to
      * @return void
      */
     public function handleBeforeNodePublishing(NodeInterface $node, Workspace $targetWorkspace): void
     {
-        $this->systemLogger->debug(
-            'beforeNodePublishing: ' . $node->getIdentifier()
-            . ' => ' . $targetWorkspace->getName(),
-            ['packageKey' => 'NEOSidekick.AiAssistant']
-        );
-
-        // Set the workspace name in the publishing state
         $publishingState = $this->publishingStateService->getPublishingState();
         $publishingState->setWorkspaceName($targetWorkspace->getName());
 
-        // Get the closest document node identifier
         $closestDocumentNodeIdentifier = NodeTreeUtility::getClosestDocumentNodeIdentifier($node);
-        $this->systemLogger->debug('ClosestDocumentNodeIdentifier: ' . $closestDocumentNodeIdentifier);
+        if ($closestDocumentNodeIdentifier === null) {
+            return;
+        }
 
-        // Get the original document node from the target workspace
-        $originalDocumentNode = $this->nodeDataService->findNodeInWorkspace(
+        $documentPath = $this->resolveDocumentPathAndInitializeChangeSet($node, $closestDocumentNodeIdentifier, $targetWorkspace, $publishingState);
+        if ($documentPath === null) {
+            return;
+        }
+
+        $this->recordBeforeState($node, $targetWorkspace, $publishingState->getDocumentChangeSet($documentPath));
+    }
+
+    /**
+     * Handle the afterNodePublishing signal
+     *
+     * Refreshes the document node data with the now-published state (properties, URIs)
+     * and records the "after" state of the node.
+     *
+     * @param NodeInterface $node The node that was published
+     * @param Workspace $targetWorkspace The workspace the node was published to
+     * @return void
+     */
+    public function handleAfterNodePublishing(NodeInterface $node, Workspace $targetWorkspace): void
+    {
+        $closestDocumentNodeIdentifier = NodeTreeUtility::getClosestDocumentNodeIdentifier($node);
+        if ($closestDocumentNodeIdentifier === null) {
+            return;
+        }
+
+        $closestDocumentNode = $this->resolveDocumentNodeAfterPublishing($node, $closestDocumentNodeIdentifier, $targetWorkspace);
+        if ($closestDocumentNode === null) {
+            return;
+        }
+
+        $publishingState = $this->publishingStateService->getPublishingState();
+        $documentPath = $closestDocumentNode->getPath();
+
+        if (!$publishingState->hasDocumentChangeSet($documentPath)) {
+            return;
+        }
+
+        $documentChangeSet = $publishingState->getDocumentChangeSet($documentPath);
+
+        $this->refreshDocumentNodeDataIfNeeded($node, $closestDocumentNodeIdentifier, $closestDocumentNode, $documentPath, $documentChangeSet, $publishingState);
+        $this->recordAfterState($node, $targetWorkspace, $documentChangeSet);
+    }
+
+    /**
+     * Resolve the document path and initialize a DocumentChangeSet if one does not exist yet.
+     *
+     * For existing documents: creates a DocumentChangeSet with preliminary data from the target workspace.
+     * For new documents: creates an empty placeholder DocumentChangeSet.
+     *
+     * @return string|null The document path, or null if the document node could not be resolved
+     */
+    private function resolveDocumentPathAndInitializeChangeSet(
+        NodeInterface $node,
+        string $closestDocumentNodeIdentifier,
+        Workspace $targetWorkspace,
+        \NEOSidekick\AiAssistant\Dto\PublishingState $publishingState
+    ): ?string {
+        // Try to find the document node in the target workspace (exists for updates, null for new documents)
+        $documentNodeInTarget = $this->nodeDataService->findNodeInWorkspace(
             $closestDocumentNodeIdentifier,
             $targetWorkspace->getName(),
             $node->getDimensions()
         );
 
-        if ($originalDocumentNode === null) {
-            $this->systemLogger->warning('Could not fetch original document from target workspace', [
+        if ($documentNodeInTarget !== null) {
+            $documentPath = $documentNodeInTarget->getPath();
+            if (!$publishingState->hasDocumentChangeSet($documentPath)) {
+                // Preliminary data from target workspace — will be refreshed in afterNodePublishing
+                // when the document node itself is published
+                $documentNodeData = $this->findDocumentNodeDataFactory->createFromNodeAndGlobals($documentNodeInTarget)->jsonSerialize();
+                $publishingState->addDocumentChangeSet($documentPath, new DocumentChangeSet($documentNodeData));
+            }
+            return $documentPath;
+        }
+
+        // New document: find it in the source workspace to determine its path
+        $documentNodeInSource = $this->nodeDataService->findNodeInWorkspace(
+            $closestDocumentNodeIdentifier,
+            $node->getWorkspace()->getName(),
+            $node->getDimensions()
+        );
+
+        if ($documentNodeInSource === null) {
+            $this->systemLogger->warning('Could not find document node in any workspace', [
                 'packageKey' => 'NEOSidekick.AiAssistant',
                 'documentNodeIdentifier' => $closestDocumentNodeIdentifier
             ]);
-            return;
+            return null;
         }
 
-        // Create a document change set if it doesn't exist yet
-        $documentPath = $originalDocumentNode->getPath();
+        $documentPath = $documentNodeInSource->getPath();
         if (!$publishingState->hasDocumentChangeSet($documentPath)) {
-            // Create document node data and add it to the publishing state
-            $documentNodeData = $this->findDocumentNodeDataFactory->createFromNodeAndGlobals($originalDocumentNode)->jsonSerialize();
-            $documentChangeSet = new DocumentChangeSet($documentNodeData);
-            $publishingState->addDocumentChangeSet($documentPath, $documentChangeSet);
+            // Empty placeholder — will be populated in afterNodePublishing
+            $publishingState->addDocumentChangeSet($documentPath, new DocumentChangeSet([]));
         }
+        return $documentPath;
+    }
 
-        // Get the original node from the target workspace (before changes)
+    /**
+     * Record the "before" state of a node being published.
+     */
+    private function recordBeforeState(NodeInterface $node, Workspace $targetWorkspace, DocumentChangeSet $documentChangeSet): void
+    {
         $originalNode = $this->nodeDataService->findNodeInWorkspace(
             $node->getIdentifier(),
             $targetWorkspace->getName(),
             $node->getDimensions()
         );
 
-        // Add the content change to the document change set
-        $documentChangeSet = $publishingState->getDocumentChangeSet($documentPath);
         $beforeState = $originalNode ? $this->nodeDataService->createNodeDataDto($originalNode, true) : null;
-        $change = new ContentChangeDto($beforeState, null);
-        $documentChangeSet->addContentChange($node->getPath(), $change);
+        $documentChangeSet->addContentChange($node->getPath(), new ContentChangeDto($beforeState, null));
     }
 
     /**
-     * Handle the afterNodePublishing signal
+     * Resolve the closest document node after publishing.
      *
-     * @param NodeInterface $node The node that was published
-     * @param Workspace $workspace The workspace the node was published to
-     * @return void
+     * If the published node IS the document node, use it directly (avoids lookup issues
+     * where the node may not yet be findable via identifier in the target workspace).
+     * Otherwise, look it up in the target workspace.
      */
-    public function handleAfterNodePublishing(NodeInterface $node, Workspace $workspace): void
-    {
-        $this->systemLogger->debug(
-            'afterNodePublishing: ' . $node->getIdentifier()
-            . ' => ' . $workspace->getName(),
-            ['packageKey' => 'NEOSidekick.AiAssistant']
-        );
+    private function resolveDocumentNodeAfterPublishing(
+        NodeInterface $node,
+        string $closestDocumentNodeIdentifier,
+        Workspace $targetWorkspace
+    ): ?NodeInterface {
+        if ($node->getIdentifier() === $closestDocumentNodeIdentifier) {
+            return $node;
+        }
 
-        // Get the closest document node identifier
-        $closestDocumentNodeIdentifier = NodeTreeUtility::getClosestDocumentNodeIdentifier($node);
-
-        // Get the document node from the target workspace
-        $closestDocumentNode = $this->nodeDataService->findNodeInWorkspace(
+        $documentNode = $this->nodeDataService->findNodeInWorkspace(
             $closestDocumentNodeIdentifier,
-            $workspace->getName(),
+            $targetWorkspace->getName(),
             $node->getDimensions()
         );
 
-        if ($closestDocumentNode === null) {
-            $this->systemLogger->warning('Could not fetch document node from target workspace', [
+        if ($documentNode === null) {
+            $this->systemLogger->warning('Could not find document node in target workspace after publishing', [
                 'packageKey' => 'NEOSidekick.AiAssistant',
                 'documentNodeIdentifier' => $closestDocumentNodeIdentifier
             ]);
+        }
+
+        return $documentNode;
+    }
+
+    /**
+     * Refresh the document node data in the DocumentChangeSet when the document node itself is published.
+     *
+     * This is necessary because:
+     * - For new documents: the DocumentChangeSet was initialized empty
+     * - For existing documents: the DocumentChangeSet contains stale data from the target workspace
+     *   (before state) and needs to reflect the newly published properties and URIs
+     */
+    private function refreshDocumentNodeDataIfNeeded(
+        NodeInterface $publishedNode,
+        string $closestDocumentNodeIdentifier,
+        NodeInterface $closestDocumentNode,
+        string $documentPath,
+        DocumentChangeSet $documentChangeSet,
+        \NEOSidekick\AiAssistant\Dto\PublishingState $publishingState
+    ): void {
+        if ($publishedNode->getIdentifier() !== $closestDocumentNodeIdentifier) {
             return;
         }
 
-        // Get the publishing state
-        $publishingState = $this->publishingStateService->getPublishingState();
-        $documentPath = $closestDocumentNode->getPath();
-
-        // If we don't have a document change set for this document, something went wrong
-        if (!$publishingState->hasDocumentChangeSet($documentPath)) {
-            $this->systemLogger->warning('No document change set found for document', [
+        $documentNodeData = $this->findDocumentNodeDataFactory->createFromNodeAndGlobals($closestDocumentNode)->jsonSerialize();
+        if (empty($documentNodeData['publicUri']) && empty($documentNodeData['previewUri'])) {
+            $this->systemLogger->warning('Could not generate URIs for document, removing DocumentChangeSet', [
                 'packageKey' => 'NEOSidekick.AiAssistant',
                 'documentPath' => $documentPath
             ]);
+            $publishingState->removeDocumentChangeSet($documentPath);
             return;
         }
 
-        // Get the document change set
-        $documentChangeSet = $publishingState->getDocumentChangeSet($documentPath);
+        $documentChangeSet->setDocumentNode($documentNodeData);
+    }
 
-        // Check if the node exists in the target workspace after publishing
-        $nodeExistsInTargetWorkspace = $this->nodeDataService->findNodeInWorkspace(
+    /**
+     * Record the "after" state of a node that was published.
+     */
+    private function recordAfterState(NodeInterface $node, Workspace $targetWorkspace, DocumentChangeSet $documentChangeSet): void
+    {
+        $nodeInTargetWorkspace = $this->nodeDataService->findNodeInWorkspace(
             $node->getIdentifier(),
-            $workspace->getName(),
+            $targetWorkspace->getName(),
             $node->getDimensions()
         );
 
-        // Check if the node exists in the target workspace after publishing
-        $afterState = $nodeExistsInTargetWorkspace ? $this->nodeDataService->createNodeDataDto($nodeExistsInTargetWorkspace, true) : null;
+        $afterState = $nodeInTargetWorkspace ? $this->nodeDataService->createNodeDataDto($nodeInTargetWorkspace, true) : null;
 
-        // Get the existing content change
         $contentChanges = $documentChangeSet->getContentChanges();
-        $nodePath = $node->getPath();
-
-        // Get the existing change or create a new one
-        $existingChange = $contentChanges[$nodePath] ?? null;
-
-        // Use the "before" state from the initial signal, if it exists
+        $existingChange = $contentChanges[$node->getPath()] ?? null;
         $beforeState = $existingChange?->before;
 
-        // Create a new, complete change DTO and update the change set
-        $finalChange = new ContentChangeDto($beforeState, $afterState);
-        $documentChangeSet->addContentChange($nodePath, $finalChange);
+        $documentChangeSet->addContentChange($node->getPath(), new ContentChangeDto($beforeState, $afterState));
     }
 }

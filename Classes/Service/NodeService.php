@@ -224,6 +224,12 @@ class NodeService extends AbstractNodeService
                 $contextPathSegments['dimensions']
             );
             $node = $context->getNode($contextPathSegments['nodePath']);
+            
+            if ($node === null) {
+                // Log warning and skip this node
+                continue;
+            }
+            
             foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
                 $node->setProperty($propertyName, $propertyValue);
             }
@@ -235,6 +241,11 @@ class NodeService extends AbstractNodeService
 
                 $imageNodeContextPathSegments = NodePaths::explodeContextPath($imageNodeContextPath);
                 $imageNode = $context->getNode($imageNodeContextPathSegments['nodePath']);
+                
+                if ($imageNode === null) {
+                    continue;
+                }
+                
                 foreach ($imageNodeProperties as $propertyName => $propertyValue) {
                     $imageNode->setProperty($propertyName, $propertyValue);
                 }

@@ -75,6 +75,17 @@ final class PublishingState
     }
 
     /**
+     * Remove a document change set
+     *
+     * @param string $documentPath
+     * @return void
+     */
+    public function removeDocumentChangeSet(string $documentPath): void
+    {
+        unset($this->documentChangeSets[$documentPath]);
+    }
+
+    /**
      * Get all document change sets
      *
      * @return array<string, DocumentChangeSet>

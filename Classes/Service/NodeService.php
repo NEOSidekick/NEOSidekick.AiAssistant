@@ -25,6 +25,7 @@ use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use PDO;
 use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Log\LoggerInterface;
 
 class NodeService extends AbstractNodeService
 {
@@ -71,6 +72,12 @@ class NodeService extends AbstractNodeService
      * @var NodeFindingService
      */
     protected $nodeFindingService;
+
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $systemLogger;
 
     public function __construct(
         WorkspaceRepository $workspaceRepository,
@@ -217,38 +224,77 @@ class NodeService extends AbstractNodeService
     public function updatePropertiesOnNodes(array $itemsToUpdate): void
     {
         foreach ($itemsToUpdate as $updateItem) {
-            /** @var array{nodePath: string, workspaceName: string, dimensions: array} $contextPathSegments */
-            $contextPathSegments = NodePaths::explodeContextPath($updateItem->getNodeContextPath());
-            $context = $this->createContentContext(
-                $contextPathSegments['workspaceName'],
-                $contextPathSegments['dimensions']
-            );
-            $node = $context->getNode($contextPathSegments['nodePath']);
-            
-            if ($node === null) {
-                // Log warning and skip this node
-                continue;
-            }
-            
-            foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
-                $node->setProperty($propertyName, $propertyValue);
-            }
+            try {
+                /** @var array{nodePath: string, workspaceName: string, dimensions: array} $contextPathSegments */
+                $contextPathSegments = NodePaths::explodeContextPath($updateItem->getNodeContextPath());
+                $context = $this->createContentContext(
+                    $contextPathSegments['workspaceName'],
+                    $contextPathSegments['dimensions']
+                );
+                /** @var Node|null $node Context::getNode() can return null despite its @return annotation */
+                $node = $context->getNode($contextPathSegments['nodePath']);
 
-            foreach ($updateItem->getImages() as $imageNodeContextPath => $imageNodeProperties) {
-                if (empty($imageNodeProperties)) {
+                if ($node === null) {
+                    $this->systemLogger->warning('Node not found, skipping', [
+                        'nodeContextPath' => $updateItem->getNodeContextPath()
+                    ]);
                     continue;
                 }
 
-                $imageNodeContextPathSegments = NodePaths::explodeContextPath($imageNodeContextPath);
-                $imageNode = $context->getNode($imageNodeContextPathSegments['nodePath']);
-                
-                if ($imageNode === null) {
-                    continue;
+                foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
+                    try {
+                        $node->setProperty($propertyName, $propertyValue);
+                    } catch (\Exception $e) {
+                        $this->systemLogger->error('Failed to set node property', [
+                            'nodeContextPath' => $updateItem->getNodeContextPath(),
+                            'propertyName' => $propertyName,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 }
-                
-                foreach ($imageNodeProperties as $propertyName => $propertyValue) {
-                    $imageNode->setProperty($propertyName, $propertyValue);
+
+                foreach ($updateItem->getImages() as $imageNodeContextPath => $imageNodeProperties) {
+                    if (empty($imageNodeProperties)) {
+                        continue;
+                    }
+
+                    try {
+                        $imageNodeContextPathSegments = NodePaths::explodeContextPath($imageNodeContextPath);
+                        /** @var Node|null $imageNode Context::getNode() can return null despite its @return annotation */
+                        $imageNode = $context->getNode($imageNodeContextPathSegments['nodePath']);
+
+                        if ($imageNode === null) {
+                            $this->systemLogger->warning('Image node not found, skipping', [
+                                'imageNodeContextPath' => $imageNodeContextPath,
+                                'parentNodeContextPath' => $updateItem->getNodeContextPath()
+                            ]);
+                            continue;
+                        }
+
+                        foreach ($imageNodeProperties as $propertyName => $propertyValue) {
+                            try {
+                                $imageNode->setProperty($propertyName, $propertyValue);
+                            } catch (\Exception $e) {
+                                $this->systemLogger->error('Failed to set image node property', [
+                                    'imageNodeContextPath' => $imageNodeContextPath,
+                                    'propertyName' => $propertyName,
+                                    'error' => $e->getMessage()
+                                ]);
+                            }
+                        }
+                    } catch (\Exception $e) {
+                        $this->systemLogger->error('Failed to resolve image node', [
+                            'imageNodeContextPath' => $imageNodeContextPath,
+                            'parentNodeContextPath' => $updateItem->getNodeContextPath(),
+                            'error' => $e->getMessage()
+                        ]);
+                    }
                 }
+            } catch (\Exception $e) {
+                $this->systemLogger->error('Failed to process node update item', [
+                    'nodeContextPath' => $updateItem->getNodeContextPath(),
+                    'error' => $e->getMessage()
+                ]);
             }
         }
     }

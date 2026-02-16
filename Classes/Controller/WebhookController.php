@@ -7,6 +7,7 @@ use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\Mvc\View\JsonView;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Service\NodeService;
+use Psr\Log\LoggerInterface;
 
 class WebhookController extends ActionController
 {
@@ -15,6 +16,12 @@ class WebhookController extends ActionController
      * @var NodeService
      */
     protected $nodeService;
+
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $systemLogger;
 
     protected $supportedMediaTypes = array('application/json');
 
@@ -70,6 +77,20 @@ class WebhookController extends ActionController
                 $newPropertyValue = reset($result['message']['message']);
             } else {
                 $newPropertyValue = $result['message']['message'];
+            }
+
+            // The Sidekick API contract specifies string responses only. Skip and log
+            // non-string values as a safety boundary. If the API evolves to return
+            // structured data, this validation should be revisited.
+            // @todo Revisit when Sidekick supports non-string property types
+            if (!is_string($newPropertyValue)) {
+                $this->systemLogger->warning('Webhook received non-string property value, skipping', [
+                    'nodeContextPath' => $nodeContextPath,
+                    'propertyName' => $propertyName,
+                    'valueType' => gettype($newPropertyValue),
+                    'value' => json_encode($newPropertyValue)
+                ]);
+                continue;
             }
             $groupedUpdates[$nodeContextPath][$propertyName] = $newPropertyValue;
         }

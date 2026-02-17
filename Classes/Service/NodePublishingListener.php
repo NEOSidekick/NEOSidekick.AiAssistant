@@ -61,6 +61,15 @@ class NodePublishingListener
      */
     public function handleBeforeNodePublishing(NodeInterface $node, Workspace $targetWorkspace): void
     {
+        // CLI publishing (e.g. ./flow workspace:publish) is not supported for AI Assistant automations.
+        // The automation workflow requires JWT tokens bound to the publishing user's HTTP session
+        // for both the preview endpoint (read-only token) and the webhook endpoint (write-access token).
+        // In CLI contexts there is no authenticated HTTP session, so tokens cannot be generated.
+        // This is an intentional design decision — automations are triggered by interactive editors only.
+        if (defined('FLOW_SAPITYPE') && FLOW_SAPITYPE === 'CLI') {
+            return;
+        }
+
         $publishingState = $this->publishingStateService->getPublishingState();
         $publishingState->setWorkspaceName($targetWorkspace->getName());
 

@@ -439,7 +439,7 @@ GET /neosidekick/api/search-nodes
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `query` | string | **Yes** | - | Search term (case-insensitive) |
+| `query` | string | No | `""` | Search term (case-insensitive). Empty or `*` returns all document nodes |
 | `workspace` | string | No | `live` | Workspace name |
 | `dimensions` | string | No | `{}` | JSON-encoded dimensions |
 | `nodeTypeFilter` | string | No | `Neos.Neos:Node` | Filter by NodeType (e.g., `Neos.Neos:Content`) |
@@ -467,6 +467,20 @@ curl -G "https://example.com/neosidekick/api/search-nodes" \
 curl -G "https://example.com/neosidekick/api/search-nodes" \
   --data-urlencode "query=product" \
   --data-urlencode "pathStartingPoint=/sites/my-site/products" \
+  --data-urlencode 'dimensions={"language":["de"]}' \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Return all document nodes (empty query)
+curl -G "https://example.com/neosidekick/api/search-nodes" \
+  --data-urlencode "query=" \
+  --data-urlencode 'dimensions={"language":["de"]}' \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Return all document nodes (wildcard query)
+curl -G "https://example.com/neosidekick/api/search-nodes" \
+  --data-urlencode "query=*" \
   --data-urlencode 'dimensions={"language":["de"]}' \
   -H "Authorization: Bearer your-api-key" \
   -H "Accept: application/json"
@@ -527,6 +541,8 @@ curl -G "https://example.com/neosidekick/api/search-nodes" \
 | `results` | array | List of matching nodes |
 | `resultCount` | int | Total results returned |
 
+If `query` is empty or `*`, this endpoint returns the same document list response model as `/neosidekick/api/document-nodes` (including `site`, `documents`, and `documentCount`). In this mode, the result is always all document nodes for the given workspace/dimensions.
+
 #### Result Object
 
 | Field | Type | Description |
@@ -556,17 +572,6 @@ NEOSidekick:
         - 'metaDescription'
 ```
 
-### Error Response
-
-**400 Bad Request** - Missing required query parameter:
-
-```json
-{
-  "error": "Bad Request",
-  "message": "The \"query\" parameter is required and cannot be empty"
-}
-```
-
 ---
 
 ## 5. Search Media Assets API
@@ -583,7 +588,7 @@ GET /neosidekick/api/search-media-assets
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `query` | string | **Yes** | - | Search term (searches title, filename, caption) |
+| `query` | string | No | `""` | Search term (searches title, filename, caption). Empty or `*` returns all assets |
 | `mediaType` | string | No | `image/*` | Filter by media type (e.g., `image/*`, `application/pdf`) |
 | `limit` | int | No | 10 | Max results to return (1-50) |
 
@@ -601,6 +606,18 @@ curl -G "https://example.com/neosidekick/api/search-media-assets" \
   --data-urlencode "query=document" \
   --data-urlencode "mediaType=application/pdf" \
   --data-urlencode "limit=5" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Return all assets (empty query)
+curl -G "https://example.com/neosidekick/api/search-media-assets" \
+  --data-urlencode "query=" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Return all assets (wildcard query)
+curl -G "https://example.com/neosidekick/api/search-media-assets" \
+  --data-urlencode "query=*" \
   -H "Authorization: Bearer your-api-key" \
   -H "Accept: application/json"
 ```
@@ -686,17 +703,6 @@ When setting image/asset properties, you can use **either format**:
 ```
 
 The API automatically extracts the `identifier` from asset objects. This allows you to use the asset data from search results directly.
-
-### Error Response
-
-**400 Bad Request** - Missing required query parameter:
-
-```json
-{
-  "error": "Bad Request",
-  "message": "The \"query\" parameter is required and cannot be empty"
-}
-```
 
 ---
 
@@ -1178,4 +1184,3 @@ Data extraction services that provide raw data to the controllers:
 - `Configuration/Routes.yaml` - API route definitions
 - `Configuration/Policy.yaml` - Security policy (grants public access to API controllers)
 - `Configuration/Settings.Internal.yaml` - Authentication pattern configuration
-

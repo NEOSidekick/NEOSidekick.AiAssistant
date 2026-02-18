@@ -8,6 +8,7 @@ use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use NEOSidekick\AiAssistant\Controller\Trait\ApiAuthenticationTrait;
+use NEOSidekick\AiAssistant\Service\DocumentNodeListExtractor;
 use NEOSidekick\AiAssistant\Service\SearchNodesExtractor;
 
 /**
@@ -24,11 +25,20 @@ use NEOSidekick\AiAssistant\Service\SearchNodesExtractor;
 class SearchNodesApiController extends ActionController
 {
     use ApiAuthenticationTrait;
+
+    private const DOCUMENT_TYPE = 'Neos.Neos:Document';
+
     /**
      * @Flow\Inject
      * @var SearchNodesExtractor
      */
     protected $extractor;
+
+    /**
+     * @Flow\Inject
+     * @var DocumentNodeListExtractor
+     */
+    protected $documentNodeListExtractor;
 
     /**
      * @Flow\InjectConfiguration(path="apikey")
@@ -56,7 +66,10 @@ class SearchNodesApiController extends ActionController
      * similar to grep functionality. Returns matching nodes with their
      * properties and parent document context.
      *
-     * @param string $query The search term (required)
+     * If query is empty or "*", returns all document nodes using the same
+     * extraction behavior as DocumentNodeListApiController.
+     *
+     * @param string $query The search term (empty or "*" returns all document nodes)
      * @param string $workspace The workspace name (default: 'live')
      * @param string $dimensions JSON-encoded dimensions array
      * @param string $nodeTypeFilter Filter by NodeType (e.g., 'Neos.Neos:Content')
@@ -78,24 +91,48 @@ class SearchNodesApiController extends ActionController
             return $authError;
         }
 
-        // Validate required query parameter
-        if (empty(trim($query))) {
-            $this->response->setStatusCode(400);
-            return json_encode([
-                'error' => 'Bad Request',
-                'message' => 'The "query" parameter is required and cannot be empty'
-            ], JSON_THROW_ON_ERROR);
-        }
-
         // Parse dimensions from JSON string
         $dimensionsArray = json_decode($dimensions, true);
         if (!is_array($dimensionsArray)) {
             $dimensionsArray = [];
         }
 
+        $normalizedQuery = trim($query);
+
+        // Empty query and wildcard query return a full document list.
+        if ($normalizedQuery === '' || $normalizedQuery === '*') {
+            try {
+                $result = $this->documentNodeListExtractor->extract(
+                    workspace: $workspace,
+                    dimensions: $dimensionsArray,
+                    siteNodeName: null,
+                    nodeTypeFilter: self::DOCUMENT_TYPE,
+                    depth: -1
+                );
+
+                if ($pathStartingPoint !== '') {
+                    $documents = array_values(array_filter(
+                        $result['documents'],
+                        static fn(array $document): bool => isset($document['path'])
+                            && str_starts_with((string)$document['path'], $pathStartingPoint)
+                    ));
+                    $result['documents'] = $documents;
+                    $result['documentCount'] = count($documents);
+                }
+
+                return json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+            } catch (\Exception $e) {
+                $this->response->setStatusCode(400);
+                return json_encode([
+                    'error' => 'Bad Request',
+                    'message' => $e->getMessage()
+                ], JSON_THROW_ON_ERROR);
+            }
+        }
+
         try {
             $result = $this->extractor->search(
-                query: $query,
+                query: $normalizedQuery,
                 workspace: $workspace,
                 dimensions: $dimensionsArray,
                 nodeTypeFilter: $nodeTypeFilter !== '' ? $nodeTypeFilter : null,

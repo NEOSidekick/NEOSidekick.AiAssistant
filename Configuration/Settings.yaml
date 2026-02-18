@@ -1,7 +1,6 @@
 NEOSidekick:
   AiAssistant:
     apikey: ''
-    developmentBuild: false
     defaultLanguage: 'en'
     chatSidebarEnabled: true
     # The language dimension is usually called "language" in most Neos projects

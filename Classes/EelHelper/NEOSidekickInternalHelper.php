@@ -87,11 +87,7 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 
     public function apiDomain(): string
     {
-        if (isset($this->settings['developmentBuild']) && $this->settings['developmentBuild'] === true) {
-            return 'https://api-staging.neosidekick.com';
-        }
-
-        return 'https://api.neosidekick.com';
+        return $this->settings['Internal']['apiDomain'];
     }
 
     public function apiKey(): string

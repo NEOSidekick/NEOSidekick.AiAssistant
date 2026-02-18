@@ -210,8 +210,7 @@ export class ContentCanvasService {
             return;
         }
 
-        const fusionPath = state?.cr?.nodes?.focused?.fusionPath || '';
-        this.store.dispatch(actions.CR.Nodes.focus(targetNode.contextPath, fusionPath));
+        this.store.dispatch(actions.CR.Nodes.focus(targetNode.contextPath));
         this.store.dispatch(actions.UI.ContentCanvas.requestScrollIntoView(true));
     }
 

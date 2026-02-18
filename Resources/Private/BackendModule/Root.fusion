@@ -113,9 +113,9 @@ NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = 
 }
 
 NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusion:Component {
-    apiDomain = ${developmentBuild ? 'https://api-staging.neosidekick.com' : 'https://api.neosidekick.com'}
+    apiDomain = ${apiDomain}
     renderer = afx`
-        <div @if={developmentBuild} style="font-size: 1.5em; font-weight: bold; background: orange; padding: 1rem; margin-bottom: 1rem;">You are using the Development Version of the API</div>
+        <div @if={props.apiDomain != 'https://api.neosidekick.com'} style="font-size: 1.5em; font-weight: bold; background: orange; padding: 1rem; margin-bottom: 1rem;">You are using a non-production API: {props.apiDomain}</div>
         <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey}></iframe>
     `
 }

@@ -22,7 +22,6 @@ Neos:
             - 'Error'
             - 'Main'
             - 'Module'
-            - 'Editors/*'
             - 'NodeTypes/*'
     Ui:
       resources:

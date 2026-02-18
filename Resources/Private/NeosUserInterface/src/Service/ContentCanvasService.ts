@@ -1,7 +1,8 @@
 import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
 // @ts-ignore
 import {Store} from 'react-redux'
-import {actions} from '@neos-project/neos-ui-redux-store'
+// @ts-ignore
+import {actions, actionTypes} from '@neos-project/neos-ui-redux-store'
 import {IFrameApiService} from "./IFrameApiService";
 import {ServerStreamMessage} from "../interfaces";
 
@@ -108,6 +109,9 @@ export class ContentCanvasService {
                 this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + errorMessage, 'error', errorMessage);
                 this.handleStreamingFinished();
                 break;
+            case 'reload-content-canvas':
+                this.reloadContentCanvas();
+                break;
             default:
                 const errorMessage2 = 'Unknown message event: ' + message?.data?.eventName;
                 this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + errorMessage2, 'error', errorMessage2);
@@ -119,6 +123,21 @@ export class ContentCanvasService {
         this.resetTypingCaret();
         this.unsetCurrentlyHandledNodePath();
         this.iFrameApiService.setStreamingFinished();
+    }
+
+    private reloadContentCanvas(): void {
+        const state = this.store.getState();
+        const uri = state?.ui?.contentCanvas?.previewUrl || state?.ui?.contentCanvas?.src;
+        if (!uri) {
+            return;
+        }
+
+        this.store.dispatch({
+            type: actionTypes.UI.ContentCanvas.RELOAD,
+            payload: {
+                uri,
+            }
+        });
     }
 
     private resetTypingCaret() {

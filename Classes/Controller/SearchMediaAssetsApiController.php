@@ -52,9 +52,10 @@ class SearchMediaAssetsApiController extends ActionController
      * Search for media assets by text query.
      *
      * Searches across asset title, filename, and caption fields.
+     * If query is empty or "*", all assets are returned (respecting mediaType and limit).
      * Returns extended asset details optimized for LLM consumption.
      *
-     * @param string $query The search term (required)
+     * @param string $query The search term (empty or "*" returns all assets)
      * @param string $mediaType Filter by media type pattern (default: "image/*")
      * @param int $limit Maximum results to return (default: 10, max: 50)
      * @return string JSON response
@@ -72,18 +73,15 @@ class SearchMediaAssetsApiController extends ActionController
             return $authError;
         }
 
-        // Validate required query parameter
-        if (empty(trim($query))) {
-            $this->response->setStatusCode(400);
-            return json_encode([
-                'error' => 'Bad Request',
-                'message' => 'The "query" parameter is required and cannot be empty'
-            ], JSON_THROW_ON_ERROR);
+        // Empty query and wildcard query should return all assets.
+        $normalizedQuery = trim($query);
+        if ($normalizedQuery === '*') {
+            $normalizedQuery = '';
         }
 
         try {
             $result = $this->searchService->search(
-                searchTerm: $query,
+                searchTerm: $normalizedQuery,
                 mediaTypeFilter: $mediaType,
                 limit: $limit
             );

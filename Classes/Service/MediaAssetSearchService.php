@@ -10,6 +10,7 @@ use Neos\Flow\Persistence\Doctrine\Query;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Persistence\QueryInterface;
 use Neos\Flow\Reflection\ReflectionService;
+use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\AssetVariantInterface;
 use Neos\Media\Domain\Model\Tag;
@@ -37,6 +38,12 @@ class MediaAssetSearchService
      * @var ReflectionService
      */
     protected $reflectionService;
+
+    /**
+     * @Flow\Inject
+     * @var ResourceManager
+     */
+    protected $resourceManager;
 
     /**
      * Search for assets matching a query string.
@@ -118,6 +125,7 @@ class MediaAssetSearchService
         $resource = $asset->getResource();
         $filename = $resource !== null ? $resource->getFilename() : '';
         $mediaType = $resource !== null ? $asset->getMediaType() : '';
+        $previewUrl = $resource !== null ? ($this->resourceManager->getPublicPersistentResourceUri($resource) ?? '') : '';
 
         return new MediaAssetData(
             identifier: $asset->getIdentifier(),
@@ -125,6 +133,7 @@ class MediaAssetSearchService
             title: $asset->getTitle() ?? '',
             caption: $asset->getCaption() ?? '',
             mediaType: $mediaType,
+            previewUrl: $previewUrl,
             tags: $tags
         );
     }
@@ -168,4 +177,3 @@ class MediaAssetSearchService
         $query->matching($query->logicalAnd([$constraints, $query->logicalAnd($variantsConstraints)]));
     }
 }
-

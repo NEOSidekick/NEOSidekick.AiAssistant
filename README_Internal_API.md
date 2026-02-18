@@ -636,6 +636,7 @@ curl -G "https://example.com/neosidekick/api/search-media-assets" \
       "title": "NEOSidekick Logo",
       "caption": "The official NEOSidekick AI assistant logo",
       "mediaType": "image/png",
+      "previewUrl": "https://example.com/_Resources/Persistent/1/2/3/AI-Sidekick-Logo.png",
       "tags": ["logo", "branding"]
     },
     {
@@ -644,6 +645,7 @@ curl -G "https://example.com/neosidekick/api/search-media-assets" \
       "title": "Company Logo (Dark)",
       "caption": "",
       "mediaType": "image/svg+xml",
+      "previewUrl": "https://example.com/_Resources/Persistent/a/b/c/company-logo-dark.svg",
       "tags": ["logo"]
     }
   ],
@@ -670,6 +672,7 @@ curl -G "https://example.com/neosidekick/api/search-media-assets" \
 | `title` | string | Editorial title (may be empty) |
 | `caption` | string | Description/alt text (may be empty) |
 | `mediaType` | string | MIME type (e.g., `image/png`) |
+| `previewUrl` | string | Public URL to preview/download the asset |
 | `tags` | array | Tag labels for categorization |
 
 ### Usage in Patches
@@ -758,7 +761,8 @@ curl -X POST "https://example.com/neosidekick/api/upload-media-asset" \
     "filename": "hero.jpg",
     "title": "Homepage Hero",
     "caption": "Hero image for homepage",
-    "mediaType": "image/jpeg"
+    "mediaType": "image/jpeg",
+    "previewUrl": "https://example.com/_Resources/Persistent/f/3/2/hero.jpg"
   }
 }
 ```

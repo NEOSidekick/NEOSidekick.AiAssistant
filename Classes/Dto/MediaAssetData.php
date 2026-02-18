@@ -17,6 +17,7 @@ use Neos\Flow\Annotations as Flow;
  * - title: Editorial name given by content editors (most descriptive)
  * - caption: Description/alt text (provides context)
  * - mediaType: MIME type for filtering (e.g., image/png)
+ * - previewUrl: Public URL for previewing the asset
  * - tags: Categorization labels for semantic matching
  *
  * @Flow\Proxy(false)
@@ -29,6 +30,7 @@ final class MediaAssetData implements JsonSerializable
      * @param string $title Editorial title (may be empty)
      * @param string $caption Description/alt text (may be empty)
      * @param string $mediaType MIME type (e.g., "image/png")
+     * @param string $previewUrl Public URL for previewing/downloading the asset
      * @param array<string> $tags Tag labels for categorization
      */
     public function __construct(
@@ -37,6 +39,7 @@ final class MediaAssetData implements JsonSerializable
         private readonly string $title,
         private readonly string $caption,
         private readonly string $mediaType,
+        private readonly string $previewUrl,
         private readonly array $tags
     ) {
     }
@@ -66,6 +69,11 @@ final class MediaAssetData implements JsonSerializable
         return $this->mediaType;
     }
 
+    public function getPreviewUrl(): string
+    {
+        return $this->previewUrl;
+    }
+
     /**
      * @return array<string>
      */
@@ -75,7 +83,7 @@ final class MediaAssetData implements JsonSerializable
     }
 
     /**
-     * @return array{identifier: string, filename: string, title: string, caption: string, mediaType: string, tags: array<string>}
+     * @return array{identifier: string, filename: string, title: string, caption: string, mediaType: string, previewUrl: string, tags: array<string>}
      */
     public function jsonSerialize(): array
     {
@@ -85,8 +93,8 @@ final class MediaAssetData implements JsonSerializable
             'title' => $this->title,
             'caption' => $this->caption,
             'mediaType' => $this->mediaType,
+            'previewUrl' => $this->previewUrl,
             'tags' => $this->tags,
         ];
     }
 }
-

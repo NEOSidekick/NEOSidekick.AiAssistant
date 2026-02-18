@@ -141,15 +141,19 @@ class MediaAssetUploadService
 
         $this->persistenceManager->persistAll();
 
+        $assetResource = $asset->getResource();
+        $previewUrl = $assetResource !== null ? ($this->resourceManager->getPublicPersistentResourceUri($assetResource) ?? '') : '';
+
         return [
             'created' => $isNewAsset,
             'sourceUrl' => $sourceUrl,
             'asset' => [
                 'identifier' => $asset->getIdentifier(),
-                'filename' => $asset->getResource() !== null ? $asset->getResource()->getFilename() : '',
+                'filename' => $assetResource !== null ? $assetResource->getFilename() : '',
                 'title' => $asset->getTitle() ?? '',
                 'caption' => $asset->getCaption() ?? '',
                 'mediaType' => $asset->getMediaType(),
+                'previewUrl' => $previewUrl,
             ]
         ];
     }

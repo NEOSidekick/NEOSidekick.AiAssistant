@@ -17,8 +17,9 @@ use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
 /**
  * Service to search nodes in the Neos content repository.
  *
- * Performs grep-like search across all node properties and returns
- * matching nodes with their context information for LLM agents.
+ * Performs grep-like search across all node properties and supports
+ * direct lookup by node identifier, returning matching nodes with their
+ * context information for LLM agents.
  *
  * @Flow\Scope("singleton")
  */
@@ -68,12 +69,13 @@ class SearchNodesExtractor
     }
 
     /**
-     * Search nodes by property values.
+     * Search nodes by property values or identifier.
      *
-     * Performs a case-insensitive search across all node properties,
-     * returning matching nodes with their context information.
+     * Performs a case-insensitive search across all node properties and
+     * supports direct node identifier lookup, returning matching nodes
+     * with their context information.
      *
-     * @param string $query The search term
+     * @param string $query The search term or candidate node identifier
      * @param string $workspace Workspace name (default: 'live')
      * @param array $dimensions Content dimensions
      * @param string|null $nodeTypeFilter Filter by NodeType
@@ -112,7 +114,7 @@ class SearchNodesExtractor
         $context = $this->createContentContext($workspace, $dimensions);
 
         // Extract result data from NodeData objects
-        $results = [];
+        $resultsByKey = [];
         foreach ($nodeDataResults as $nodeData) {
             /** @var NodeData $nodeData */
             $node = $this->nodeFactory->createFromNodeData($nodeData, $context);
@@ -122,8 +124,23 @@ class SearchNodesExtractor
                 continue;
             }
 
-            $results[] = $this->extractNodeData($node);
+            $resultKey = $node->getIdentifier() . '|' . $node->getPath();
+            $resultsByKey[$resultKey] = $this->extractNodeData($node);
         }
+
+        // Also support direct identifier lookups (UUID) in addition to property search.
+        $nodeByIdentifier = $this->resolveNodeByIdentifier(
+            $context,
+            $query,
+            $effectiveNodeTypeFilter,
+            $pathStartingPoint
+        );
+        if ($nodeByIdentifier !== null) {
+            $resultKey = $nodeByIdentifier->getIdentifier() . '|' . $nodeByIdentifier->getPath();
+            $resultsByKey[$resultKey] = $this->extractNodeData($nodeByIdentifier);
+        }
+
+        $results = array_values($resultsByKey);
 
         return [
             'generatedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
@@ -135,6 +152,42 @@ class SearchNodesExtractor
             'results' => $results,
             'resultCount' => count($results),
         ];
+    }
+
+    /**
+     * Resolve a query string as a node identifier and apply existing filters.
+     *
+     * @param mixed $context The content context created via CreateContentContextTrait
+     * @param string $identifier Candidate node identifier (UUID)
+     * @param string|null $nodeTypeFilter Effective node type filter to apply
+     * @param string|null $pathStartingPoint Optional path prefix filter
+     * @return NodeInterface|null
+     */
+    private function resolveNodeByIdentifier(
+        mixed $context,
+        string $identifier,
+        ?string $nodeTypeFilter,
+        ?string $pathStartingPoint
+    ): ?NodeInterface {
+        try {
+            $node = $context->getNodeByIdentifier($identifier);
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if (!$node instanceof NodeInterface) {
+            return null;
+        }
+
+        if ($nodeTypeFilter !== null && !$node->getNodeType()->isOfType($nodeTypeFilter)) {
+            return null;
+        }
+
+        if ($pathStartingPoint !== null && !str_starts_with($node->getPath(), $pathStartingPoint)) {
+            return null;
+        }
+
+        return $node;
     }
 
     /**

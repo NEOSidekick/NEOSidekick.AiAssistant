@@ -427,7 +427,7 @@ NEOSidekick:
 
 ## 4. Search Nodes API
 
-Performs grep-like search across all node properties for a given workspace and dimension. Used by LLM agents to find specific content within the site.
+Performs grep-like search across all node properties for a given workspace and dimension. It also supports direct lookup by node identifier (UUID). Used by LLM agents to find specific content within the site.
 
 ### Endpoint
 
@@ -439,7 +439,7 @@ GET /neosidekick/api/search-nodes
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `query` | string | No | `""` | Search term (case-insensitive). Empty or `*` returns all document nodes |
+| `query` | string | No | `""` | Search term (case-insensitive) or exact node identifier (UUID). Empty or `*` returns all document nodes |
 | `workspace` | string | No | `live` | Workspace name |
 | `dimensions` | string | No | `{}` | JSON-encoded dimensions |
 | `nodeTypeFilter` | string | No | `Neos.Neos:Node` | Filter by NodeType (e.g., `Neos.Neos:Content`) |
@@ -467,6 +467,13 @@ curl -G "https://example.com/neosidekick/api/search-nodes" \
 curl -G "https://example.com/neosidekick/api/search-nodes" \
   --data-urlencode "query=product" \
   --data-urlencode "pathStartingPoint=/sites/my-site/products" \
+  --data-urlencode 'dimensions={"language":["de"]}' \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Search by node identifier (UUID)
+curl -G "https://example.com/neosidekick/api/search-nodes" \
+  --data-urlencode "query=c8ce98d5-adb2-4bce-8397-9b00bfbae4fc" \
   --data-urlencode 'dimensions={"language":["de"]}' \
   -H "Authorization: Bearer your-api-key" \
   -H "Accept: application/json"

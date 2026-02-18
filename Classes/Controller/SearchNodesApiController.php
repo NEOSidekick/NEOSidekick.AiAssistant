@@ -60,16 +60,16 @@ class SearchNodesApiController extends ActionController
     }
 
     /**
-     * Search nodes by property values.
+     * Search nodes by property values or identifier.
      *
      * Performs a case-insensitive search across all node properties,
-     * similar to grep functionality. Returns matching nodes with their
+     * with additional support for direct identifier lookup. Returns matching nodes with their
      * properties and parent document context.
      *
      * If query is empty or "*", returns all document nodes using the same
      * extraction behavior as DocumentNodeListApiController.
      *
-     * @param string $query The search term (empty or "*" returns all document nodes)
+     * @param string $query The search term or node identifier (empty or "*" returns all document nodes)
      * @param string $workspace The workspace name (default: 'live')
      * @param string $dimensions JSON-encoded dimensions array
      * @param string $nodeTypeFilter Filter by NodeType (e.g., 'Neos.Neos:Content')

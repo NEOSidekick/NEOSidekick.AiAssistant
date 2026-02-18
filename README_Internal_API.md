@@ -33,7 +33,17 @@ curl -G "https://your-site.com/neosidekick/api/search-media-assets" \
   --data-urlencode "query=logo" \
   -H "Authorization: Bearer your-api-key"
 
-# 6. Apply patches (create, update, move, delete nodes)
+# 6. Upload media asset from URL
+curl -X POST "https://your-site.com/neosidekick/api/upload-media-asset" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/images/hero.jpg",
+    "title": "Homepage Hero",
+    "caption": "Hero image for homepage"
+  }'
+
+# 7. Apply patches (create, update, move, delete nodes)
 curl -X POST "https://your-site.com/neosidekick/api/apply-patches" \
   -H "Authorization: Bearer your-api-key" \
   -H "Content-Type: application/json" \
@@ -94,6 +104,7 @@ NEOSidekick:
 | `/neosidekick/api/document-nodes` | GET | Get list of all document nodes (pages) |
 | `/neosidekick/api/search-nodes` | GET | Search across all node properties (grep-like) |
 | `/neosidekick/api/search-media-assets` | GET | Search media assets by title, filename, or caption |
+| `/neosidekick/api/upload-media-asset` | POST | Upload media asset from remote URL |
 | `/neosidekick/api/apply-patches` | POST | Apply atomic patches (create, update, move, delete nodes) |
 | `/neosidekick/aiassistant/service/{action}` | GET/POST | Backend service for UI integration |
 
@@ -689,7 +700,86 @@ The API automatically extracts the `identifier` from asset objects. This allows 
 
 ---
 
-## 6. Apply Patches API
+## 6. Upload Media Asset API
+
+Upload a remote file into the Neos media library using a URL. This API uses Neos' internal `uploadAction` naming convention (as used in `Neos.Media.Browser`).
+
+### Endpoint
+
+```http
+POST /neosidekick/api/upload-media-asset
+```
+
+### Request Body
+
+```json
+{
+  "url": "https://example.com/images/hero.jpg",
+  "title": "Homepage Hero",
+  "caption": "Hero image for homepage"
+}
+```
+
+### Request Fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `url` | string | **Yes** | Source URL (`http`/`https`) of the file to import |
+| `title` | string | No | Optional asset title |
+| `caption` | string | No | Optional asset caption |
+
+### Example Request
+
+```bash
+curl -X POST "https://example.com/neosidekick/api/upload-media-asset" \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "url": "https://example.com/images/hero.jpg",
+    "title": "Homepage Hero",
+    "caption": "Hero image for homepage"
+  }'
+```
+
+### Response
+
+```json
+{
+  "created": true,
+  "sourceUrl": "https://example.com/images/hero.jpg",
+  "asset": {
+    "identifier": "f32afaf9-8b14-4f55-ae67-dcb730cbf0b0",
+    "filename": "hero.jpg",
+    "title": "Homepage Hero",
+    "caption": "Hero image for homepage",
+    "mediaType": "image/jpeg"
+  }
+}
+```
+
+### Error Responses
+
+**400 Bad Request** - Invalid URL or malformed payload:
+
+```json
+{
+  "error": "Bad Request",
+  "message": "The \"url\" field must be a valid URL."
+}
+```
+
+**502 Upstream Error** - Download failed:
+
+```json
+{
+  "error": "Upstream Error",
+  "message": "Downloading the source URL failed with HTTP status 404."
+}
+```
+
+---
+
+## 7. Apply Patches API
 
 Apply atomic patches to the content repository. Supports creating, updating, moving, and deleting nodes with transaction-based rollback and dry-run support.
 
@@ -1066,6 +1156,7 @@ API controllers are placed directly in the Controller namespace (not in a subpac
 - `Classes/Controller/DocumentNodeListApiController.php` - Document list endpoint
 - `Classes/Controller/SearchNodesApiController.php` - Search nodes endpoint
 - `Classes/Controller/SearchMediaAssetsApiController.php` - Search media assets endpoint
+- `Classes/Controller/UploadMediaAssetApiController.php` - Upload media assets from URL endpoint
 - `Classes/Controller/ApplyPatchesApiController.php` - Apply patches endpoint
 - `Classes/Controller/BackendServiceController.php` - Backend UI service
 
@@ -1078,6 +1169,7 @@ Data extraction services that provide raw data to the controllers:
 - `Classes/Service/DocumentNodeListExtractor.php` - Extracts document node lists
 - `Classes/Service/SearchNodesExtractor.php` - Searches nodes by property values
 - `Classes/Service/MediaAssetSearchService.php` - Searches media assets by title, filename, caption
+- `Classes/Service/MediaAssetUploadService.php` - Uploads media assets into library from remote URLs
 - `Classes/Service/NodePatchService.php` - Applies atomic patches with transaction support
 - `Classes/Service/PatchValidator.php` - Validates patches using NodeTemplates PropertiesProcessor
 

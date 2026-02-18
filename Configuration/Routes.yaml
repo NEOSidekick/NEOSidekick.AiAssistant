@@ -59,6 +59,16 @@
   httpMethods: ['GET']
 
 -
+  name:  'Upload Media Asset API'
+  uriPattern: 'neosidekick/api/upload-media-asset'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'UploadMediaAssetApi'
+    '@action':     'upload'
+    '@format':     'json'
+  httpMethods: ['POST']
+
+-
   name:  'Apply Patches API'
   uriPattern: 'neosidekick/api/apply-patches'
   defaults:

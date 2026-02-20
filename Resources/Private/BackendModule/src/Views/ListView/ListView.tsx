@@ -52,7 +52,7 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         })
         const backend: NeosBackendService = NeosBackendService.getInstance()
         try {
-            const items: FindAssetData[] | FindDocumentNodeData[] = await backend.getItems(this.context.moduleConfiguration);
+            const items: FindAssetData[] | FindDocumentNodeData[] = await backend.getItems(this.context.moduleConfiguration, this.context.syncLanguagePresets);
             const processedItems = Object.values(items).reduce<ListItems>((accumulator: ListItems, item: FindAssetData | FindDocumentNodeData) => {
                 accumulator.push(this.postprocessListItem(item, this.context.moduleConfiguration));
                 return accumulator;

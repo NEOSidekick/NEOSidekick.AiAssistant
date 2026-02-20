@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="label" xml:space="preserve">
+                <source>NEOSidekick Automations</source>
+            </trans-unit>
+            <trans-unit id="description" xml:space="preserve">
+                <source>Configure AI-powered automations for your content.</source>
+            </trans-unit>
+            <trans-unit id="intro" xml:space="preserve">
+                <source>Configure AI-powered automations for your content, by adding quality assurance features. All enabled automations will be executed after every publish to live and finish 1-2 minutes after the publish.</source>
+            </trans-unit>
+            <trans-unit id="currentlyEditing" xml:space="preserve">
+                <source>Currently automations are applied for the site "{site}".</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.title" xml:space="preserve">
+                <source>On-Page SEO Automations</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.determineMissingFocusKeywords" xml:space="preserve">
+                <source>Determine and set missing focus keywords on publication</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.redetermineExistingFocusKeywords" xml:space="preserve">
+                <source>Re-determine existing focus keywords on publication</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.generateEmptySeoTitles" xml:space="preserve">
+                <source>Automatically create SEO titles on publication when empty </source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.generateEmptyMetaDescriptions" xml:space="preserve">
+                <source>Automatically create meta descriptions on publication when empty </source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.regenerateExistingSeoTitles" xml:space="preserve">
+                <source>Automatically regenerate existing SEO titles on publication</source>
+            </trans-unit>
+            <trans-unit id="seoAutomations.regenerateExistingMetaDescriptions" xml:space="preserve">
+                <source>Automatically regenerate existing meta descriptions on publication</source>
+            </trans-unit>
+            <trans-unit id="approvalProcess.label" xml:space="preserve">
+                <source>Approval process:</source>
+            </trans-unit>
+            <trans-unit id="approvalProcess.approveAutomatically" xml:space="preserve">
+                <source>Publish directly</source>
+            </trans-unit>
+            <trans-unit id="approvalProcess.requestViaEmail" xml:space="preserve">
+                <source>Request via email</source>
+            </trans-unit>
+            <trans-unit id="approvalProcess.requestViaSlack" xml:space="preserve">
+                <source>Request via Slack</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.title" xml:space="preserve">
+                <source>Image Alt Text Automation</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.intro" xml:space="preserve">
+                <source>Automatically correct texts and maintain brand integrity.</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.generateEmptyAltTexts" xml:space="preserve">
+                <source>Automatically generate empty alternative texts for images on publication</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.generateEmptyTitleTexts" xml:space="preserve">
+                <source>Automatically generate empty title texts for images on publication</source>
+            </trans-unit>
+            <trans-unit id="imageAltText.approvalProcess" xml:space="preserve">
+                <source>Approval process for SEO automations:</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.title" xml:space="preserve">
+                <source>Brand Guard</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.rules" xml:space="preserve">
+                <source>Rules</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.defaultPrompt" xml:space="preserve">
+                <source>Please correct the following text based on these rules.
+# Rules
+- Correct all spelling and grammar mistakes
+- Always write "Neos CMS" (never "NEOS")</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.includeNeosidekickBriefing" xml:space="preserve">
+                <source>Include NEOSidekick briefing in prompt</source>
+            </trans-unit>
+            <trans-unit id="brandGuard.approvalProcess" xml:space="preserve">
+                <source>Approval process for Brand Guard:</source>
+            </trans-unit>
+            <trans-unit id="save" xml:space="preserve">
+                <source>Save</source>
+            </trans-unit>
+            <trans-unit id="noSite.title" xml:space="preserve">
+                <source>No Site Detected</source>
+            </trans-unit>
+            <trans-unit id="noSite.message" xml:space="preserve">
+                <source>The automations are site-specific, and we could not detect a site for the current hostname. Please check the following:</source>
+            </trans-unit>
+            <trans-unit id="noSite.checkDomainAssignment" xml:space="preserve">
+                <source>Make sure your site has a domain assigned in the Neos backend (under Management > Sites)</source>
+            </trans-unit>
+            <trans-unit id="noSite.accessViaDomain" xml:space="preserve">
+                <source>Access the Neos backend using a hostname that is configured as a domain for one of your sites</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

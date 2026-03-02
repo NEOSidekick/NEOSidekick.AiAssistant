@@ -9,6 +9,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use NEOSidekick\AiAssistant\Controller\Trait\ApiAuthenticationTrait;
 use NEOSidekick\AiAssistant\Service\NodePatchService;
+use Neos\Neos\Service\UserService;
 
 /**
  * API controller to apply atomic patches to nodes.
@@ -23,11 +24,18 @@ use NEOSidekick\AiAssistant\Service\NodePatchService;
 class ApplyPatchesApiController extends ActionController
 {
     use ApiAuthenticationTrait;
+
     /**
      * @Flow\Inject
      * @var NodePatchService
      */
     protected $patchService;
+
+    /**
+     * @Flow\Inject
+     * @var UserService
+     */
+    protected UserService $userService;
 
     /**
      * @Flow\InjectConfiguration(path="apikey")
@@ -53,7 +61,6 @@ class ApplyPatchesApiController extends ActionController
      *
      * Accepts a JSON body with the following structure:
      * {
-     *   "workspace": "user-admin",
      *   "dimensions": {"language": ["de"]},
      *   "dryRun": false,
      *   "patches": [
@@ -104,8 +111,17 @@ class ApplyPatchesApiController extends ActionController
             return $validationError;
         }
 
+        // Resolve workspace from authenticated user
+        $workspace = $this->userService->getPersonalWorkspaceName();
+        if ($workspace === null) {
+            $this->response->setStatusCode(401);
+            return json_encode([
+                'error' => 'Unauthorized',
+                'message' => 'Could not determine user workspace. No authenticated user found.'
+            ], JSON_THROW_ON_ERROR);
+        }
+
         // Extract parameters with defaults
-        $workspace = $data['workspace'] ?? 'live';
         $dimensions = $data['dimensions'] ?? [];
         // dryRun is validated as boolean in validateRequestData, safe to use directly
         $dryRun = $data['dryRun'] ?? false;
@@ -178,15 +194,6 @@ class ApplyPatchesApiController extends ActionController
                     'message' => sprintf('Patch at index %d is missing "operation" field', $index)
                 ], JSON_THROW_ON_ERROR);
             }
-        }
-
-        // Validate workspace if provided
-        if (isset($data['workspace']) && !is_string($data['workspace'])) {
-            $this->response->setStatusCode(400);
-            return json_encode([
-                'error' => 'Bad Request',
-                'message' => 'Field "workspace" must be a string'
-            ], JSON_THROW_ON_ERROR);
         }
 
         // Validate dimensions if provided

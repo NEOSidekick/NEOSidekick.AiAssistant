@@ -7,7 +7,6 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
-use NEOSidekick\AiAssistant\Controller\Trait\ApiAuthenticationTrait;
 use NEOSidekick\AiAssistant\Service\NodePatchService;
 use Neos\Neos\Service\UserService;
 
@@ -17,14 +16,12 @@ use Neos\Neos\Service\UserService;
  * Processes LLM-generated node operations (create, update, move, delete)
  * with validation, transaction-based rollback, and dry-run support.
  *
- * Authentication is done via Bearer token matching the configured API key.
+ * Authentication is done via JWT Bearer token (Flow security provider).
  *
  * @noinspection PhpUnused
  */
 class ApplyPatchesApiController extends ActionController
 {
-    use ApiAuthenticationTrait;
-
     /**
      * @Flow\Inject
      * @var NodePatchService
@@ -36,12 +33,6 @@ class ApplyPatchesApiController extends ActionController
      * @var UserService
      */
     protected UserService $userService;
-
-    /**
-     * @Flow\InjectConfiguration(path="apikey")
-     * @var string
-     */
-    protected string $apiKey;
 
     /**
      * @var string[]
@@ -77,12 +68,6 @@ class ApplyPatchesApiController extends ActionController
      */
     public function applyPatchesAction(): string
     {
-        // Validate Bearer token authentication
-        $authError = $this->validateAuthentication();
-        if ($authError !== null) {
-            return $authError;
-        }
-
         // Parse JSON body from request
         // Use php://input as the PSR-7 stream may have already been consumed
         $requestBody = file_get_contents('php://input');

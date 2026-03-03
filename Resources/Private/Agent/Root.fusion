@@ -5,6 +5,7 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
     interfaceLanguage = ${interfaceLanguage}
     csrfToken = ${csrfToken}
     authorizeActionUri = ${authorizeActionUri}
+    state = ${state}
 
     renderer = afx`
         <html>
@@ -18,6 +19,7 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
                     <p>You need to authorize NEOSidekick Agent so it can write to your user workspace</p>
                     <form method="POST" action={props.authorizeActionUri}>
                         <input type="hidden" name="__csrfToken" value={props.csrfToken} />
+                        <input type="hidden" name="state" value={props.state} />
                         <button type="submit" class="auth-button">
                             Authorize
                         </button>

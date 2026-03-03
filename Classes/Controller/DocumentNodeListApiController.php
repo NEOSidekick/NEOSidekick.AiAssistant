@@ -7,7 +7,6 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
-use NEOSidekick\AiAssistant\Controller\Trait\ApiAuthenticationTrait;
 use NEOSidekick\AiAssistant\Service\DocumentNodeListExtractor;
 
 /**
@@ -16,24 +15,17 @@ use NEOSidekick\AiAssistant\Service\DocumentNodeListExtractor;
  * Returns a list of all document nodes (pages) for a given workspace
  * and dimension configuration. Used by LLM agents to discover pages.
  *
- * Authentication is done via Bearer token matching the configured API key.
+ * Authentication is done via JWT Bearer token (Flow security provider).
  *
  * @noinspection PhpUnused
  */
 class DocumentNodeListApiController extends ActionController
 {
-    use ApiAuthenticationTrait;
     /**
      * @Flow\Inject
      * @var DocumentNodeListExtractor
      */
     protected $extractor;
-
-    /**
-     * @Flow\InjectConfiguration(path="apikey")
-     * @var string
-     */
-    protected string $apiKey;
 
     /**
      * @var string[]
@@ -67,12 +59,6 @@ class DocumentNodeListApiController extends ActionController
         string $nodeTypeFilter = 'Neos.Neos:Document',
         int $depth = -1
     ): string {
-        // Validate Bearer token authentication
-        $authError = $this->validateAuthentication();
-        if ($authError !== null) {
-            return $authError;
-        }
-
         // Parse dimensions from JSON string
         $dimensionsArray = json_decode($dimensions, true);
         if (!is_array($dimensionsArray)) {

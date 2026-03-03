@@ -7,7 +7,6 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
-use NEOSidekick\AiAssistant\Controller\Trait\ApiAuthenticationTrait;
 use NEOSidekick\AiAssistant\Service\MediaAssetSearchService;
 
 /**
@@ -16,24 +15,17 @@ use NEOSidekick\AiAssistant\Service\MediaAssetSearchService;
  * Provides search functionality optimized for LLM agents to find
  * appropriate images and media files for content creation.
  *
- * Authentication is done via Bearer token matching the configured API key.
+ * Authentication is done via JWT Bearer token (Flow security provider).
  *
  * @noinspection PhpUnused
  */
 class SearchMediaAssetsApiController extends ActionController
 {
-    use ApiAuthenticationTrait;
     /**
      * @Flow\Inject
      * @var MediaAssetSearchService
      */
     protected $searchService;
-
-    /**
-     * @Flow\InjectConfiguration(path="apikey")
-     * @var string
-     */
-    protected string $apiKey;
 
     /**
      * @var string[]
@@ -67,12 +59,6 @@ class SearchMediaAssetsApiController extends ActionController
         string $mediaType = 'image/*',
         int $limit = 10
     ): string {
-        // Validate Bearer token authentication
-        $authError = $this->validateAuthentication();
-        if ($authError !== null) {
-            return $authError;
-        }
-
         // Empty query and wildcard query should return all assets.
         $normalizedQuery = trim($query);
         if ($normalizedQuery === '*') {

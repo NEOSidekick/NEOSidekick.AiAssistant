@@ -164,4 +164,76 @@ class AgentController extends ActionController
             ], JSON_THROW_ON_ERROR);
         }
     }
+
+    /**
+     * Test the JWT authentication flow by generating a JWT and calling
+     * the NodeTypeSchema API endpoint with it via GuzzleHttp.
+     *
+     * @return string JSON response with the test result
+     * @Flow\SkipCsrfProtection
+     */
+    public function testJwtAction(): string
+    {
+        $this->response->setContentType('application/json');
+
+        try {
+            $tokenData = $this->agentTokenService->generateTokenData();
+            $jwt = $tokenData['jwt'];
+            $jwtClaims = $this->agentTokenService->verifyToken($jwt);
+
+            $httpRequest = $this->request->getHttpRequest();
+            $uri = $httpRequest->getUri();
+            $baseUrl = $uri->getScheme() . '://' . $uri->getHost() . ($uri->getPort() ? ':' . $uri->getPort() : '');
+
+            $client = new Client(['verify' => false]);
+            $whoamiResponse = $client->get($baseUrl . '/neosidekick/api/whoami', [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $jwt,
+                    'Accept' => 'application/json',
+                ],
+            ]);
+
+            $whoami = json_decode((string) $whoamiResponse->getBody(), true);
+
+            return json_encode([
+                'success' => true,
+                'token' => [
+                    'user_id' => $tokenData['user_id'],
+                    'account_id' => $tokenData['account_id'],
+                    'session_id' => $tokenData['session_id'],
+                ],
+                'jwt_claims' => $jwtClaims,
+                'authenticated_user' => $whoami,
+            ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+        } catch (AgentTokenException $e) {
+            $this->response->setStatusCode($e->getStatusCode());
+            return json_encode([
+                'success' => false,
+                'step' => 'token_generation',
+                'error' => $e->getErrorType(),
+                'message' => $e->getMessage(),
+            ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+        } catch (GuzzleException $e) {
+            $responseBody = null;
+            if (method_exists($e, 'getResponse') && $e->getResponse() !== null) {
+                $responseBody = (string) $e->getResponse()->getBody();
+            }
+            $this->response->setStatusCode(502);
+            return json_encode([
+                'success' => false,
+                'step' => 'api_call',
+                'error' => 'API call failed',
+                'message' => $e->getMessage(),
+                'api_response_body' => $responseBody ? mb_substr($responseBody, 0, 2000) : null,
+            ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+        } catch (\Throwable $e) {
+            $this->response->setStatusCode(500);
+            return json_encode([
+                'success' => false,
+                'step' => 'unknown',
+                'error' => get_class($e),
+                'message' => $e->getMessage(),
+            ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+        }
+    }
 }

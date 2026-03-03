@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace NEOSidekick\AiAssistant\Service;
 
 use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
 use Neos\Flow\Security\Context;
@@ -124,6 +125,23 @@ class AgentTokenService
                 $e
             );
         }
+    }
+
+    /**
+     * Verify and decode a JWT token.
+     *
+     * @param string $jwt The raw JWT string
+     * @return array The decoded payload (sub, session_id, user_id, account_id, etc.)
+     * @throws \Firebase\JWT\ExpiredException When the token has expired
+     * @throws \Firebase\JWT\SignatureInvalidException When the signature is invalid
+     * @throws \InvalidArgumentException When the token is malformed
+     */
+    public function verifyToken(string $jwt): array
+    {
+        $encryptionKey = $this->getEncryptionKeyFromHashService();
+        $algorithm = $this->jwtSettings['algorithm'] ?? 'HS256';
+        $decoded = JWT::decode($jwt, new Key($encryptionKey, $algorithm));
+        return (array) $decoded;
     }
 
     /**

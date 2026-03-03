@@ -97,7 +97,7 @@ declare module "@neos-project/neos-ui" {
 }
 
 declare module "@neos-project/neos-ui-redux-store" {
-    import { Node } from "@neos-project/neos-ts-interfaces";
+    import { Node, NodeMap } from "@neos-project/neos-ts-interfaces";
     import { DefaultRootState } from "react-redux";
 
     type Selector<S> = (state: DefaultRootState) => S;
@@ -106,6 +106,10 @@ declare module "@neos-project/neos-ui-redux-store" {
         CR: {
             Nodes: {
                 focusedSelector: Selector<Node | undefined>;
+                documentNodeSelector: Selector<Node | undefined>;
+                documentNodeContextPathSelector: Selector<string | null>;
+                nodeByContextPath: (state: DefaultRootState) => (contextPath: string) => Node | undefined;
+                nodesByContextPathSelector: Selector<NodeMap>;
             };
         };
         System: {
@@ -249,6 +253,7 @@ declare module "@neos-project/neos-ts-interfaces" {
     export interface NodeChild {
         contextPath: NodeContextPath;
         nodeType: NodeTypeName;
+        role: 'document' | 'content';
     }
     // TODO: for some reason (probably due to immer) I can not use ReadonlyArray here
     export interface NodeChildren extends Array<NodeChild> {}

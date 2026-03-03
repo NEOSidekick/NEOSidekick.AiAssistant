@@ -7,7 +7,6 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
-use NEOSidekick\AiAssistant\Controller\Trait\ApiAuthenticationTrait;
 use NEOSidekick\AiAssistant\Service\NodeTypeSchemaExtractor;
 
 /**
@@ -16,22 +15,17 @@ use NEOSidekick\AiAssistant\Service\NodeTypeSchemaExtractor;
  * This controller is placed directly in the Controller namespace (without subpackage)
  * to work around Flow routing issues with subpackages.
  *
+ * Authentication is done via JWT Bearer token (Flow security provider).
+ *
  * @noinspection PhpUnused
  */
 class NodeTypeSchemaApiController extends ActionController
 {
-    use ApiAuthenticationTrait;
     /**
      * @Flow\Inject
      * @var NodeTypeSchemaExtractor
      */
     protected $schemaExtractor;
-
-    /**
-     * @Flow\InjectConfiguration(path="apikey")
-     * @var string
-     */
-    protected string $apiKey;
 
     /**
      * @var string[]
@@ -57,12 +51,6 @@ class NodeTypeSchemaApiController extends ActionController
      */
     public function getNodeTypeSchemaAction(bool $includeAbstract = false, string $filter = ''): string
     {
-        // Validate Bearer token authentication
-        $authError = $this->validateAuthentication();
-        if ($authError !== null) {
-            return $authError;
-        }
-
         $schema = $this->schemaExtractor->extract($includeAbstract, $filter);
 
         return json_encode($schema, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);

@@ -7,7 +7,6 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
-use NEOSidekick\AiAssistant\Controller\Trait\ApiAuthenticationTrait;
 use NEOSidekick\AiAssistant\Service\MediaAssetUploadService;
 
 /**
@@ -15,25 +14,17 @@ use NEOSidekick\AiAssistant\Service\MediaAssetUploadService;
  *
  * Uses the same "upload" action naming that Neos.Media.Browser uses internally.
  *
- * Authentication is done via Bearer token matching the configured API key.
+ * Authentication is done via JWT Bearer token (Flow security provider).
  *
  * @noinspection PhpUnused
  */
 class UploadMediaAssetApiController extends ActionController
 {
-    use ApiAuthenticationTrait;
-
     /**
      * @Flow\Inject
      * @var MediaAssetUploadService
      */
     protected $uploadService;
-
-    /**
-     * @Flow\InjectConfiguration(path="apikey")
-     * @var string
-     */
-    protected string $apiKey;
 
     /**
      * @var string[]
@@ -64,11 +55,6 @@ class UploadMediaAssetApiController extends ActionController
      */
     public function uploadAction(): string
     {
-        $authError = $this->validateAuthentication();
-        if ($authError !== null) {
-            return $authError;
-        }
-
         $requestBody = file_get_contents('php://input');
 
         try {

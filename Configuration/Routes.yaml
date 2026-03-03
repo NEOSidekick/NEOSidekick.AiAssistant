@@ -69,6 +69,16 @@
   httpMethods: ['POST']
 
 -
+  name:  'Who Am I API'
+  uriPattern: 'neosidekick/api/whoami'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'WhoAmIApi'
+    '@action':     'index'
+    '@format':     'json'
+  httpMethods: ['GET']
+
+-
   name:  'Apply Patches API'
   uriPattern: 'neosidekick/api/apply-patches'
   defaults:
@@ -87,6 +97,16 @@
     '@action':     'index'
     '@format':     'html'
   httpMethods: ['GET']
+
+-
+  name: 'Agent Test JWT Auth'
+  uriPattern: 'neosidekick/agent/test-jwt'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'Agent'
+    '@action':     'testJwt'
+    '@format':     'json'
+  httpMethods: ['GET', 'POST']
 
 -
   name: 'Agent Authorization Action'

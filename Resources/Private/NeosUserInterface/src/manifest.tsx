@@ -5,6 +5,7 @@ import {createApiService} from './Service/ApiService';
 import {createContentService} from './Service/ContentService';
 import {createContentCanvasService} from "./Service/ContentCanvasService";
 import {createIFrameApiService} from "./Service/IFrameApiService";
+import {ContentTreeService} from "./Service/ContentTreeService";
 import {reducer} from './actions';
 
 import initializeEditor from './manifest.editors';
@@ -41,6 +42,11 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
     neosidekickRegistry.set('iFrameApiService', iFrameApiService);
     const contentCanvasService = createContentCanvasService(globalRegistry, store, iFrameApiService);
     neosidekickRegistry.set('contentCanvasService', contentCanvasService);
+    const contentTreeService = new ContentTreeService(store);
+    neosidekickRegistry.set('contentTreeService', contentTreeService);
+
+    // Expose to window for browser console testing
+    (window as any).__neosidekick_contentTreeService = contentTreeService;
 
     initializeChatSidebar(globalRegistry, configuration);
     initializeWatchPageContent(globalRegistry, store, iFrameApiService, contentService);

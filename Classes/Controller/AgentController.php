@@ -56,10 +56,10 @@ class AgentController extends ActionController
     protected string $apiKey;
 
     /**
-     * @Flow\InjectConfiguration(path="agent.externalServiceUrl")
+     * @Flow\InjectConfiguration(path="agent.externalApiDomain")
      * @var string|null
      */
-    protected ?string $externalServiceUrl = null;
+    protected ?string $externalApiDomain = null;
 
     /**
      * @param FusionView $view
@@ -90,7 +90,7 @@ class AgentController extends ActionController
     /**
      * Handle authorization: generate token data and POST to Laravel callback.
      *
-     * Receives state from the form. If externalServiceUrl is configured, POSTs
+     * Receives state from the form. If externalApiDomain is configured, POSTs
      * {user_id, account_id, session_id, jwt, state} to Laravel; otherwise returns
      * token data directly (e.g. for development without Laravel).
      *
@@ -107,7 +107,7 @@ class AgentController extends ActionController
             $tokenData = $this->agentTokenService->generateTokenData();
             $stateValue = $state ?? $this->request->getArgument('state') ?? '';
 
-            if ($this->externalServiceUrl !== null && $this->externalServiceUrl !== '') {
+            if ($this->externalApiDomain !== null && $this->externalApiDomain !== '') {
                 $payload = [
                     'user_id' => $tokenData['user_id'],
                     'account_id' => $tokenData['account_id'],
@@ -124,7 +124,7 @@ class AgentController extends ActionController
                 }
 
                 $client = new Client();
-                $response = $client->post($this->externalServiceUrl, [
+                $response = $client->post($this->externalApiDomain. '/api/agentic-chat/oauth/callback', [
                     'json' => $payload,
                     'headers' => $headers,
                 ]);

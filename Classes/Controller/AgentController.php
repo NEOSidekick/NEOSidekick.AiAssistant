@@ -95,12 +95,13 @@ class AgentController extends ActionController
      * token data directly (e.g. for development without Laravel).
      *
      * @param string|null $state The OAuth state parameter (Laravel session ID)
-     * @return string JSON response
+     * @return string HTML or JSON response
      * @Flow\SkipCsrfProtection
      */
     public function authorizeAction(?string $state = null): string
     {
-        $this->response->setContentType('application/json');
+        $responseFormat = strtolower((string) $this->request->getFormat());
+        $wantsJsonResponse = $responseFormat === 'json';
 
         try {
             $tokenData = $this->agentTokenService->generateTokenData();
@@ -131,33 +132,54 @@ class AgentController extends ActionController
                 if ($response->getStatusCode() >= 400) {
                     $this->response->setStatusCode($response->getStatusCode());
                     $body = (string) $response->getBody();
-                    return $body ?: json_encode([
+                    if ($body !== '') {
+                        return $body;
+                    }
+
+                    return json_encode([
                         'error' => 'Callback failed',
                         'message' => 'Laravel callback returned ' . $response->getStatusCode(),
                     ], JSON_THROW_ON_ERROR);
                 }
 
-                return json_encode([
-                    'success' => true,
-                    'message' => 'Authorization complete',
-                ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+                if ($wantsJsonResponse) {
+                    $this->response->setContentType('application/json');
+                    return json_encode([
+                        'success' => true,
+                        'message' => 'Authorization complete',
+                    ], JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+                }
+
+                $this->response->setContentType('text/html');
+                return '<!doctype html><html><head><meta charset="utf-8"><title>Authorization Complete</title></head><body><script>(function(){if(window.opener){window.opener.postMessage({eventName:"neosidekick-agent-authorization-complete"},"*");}window.close();})();</script><p>Authorization completed. You can close this window.</p></body></html>';
             }
 
+            $this->response->setContentType('application/json');
             return json_encode($tokenData, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
         } catch (AgentTokenException $e) {
             $this->response->setStatusCode($e->getStatusCode());
+            $this->response->setContentType('application/json');
             return json_encode([
                 'error' => $e->getErrorType(),
                 'message' => $e->getMessage(),
             ], JSON_THROW_ON_ERROR);
         } catch (GuzzleException $e) {
             $this->response->setStatusCode(502);
-            return json_encode([
-                'error' => 'Bad Gateway',
-                'message' => 'Failed to reach Laravel callback: ' . $e->getMessage(),
-            ], JSON_THROW_ON_ERROR);
+            $errorMessage = 'Failed to reach Laravel callback: ' . $e->getMessage();
+
+            if ($wantsJsonResponse) {
+                $this->response->setContentType('application/json');
+                return json_encode([
+                    'error' => 'Bad Gateway',
+                    'message' => $errorMessage,
+                ], JSON_THROW_ON_ERROR);
+            }
+
+            $this->response->setContentType('text/html');
+            return '<!doctype html><html><head><meta charset="utf-8"><title>Authorization Failed</title></head><body><h1>Authorization failed</h1><p>' . htmlspecialchars($errorMessage, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p></body></html>';
         } catch (JsonException $e) {
             $this->response->setStatusCode(500);
+            $this->response->setContentType('application/json');
             return json_encode([
                 'error' => 'Internal Server Error',
                 'message' => 'Failed to encode response: ' . $e->getMessage(),

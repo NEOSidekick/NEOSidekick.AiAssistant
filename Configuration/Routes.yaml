@@ -115,5 +115,5 @@
     '@package':    'NEOSidekick.AiAssistant'
     '@controller': 'Agent'
     '@action':     'authorize'
-    '@format':     'json'
+    '@format':     'html'
   httpMethods: ['POST']

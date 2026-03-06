@@ -39,6 +39,7 @@ Neos:
           apiDomain: '${NEOSidekickInternal.apiDomain()}'
           apiKey: '${NEOSidekickInternal.apiKey()}'
           userId: '${NEOSidekickInternal.userId(user)}'
+          sessionId: '${NEOSidekickInternal.sessionId()}'
           siteName: '${NEOSidekickInternal.siteName()}'
           domain: '${NEOSidekickInternal.domain()}'
           referrer: '${NEOSidekickInternal.referrer()}'

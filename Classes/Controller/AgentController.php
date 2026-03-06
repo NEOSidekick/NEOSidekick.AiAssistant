@@ -110,7 +110,6 @@ class AgentController extends ActionController
             if ($this->externalApiDomain !== null && $this->externalApiDomain !== '') {
                 $payload = [
                     'user_id' => $tokenData['user_id'],
-                    'account_id' => $tokenData['account_id'],
                     'session_id' => $tokenData['session_id'],
                     'jwt' => $tokenData['jwt'],
                     'state' => $stateValue,

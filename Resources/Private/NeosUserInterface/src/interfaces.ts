@@ -3,6 +3,7 @@ export interface SidekickFrontendConfiguration {
     apiDomain: string;
     apiKey: string;
     userId: string;
+    sessionId: string;
     siteName: string;
     domain: string;
     referrer: string;

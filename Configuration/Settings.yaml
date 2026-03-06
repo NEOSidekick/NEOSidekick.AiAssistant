@@ -2,7 +2,7 @@ NEOSidekick:
   AiAssistant:
     apikey: ''
     agent:
-      externalApiDomain: 'https://api-staging.neosidekick.com/agent/authorize'
+      externalApiDomain: 'https://api-staging.neosidekick.com'
     jwt:
       algorithm: 'HS256'
       issuer: 'NEOSidekick.AiAssistant'

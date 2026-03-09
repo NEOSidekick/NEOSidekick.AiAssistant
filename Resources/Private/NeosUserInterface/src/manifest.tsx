@@ -12,6 +12,7 @@ import initializeEditor from './manifest.editors';
 import initializeChatSidebar from './manifest.chatSidebar';
 import initializeWatchPageContent from './manifest.watchPageContent';
 import initializeRichToolbarIcon from './manifest.richToolbarIcon';
+import {createPreloadContentTreeSaga} from './Sagas/PreloadContentTree';
 
 import "./manifest.chatSidebar.css";
 
@@ -42,8 +43,14 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
     neosidekickRegistry.set('iFrameApiService', iFrameApiService);
     const contentCanvasService = createContentCanvasService(globalRegistry, store, iFrameApiService);
     neosidekickRegistry.set('contentCanvasService', contentCanvasService);
-    const contentTreeService = new ContentTreeService(store);
+    const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository');
+    const contentTreeService = new ContentTreeService(store, nodeTypesRegistry);
     neosidekickRegistry.set('contentTreeService', contentTreeService);
+
+    const sagasRegistry = globalRegistry.get('sagas');
+    sagasRegistry.set('NEOSidekick.AiAssistant/preloadContentTree', {
+        saga: createPreloadContentTreeSaga(contentTreeService)
+    });
 
     // Expose to window for browser console testing
     (window as any).__neosidekick_contentTreeService = contentTreeService;

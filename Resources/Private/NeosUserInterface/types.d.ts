@@ -127,7 +127,16 @@ declare module "@neos-project/neos-ui-redux-store" {
         System: {
             authenticationTimeout(): any;
         };
+        CR: {
+            Nodes: {
+                merge(nodeMap: Record<string, any>): any;
+            };
+        };
         UI: {
+            ContentCanvas: {
+                SET_SRC?: string;
+                RELOAD?: string;
+            };
             FlashMessages: {
                 add(key: string, message: string, severity: "success" |"info" | "error", timeout?: number)
             }
@@ -136,6 +145,10 @@ declare module "@neos-project/neos-ui-redux-store" {
 
     export const actions: Actions;
     export const selectors: Selectors;
+    export const actionTypes: {
+        UI: { ContentCanvas: { SET_SRC: string; RELOAD: string } };
+        [key: string]: any;
+    };
 }
 
 declare module "@neos-project/neos-ui-decorators" {

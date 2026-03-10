@@ -3,10 +3,10 @@
     <file original="" source-language="de" datatype="plaintext">
         <body>
             <trans-unit id="authorizationTitle" xml:space="preserve">
-                <source>NEOSidekick Agent Autorisierung</source>
+                <source>Erlaube NEOSidekick, mit dir zusammenzuarbeiten</source>
             </trans-unit>
             <trans-unit id="authorizationMessage" xml:space="preserve">
-                <source>Sie müssen den NEOSidekick Agent autorisieren, damit er in Ihren Benutzer-Arbeitsbereich schreiben kann</source>
+                <source>Erlaube NEOSidekick, auf deinen Arbeitsbereich zuzugreifen sowie Inhalte zu lesen und zu schreiben. Der Chat wird niemals Änderungen live veröffentlichen – du behältst stets die Kontrolle darüber, was veröffentlicht wird.</source>
             </trans-unit>
             <trans-unit id="authorizeButton" xml:space="preserve">
                 <source>Autorisieren</source>

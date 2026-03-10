@@ -11,7 +11,6 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Annotations as Flow;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\CreateNodePatch;
@@ -55,7 +54,6 @@ class PatchValidator
      * @param int $patchIndex The index of the patch in the batch
      * @param Context $context The content context
      * @throws PatchFailedException If validation fails
-     * @throws NodeTypeNotFoundException If the node type doesn't exist
      */
     public function validatePatch(AbstractPatch $patch, int $patchIndex, Context $context): void
     {
@@ -81,7 +79,6 @@ class PatchValidator
      * @param int $patchIndex
      * @param Context $context
      * @throws PatchFailedException
-     * @throws NodeTypeNotFoundException
      */
     private function validateCreateNodePatch(CreateNodePatch $patch, int $patchIndex, Context $context): void
     {
@@ -230,25 +227,17 @@ class PatchValidator
      */
     private function getNodeType(string $nodeTypeName, int $patchIndex, string $operation): NodeType
     {
-        try {
-            $nodeType = $this->nodeTypeManager->getNodeType($nodeTypeName);
-            if ($nodeType === null) {
-                throw new PatchFailedException(
-                    sprintf('NodeType "%s" does not exist', $nodeTypeName),
-                    $patchIndex,
-                    $operation
-                );
-            }
-            return $nodeType;
-        } catch (NodeTypeNotFoundException $e) {
+        // Check with hasNodeType() first, because getNodeType() returns a
+        // FallbackNode instead of throwing when a fallback NodeType is configured.
+        if (!$this->nodeTypeManager->hasNodeType($nodeTypeName)) {
             throw new PatchFailedException(
-                sprintf('NodeType "%s" does not exist', $nodeTypeName),
+                sprintf('NodeType "%s" does not exist. Hint: Check the TypeScript node type definitions in your system prompt', $nodeTypeName),
                 $patchIndex,
-                $operation,
-                null,
-                $e
+                $operation
             );
         }
+
+        return $this->nodeTypeManager->getNodeType($nodeTypeName);
     }
 
     /**

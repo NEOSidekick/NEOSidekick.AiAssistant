@@ -15,8 +15,8 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
             </head>
             <body>
                 <div class="auth-container">
-                    <h1>NEOSidekick Agent Authorization</h1>
-                    <p>You need to authorize NEOSidekick Agent so it can write to your user workspace</p>
+                    <h1>Allow NEOSidekick to work together with you</h1>
+                    <p>Allow NEOSidekick to access your workspace, read and write content. The chat will never publish any changes to live, you are always in control of what is published.</p>
                     <form method="POST" action={props.authorizeActionUri}>
                         <input type="hidden" name="__csrfToken" value={props.csrfToken} />
                         <input type="hidden" name="state" value={props.state} />

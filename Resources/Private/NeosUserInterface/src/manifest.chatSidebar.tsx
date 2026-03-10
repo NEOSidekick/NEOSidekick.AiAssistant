@@ -47,7 +47,7 @@ export default (globalRegistry: GlobalRegistry, configuration: SidekickFrontendC
             <App {...props} />
             <div className="neosidekick_sideBar">
                 <div className="neosidekick_sideBar__title">
-                    <Headline className={`neosidekick_sideBar__title-headline ${isOpen ? "neosidekick_sideBar__title-headline--open" : ""}`}>AI Sidekick</Headline>
+                    <Headline className={`neosidekick_sideBar__title-headline ${isOpen ? "neosidekick_sideBar__title-headline--open" : ""}`}>NEOSidekick</Headline>
                     <div>
                         {fullscreenButton(isOpen, isFullscreen, () => setFullscreenAndPersistState(!isFullscreen))}
                         {toggleButton(isOpen, isFullscreen, () => setOpenAndPersistState(!isOpen))}

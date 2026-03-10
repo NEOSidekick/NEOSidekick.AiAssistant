@@ -13,7 +13,7 @@ body {
 }
 
 .auth-button {
-    background: #007bff;
+    background: #00adee;
     color: white;
     padding: 15px 30px;
     border: none;
@@ -23,5 +23,5 @@ body {
 }
 
 .auth-button:hover {
-    background: #0056b3;
+    background: #007099;
 }

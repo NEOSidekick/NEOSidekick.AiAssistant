@@ -11,7 +11,6 @@ use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\Image;
@@ -109,12 +108,6 @@ class NodePatchService
                 return PatchResult::failure(
                     $dryRun,
                     new PatchError($e->getMessage(), $e->getPatchIndex(), $e->getOperation(), $e->getNodeId()),
-                    false
-                );
-            } catch (NodeTypeNotFoundException $e) {
-                return PatchResult::failure(
-                    $dryRun,
-                    new PatchError($e->getMessage(), $index, 'unknown'),
                     false
                 );
             }

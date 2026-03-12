@@ -16,6 +16,12 @@ import {createPreloadContentTreeSaga} from './Sagas/PreloadContentTree';
 
 import "./manifest.chatSidebar.css";
 
+interface IframeIncomingMessage {
+    data?: {
+        eventName?: unknown;
+    };
+}
+
 manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry<any>, {store, frontendConfiguration}) => {
     const configuration = frontendConfiguration['NEOSidekick.AiAssistant'] as SidekickFrontendConfiguration;
     initializeEditor(globalRegistry, configuration?.enabled);
@@ -46,6 +52,15 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
     const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository');
     const contentTreeService = new ContentTreeService(store, nodeTypesRegistry);
     neosidekickRegistry.set('contentTreeService', contentTreeService);
+
+    iFrameApiService.listenToMessages((message: IframeIncomingMessage) => {
+        if (message.data?.eventName !== 'get-content-tree') {
+            return;
+        }
+
+        const contentTree = contentTreeService.getDocumentContentTree();
+        iFrameApiService.respondWithContentTree(contentTree);
+    });
 
     const sagasRegistry = globalRegistry.get('sagas');
     sagasRegistry.set('NEOSidekick.AiAssistant/preloadContentTree', {

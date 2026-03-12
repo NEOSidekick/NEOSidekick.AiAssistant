@@ -1,5 +1,5 @@
 // @ts-ignore
-import {actionTypes} from "@neos-project/neos-ui-redux-store";
+import {actionTypes, selectors} from "@neos-project/neos-ui-redux-store";
 // @ts-ignore
 import {takeLatest} from 'redux-saga/effects';
 import {ContentService} from "./Service/ContentService";
@@ -29,6 +29,8 @@ export default (globalRegistry: object, store: Store, iFrameApiService: IFrameAp
             const previewUrl = state?.ui?.contentCanvas?.previewUrl
             const currentDocumentNode = contentService.getCurrentDocumentNode()
             const currentDocumentNodePath = currentDocumentNode?.contextPath
+            const currentWorkspace = state?.cr?.workspaces?.currentWorkspaceName
+            const activeContentDimensions = selectors.CR.ContentDimensions.active(state) || {};
             // @ts-ignore
             const relevantNodes = Object.values(state?.cr?.nodes?.byContextPath || {}).filter(node => {
                 const documentRole = nodeTypesRegistry.getRole('document');
@@ -49,7 +51,11 @@ export default (globalRegistry: object, store: Store, iFrameApiService: IFrameAp
                 'structuredContent': relevantNodes,
                 'targetAudience': await contentService.getCurrentDocumentTargetAudience(),
                 'pageBriefing': await contentService.getCurrentDocumentPageBriefing(),
-                'focusKeyword': await contentService.getCurrentDocumentFocusKeyword()
+                'focusKeyword': await contentService.getCurrentDocumentFocusKeyword(),
+                'documentNodeId': currentDocumentNode?.identifier || '',
+                'workspace': typeof currentWorkspace === 'string' && currentWorkspace !== '' ? currentWorkspace : 'live',
+                'dimensions': activeContentDimensions,
+                'pageRevision': String(Date.now())
             };
             updateWebContextDebounce(requiredChangedEvent, data);
             requiredChangedEvent = false;

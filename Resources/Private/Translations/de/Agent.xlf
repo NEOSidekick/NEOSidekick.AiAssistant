@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="de" datatype="plaintext">
+        <body>
+            <trans-unit id="authorizationTitle" xml:space="preserve">
+                <source>Erlaube NEOSidekick, mit dir zusammenzuarbeiten</source>
+            </trans-unit>
+            <trans-unit id="authorizationMessage" xml:space="preserve">
+                <source>Erlaube NEOSidekick, auf deinen Arbeitsbereich zuzugreifen sowie Inhalte zu lesen und zu schreiben. Der Chat wird niemals Änderungen live veröffentlichen – du behältst stets die Kontrolle darüber, was veröffentlicht wird.</source>
+            </trans-unit>
+            <trans-unit id="authorizeButton" xml:space="preserve">
+                <source>Autorisieren</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

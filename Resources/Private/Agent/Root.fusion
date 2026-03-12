@@ -1,0 +1,39 @@
+include: resource://Neos.Fusion/Private/Fusion/Root.fusion
+
+NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
+    user = ${user}
+    interfaceLanguage = ${interfaceLanguage}
+    csrfToken = ${csrfToken}
+    authorizeActionUri = ${authorizeActionUri}
+    state = ${state}
+
+    renderer = afx`
+        <html>
+            <head>
+                <title>NEOSidekick Agent Authorization</title>
+                <link rel="stylesheet" href={StaticResource.uri('NEOSidekick.AiAssistant', 'Public/Agent.css')} />
+            </head>
+            <body>
+                <div class="auth-container">
+                    <h1>Allow NEOSidekick to work together with you</h1>
+                    <p>Allow NEOSidekick to access your workspace, read and write content. The chat will never publish any changes to live, you are always in control of what is published.</p>
+                    <form method="POST" action={props.authorizeActionUri}>
+                        <input type="hidden" name="__csrfToken" value={props.csrfToken} />
+                        <input type="hidden" name="state" value={props.state} />
+                        <button type="submit" class="auth-button">
+                            Authorize
+                        </button>
+                    </form>
+                    <hr style="margin: 20px 0;" />
+                    <form method="POST" action="/neosidekick/agent/test-jwt">
+                        <input type="hidden" name="__csrfToken" value={props.csrfToken} />
+                        <button type="submit" class="auth-button" style="background: #555;">
+                            Test JWT Auth
+                        </button>
+                    </form>
+                    <pre id="test-result"></pre>
+                </div>
+            </body>
+        </html>
+    `
+}

@@ -5,14 +5,22 @@ import {createApiService} from './Service/ApiService';
 import {createContentService} from './Service/ContentService';
 import {createContentCanvasService} from "./Service/ContentCanvasService";
 import {createIFrameApiService} from "./Service/IFrameApiService";
+import {ContentTreeService} from "./Service/ContentTreeService";
 import {reducer} from './actions';
 
 import initializeEditor from './manifest.editors';
 import initializeChatSidebar from './manifest.chatSidebar';
 import initializeWatchPageContent from './manifest.watchPageContent';
 import initializeRichToolbarIcon from './manifest.richToolbarIcon';
+import {createPreloadContentTreeSaga} from './Sagas/PreloadContentTree';
 
 import "./manifest.chatSidebar.css";
+
+interface IframeIncomingMessage {
+    data?: {
+        eventName?: unknown;
+    };
+}
 
 manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry<any>, {store, frontendConfiguration}) => {
     const configuration = frontendConfiguration['NEOSidekick.AiAssistant'] as SidekickFrontendConfiguration;
@@ -41,6 +49,26 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
     neosidekickRegistry.set('iFrameApiService', iFrameApiService);
     const contentCanvasService = createContentCanvasService(globalRegistry, store, iFrameApiService);
     neosidekickRegistry.set('contentCanvasService', contentCanvasService);
+    const nodeTypesRegistry = globalRegistry.get('@neos-project/neos-ui-contentrepository');
+    const contentTreeService = new ContentTreeService(store, nodeTypesRegistry);
+    neosidekickRegistry.set('contentTreeService', contentTreeService);
+
+    iFrameApiService.listenToMessages((message: IframeIncomingMessage) => {
+        if (message.data?.eventName !== 'get-content-tree') {
+            return;
+        }
+
+        const contentTree = contentTreeService.getDocumentContentTree();
+        iFrameApiService.respondWithContentTree(contentTree);
+    });
+
+    const sagasRegistry = globalRegistry.get('sagas');
+    sagasRegistry.set('NEOSidekick.AiAssistant/preloadContentTree', {
+        saga: createPreloadContentTreeSaga(contentTreeService)
+    });
+
+    // Expose to window for browser console testing
+    (window as any).__neosidekick_contentTreeService = contentTreeService;
 
     initializeChatSidebar(globalRegistry, configuration);
     initializeWatchPageContent(globalRegistry, store, iFrameApiService, contentService);

@@ -1,3 +1,8 @@
+NEOSidekick:
+  AiAssistant:
+    Internal:
+      apiDomain: 'https://api-staging.neosidekick.com'
+
 Neos:
   Fusion:
     defaultContext:
@@ -17,7 +22,6 @@ Neos:
             - 'Error'
             - 'Main'
             - 'Module'
-            - 'Editors/*'
             - 'NodeTypes/*'
     Ui:
       resources:
@@ -35,6 +39,7 @@ Neos:
           apiDomain: '${NEOSidekickInternal.apiDomain()}'
           apiKey: '${NEOSidekickInternal.apiKey()}'
           userId: '${NEOSidekickInternal.userId(user)}'
+          sessionId: '${NEOSidekickInternal.sessionId()}'
           siteName: '${NEOSidekickInternal.siteName()}'
           domain: '${NEOSidekickInternal.domain()}'
           referrer: '${NEOSidekickInternal.referrer()}'
@@ -109,7 +114,18 @@ Neos:
         providers:
           'Neos.Neos:Backend':
             requestPatterns:
+              # Backend controllers require Neos backend authentication
               'NEOSidekick.AiAssistant:BackendControllers':
                 pattern: ControllerObjectName
                 patternOptions:
-                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\.*'
+                  # Include Agent controller for backend session access; exclude API controllers (JWT auth)
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\(Backend.*|AgentController)'
+          'NEOSidekick.AiAssistant:JwtApi':
+            provider: 'NEOSidekick\AiAssistant\Security\Authentication\Provider\JwtProvider'
+            token: 'NEOSidekick\AiAssistant\Security\Authentication\Token\JwtToken'
+            entryPoint: 'NEOSidekick\AiAssistant\Security\Authentication\EntryPoint\JwtEntryPoint'
+            requestPatterns:
+              'NEOSidekick.AiAssistant:JwtApiControllers':
+                pattern: ControllerObjectName
+                patternOptions:
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\(NodeTypeSchemaApi|NodeTreeSchemaApi|DocumentNodeListApi|SearchNodesApi|SearchMediaAssetsApi|UploadMediaAssetApi|ApplyPatchesApi|WhoAmIApi)Controller'

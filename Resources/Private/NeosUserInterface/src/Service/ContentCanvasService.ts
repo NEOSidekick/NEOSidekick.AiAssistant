@@ -122,6 +122,9 @@ export class ContentCanvasService {
             case 'show-content-node':
                 this.focusContentNodePath(message?.data?.data?.contentNodeId || message?.data?.data?.href);
                 break;
+            case 'get-content-tree':
+                // handled in manifest.tsx; this service only handles canvas-modification events
+                break;
             default:
                 const errorMessage2 = 'Unknown message event: ' + message?.data?.eventName;
                 this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + errorMessage2, 'error', errorMessage2);

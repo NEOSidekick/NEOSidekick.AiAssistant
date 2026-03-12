@@ -15,7 +15,7 @@ export interface SidekickFrontendConfiguration {
 
 export interface ServerStreamMessage {
     data : {
-        eventName: 'write-content' | 'stopped-generation' | 'error' | 'reload-content-canvas' | 'show-document-node' | 'show-content-node';
+        eventName: 'write-content' | 'stopped-generation' | 'error' | 'reload-content-canvas' | 'show-document-node' | 'show-content-node' | 'get-content-tree';
         data: {
             modalTarget?: boolean
             nodePath?: string;

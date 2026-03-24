@@ -6,6 +6,7 @@ use GuzzleHttp\Psr7\Uri;
 use Neos\ContentRepository\Domain\Model\Node;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Mvc\Routing\Dto\MatchResult;
 use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
 use Neos\Neos\Controller\CreateContentContextTrait;
@@ -40,19 +41,21 @@ class NodeFindingService
         }
 
         $uri = new Uri($term);
-        // Remove the starting slash.
         $path = str_starts_with($uri->getPath(), '/') ? substr($uri->getPath(), 1) : $uri->getPath();
-
-        $routeHandler = $this->objectManager->get(FrontendNodeRoutePartHandlerInterface::class);
-        $routeHandler->setName('node');
+        $path = rtrim($path, '/');
 
         $uriPathSuffix = $this->routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'];
-        $routeHandler->setOptions(['uriPathSuffix' => $uriPathSuffix]);
 
         $routeParameters = RouteParameters::createEmpty();
-        // This is needed for the FrontendNodeRoutePartHandler to correctly identify the current site
         $routeParameters = $routeParameters->withParameter('requestUriHost', $uri->getHost());
-        $matchResult = $routeHandler->matchWithParameters($path, $routeParameters);
+
+        $matchResult = $this->matchPathWithRouteHandler($path, $uriPathSuffix, $routeParameters);
+
+        // Retry with the configured suffix appended — handles URLs that were
+        // stored/returned without it (e.g. bare paths or trailing-slash variants).
+        if ((!$matchResult || !$matchResult->getMatchedValue()) && $uriPathSuffix !== '' && !str_ends_with($path, $uriPathSuffix)) {
+            $matchResult = $this->matchPathWithRouteHandler($path . $uriPathSuffix, $uriPathSuffix, $routeParameters);
+        }
 
         if (!$matchResult || !$matchResult->getMatchedValue()) {
             return null;
@@ -69,5 +72,16 @@ class NodeFindingService
         }
 
         return $matchingNode;
+    }
+
+    /**
+     * @return MatchResult|false
+     */
+    private function matchPathWithRouteHandler(string $path, string $uriPathSuffix, RouteParameters $routeParameters)
+    {
+        $routeHandler = $this->objectManager->get(FrontendNodeRoutePartHandlerInterface::class);
+        $routeHandler->setName('node');
+        $routeHandler->setOptions(['uriPathSuffix' => $uriPathSuffix]);
+        return $routeHandler->matchWithParameters($path, $routeParameters);
     }
 }

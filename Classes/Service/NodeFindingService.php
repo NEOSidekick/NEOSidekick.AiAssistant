@@ -44,7 +44,7 @@ class NodeFindingService
         $path = str_starts_with($uri->getPath(), '/') ? substr($uri->getPath(), 1) : $uri->getPath();
         $path = rtrim($path, '/');
 
-        $uriPathSuffix = $this->routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'];
+        $uriPathSuffix = (string)($this->routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'] ?? '');
 
         $routeParameters = RouteParameters::createEmpty();
         $routeParameters = $routeParameters->withParameter('requestUriHost', $uri->getHost());

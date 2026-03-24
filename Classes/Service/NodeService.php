@@ -196,7 +196,10 @@ class NodeService extends AbstractNodeService
         $queryBuilder->setParameter('hidden', false, PDO::PARAM_BOOL);
         $queryBuilder->setParameter('removed', false, PDO::PARAM_BOOL);
         if (!empty($findDocumentNodesFilter->getLanguageDimensionFilter())) {
-            $this->addDimensionJoinConstraintsToQueryBuilder($queryBuilder, [$this->languageDimensionName => $findDocumentNodesFilter->getLanguageDimensionFilter()]);
+            $this->addDimensionJoinConstraintsToQueryBuilder(
+                $queryBuilder,
+                [$this->languageDimensionName => $findDocumentNodesFilter->getLanguageDimensionFilter()]
+            );
         }
         $queryBuilder->addOrderBy('LENGTH(n.path)', 'ASC');
         $queryBuilder->addOrderBy('n.index', 'ASC');

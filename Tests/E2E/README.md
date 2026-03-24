@@ -1,6 +1,6 @@
 # NEOSidekick.AiAssistant E2E (Playwright)
 
-Runs against DDEV Neos (`/neos`) using the real NEOSidekick API.
+Runs against DDEV Neos (`/neos`) using the real NEOSidekick API with the NEOSidekickTestWebsite.
 
 ## Install
 

@@ -9,12 +9,12 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeTemplate;
 use Neos\ContentRepository\Domain\Model\Workspace;
 use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
-use Neos\ContentRepository\Domain\Repository\ContentDimensionRepository;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\ContextFactory;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
+use Neos\Flow\Configuration\ConfigurationManager;
 use Neos\Flow\Http\ServerRequestAttributes;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Mvc\ActionResponse;
@@ -36,7 +36,6 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     protected array $dimensions = [];
     protected array $siteHosts = [];
 
-    protected ContentDimensionRepository $contentDimensionRepository;
     protected ContextFactory $contextFactory;
     protected ?NodeDataRepository $nodeDataRepository = null;
     protected WorkspaceRepository $workspaceRepository;
@@ -55,7 +54,6 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
         $this->currentUserWorkspace = explode('.', uniqid('user-', true))[0];
         $this->currentGroupWorkspace = explode('.', uniqid('group-', true))[0];
-        $this->configureNodeDimensions();
         $this->setUpRootNodeAndRepository();
 
         // Purge existing sites/domains and content under /sites to ensure tests are isolated
@@ -78,28 +76,14 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         parent::tearDown();
     }
 
-    private function configureNodeDimensions(): void
+    protected function getDimensionValuesForPreset(string $presetKey): array
     {
-        /** @var ContentDimensionRepository $configuration */
-        $this->contentDimensionRepository = $this->objectManager->get(ContentDimensionRepository::class);
-
-        $contentDimensionsConfiguration = [];
-        if ($this->dimensions) {
-            $contentDimensionsConfiguration = [
-                'language' => [
-                    'default' => $this->dimensions[0],
-                    'defaultPreset' => $this->dimensions[0],
-                    'presets' => []
-                ]
-            ];
-            foreach ($this->dimensions as $dimension) {
-                $contentDimensionsConfiguration['language']['presets'][$dimension] = [
-                    'values' => [$dimension]
-                ];
-            }
-        }
-
-        $this->contentDimensionRepository->setDimensionsConfiguration($contentDimensionsConfiguration);
+        $configurationManager = $this->objectManager->get(ConfigurationManager::class);
+        $presetConfig = $configurationManager->getConfiguration(
+            ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
+            'Neos.ContentRepository.contentDimensions.language.presets.' . $presetKey
+        );
+        return $presetConfig['values'] ?? [];
     }
 
     protected function setUpRootNodeAndRepository(): void

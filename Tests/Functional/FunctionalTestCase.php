@@ -99,6 +99,13 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     /**
      * Values persisted on NodeData for a language preset are the preset identifier as a single
      * dimension value (see ContextFactory::mergeDimensionValues), not the full YAML fallback chain.
+     *
+     * CAVEAT: This assumes every preset defines exactly its own identifier as the sole dimension
+     * value — which holds for our current Testing/Settings.yaml presets ("de" → ['de'],
+     * "en" → ['en']). If a preset were configured with a fallback chain (e.g. ['en', 'de']),
+     * the value stored on NodeData would still be the full chain as created by
+     * ContextFactory::mergeDimensionValues, and this helper would return the wrong result.
+     * Revisit if the dimension configuration changes.
      */
     protected function getStoredLanguageDimensionValuesForPreset(string $presetIdentifier): array
     {

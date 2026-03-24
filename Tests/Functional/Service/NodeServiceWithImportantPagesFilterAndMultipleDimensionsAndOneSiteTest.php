@@ -137,44 +137,77 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     }
 
     /**
-     * Trailing slash and defaultUriSuffix variations should resolve to the same node and not create duplicates.
+     * URL with the configured uriPathSuffix (e.g. ".html") resolves directly.
      * @test
      */
-    public function itHandlesTrailingSlashAndSuffix(): void
+    public function itResolvesUrlWithConfiguredUriPathSuffix(): void
     {
-        $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
-            ->disableOriginalConstructor()
-            ->getMock();
         /** @var NodeFindingService $nodeFindingService */
         $nodeFindingService = $this->objectManager->get(NodeFindingService::class);
         $routesConfiguration = ObjectAccess::getProperty($nodeFindingService, 'routesConfiguration', true);
         $defaultUriSuffix = $routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'] ?? '';
 
-        // Two URL variants that should identify the same page in DE
+        $foundNodes = $this->findImportantPagesForCandidates([
+            'https://example.com/de/node-wan-kenodi' . $defaultUriSuffix,
+        ]);
+
+        $this->assertCount(1, $foundNodes, 'URL with configured suffix must resolve');
+        $expectedPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
+        $this->assertArrayHasKey($expectedPath, $foundNodes);
+    }
+
+    /**
+     * A trailing-slash URL resolves because NodeFindingService strips the trailing
+     * slash and retries with the configured suffix appended.
+     * @test
+     */
+    public function itResolvesUrlWithTrailingSlash(): void
+    {
+        $foundNodes = $this->findImportantPagesForCandidates([
+            'https://example.com/de/node-wan-kenodi/',
+        ]);
+
+        $this->assertCount(1, $foundNodes, 'Trailing-slash URL must resolve after suffix normalisation');
+        $expectedPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
+        $this->assertArrayHasKey($expectedPath, $foundNodes);
+    }
+
+    /**
+     * A bare URL (no suffix, no trailing slash) resolves because NodeFindingService
+     * retries with the configured suffix appended.
+     * @test
+     */
+    public function itResolvesUrlWithoutAnySuffix(): void
+    {
+        $foundNodes = $this->findImportantPagesForCandidates([
+            'https://example.com/de/node-wan-kenodi',
+        ]);
+
+        $this->assertCount(1, $foundNodes, 'Bare URL must resolve after suffix normalisation');
+        $expectedPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
+        $this->assertArrayHasKey($expectedPath, $foundNodes);
+    }
+
+    /**
+     * All three URL variants (with suffix, trailing slash, bare) point to the same
+     * node and must deduplicate to a single result.
+     * @test
+     */
+    public function itDeduplicatesAllUrlVariantsToSameNode(): void
+    {
+        /** @var NodeFindingService $nodeFindingService */
+        $nodeFindingService = $this->objectManager->get(NodeFindingService::class);
+        $routesConfiguration = ObjectAccess::getProperty($nodeFindingService, 'routesConfiguration', true);
+        $defaultUriSuffix = $routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'] ?? '';
+
         $base = 'https://example.com/de/node-wan-kenodi';
-        $candidates = [
+        $foundNodes = $this->findImportantPagesForCandidates([
             $base . $defaultUriSuffix,
-            rtrim($base, '/') . '/',
-        ];
-        $apiFacadeMock
-            ->method('getMostRelevantInternalSeoUrisByHosts')
-            ->willReturn($candidates);
+            $base . '/',
+            $base,
+        ]);
 
-        /** @var NodeService $nodeService */
-        $nodeService = $this->objectManager->get(NodeService::class);
-        $this->inject($nodeService, 'apiFacade', $apiFacadeMock);
-
-        $findDocumentNodesFilter = new FindDocumentNodesFilter(
-            filter: 'important-pages',
-            workspace: 'live',
-            focusKeywordPropertyFilter: 'only-existing-focus-keywords',
-            languageDimensionFilter: 'de'
-        );
-        $controllerContext = $this->createControllerContextForDomain('example.com');
-        $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
-
-        $this->assertIsArray($foundNodes);
-        $this->assertCount(1, $foundNodes, 'Trailing slash and suffix variants must resolve to one node');
+        $this->assertCount(1, $foundNodes, 'All URL variants for the same page must deduplicate to one node');
         $expectedPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
         $this->assertArrayHasKey($expectedPath, $foundNodes);
     }
@@ -217,10 +250,16 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $this->assertArrayHasKey($expectedPath, $foundNodes);
     }
     /**
-     * Mixed schemes/ports for the same path should resolve to one node.
+     * Verifies that uriMatchesControllerContext compares hostnames only, so that
+     * scheme variations (http vs https) and default-port variations (:80, :443)
+     * do not prevent a URL from resolving.
+     *
+     * There is no explicit normalisation in the product code — this works because
+     * parse_url() separates host from port, and the result map keys by context
+     * path which naturally deduplicates identical nodes.
      * @test
      */
-    public function itNormalizesSchemeAndPortInCandidateUrls(): void
+    public function itMatchesHostRegardlessOfSchemeAndDefaultPort(): void
     {
         $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
             ->disableOriginalConstructor()
@@ -258,5 +297,34 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $this->assertCount(1, $foundNodes, 'Scheme/port variants must resolve to one node');
         $expectedPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
         $this->assertArrayHasKey($expectedPath, $foundNodes);
+    }
+
+    /**
+     * @param string[] $candidateUrls
+     * @return array
+     */
+    private function findImportantPagesForCandidates(array $candidateUrls): array
+    {
+        $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $apiFacadeMock
+            ->method('getMostRelevantInternalSeoUrisByHosts')
+            ->willReturn($candidateUrls);
+
+        /** @var NodeService $nodeService */
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $this->inject($nodeService, 'apiFacade', $apiFacadeMock);
+
+        $findDocumentNodesFilter = new FindDocumentNodesFilter(
+            filter: 'important-pages',
+            workspace: 'live',
+            focusKeywordPropertyFilter: 'only-existing-focus-keywords',
+            languageDimensionFilter: 'de'
+        );
+        $controllerContext = $this->createControllerContextForDomain('example.com');
+        $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
+        $this->assertIsArray($foundNodes);
+        return $foundNodes;
     }
 }

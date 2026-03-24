@@ -9,11 +9,7 @@ use NEOSidekick\AiAssistant\Service\NodeFindingService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
 
-/**
- * Runs last in the functional suite (ZZ* filename) so ApiFacade mocks on singleton NodeService
- * from earlier tests cannot affect this class.
- */
-class ZZNodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
+class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
 {
     protected array $dimensions = ['de'];
     protected array $siteHosts = ['example.com', 'example2.com'];

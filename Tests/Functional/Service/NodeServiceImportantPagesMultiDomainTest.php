@@ -49,7 +49,12 @@ class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
             'https://example2.com/de/site2-page' . $defaultUriSuffix,
         ];
         $apiFacadeMock
+            ->expects($this->once())
             ->method('getMostRelevantInternalSeoUrisByHosts')
+            ->with(
+                $this->equalTo(['https://example.com/de']),
+                $this->equalTo('de')
+            )
             ->willReturn($candidates);
 
         /** @var NodeService $nodeService */

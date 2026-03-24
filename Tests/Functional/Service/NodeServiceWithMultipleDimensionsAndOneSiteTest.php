@@ -167,7 +167,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
     /**
      * @test
      */
-    public function itWillThrowsExceptionIfWorkspaceDoesNotExist(): void
+    public function itThrowsExceptionIfWorkspaceDoesNotExist(): void
     {
         $nodeService = $this->objectManager->get(NodeService::class);
         $controllerContext = $this->createControllerContextForDomain('example.com');

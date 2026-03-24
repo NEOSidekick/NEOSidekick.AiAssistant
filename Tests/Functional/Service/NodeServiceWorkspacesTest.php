@@ -7,6 +7,20 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
 
+/**
+ * Documents how {@see NodeService::find()} interacts with workspaces and `hidden`.
+ *
+ * `find()` builds a query with `n.hidden = false` before workspace reduction. Rows for the
+ * user-workspace variant with `hidden = true` are therefore excluded from SQL results; the
+ * live base variant (`hidden = false`) can still be returned when querying the user workspace,
+ * and the result is wrapped in the requested workspace context (see `reduceNodeVariantsByWorkspaces`
+ * in {@see AbstractNodeService}).
+ *
+ * So a node marked hidden only in the user workspace may still appear in `find()` results for
+ * that workspace — not because the UI “ignores” hidden, but because the query never sees the
+ * hidden user row. Changing that would require product/contract changes in `NodeService::find()`,
+ * not test tweaks alone.
+ */
 class NodeServiceWorkspacesTest extends FunctionalTestCase
 {
     protected array $dimensions = ['de'];
@@ -51,18 +65,24 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
             'Node should still be visible in live before publishing'
         );
 
-        // In USER workspace the node is hidden and should not be listed
+        // User workspace query: SQL still matches the live base row (hidden=false); the hidden
+        // user-workspace row is excluded by `n.hidden = false`. Result still lists the page.
         $userFilter = new FindDocumentNodesFilter('custom', $this->currentUserWorkspace);
         $userFound = $nodeService->find($userFilter, $controllerContext);
         $this->assertArrayHasKey(
             NodePaths::generateContextPath('/sites/example/workspace-test', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]),
             $userFound,
-            'Current behavior: hidden in user workspace is still listed (documented for future discussion)'
+            'Expected with current find() implementation: node still listed (live variant satisfies SQL)'
         );
     }
 
     /**
-     * After publishing, live should reflect the hidden state.
+     * After publishing a hide from user to live, observes whether `find()` for `live` still returns the node.
+     *
+     * Investigation (functional run): this assertion passes — the node remains in `find()` for `live`
+     * after publish in this environment. If live `NodeData` carried `hidden=true` after publish, the
+     * SQL filter in `find()` would exclude it and this test would need `assertArrayNotHasKey`.
+     * Revisit if Neos publish semantics or `find()` contract change.
      * @test
      */
     public function itReflectsPublishingStateChanges(): void
@@ -90,12 +110,11 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
         $this->saveNodesAndTearDownRootNodeAndRepository();
         $this->setUpRootNodeAndRepository();
 
-        // Now live still includes the node (current observed behavior); document for future discussion
         $liveFoundAfter = $nodeService->find($liveFilter, $controllerContext);
         $this->assertArrayHasKey(
             NodePaths::generateContextPath('/sites/example/workspace-test', 'live', ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]),
             $liveFoundAfter,
-            'Current behavior: after publishing the hide change, live still lists the node (to be clarified)'
+            'Observed: live find() still returns the node after publish in this test (see class docblock)'
         );
     }
 }

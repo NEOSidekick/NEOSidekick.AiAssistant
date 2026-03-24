@@ -146,6 +146,15 @@ class NodeService extends AbstractNodeService
     }
 
     /**
+     * Known limitation — hidden flag and workspace interaction:
+     * The query applies `n.hidden = false` across all workspace rows BEFORE
+     * {@see AbstractNodeService::reduceNodeVariantsByWorkspaces()} picks the
+     * highest-priority variant. If a node is hidden only in the user workspace,
+     * that row is excluded by SQL, and the live variant (hidden = false) may
+     * still satisfy the query — causing the node to appear in results even
+     * when the editor has hidden it in their workspace. This is accepted as a
+     * low-priority edge case for now; revisit if user-reported.
+     *
      * @param FindDocumentNodesFilter $findDocumentNodesFilter
      * @param ControllerContext       $controllerContext
      *

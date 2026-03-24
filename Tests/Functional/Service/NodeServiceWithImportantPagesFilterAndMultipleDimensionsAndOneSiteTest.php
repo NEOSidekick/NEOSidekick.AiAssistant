@@ -84,8 +84,11 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
 
         $this->assertIsArray($foundNodes);
-        // Assert that the page with a non-empty focus keyword is not returned
-        $forbiddenContextPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => ['de']]);
+        $this->assertCount(1, $foundNodes, 'Only the German subpage without focus keyword should be returned');
+        $routingDimensions = ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')];
+        $expectedContextPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', 'live', $routingDimensions);
+        $this->assertArrayHasKey($expectedContextPath, $foundNodes, 'German subpage without focus keyword must be present');
+        $forbiddenContextPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', $routingDimensions);
         foreach ($foundNodes as $dto) {
             $this->assertNotEquals($forbiddenContextPath, $dto->getNodeContextPath(), 'Page with non-empty focus keyword must be excluded when filtering for empty focus keyword.');
         }
@@ -128,8 +131,9 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
 
         $this->assertIsArray($foundNodes);
-        // Document current behavior: service returns no results for important-pages in this setup.
-        $this->assertCount(0, $foundNodes, 'Current behavior: no important pages returned; adjust when implementation changes.');
+        $this->assertCount(1, $foundNodes, 'Only the page with focus keyword should be returned');
+        $expectedContextPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
+        $this->assertArrayHasKey($expectedContextPath, $foundNodes, 'German page with focus keyword must be present');
     }
 
     /**
@@ -170,8 +174,9 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
 
         $this->assertIsArray($foundNodes);
-        // Document current behavior: service returns no results for these URL variants in this setup.
-        $this->assertCount(0, $foundNodes, 'Current behavior: trailing slash/suffix variants yield no important pages; adjust when implementation changes.');
+        $this->assertCount(1, $foundNodes, 'Trailing slash and suffix variants must resolve to one node');
+        $expectedPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
+        $this->assertArrayHasKey($expectedPath, $foundNodes);
     }
 
     /**
@@ -207,8 +212,9 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
 
         $this->assertIsArray($foundNodes);
-        // Document current behavior: service returns no results even with duplicate candidate URLs in this setup.
-        $this->assertCount(0, $foundNodes, 'Current behavior: duplicate candidate URLs yield no important pages; adjust when implementation changes.');
+        $this->assertCount(1, $foundNodes, 'Duplicate candidate URLs must deduplicate to one node');
+        $expectedPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
+        $this->assertArrayHasKey($expectedPath, $foundNodes);
     }
     /**
      * Mixed schemes/ports for the same path should resolve to one node.
@@ -249,7 +255,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
 
         $this->assertIsArray($foundNodes);
-        // Document current behavior: service returns no results for scheme/port variations in this setup.
-        $this->assertCount(0, $foundNodes, 'Current behavior: scheme/port variations yield no important pages; adjust when implementation changes.');
+        $this->assertCount(1, $foundNodes, 'Scheme/port variants must resolve to one node');
+        $expectedPath = NodePaths::generateContextPath('/sites/example/node-wan-kenodi', 'live', ['language' => $this->getRoutingLanguageDimensionValuesForPreset('de')]);
+        $this->assertArrayHasKey($expectedPath, $foundNodes);
     }
 }

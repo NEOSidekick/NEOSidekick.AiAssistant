@@ -5,12 +5,15 @@ Neos:
         default: de
         defaultPreset: de
         presets:
-          all: null
-          de:
-            label: German
-            values:
-              - de
-            uriSegment: de
+          # Unset Neos Testing / site-package presets we do not need (Flow merge: ~ replaces whole preset)
+          all: ~
+          en_US: ~
+          en_UK: ~
+          fr: ~
+          nl: ~
+          dk: ~
+          da: ~
+          lv: ~
           en:
             label: English
             values:

@@ -46,7 +46,7 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
         $liveFilter = new FindDocumentNodesFilter('custom', 'live');
         $liveFound = $nodeService->find($liveFilter, $controllerContext);
         $this->assertArrayHasKey(
-            NodePaths::generateContextPath('/sites/example/workspace-test', 'live', ['language' => ['de']]),
+            NodePaths::generateContextPath('/sites/example/workspace-test', 'live', ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]),
             $liveFound,
             'Node should still be visible in live before publishing'
         );
@@ -55,7 +55,7 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
         $userFilter = new FindDocumentNodesFilter('custom', $this->currentUserWorkspace);
         $userFound = $nodeService->find($userFilter, $controllerContext);
         $this->assertArrayHasKey(
-            NodePaths::generateContextPath('/sites/example/workspace-test', $this->currentUserWorkspace, ['language' => ['de']]),
+            NodePaths::generateContextPath('/sites/example/workspace-test', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]),
             $userFound,
             'Current behavior: hidden in user workspace is still listed (documented for future discussion)'
         );
@@ -79,7 +79,7 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
         $liveFilter = new FindDocumentNodesFilter('custom', 'live');
         $liveFoundBefore = $nodeService->find($liveFilter, $controllerContext);
         $this->assertArrayHasKey(
-            NodePaths::generateContextPath('/sites/example/workspace-test', 'live', ['language' => ['de']]),
+            NodePaths::generateContextPath('/sites/example/workspace-test', 'live', ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]),
             $liveFoundBefore,
             'Sanity check: visible in live prior to publishing user change'
         );
@@ -93,7 +93,7 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
         // Now live still includes the node (current observed behavior); document for future discussion
         $liveFoundAfter = $nodeService->find($liveFilter, $controllerContext);
         $this->assertArrayHasKey(
-            NodePaths::generateContextPath('/sites/example/workspace-test', 'live', ['language' => ['de']]),
+            NodePaths::generateContextPath('/sites/example/workspace-test', 'live', ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]),
             $liveFoundAfter,
             'Current behavior: after publishing the hide change, live still lists the node (to be clarified)'
         );

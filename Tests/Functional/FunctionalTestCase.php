@@ -12,6 +12,7 @@ use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Service\ContextFactory;
+use Neos\Neos\Domain\Service\ContentContextFactory;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Configuration\ConfigurationManager;
@@ -29,6 +30,8 @@ use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\Service\SiteService;
+use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
+use NEOSidekick\AiAssistant\Service\NodeService;
 
 abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 {
@@ -59,7 +62,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         // Purge existing sites/domains and content under /sites to ensure tests are isolated
         $this->purgeSitesDomainsAndContent();
 
-        foreach($this->siteHosts as $i => $siteHost) {
+        foreach ($this->siteHosts as $i => $siteHost) {
             $this->createSite(explode('.', $siteHost)[0], $siteHost);
         }
 
@@ -73,17 +76,50 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     public function tearDown(): void
     {
         $this->saveNodesAndTearDownRootNodeAndRepository();
+        $this->restoreNodeServiceApiFacadeAfterTest();
         parent::tearDown();
     }
 
-    protected function getDimensionValuesForPreset(string $presetKey): array
+    /**
+     * Tests that replace ApiFacade with a mock must not leave the mock on the singleton NodeService.
+     */
+    protected function restoreNodeServiceApiFacadeAfterTest(): void
+    {
+        if (!isset($this->objectManager)) {
+            return;
+        }
+        try {
+            $nodeService = $this->objectManager->get(NodeService::class);
+            $this->inject($nodeService, 'apiFacade', $this->objectManager->get(ApiFacade::class));
+        } catch (\Throwable $e) {
+            // ignore
+        }
+    }
+
+    /**
+     * Values persisted on NodeData for a language preset are the preset identifier as a single
+     * dimension value (see ContextFactory::mergeDimensionValues), not the full YAML fallback chain.
+     */
+    protected function getStoredLanguageDimensionValuesForPreset(string $presetIdentifier): array
+    {
+        return [$presetIdentifier];
+    }
+
+    /**
+     * Preset "values" from Settings (fallback chain), sorted like NodeData — for assertions on
+     * context paths produced by routing / FrontendNodeRoutePartHandler (findImportantPages).
+     */
+    protected function getRoutingLanguageDimensionValuesForPreset(string $presetKey): array
     {
         $configurationManager = $this->objectManager->get(ConfigurationManager::class);
         $presetConfig = $configurationManager->getConfiguration(
             ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
             'Neos.ContentRepository.contentDimensions.language.presets.' . $presetKey
         );
-        return $presetConfig['values'] ?? [];
+        $values = is_array($presetConfig) ? ($presetConfig['values'] ?? []) : [];
+        sort($values);
+
+        return $values;
     }
 
     protected function setUpRootNodeAndRepository(): void
@@ -124,6 +160,9 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $nodeFactory = $this->objectManager->get(NodeFactory::class);
         $nodeFactory->reset();
         $this->contextFactory->reset();
+        // Routing (NodeFindingService) uses Neos ContentContextFactory; tests used to reset only the base CR
+        // ContextFactory singleton, leaving stale contextInstances and breaking findImportantPages / URI resolve.
+        $this->objectManager->get(ContentContextFactory::class)->reset();
 
         $this->persistenceManager->persistAll();
         $this->persistenceManager->clearState();

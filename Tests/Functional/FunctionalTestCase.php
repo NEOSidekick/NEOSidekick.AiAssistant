@@ -62,7 +62,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         // Purge existing sites/domains and content under /sites to ensure tests are isolated
         $this->purgeSitesDomainsAndContent();
 
-        foreach ($this->siteHosts as $i => $siteHost) {
+        foreach ($this->siteHosts as $siteHost) {
             $this->createSite(explode('.', $siteHost)[0], $siteHost);
         }
 
@@ -88,12 +88,8 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         if (!isset($this->objectManager)) {
             return;
         }
-        try {
-            $nodeService = $this->objectManager->get(NodeService::class);
-            $this->inject($nodeService, 'apiFacade', $this->objectManager->get(ApiFacade::class));
-        } catch (\Throwable $e) {
-            // ignore
-        }
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $this->inject($nodeService, 'apiFacade', $this->objectManager->get(ApiFacade::class));
     }
 
     /**

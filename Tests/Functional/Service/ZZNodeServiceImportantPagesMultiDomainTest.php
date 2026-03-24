@@ -21,18 +21,12 @@ class ZZNodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
     public function setUp(): void
     {
         parent::setUp();
-        // Create simple content on both sites and publish, so routing/URIs work in functional context
+        // rootNode is from liveContext, so nodes are created directly in the live workspace
         $site1 = $this->rootNode->getNode('/sites/example');
-        $page1 = $this->createPageWithImageNodes($site1, 'site1-page', 'Site1', ['image1.jpg']);
+        $this->createPageWithImageNodes($site1, 'site1-page', 'Site1', ['image1.jpg']);
 
         $site2 = $this->rootNode->getNode('/sites/example2');
-        $page2 = $this->createPageWithImageNodes($site2, 'site2-page', 'Site2', ['image1.jpg']);
-
-        // Publish to live because Important Pages work with public URIs
-        $site1->getContext()->getWorkspace()->publish($this->liveWorkspace);
-        $page1->getContext()->getWorkspace()->publish($this->liveWorkspace);
-        $site2->getContext()->getWorkspace()->publish($this->liveWorkspace);
-        $page2->getContext()->getWorkspace()->publish($this->liveWorkspace);
+        $this->createPageWithImageNodes($site2, 'site2-page', 'Site2', ['image1.jpg']);
 
         $this->saveNodesAndTearDownRootNodeAndRepository();
         $this->setUpRootNodeAndRepository();

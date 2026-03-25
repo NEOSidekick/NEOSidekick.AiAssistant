@@ -34,11 +34,9 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         $page1a->createVariantForContext($englishContext);
         $page2->createVariantForContext($englishContext);
 
-        // Publish site and pages so that routes/URIs can resolve in functional context
-        $exampleSiteNode->getContext()->getWorkspace()->publish($this->liveWorkspace);
-        $page1->getContext()->getWorkspace()->publish($this->liveWorkspace);
-        $page1a->getContext()->getWorkspace()->publish($this->liveWorkspace);
-        $page2->getContext()->getWorkspace()->publish($this->liveWorkspace);
+        // DE nodes are already in the live workspace (created via $this->rootNode which is in live context).
+        // Publish EN variants from the user workspace so that routing can resolve EN URIs too.
+        $englishContext->getWorkspace()->publish($this->liveWorkspace);
 
         $this->saveNodesAndTearDownRootNodeAndRepository();
         $this->setUpRootNodeAndRepository();

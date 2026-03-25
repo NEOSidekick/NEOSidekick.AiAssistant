@@ -75,9 +75,12 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
      */
     public function tearDown(): void
     {
-        $this->saveNodesAndTearDownRootNodeAndRepository();
-        $this->restoreNodeServiceApiFacadeAfterTest();
-        parent::tearDown();
+        try {
+            $this->saveNodesAndTearDownRootNodeAndRepository();
+        } finally {
+            $this->restoreNodeServiceApiFacadeAfterTest();
+            parent::tearDown();
+        }
     }
 
     /**

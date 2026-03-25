@@ -1,0 +1,10 @@
+'Neos.Demo:Content.Image':
+  properties:
+    alternativeText:
+      ui:
+        inspector:
+          editor: 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextAreaEditor'
+          editorOptions:
+            module: 'image_alt_text'
+            arguments:
+              url: 'SidekickClientEval: AssetUri(node.properties.image)'

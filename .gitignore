@@ -1,4 +1,6 @@
 .idea
 node_modules
+Tests/.phpunit.result.cache
+Tests/Reports/*
 Tests/E2E/test-results
 Tests/E2E/tests/.auth

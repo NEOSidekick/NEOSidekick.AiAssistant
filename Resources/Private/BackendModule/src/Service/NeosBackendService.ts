@@ -59,10 +59,10 @@ export default class NeosBackendService {
         }
     }
 
-    public async getItems(moduleConfiguration: ModuleConfiguration)
+    public async getItems(moduleConfiguration: ModuleConfiguration, syncLanguagePresets?: string[])
     {
         const params = new URLSearchParams();
-        const filters = this.toFilterDto(moduleConfiguration);
+        const filters = this.toFilterDto(moduleConfiguration, syncLanguagePresets);
         Object.keys(filters).map(key => params.append(`configuration[${key}]`, filters[key]))
         const response = await fetch(this.endpoints.get + '?' + params.toString(), {
             credentials: 'include'
@@ -85,7 +85,7 @@ export default class NeosBackendService {
         });
     }
 
-    private toFilterDto(moduleConfiguration: ModuleConfiguration): FindFilter {
+    private toFilterDto(moduleConfiguration: ModuleConfiguration, syncLanguagePresets?: string[]): FindFilter {
         if (moduleConfiguration.itemType === 'Asset') {
             const {onlyAssetsInUse, propertyName} = moduleConfiguration as AssetModuleConfiguration;
             return {onlyAssetsInUse, propertyNameMustBeEmpty: propertyName, firstResult:0, limit: 1000} as FindAssetsFilter;
@@ -104,13 +104,16 @@ export default class NeosBackendService {
                         break;
                 }
             }
+            // Exclude sync language presets as they are handled automatically via DeepL
+            const filteredLanguageDimensionFilter = (languageDimensionFilter || [])
+                .filter(preset => !(syncLanguagePresets || []).includes(preset));
             return {
                 filter,
                 workspace,
                 seoPropertiesFilter: seoPropertiesFilter || 'none',
                 focusKeywordPropertyFilter: focusKeywordPropertyFilter || 'none',
                 imagePropertiesFilter: imagePropertiesFilter || 'none',
-                languageDimensionFilter: languageDimensionFilter || [],
+                languageDimensionFilter: filteredLanguageDimensionFilter,
                 nodeTypeFilter: nodeTypeFilter || '',
                 baseNodeTypeFilter: baseNodeTypeFilter || '',
             } as FindDocumentNodesFilter;

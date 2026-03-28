@@ -101,7 +101,7 @@ class NodeService extends AbstractNodeService
      * @throws IllegalObjectTypeException
      * @throws GetMostRelevantInternalSeoLinksApiException
      */
-    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage): array
+    public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage = 'en'): array
     {
         $currentRequestUri = $controllerContext->getRequest()->getHttpRequest()->getUri();
         $hosts = [];
@@ -114,10 +114,15 @@ class NodeService extends AbstractNodeService
         } else {
             $hosts = [$currentRequestUri->getScheme() . '://' . $currentRequestUri->getHost()];
         }
-        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts, $interfaceLanguage ?? 'en');
+        $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts, $interfaceLanguage);
 
         $result = [];
         foreach ($mostRelevantInternalSeoUris as $uri) {
+            // Filter out URIs that do not match the current ControllerContext host
+            if (!self::uriMatchesControllerContext((string)$uri, $controllerContext)) {
+                continue;
+            }
+
             $node = $this->nodeFindingService->tryToResolvePublicUriToNode((string)$uri, $findDocumentNodesFilter->getWorkspace());
             if ($node === null) {
                 continue;
@@ -141,6 +146,15 @@ class NodeService extends AbstractNodeService
     }
 
     /**
+     * Known limitation — hidden flag and workspace interaction:
+     * The query applies `n.hidden = false` across all workspace rows BEFORE
+     * {@see AbstractNodeService::reduceNodeVariantsByWorkspaces()} picks the
+     * highest-priority variant. If a node is hidden only in the user workspace,
+     * that row is excluded by SQL, and the live variant (hidden = false) may
+     * still satisfy the query — causing the node to appear in results even
+     * when the editor has hidden it in their workspace. This is accepted as a
+     * low-priority edge case for now; revisit if user-reported.
+     *
      * @param FindDocumentNodesFilter $findDocumentNodesFilter
      * @param ControllerContext       $controllerContext
      *
@@ -174,9 +188,11 @@ class NodeService extends AbstractNodeService
             $queryBuilder->expr()->eq('n.path', ':currentSitePath'),
             $queryBuilder->expr()->like('n.path', ':currentSitePathWithWildcard')
         ));
-        $queryBuilder->setParameter('currentSitePath', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()));
-        $queryBuilder->setParameter('currentSitePathWithWildcard', NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName()) . '%');
-        $queryBuilder->setParameter('includeNodeTypes', $this->getNodeTypeFilter($findDocumentNodesFilter));
+        $currentSitePath = NodePaths::addNodePathSegment(SiteService::SITES_ROOT_PATH, $siteMatchingCurrentRequestHost->getNodeName());
+        $queryBuilder->setParameter('currentSitePath', $currentSitePath);
+        $queryBuilder->setParameter('currentSitePathWithWildcard', $currentSitePath . '/%');
+        $includeNodeTypes = $this->getNodeTypeFilter($findDocumentNodesFilter);
+        $queryBuilder->setParameter('includeNodeTypes', $includeNodeTypes);
         $queryBuilder->setParameter('hidden', false, PDO::PARAM_BOOL);
         $queryBuilder->setParameter('removed', false, PDO::PARAM_BOOL);
         if (!empty($findDocumentNodesFilter->getLanguageDimensionFilter())) {
@@ -291,6 +307,22 @@ class NodeService extends AbstractNodeService
         $documentNodeTypeNameWithSubNodeTypeNames = [$documentNodeTypeFilter, ...array_keys($documentSubNodeTypes)];
         $intersectNodeTypeNames = array_intersect(array_values($baseNodeTypeNameWithSubNodeTypeNames), array_values($documentNodeTypeNameWithSubNodeTypeNames));
         return array_values($intersectNodeTypeNames);
+    }
+
+    /**
+     * Ensure a candidate public URI belongs to the same host as the current ControllerContext request.
+     * The comparison is case-insensitive and ignores ports (compares host only).
+     */
+    protected static function uriMatchesControllerContext(string $uri, ControllerContext $controllerContext): bool
+    {
+        // parse_url returns host without scheme if missing; we expect absolute URIs from API
+        $parsed = @parse_url($uri);
+        if ($parsed === false || !isset($parsed['host'])) {
+            return false;
+        }
+        $candidateHost = strtolower($parsed['host']);
+        $currentHost = strtolower($controllerContext->getRequest()->getHttpRequest()->getUri()->getHost());
+        return $candidateHost === $currentHost;
     }
 
     protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, Node $node): bool

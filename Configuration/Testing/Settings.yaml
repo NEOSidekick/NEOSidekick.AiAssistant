@@ -1,0 +1,21 @@
+Neos:
+  ContentRepository:
+    contentDimensions:
+      language:
+        default: de
+        defaultPreset: de
+        presets:
+          # Unset Neos Testing / site-package presets we do not need (Flow merge: ~ replaces whole preset)
+          all: ~
+          en_US: ~
+          en_UK: ~
+          fr: ~
+          nl: ~
+          dk: ~
+          da: ~
+          lv: ~
+          en:
+            label: English
+            values:
+              - en
+            uriSegment: en

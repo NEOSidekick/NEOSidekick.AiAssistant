@@ -23,7 +23,6 @@ use NEOSidekick\AiAssistant\Dto\NodeTypeWithImageMetadataSchemaDto;
 use NEOSidekick\AiAssistant\Factory\FindImageDataFactory;
 use PDO;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
 
 /**
  * @Flow\Scope("singleton")

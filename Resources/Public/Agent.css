@@ -1,0 +1,27 @@
+body {
+    font-family: Arial, sans-serif;
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 20px;
+}
+
+.auth-container {
+    text-align: center;
+    background: #f8f9fa;
+    padding: 40px;
+    border-radius: 8px;
+}
+
+.auth-button {
+    background: #00adee;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+}
+
+.auth-button:hover {
+    background: #007099;
+}

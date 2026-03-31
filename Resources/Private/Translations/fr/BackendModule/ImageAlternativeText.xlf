@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="label">
+                <source>SEO Image Alternative Text Generator</source>
+                <target xml:lang="fr">Générateur de texte alternatif d'image SEO</target>
+            </trans-unit>
+            <trans-unit id="stepName">
+                <source>Optimize Image Alt Texts</source>
+                <target xml:lang="fr">Optimiser les textes alternatifs des images</target>
+            </trans-unit>
+            <trans-unit id="description">
+                <source><![CDATA[
+                Images boost user engagement, but search engines can't interpret visuals—they rely on alt text.<br><br>
+                The <a href="/neos/ai-assistant/alternate-description-generator" style="text-decoration:underline">Image Description Generator</a> helps you create effective descriptions for your media. This improves the searchability of extensive media libraries and by serving as a <a href="https://neosidekick.com/en/product/features/image-description-generator" target="_blank" style="text-decoration: underline;">fallback alternative text for images</a> it makes your site more accessible.<br><br>
+                To craft SEO-optimized alt texts, it's crucial to understand the page content and context. The same image can need different descriptions depending on how it's used. Since Neos NodeTypes do not automatically link image attributes to alt text properties, you must <a href="https://neosidekick.com/en/product/features/image-description-generator" target="_blank" style="text-decoration: underline;">configure these details for NEOSidekick in YAML</a>. After this setup, you can generate SEO-friendly alt texts directly in the Neos content editor. Here, you can also systematically apply these alt texts on bulk.
+                ]]></source>
+                <target xml:lang="fr"><![CDATA[
+                Les images dynamisent l’expérience utilisateur, mais les moteurs de recherche ne « voient » pas les visuels : ils s’appuient sur le texte alternatif.<br><br>
+                Le <a href="/neos/ai-assistant/alternate-description-generator" style="text-decoration:underline">Générateur de descriptions d’images</a> t’aide à rédiger des textes clairs et percutants pour tes médias. Tu améliores ainsi la visibilité de vastes bibliothèques d’images et, en les utilisant comme <a href="https://neosidekick.com/produkt/features/bildbeschreibungs-generator" target="_blank" style="text-decoration: underline;">texte alternatif de secours pour les images</a>, tu rends ton site nettement plus accessible.<br><br>
+                Pour créer de vrais textes alternatifs optimisés SEO, le contexte de la page et l’utilisation de l’image sont essentiels. Une même image peut nécessiter des formulations différentes selon l’endroit où elle apparaît. Comme les NodeTypes Neos ne relient pas automatiquement les attributs d’image aux propriétés de texte alternatif, tu dois d’abord <a href="https://neosidekick.com/produkt/features/property-text-generieren#alt-tags" target="_blank" style="text-decoration: underline;">configurer cette liaison pour NEOSidekick en YAML</a>. Une fois le paramétrage effectué, tu peux générer des textes alternatifs optimisés SEO directement dans l’éditeur de contenu Neos et les appliquer ensuite en masse de façon cohérente.
+                ]]></target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

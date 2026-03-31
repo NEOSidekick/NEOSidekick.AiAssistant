@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="generateWithSidekick" xml:space="preserve">
+                <source>Generate with Sidekick</source>
+                <target xml:lang="fr" state="translated">Générer avec Sidekick</target>
+            </trans-unit>
+            <trans-unit id="generate" xml:space="preserve">
+                <source>Generate</source>
+                <target xml:lang="fr" state="translated">Générer</target>
+            </trans-unit>
+            <trans-unit id="calculateWithSidekick" xml:space="preserve">
+                <source>Calculate with Sidekick</source>
+                <target xml:lang="fr" state="translated">Calculer avec Sidekick</target>
+            </trans-unit>
+            <trans-unit id="failedToGenerate" xml:space="preserve">
+                <source>Failed to fetch generated text</source>
+                <target xml:lang="fr" state="translated">Le texte n'a pas pu être généré</target>
+            </trans-unit>
+            <trans-unit id="loading">
+                <source>Loading...</source>
+                <target xml:lang="fr">Chargement...</target>
+            </trans-unit>
+            <trans-unit id="progressBarLabel">
+                <source>Page {0} of {1}</source>
+                <target xml:lang="fr">Page {0} sur {1}</target>
+            </trans-unit>
+            <trans-unit id="reset">
+                <source>Reset</source>
+                <target xml:lang="fr">Réinitialiser</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

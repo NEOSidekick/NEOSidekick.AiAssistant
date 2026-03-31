@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="label">
+                <source>SEO titles &amp; meta descriptions Generator</source>
+                <target xml:lang="fr">Générateur de titres SEO &amp; méta-descriptions</target>
+            </trans-unit>
+            <trans-unit id="stepName">
+                <source>Write SEO Titles and Meta Descriptions</source>
+                <target xml:lang="fr">Rédiger des titres SEO et des méta-descriptions</target>
+            </trans-unit>
+            <trans-unit id="description">
+                <source><![CDATA[You can use this tool to create search engine optimized page titles and meta descriptions. In many cases, the menu title ("Title") is not the optimal SEO title (HTML &lt;title&gt; tag), which is why we create this separately as an "Override title". You will get the best results if you <a href="/neos/ai-assistant/focus-keyword-generator" style="text-decoration: underline;">set focus keywords for all pages beforehand</a>.]]></source>
+                <target xml:lang="fr"><![CDATA[Avec cet outil, tu rédiges des titres de page et des méta-descriptions réellement optimisés pour les moteurs de recherche. Dans de nombreux cas, le titre de menu (« Titre ») n’est pas le meilleur titre SEO (balise HTML &lt;title&gt;) : c’est pourquoi nous proposons un « titre de remplacement » dédié. Pour des résultats vraiment performants, commence par définir <a href="/neos/ai-assistant/focus-keyword-generator" style="text-decoration: underline;">des mots-clés principaux pour toutes tes pages</a>.]]></target>
+            </trans-unit>
+            <trans-unit id="seoDirectivesLabel">
+                <source>SEO Directives</source>
+                <target xml:lang="fr">Directives SEO</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

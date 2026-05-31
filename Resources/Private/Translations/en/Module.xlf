@@ -5,11 +5,17 @@
             <trans-unit id="label">
                 <source>NEOSidekick AI-Assistant</source>
             </trans-unit>
+            <trans-unit id="description">
+                <source>AI-powered content assistance for Neos</source>
+            </trans-unit>
             <trans-unit id="selectionFilter" xml:space="preserve">
                 <source>Selection filter</source>
             </trans-unit>
             <trans-unit id="actions" xml:space="preserve">
                 <source>Actions</source>
+            </trans-unit>
+            <trans-unit id="progress">
+                <source>Progress</source>
             </trans-unit>
             <trans-unit id="listEmpty">
                 <source>There are no items that match the filter!</source>
@@ -25,6 +31,12 @@
             </trans-unit>
             <trans-unit id="error.noApiKey">
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+            </trans-unit>
+            <trans-unit id="error.assetMultipleEditableProperties">
+                <source>Expected only one editable property for an asset</source>
+            </trans-unit>
+            <trans-unit id="pageNotAccessible">
+                <source>This page is not accessible.</source>
             </trans-unit>
             <trans-unit id="saveAndNextPage" xml:space="preserve">
                 <source>Save all and get next page</source>

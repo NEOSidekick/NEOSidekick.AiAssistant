@@ -1,4 +1,5 @@
 import React from 'react';
+import TranslationService from "../Service/TranslationService";
 
 interface ProgressStepsProps {
     steps: Array<{ id: string, name: string, href: string, status: 'complete' | 'current' | 'upcoming' }>;
@@ -13,8 +14,10 @@ const steps = [
 */
 
 export default function ProgressSteps({steps}: ProgressStepsProps) {
+    const translationService = TranslationService.getInstance();
+
     return (
-        <nav aria-label="Progress">
+        <nav aria-label={translationService.translate('NEOSidekick.AiAssistant:Module:progress', 'Progress')}>
             <ol role="list"
                 style={{border: '1px solid #3f3f3f', borderRadius: '0.375rem', display: 'flex', marginBottom: '1rem'}}>
                 {steps.map((step, stepIdx) => (

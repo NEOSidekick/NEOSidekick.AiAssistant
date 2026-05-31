@@ -20,6 +20,12 @@
             <trans-unit id="error.noApiKey">
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
             </trans-unit>
+            <trans-unit id="error.unsupportedEditor">
+                <source>[{0}:{1}] Editor "{2}" is currently not supported</source>
+            </trans-unit>
+            <trans-unit id="error.missingEditorConfiguration">
+                <source>[{0}:{1}] Editor configuration is missing</source>
+            </trans-unit>
             <trans-unit id="configuration.filter.custom">
                 <source>I know what I'm doing and would prefer to set individual filters</source>
             </trans-unit>

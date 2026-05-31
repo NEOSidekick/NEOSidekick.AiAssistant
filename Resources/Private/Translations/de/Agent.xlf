@@ -14,6 +14,9 @@
             <trans-unit id="authorizeButton" xml:space="preserve">
                 <source>Autorisieren</source>
             </trans-unit>
+            <trans-unit id="testJwtAuthButton" xml:space="preserve">
+                <source>JWT-Authentifizierung testen</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

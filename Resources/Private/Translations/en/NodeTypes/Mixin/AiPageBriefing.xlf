@@ -11,6 +11,9 @@
             <trans-unit id="properties.focusKeyword.ui.help.message" xml:space="preserve">
                 <source>This focus keyword is used for generating better content, optimized seo titles and meta descriptions. Let us know know if you would like additional features based on that keyword.</source>
             </trans-unit>
+            <trans-unit id="properties.focusKeyword.textAreaEditor.placeholder" xml:space="preserve">
+                <source>Define one keyword to optimize for</source>
+            </trans-unit>
             <trans-unit id="properties.targetAudience" xml:space="preserve">
                 <source>Target Audience</source>
             </trans-unit>

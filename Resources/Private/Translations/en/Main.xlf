@@ -5,6 +5,9 @@
             <trans-unit id="generateWithSidekick" xml:space="preserve">
                 <source>Generate with Sidekick</source>
             </trans-unit>
+            <trans-unit id="title" xml:space="preserve">
+                <source>Edit with AI</source>
+            </trans-unit>
             <trans-unit id="generate" xml:space="preserve">
                 <source>Generate</source>
             </trans-unit>
@@ -22,6 +25,18 @@
             </trans-unit>
             <trans-unit id="reset">
                 <source>Reset</source>
+            </trans-unit>
+            <trans-unit id="error.imageAltTextEditorMissingImagePropertyName">
+                <source>Incorrect YAML configuration: ImageAltTextEditor requires an editorOption imagePropertyName</source>
+            </trans-unit>
+            <trans-unit id="error.imageTitleEditorMissingImagePropertyName">
+                <source>Incorrect YAML configuration: ImageTitleEditor requires an editorOption imagePropertyName</source>
+            </trans-unit>
+            <trans-unit id="error.imageTextEditorMissingImagePropertyName">
+                <source>Incorrect YAML configuration: Image Text Editor requires an editorOption imagePropertyName</source>
+            </trans-unit>
+            <trans-unit id="privilege.canUse">
+                <source>Can use AiAssistant</source>
             </trans-unit>
         </body>
     </file>

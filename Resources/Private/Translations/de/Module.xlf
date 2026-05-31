@@ -6,6 +6,10 @@
                 <source>NEOSidekick AI-Assistant</source>
                 <target xml:lang="de">NEOSidekick AI-Assistent</target>
             </trans-unit>
+            <trans-unit id="description">
+                <source>AI-powered content assistance for Neos</source>
+                <target xml:lang="de" state="translated">KI-gestützte Inhaltsassistenz für Neos</target>
+            </trans-unit>
             <trans-unit id="selectionFilter" xml:space="preserve">
                 <source>Selection filter</source>
                 <target xml:lang="de">Auswahl-Filter</target>
@@ -13,6 +17,10 @@
             <trans-unit id="actions" xml:space="preserve">
                 <source>Actions</source>
                 <target xml:lang="de">Aktionen</target>
+            </trans-unit>
+            <trans-unit id="progress">
+                <source>Progress</source>
+                <target xml:lang="de">Fortschritt</target>
             </trans-unit>
             <trans-unit id="listEmpty">
                 <source>There are no items that match the filter!</source>
@@ -33,6 +41,14 @@
             <trans-unit id="error.noApiKey">
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
                 <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
+            </trans-unit>
+            <trans-unit id="error.assetMultipleEditableProperties">
+                <source>Expected only one editable property for an asset</source>
+                <target xml:lang="de" state="translated">Für ein Asset wird genau eine bearbeitbare Eigenschaft erwartet</target>
+            </trans-unit>
+            <trans-unit id="pageNotAccessible">
+                <source>This page is not accessible.</source>
+                <target xml:lang="de" state="translated">Diese Seite ist nicht erreichbar.</target>
             </trans-unit>
             <trans-unit id="saveAndNextPage" xml:space="preserve">
                 <source>Save all and get next page</source>

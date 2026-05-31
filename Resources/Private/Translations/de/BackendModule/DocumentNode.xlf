@@ -26,6 +26,14 @@
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
                 <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
             </trans-unit>
+            <trans-unit id="error.unsupportedEditor">
+                <source>[{0}:{1}] Editor "{2}" is currently not supported</source>
+                <target xml:lang="de" state="translated">[{0}:{1}] Editor "{2}" wird derzeit nicht unterstützt</target>
+            </trans-unit>
+            <trans-unit id="error.missingEditorConfiguration">
+                <source>[{0}:{1}] Editor configuration is missing</source>
+                <target xml:lang="de" state="translated">[{0}:{1}] Editor-Konfiguration fehlt</target>
+            </trans-unit>
             <trans-unit id="configuration.filter.custom">
                 <source>I know what I'm doing and would prefer to set individual filters</source>
                 <target>Ich weiß was ich tue, und möchte individuelle Filter setzen</target>

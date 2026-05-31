@@ -39,7 +39,8 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
     private async fetchDocumentHtmlContent() {
         const {item} = this.props;
         if (!item.previewUri) {
-            this.setState({htmlContent: '<h1 style="color: white; padding: 1rem;">This the page is not accessible.</h1>'});
+            const pageNotAccessibleMessage = this.translationService.translate('NEOSidekick.AiAssistant:Module:pageNotAccessible', 'This page is not accessible.');
+            this.setState({htmlContent: `<h1 style="color: white; padding: 1rem;">${pageNotAccessibleMessage}</h1>`});
             return;
         }
         const htmlContent = await NeosBackendService.getInstance().fetchDocumentHtmlContent(item.previewUri);
@@ -253,7 +254,7 @@ export default class DocumentNodeListViewItem extends PureComponent<DocumentNode
                     })}
                     {(this.context.moduleConfiguration as DocumentNodeModuleConfiguration).showSeoDirectives && (item.properties.canonicalLink || item.properties.metaRobotsNoindex || item.properties.metaRobotsNofollow) && (
                         <div style={{backgroundColor: 'var(--warning)', marginBottom: '1.5rem', padding: '12px', fontWeight: 400, fontSize: '14px', lineHeight: 1.4}}>
-                            <h3>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule:SeoTitleAndMetaDescription:seoDirectivesLabel', 'SEO Directives')}</h3>
+                            <h3>{this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.SeoTitleAndMetaDescription:seoDirectivesLabel', 'SEO Directives')}</h3>
                             {item.properties.canonicalLink && (
                                 <p>Canonical: {item.properties.canonicalLink}</p>
                             )}

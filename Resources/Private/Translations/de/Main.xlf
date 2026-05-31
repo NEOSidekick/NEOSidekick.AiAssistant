@@ -6,6 +6,10 @@
                 <source>Generate with Sidekick</source>
                 <target xml:lang="de" state="translated">Mit Sidekick generieren</target>
             </trans-unit>
+            <trans-unit id="title" xml:space="preserve">
+                <source>Edit with AI</source>
+                <target xml:lang="de" state="translated">Mit AI bearbeiten</target>
+            </trans-unit>
             <trans-unit id="generate" xml:space="preserve">
                 <source>Generate</source>
                 <target xml:lang="de" state="translated">Generieren</target>
@@ -29,6 +33,22 @@
             <trans-unit id="reset">
                 <source>Reset</source>
                 <target>Zurücksetzen</target>
+            </trans-unit>
+            <trans-unit id="error.imageAltTextEditorMissingImagePropertyName">
+                <source>Incorrect YAML configuration: ImageAltTextEditor requires an editorOption imagePropertyName</source>
+                <target xml:lang="de" state="translated">Fehlerhafte YAML-Konfiguration: ImageAltTextEditor benötigt die editorOption imagePropertyName</target>
+            </trans-unit>
+            <trans-unit id="error.imageTitleEditorMissingImagePropertyName">
+                <source>Incorrect YAML configuration: ImageTitleEditor requires an editorOption imagePropertyName</source>
+                <target xml:lang="de" state="translated">Fehlerhafte YAML-Konfiguration: ImageTitleEditor benötigt die editorOption imagePropertyName</target>
+            </trans-unit>
+            <trans-unit id="error.imageTextEditorMissingImagePropertyName">
+                <source>Incorrect YAML configuration: Image Text Editor requires an editorOption imagePropertyName</source>
+                <target xml:lang="de" state="translated">Fehlerhafte YAML-Konfiguration: Image Text Editor benötigt die editorOption imagePropertyName</target>
+            </trans-unit>
+            <trans-unit id="privilege.canUse">
+                <source>Can use AiAssistant</source>
+                <target xml:lang="de" state="translated">Darf AiAssistant verwenden</target>
             </trans-unit>
         </body>
     </file>

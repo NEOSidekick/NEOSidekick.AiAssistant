@@ -29,7 +29,7 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
                     <form method="POST" action="/neosidekick/agent/test-jwt">
                         <input type="hidden" name="__csrfToken" value={props.csrfToken} />
                         <button type="submit" class="auth-button" style="background: #555;">
-                            Test JWT Auth
+                            {I18n.translate('NEOSidekick.AiAssistant:Agent:testJwtAuthButton')}
                         </button>
                     </form>
                     <pre id="test-result"></pre>

@@ -14,6 +14,10 @@
                 <source>This focus keyword is used for generating better content, optimized seo titles and meta descriptions. Let us know know if you would like additional features based on that keyword.</source>
                 <target xml:lang="de" state="translated">Dieses Fokus-Keyword wird für die Generierung von besseren Texten, optimierten SEO-Titeln und Meta-Beschreibungen verwendet. Lass uns wissen, wenn du zusätzliche Funktionen basierend auf diesem Keyword wünscht.</target>
             </trans-unit>
+            <trans-unit id="properties.focusKeyword.textAreaEditor.placeholder" xml:space="preserve">
+                <source>Define one keyword to optimize for</source>
+                <target xml:lang="de" state="translated">Definiere ein Keyword, auf das optimiert werden soll</target>
+            </trans-unit>
             <trans-unit id="properties.targetAudience" xml:space="preserve">
                 <source>Target Audience</source>
                 <target xml:lang="de" state="translated">Zielgruppe</target>

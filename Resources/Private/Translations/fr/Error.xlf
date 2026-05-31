@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="1688157373215" xml:space="preserve">
+                <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+                <target xml:lang="fr" state="translated">Cette fonctionnalité n'est pas disponible dans la version gratuite de NEOSidekick. Inscris-toi pour un essai gratuit sur : https://neosidekick.com/en/pricing.</target>
+            </trans-unit>
+            <trans-unit id="1688158193038" xml:space="preserve">
+                <source>The NEOSidekick api key provided is not valid.</source>
+                <target xml:lang="fr" state="translated">La clé API pour NEOSidekick est incorrecte.</target>
+            </trans-unit>
+            <trans-unit id="1688158257149" xml:space="preserve">
+                <source>An error occurred while asking NEOSidekick: {0}</source>
+                <target xml:lang="fr" state="translated">NEOSidekick a rencontré un problème : {0}</target>
+            </trans-unit>
+            <trans-unit id="1694595562191" xml:space="preserve">
+                <source>The property does not have a valid image.</source>
+                <target xml:lang="fr" state="translated">La propriété ne contient pas d'image valide.</target>
+            </trans-unit>
+            <trans-unit id="1694595598880" xml:space="preserve">
+                <source>Could not fetch image object.</source>
+                <target xml:lang="fr" state="translated">L'objet image n'a pas pu être récupéré.</target>
+            </trans-unit>
+            <trans-unit id="1694595462402" xml:space="preserve">
+                <source>The given image does not have a correct url.</source>
+                <target xml:lang="fr" state="translated">L'URL de l'image est incorrecte.</target>
+            </trans-unit>
+            <trans-unit id="1694682118365">
+                <source>An error occurred while trying to evaluate: {0}</source>
+                <target xml:lang="fr" state="translated">La configuration suivante n'a pas pu être évaluée : {0}</target>
+            </trans-unit>
+            <trans-unit id="1695668144026">
+                <source>You cannot start two text generations at the same time.</source>
+                <target xml:lang="fr" state="translated">Tu ne peux pas lancer deux générations de texte en même temps.</target>
+            </trans-unit>
+            <trans-unit id="1696264259260">
+                <source>Please do not use options.sidekick.onCreate.module anymore. Read the docs to find out about the new configuration.</source>
+                <target xml:lang="fr" state="translated">S'il te plaît, n'utilise plus la configuration options.sidekick.onCreate.module. Consulte la nouvelle syntaxe dans la documentation.</target>
+            </trans-unit>
+            <trans-unit id="1696264259270">
+                <source>Please write a few words about how to create the text.</source>
+                <target xml:lang="fr">Décris ce qui doit être créé comme nouveau texte.</target>
+            </trans-unit>
+            <trans-unit id="1709650151037">
+                <source>An error occurred while fetching the items: {0}</source>
+                <target xml:lang="fr">Une erreur est survenue lors de la récupération des entrées : {0}</target>
+            </trans-unit>
+            <trans-unit id="1709648035592">
+                <source>An error occurred while persisting an item</source>
+                <target xml:lang="fr">Une erreur est survenue lors de l'enregistrement d'une entrée</target>
+            </trans-unit>
+            <trans-unit id="1723668241635">
+                <source>Unfortunately, the analysis took too long and led to a timeout, please try again.</source>
+                <target xml:lang="fr">L'analyse a malheureusement pris trop de temps et a entraîné un délai d'attente, réessaie s'il te plaît.</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

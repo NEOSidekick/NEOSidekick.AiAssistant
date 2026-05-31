@@ -3,6 +3,7 @@ import {SynchronousMetaRegistry} from "@neos-project/neos-ui-extensibility";
 import {Store} from 'react-redux'
 // @ts-ignore
 import {actions, actionTypes} from '@neos-project/neos-ui-redux-store'
+import backend from '@neos-project/neos-ui-backend-connector';
 import {IFrameApiService} from "./IFrameApiService";
 import {ServerStreamMessage} from "../interfaces";
 
@@ -19,6 +20,7 @@ export class ContentCanvasService {
     private store: Store;
     private iFrameApiService: IFrameApiService;
     private currentlyHandledNodePath: string | null = null;
+    private workspaceInfoRefreshPromise: Promise<void> | null = null;
 
     constructor(globalRegistry: SynchronousMetaRegistry<any>, store: Store, iFrameApiService: IFrameApiService) {
         this.globalRegistry = globalRegistry;
@@ -139,8 +141,28 @@ export class ContentCanvasService {
     }
 
     private reloadAfterContentChange(): void {
+        this.refreshWorkspaceInfo();
         this.reloadDocumentNodeTree();
         this.reloadContentCanvas();
+    }
+
+    private refreshWorkspaceInfo(): void {
+        if (this.workspaceInfoRefreshPromise) {
+            return;
+        }
+
+        const {getWorkspaceInfo} = backend.get().endpoints;
+
+        this.workspaceInfoRefreshPromise = getWorkspaceInfo()
+            .then((workspaceInfo: unknown) => {
+                this.store.dispatch(actions.CR.Workspaces.update(workspaceInfo));
+            })
+            .catch((error: unknown) => {
+                console.error('Could not refresh Neos workspace info after NEOSidekick content update.', error);
+            })
+            .finally(() => {
+                this.workspaceInfoRefreshPromise = null;
+            });
     }
 
     private reloadDocumentNodeTree(): void {

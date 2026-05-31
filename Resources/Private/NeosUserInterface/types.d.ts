@@ -44,6 +44,19 @@ declare module "@neos-project/neos-ui-backend-connector" {
         public parseJson(response: Body): any;
     }
     export const fetchWithErrorHandling = new FetchWithErrorHandling();
+
+    type BackendConnector = {
+        endpoints: {
+            getWorkspaceInfo(): Promise<unknown>;
+        };
+        [key: string]: any;
+    };
+
+    const backend: {
+        get(): BackendConnector;
+    };
+
+    export default backend;
 }
 
 declare module "@neos-project/neos-ui-i18n" {
@@ -130,6 +143,9 @@ declare module "@neos-project/neos-ui-redux-store" {
         CR: {
             Nodes: {
                 merge(nodeMap: Record<string, any>): any;
+            };
+            Workspaces: {
+                update(workspaceInfo: unknown): any;
             };
         };
         UI: {

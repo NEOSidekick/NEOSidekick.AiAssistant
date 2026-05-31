@@ -50,7 +50,7 @@ class NodeTreeExtractor
      * @param string $workspace The workspace name
      * @param array $dimensions The dimension values (e.g., ['language' => ['de']])
      * @param int|null $maxDepth Maximum depth for tree extraction (null uses default, prevents stack overflow)
-     * @return array{generatedAt: string, rootNode: array}
+     * @return array{generatedAt: string, workspace: string, dimensions: array, rootNode: array}
      * @throws \InvalidArgumentException When node is not found
      */
     public function extract(string $nodeId, string $workspace, array $dimensions, ?int $maxDepth = null): array
@@ -69,6 +69,8 @@ class NodeTreeExtractor
 
         return [
             'generatedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
+            'workspace' => $workspace,
+            'dimensions' => $dimensions,
             'rootNode' => $this->extractNode($node, 0, $effectiveMaxDepth),
         ];
     }

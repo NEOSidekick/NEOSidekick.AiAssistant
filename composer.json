@@ -18,8 +18,9 @@
         "neos/neos": "~8.3 || dev-master",
         "neos/media": "~8.3 || dev-master",
         "neos/neos-ui": "~8.3 || dev-master",
-        "sitegeist/fusionlinkprototypes": "v1.0.1",
-        "neos/seo": "*"
+        "neos/seo": "*",
+        "flowpack/nodetemplates": "^2.1.1",
+        "sitegeist/fusionlinkprototypes": "v1.0.1"
     },
     "require-dev": {
         "phpstan/phpstan": "^1.10.0",

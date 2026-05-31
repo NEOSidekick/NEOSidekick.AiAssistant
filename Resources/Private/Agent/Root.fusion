@@ -10,18 +10,18 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
     renderer = afx`
         <html>
             <head>
-                <title>NEOSidekick Agent Authorization</title>
+                <title>{I18n.translate('NEOSidekick.AiAssistant:Agent:pageTitle')}</title>
                 <link rel="stylesheet" href={StaticResource.uri('NEOSidekick.AiAssistant', 'Public/Agent.css')} />
             </head>
             <body>
                 <div class="auth-container">
-                    <h1>Allow NEOSidekick to work together with you</h1>
-                    <p>Allow NEOSidekick to access your workspace, read and write content. The chat will never publish any changes to live, you are always in control of what is published.</p>
+                    <h1>{I18n.translate('NEOSidekick.AiAssistant:Agent:authorizationTitle')}</h1>
+                    <p>{I18n.translate('NEOSidekick.AiAssistant:Agent:authorizationMessage')}</p>
                     <form method="POST" action={props.authorizeActionUri}>
                         <input type="hidden" name="__csrfToken" value={props.csrfToken} />
                         <input type="hidden" name="state" value={props.state} />
                         <button type="submit" class="auth-button">
-                            Authorize
+                            {I18n.translate('NEOSidekick.AiAssistant:Agent:authorizeButton')}
                         </button>
                     </form>
                     <!--

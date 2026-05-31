@@ -24,6 +24,7 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
                             Authorize
                         </button>
                     </form>
+                    <!--
                     <hr style="margin: 20px 0;" />
                     <form method="POST" action="/neosidekick/agent/test-jwt">
                         <input type="hidden" name="__csrfToken" value={props.csrfToken} />
@@ -32,6 +33,7 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
                         </button>
                     </form>
                     <pre id="test-result"></pre>
+                    -->
                 </div>
             </body>
         </html>

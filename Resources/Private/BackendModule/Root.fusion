@@ -116,6 +116,6 @@ NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusio
     apiDomain = ${apiDomain}
     renderer = afx`
         <div @if={props.apiDomain != 'https://api.neosidekick.com'} style="font-size: 1.5em; font-weight: bold; background: orange; padding: 1rem; margin-bottom: 1rem;">You are using a non-production API: {props.apiDomain}</div>
-        <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey}></iframe>
+        <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey + '&stay-in-settings=true'}></iframe>
     `
 }

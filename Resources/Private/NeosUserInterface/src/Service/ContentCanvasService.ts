@@ -113,8 +113,8 @@ export class ContentCanvasService {
                 this.addFlashMessage('1688158257149', 'An error occurred while asking NEOSidekick: ' + errorMessage, 'error', errorMessage);
                 this.handleStreamingFinished();
                 break;
-            case 'reload-content-canvas':
-                this.reloadContentCanvas();
+            case 'reload-content':
+                this.reloadAfterContentChange();
                 break;
             case 'show-document-node':
                 this.navigateToDocumentNodePath(message?.data?.data?.documentNodeId || message?.data?.data?.href);
@@ -136,6 +136,16 @@ export class ContentCanvasService {
         this.resetTypingCaret();
         this.unsetCurrentlyHandledNodePath();
         this.iFrameApiService.setStreamingFinished();
+    }
+
+    private reloadAfterContentChange(): void {
+        this.reloadDocumentNodeTree();
+        this.reloadContentCanvas();
+    }
+
+    private reloadDocumentNodeTree(): void {
+        // Reuse the same action as the document-tree refresh button.
+        this.store.dispatch(actions.CR.Nodes.reloadState({merge: true}));
     }
 
     private reloadContentCanvas(): void {

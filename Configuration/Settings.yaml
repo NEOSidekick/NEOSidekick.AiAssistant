@@ -1,12 +1,6 @@
 NEOSidekick:
   AiAssistant:
     apikey: ''
-    agent:
-      externalApiDomain: 'https://api-staging.neosidekick.com'
-    jwt:
-      algorithm: 'HS256'
-      issuer: 'NEOSidekick.AiAssistant'
-    developmentBuild: false
     defaultLanguage: 'en'
     chatSidebarEnabled: true
     # The language dimension is usually called "language" in most Neos projects

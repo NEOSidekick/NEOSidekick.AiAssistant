@@ -1,7 +1,13 @@
 NEOSidekick:
   AiAssistant:
+    agent:
+      externalApiDomain: 'https://api.neosidekick.com'
+    jwt:
+      algorithm: 'HS256'
+      issuer: 'NEOSidekick.AiAssistant'
+    developmentBuild: false
     Internal:
-      apiDomain: 'https://api-staging.neosidekick.com'
+      apiDomain: 'https://api.neosidekick.com'
 
 Neos:
   Fusion:

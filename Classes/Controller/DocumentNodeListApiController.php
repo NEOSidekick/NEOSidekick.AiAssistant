@@ -7,6 +7,7 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
+use Neos\Neos\Service\UserService;
 use NEOSidekick\AiAssistant\Service\DocumentNodeListExtractor;
 
 /**
@@ -26,6 +27,12 @@ class DocumentNodeListApiController extends ActionController
      * @var DocumentNodeListExtractor
      */
     protected $extractor;
+
+    /**
+     * @Flow\Inject
+     * @var UserService
+     */
+    protected UserService $userService;
 
     /**
      * @var string[]
@@ -65,6 +72,8 @@ class DocumentNodeListApiController extends ActionController
             $dimensionsArray = [];
         }
 
+        $workspace = $this->resolveWorkspace($workspace);
+
         try {
             $result = $this->extractor->extract(
                 workspace: $workspace,
@@ -82,6 +91,16 @@ class DocumentNodeListApiController extends ActionController
                 'message' => $e->getMessage()
             ], JSON_THROW_ON_ERROR);
         }
+    }
+
+    protected function resolveWorkspace(string $requestedWorkspace): string
+    {
+        $personalWorkspace = $this->userService->getPersonalWorkspaceName();
+        if ($personalWorkspace !== null && ($requestedWorkspace === '' || $requestedWorkspace === 'live')) {
+            return $personalWorkspace;
+        }
+
+        return $requestedWorkspace !== '' ? $requestedWorkspace : 'live';
     }
 
 }

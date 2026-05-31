@@ -7,6 +7,7 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
+use Neos\Neos\Service\UserService;
 use NEOSidekick\AiAssistant\Service\DocumentNodeListExtractor;
 use NEOSidekick\AiAssistant\Service\SearchNodesExtractor;
 
@@ -36,6 +37,12 @@ class SearchNodesApiController extends ActionController
      * @var DocumentNodeListExtractor
      */
     protected $documentNodeListExtractor;
+
+    /**
+     * @Flow\Inject
+     * @var UserService
+     */
+    protected UserService $userService;
 
     /**
      * @var string[]
@@ -83,6 +90,7 @@ class SearchNodesApiController extends ActionController
         }
 
         $normalizedQuery = trim($query);
+        $workspace = $this->resolveWorkspace($workspace);
 
         // Empty query and wildcard query return a full document list.
         if ($normalizedQuery === '' || $normalizedQuery === '*') {
@@ -132,6 +140,16 @@ class SearchNodesApiController extends ActionController
                 'message' => $e->getMessage()
             ], JSON_THROW_ON_ERROR);
         }
+    }
+
+    protected function resolveWorkspace(string $requestedWorkspace): string
+    {
+        $personalWorkspace = $this->userService->getPersonalWorkspaceName();
+        if ($personalWorkspace !== null && ($requestedWorkspace === '' || $requestedWorkspace === 'live')) {
+            return $personalWorkspace;
+        }
+
+        return $requestedWorkspace !== '' ? $requestedWorkspace : 'live';
     }
 
 }

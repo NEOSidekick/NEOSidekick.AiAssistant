@@ -7,6 +7,7 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
+use Neos\Neos\Service\UserService;
 use NEOSidekick\AiAssistant\Service\NodeTreeExtractor;
 
 /**
@@ -27,6 +28,12 @@ class NodeTreeSchemaApiController extends ActionController
      * @var NodeTreeExtractor
      */
     protected $treeExtractor;
+
+    /**
+     * @Flow\Inject
+     * @var UserService
+     */
+    protected UserService $userService;
 
     /**
      * @var string[]
@@ -63,6 +70,8 @@ class NodeTreeSchemaApiController extends ActionController
             $dimensionsArray = [];
         }
 
+        $workspace = $this->resolveWorkspace($workspace);
+
         try {
             $tree = $this->treeExtractor->extract($nodeId, $workspace, $dimensionsArray);
             return json_encode($tree, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
@@ -79,6 +88,16 @@ class NodeTreeSchemaApiController extends ActionController
                 'message' => 'An unexpected error occurred'
             ], JSON_THROW_ON_ERROR);
         }
+    }
+
+    protected function resolveWorkspace(string $requestedWorkspace): string
+    {
+        $personalWorkspace = $this->userService->getPersonalWorkspaceName();
+        if ($personalWorkspace !== null && ($requestedWorkspace === '' || $requestedWorkspace === 'live')) {
+            return $personalWorkspace;
+        }
+
+        return $requestedWorkspace !== '' ? $requestedWorkspace : 'live';
     }
 
 }

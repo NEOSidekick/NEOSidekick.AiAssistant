@@ -86,6 +86,16 @@ export class IFrameApiService {
         }
     }
 
+    respondWithContentTree = (contentTree: unknown): void => {
+        this.sendMessage({
+            version: '1.0',
+            eventName: 'content-tree-response',
+            data: {
+                contentTree,
+            },
+        });
+    }
+
     private sendMessage = (message: object, onSend?: Function, retiesCount: number = 0): void => {
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {

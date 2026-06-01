@@ -44,6 +44,19 @@ declare module "@neos-project/neos-ui-backend-connector" {
         public parseJson(response: Body): any;
     }
     export const fetchWithErrorHandling = new FetchWithErrorHandling();
+
+    type BackendConnector = {
+        endpoints: {
+            getWorkspaceInfo(): Promise<unknown>;
+        };
+        [key: string]: any;
+    };
+
+    const backend: {
+        get(): BackendConnector;
+    };
+
+    export default backend;
 }
 
 declare module "@neos-project/neos-ui-i18n" {
@@ -97,7 +110,7 @@ declare module "@neos-project/neos-ui" {
 }
 
 declare module "@neos-project/neos-ui-redux-store" {
-    import { Node } from "@neos-project/neos-ts-interfaces";
+    import { Node, NodeMap } from "@neos-project/neos-ts-interfaces";
     import { DefaultRootState } from "react-redux";
 
     type Selector<S> = (state: DefaultRootState) => S;
@@ -106,6 +119,10 @@ declare module "@neos-project/neos-ui-redux-store" {
         CR: {
             Nodes: {
                 focusedSelector: Selector<Node | undefined>;
+                documentNodeSelector: Selector<Node | undefined>;
+                documentNodeContextPathSelector: Selector<string | null>;
+                nodeByContextPath: (state: DefaultRootState) => (contextPath: string) => Node | undefined;
+                nodesByContextPathSelector: Selector<NodeMap>;
             };
         };
         System: {
@@ -123,7 +140,19 @@ declare module "@neos-project/neos-ui-redux-store" {
         System: {
             authenticationTimeout(): any;
         };
+        CR: {
+            Nodes: {
+                merge(nodeMap: Record<string, any>): any;
+            };
+            Workspaces: {
+                update(workspaceInfo: unknown): any;
+            };
+        };
         UI: {
+            ContentCanvas: {
+                SET_SRC?: string;
+                RELOAD?: string;
+            };
             FlashMessages: {
                 add(key: string, message: string, severity: "success" |"info" | "error", timeout?: number)
             }
@@ -132,6 +161,10 @@ declare module "@neos-project/neos-ui-redux-store" {
 
     export const actions: Actions;
     export const selectors: Selectors;
+    export const actionTypes: {
+        UI: { ContentCanvas: { SET_SRC: string; RELOAD: string } };
+        [key: string]: any;
+    };
 }
 
 declare module "@neos-project/neos-ui-decorators" {
@@ -249,6 +282,7 @@ declare module "@neos-project/neos-ts-interfaces" {
     export interface NodeChild {
         contextPath: NodeContextPath;
         nodeType: NodeTypeName;
+        role: 'document' | 'content';
     }
     // TODO: for some reason (probably due to immer) I can not use ReadonlyArray here
     export interface NodeChildren extends Array<NodeChild> {}

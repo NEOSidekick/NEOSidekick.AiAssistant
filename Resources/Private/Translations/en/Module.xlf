@@ -5,11 +5,17 @@
             <trans-unit id="label">
                 <source>NEOSidekick AI-Assistant</source>
             </trans-unit>
+            <trans-unit id="description">
+                <source>AI-powered content assistance for Neos</source>
+            </trans-unit>
             <trans-unit id="selectionFilter" xml:space="preserve">
                 <source>Selection filter</source>
             </trans-unit>
             <trans-unit id="actions" xml:space="preserve">
                 <source>Actions</source>
+            </trans-unit>
+            <trans-unit id="progress">
+                <source>Progress</source>
             </trans-unit>
             <trans-unit id="listEmpty">
                 <source>There are no items that match the filter!</source>
@@ -17,14 +23,23 @@
             <trans-unit id="listEndReached">
                 <source>Congratulations. You have reached the end of the list. You have gone through {0} entries.</source>
             </trans-unit>
+            <trans-unit id="listLimitWarning">
+                <source>You are seeing the first {0} result pages. There are more entries, so please start this tool again after the last page.</source>
+            </trans-unit>
             <trans-unit id="listLimitReached">
-                <source>This tool can currently process a maximum of 10,000 entries at the same time. All your changes are saved, please start a new search.</source>
+                <source>This tool can currently process a maximum of {0} entries at the same time. All your changes are saved, please start a new search.</source>
             </trans-unit>
             <trans-unit id="error.configuration">
                 <source>This module is not configured correctly. Please consult the documentation!</source>
             </trans-unit>
             <trans-unit id="error.noApiKey">
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
+            </trans-unit>
+            <trans-unit id="error.assetMultipleEditableProperties">
+                <source>Expected only one editable property for an asset</source>
+            </trans-unit>
+            <trans-unit id="pageNotAccessible">
+                <source>This page is not accessible.</source>
             </trans-unit>
             <trans-unit id="saveAndNextPage" xml:space="preserve">
                 <source>Save all and get next page</source>

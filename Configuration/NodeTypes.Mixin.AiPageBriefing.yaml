@@ -28,7 +28,7 @@
           position: 10
           editor: 'NEOSidekick.AiAssistant/Inspector/Editors/FocusKeywordEditor'
           editorOptions:
-            placeholder: 'Define one keyword to optimize for'
+            placeholder: i18n
             module: 'focus_keyword_generator'
             arguments:
               content: 'SidekickClientEval:documentContent'

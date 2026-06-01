@@ -17,6 +17,8 @@ import ProgressBar from "../../Components/ProgressBar";
 import {ListItemImage} from "../../Model/ListItemImage";
 import {has} from "lodash";
 
+const ASSET_LIST_RESULT_LIMIT = 1000;
+
 export function getItemByIdentifier(state: ListViewState, identifier: string): ListItem|undefined {
     return Object.values(state.items).find(item => item.identifier === identifier);
 }
@@ -178,6 +180,34 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
         )
     }
 
+    private isListLimitReached(itemsCount: number): boolean {
+        return this.context.moduleConfiguration.itemType === 'Asset' && itemsCount === ASSET_LIST_RESULT_LIMIT;
+    }
+
+    private renderListLimitWarning(totalPages: number) {
+        return (
+            <Alert
+                type="error"
+                message={this.translationService.translate(
+                    'NEOSidekick.AiAssistant:Module:listLimitWarning',
+                    'You are seeing the first {0} result pages. There are more entries, so please start this tool again after the last page.',
+                    {0: totalPages, 1: ASSET_LIST_RESULT_LIMIT}
+                )}/>
+        )
+    }
+
+    private renderListLimitReachedAlert() {
+        return (
+            <Alert
+                type="error"
+                message={this.translationService.translate(
+                    'NEOSidekick.AiAssistant:Module:listLimitReached',
+                    'This tool can currently process a maximum of {0} entries at the same time. All your changes are saved, please start a new search.',
+                    {0: ASSET_LIST_RESULT_LIMIT}
+                )}/>
+        )
+    }
+
     private paginatedItems(): ListItem[]
     {
         const offset = (this.state.currentPage - 1) * this.state.itemsPerPage;
@@ -187,27 +217,27 @@ export default class ListView extends PureComponent<ListViewProps, ListViewState
     private renderList() {
         const paginatedItems = this.paginatedItems();
         const itemsCount = Object.values(this.state.items).length;
+        const totalPages = Math.ceil(itemsCount / this.state.itemsPerPage);
         if (paginatedItems.length === 0) {
-            if (itemsCount === 1000) {
-                return (
-                    <Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listLimitReached', 'This tool can currently process a maximum of 1,000 entries at the same time. All your changes are saved, please start a new search.')}/>
-                )
+            if (this.isListLimitReached(itemsCount)) {
+                return this.renderListLimitReachedAlert()
             }
             return (
                 <Alert type="info" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:listEndReached', 'Congratulations. You have reached the end of the list. You have gone through {0} entries.', {0: itemsCount})}/>
             )
         }
 
-        const totalPages = Math.ceil(Object.values(this.state.items).length / this.state.itemsPerPage);
-        return [
-            (totalPages <= 10 ? <ProgressCircles currentPage={this.state.currentPage} totalPages={totalPages} /> : <ProgressBar currentPage={this.state.currentPage} totalPages={totalPages} />),
-            paginatedItems.map((item: ListItem, index) =>
+        return <>
+            {this.isListLimitReached(itemsCount) ? this.renderListLimitWarning(totalPages) : null}
+            {totalPages <= 10 ? <ProgressCircles currentPage={this.state.currentPage} totalPages={totalPages} /> : <ProgressBar currentPage={this.state.currentPage} totalPages={totalPages} />}
+            {paginatedItems.map((item: ListItem, index) =>
                 <ListViewItem
                     key={item.identifier}
                     item={item}
                     updateItem={(newItemProducer: (state: Readonly<ListViewState>) => ListItem) => this.updateItem(newItemProducer)}
                     persistItem={(item: ListItem) => this.persistItems([item])}
-                    lazyGenerate={index > 0}/>)]
+                    lazyGenerate={index > 0}/>)}
+        </>
     }
 
     private updateItem(newItemProducer: (state: Readonly<ListViewState>) => ListItem) {

@@ -26,12 +26,7 @@ class ApiClient
     protected string $apiKey;
 
     /**
-     * @Flow\InjectConfiguration(path="developmentBuild")
-     * @var bool
-     */
-    protected bool $isDevelopmentBuild;
-
-    /**
+     * @Flow\InjectConfiguration(path="Internal.apiDomain")
      * @var string
      */
     protected string $apiDomain;
@@ -43,11 +38,6 @@ class ApiClient
 
     public function initializeObject(): void
     {
-        if (isset($this->isDevelopmentBuild) && $this->isDevelopmentBuild === true) {
-            $this->apiDomain = 'https://api-staging.neosidekick.com';
-        } else {
-            $this->apiDomain = 'https://api.neosidekick.com';
-        }
         $browserRequestEngine = new CurlEngine();
         $this->browser = new Browser();
         $this->browser->setRequestEngine($browserRequestEngine);

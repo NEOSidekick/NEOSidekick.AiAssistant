@@ -28,10 +28,10 @@ class ConfigurationController extends AbstractModuleController
     protected string $apiKey;
 
     /**
-     * @Flow\InjectConfiguration(path="developmentBuild")
+     * @Flow\InjectConfiguration(path="Internal.apiDomain")
      * @var string
      */
-    protected string $developmentBuild;
+    protected string $apiDomain;
 
     /**
      * @param FusionView $view
@@ -47,6 +47,6 @@ class ConfigurationController extends AbstractModuleController
     public function indexAction(): void
     {
         $this->view->assign('apiKey', $this->apiKey);
-        $this->view->assign('developmentBuild', $this->developmentBuild);
+        $this->view->assign('apiDomain', $this->apiDomain);
     }
 }

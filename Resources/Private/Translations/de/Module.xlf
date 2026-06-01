@@ -6,6 +6,10 @@
                 <source>NEOSidekick AI-Assistant</source>
                 <target xml:lang="de">NEOSidekick AI-Assistent</target>
             </trans-unit>
+            <trans-unit id="description">
+                <source>AI-powered content assistance for Neos</source>
+                <target xml:lang="de" state="translated">KI-gestützte Inhaltsassistenz für Neos</target>
+            </trans-unit>
             <trans-unit id="selectionFilter" xml:space="preserve">
                 <source>Selection filter</source>
                 <target xml:lang="de">Auswahl-Filter</target>
@@ -13,6 +17,10 @@
             <trans-unit id="actions" xml:space="preserve">
                 <source>Actions</source>
                 <target xml:lang="de">Aktionen</target>
+            </trans-unit>
+            <trans-unit id="progress">
+                <source>Progress</source>
+                <target xml:lang="de">Fortschritt</target>
             </trans-unit>
             <trans-unit id="listEmpty">
                 <source>There are no items that match the filter!</source>
@@ -22,9 +30,13 @@
                 <source>Congratulations. You have reached the end of the list. You have gone through {0} entries.</source>
                 <target xml:lang="de">Gratuliere. Du hast das Ende der Liste erreicht. Dabei bist du {0} Einträge durchgegangen.</target>
             </trans-unit>
+            <trans-unit id="listLimitWarning">
+                <source>You are seeing the first {0} result pages. There are more entries, so please start this tool again after the last page.</source>
+                <target xml:lang="de">Du siehst hier die ersten {0} Ergebnis-Seiten. Es gibt noch mehr Einträge, bitte starte das Tool nach der letzten Seite nochmal.</target>
+            </trans-unit>
             <trans-unit id="listLimitReached">
-                <source>This tool can currently process a maximum of 10,000 entries at the same time. All your changes are saved, please start a new search.</source>
-                <target xml:lang="de">Dieses Tool kann aktuell maximal 10.000 Einträge gleichzeitig verarbeiten. Alle deine Änderungen sind gespeichert, bitte starte eine neue Suche.</target>
+                <source>This tool can currently process a maximum of {0} entries at the same time. All your changes are saved, please start a new search.</source>
+                <target xml:lang="de">Dieses Tool kann aktuell maximal {0} Einträge gleichzeitig verarbeiten. Alle deine Änderungen sind gespeichert, bitte starte eine neue Suche.</target>
             </trans-unit>
             <trans-unit id="error.configuration">
                 <source>This module is not configured correctly. Please consult the documentation!</source>
@@ -33,6 +45,14 @@
             <trans-unit id="error.noApiKey">
                 <source>This feature is not available in the free version of NEOSidekick. Sign up for a free trial at: https://neosidekick.com/en/pricing.</source>
                 <target xml:lang="de" state="translated">Diese Funktion ist in der kostenlosen Version von NEOSidekick nicht verfügbar. Registrieren Sie sich für eine kostenlose Testversion unter: https://neosidekick.com/preise.</target>
+            </trans-unit>
+            <trans-unit id="error.assetMultipleEditableProperties">
+                <source>Expected only one editable property for an asset</source>
+                <target xml:lang="de" state="translated">Für ein Asset wird genau eine bearbeitbare Eigenschaft erwartet</target>
+            </trans-unit>
+            <trans-unit id="pageNotAccessible">
+                <source>This page is not accessible.</source>
+                <target xml:lang="de" state="translated">Diese Seite ist nicht erreichbar.</target>
             </trans-unit>
             <trans-unit id="saveAndNextPage" xml:space="preserve">
                 <source>Save all and get next page</source>

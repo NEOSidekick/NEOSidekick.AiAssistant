@@ -145,7 +145,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
 
         if (propertySchema.ui.inspector.editor === 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor') {
             if (!propertySchema?.ui?.inspector?.editorOptions?.imagePropertyName) {
-                return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>Incorrect YAML Configuration: Image Text Editor requires an editorOption <i>imagePropertyName</i></div>;
+                return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>{this.translationService.translate('NEOSidekick.AiAssistant:Main:error.imageTextEditorMissingImagePropertyName', 'Incorrect YAML configuration: Image Text Editor requires an editorOption imagePropertyName')}</div>;
             }
 
             // node.properties placeholders are not supported here, since we don't have the full content node
@@ -175,7 +175,7 @@ export default class DocumentNodeListViewItemImage extends PureComponent<Documen
 
         if (propertySchema.ui.inspector.editor === 'NEOSidekick.AiAssistant/Inspector/Editors/ImageTitleEditor') {
             if (!propertySchema?.ui?.inspector?.editorOptions?.imagePropertyName) {
-                return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>Incorrect YAML Configuration: Image Text Editor requires an editorOption <i>imagePropertyName</i></div>;
+                return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>{this.translationService.translate('NEOSidekick.AiAssistant:Main:error.imageTextEditorMissingImagePropertyName', 'Incorrect YAML configuration: Image Text Editor requires an editorOption imagePropertyName')}</div>;
             }
 
             // node.properties placeholders are not supported here, since we don't have the full content node

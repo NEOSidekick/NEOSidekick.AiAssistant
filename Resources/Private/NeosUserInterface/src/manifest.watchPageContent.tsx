@@ -1,5 +1,5 @@
 // @ts-ignore
-import {actionTypes} from "@neos-project/neos-ui-redux-store";
+import {actionTypes, selectors} from "@neos-project/neos-ui-redux-store";
 // @ts-ignore
 import {takeLatest} from 'redux-saga/effects';
 import {ContentService} from "./Service/ContentService";
@@ -11,6 +11,42 @@ import { debounce } from 'lodash';
 
 function delay(timeInMilliseconds: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, timeInMilliseconds));
+}
+
+function resolveWorkspaceFromContextPath(contextPath?: string): string | null {
+    if (typeof contextPath !== 'string') {
+        return null;
+    }
+
+    const workspaceStart = contextPath.indexOf('@');
+    if (workspaceStart === -1) {
+        return null;
+    }
+
+    const dimensionStart = contextPath.indexOf(';', workspaceStart);
+    const workspace = contextPath.slice(
+        workspaceStart + 1,
+        dimensionStart === -1 ? undefined : dimensionStart
+    ).trim();
+
+    return workspace !== '' ? workspace : null;
+}
+
+function resolveCurrentWorkspace(state: any, currentDocumentNodePath?: string): string {
+    const workspaceCandidates = [
+        state?.cr?.workspaces?.currentWorkspaceName,
+        state?.cr?.workspaces?.personalWorkspace?.name,
+        state?.cr?.workspaces?.personalWorkspaceName,
+        resolveWorkspaceFromContextPath(currentDocumentNodePath),
+    ];
+
+    for (const workspaceCandidate of workspaceCandidates) {
+        if (typeof workspaceCandidate === 'string' && workspaceCandidate.trim() !== '') {
+            return workspaceCandidate.trim();
+        }
+    }
+
+    return 'live';
 }
 
 export default (globalRegistry: object, store: Store, iFrameApiService: IFrameApiService, contentService: ContentService) => {
@@ -29,6 +65,8 @@ export default (globalRegistry: object, store: Store, iFrameApiService: IFrameAp
             const previewUrl = state?.ui?.contentCanvas?.previewUrl
             const currentDocumentNode = contentService.getCurrentDocumentNode()
             const currentDocumentNodePath = currentDocumentNode?.contextPath
+            const currentWorkspace = resolveCurrentWorkspace(state, currentDocumentNodePath)
+            const activeContentDimensions = selectors.CR.ContentDimensions.active(state) || {};
             // @ts-ignore
             const relevantNodes = Object.values(state?.cr?.nodes?.byContextPath || {}).filter(node => {
                 const documentRole = nodeTypesRegistry.getRole('document');
@@ -49,7 +87,11 @@ export default (globalRegistry: object, store: Store, iFrameApiService: IFrameAp
                 'structuredContent': relevantNodes,
                 'targetAudience': await contentService.getCurrentDocumentTargetAudience(),
                 'pageBriefing': await contentService.getCurrentDocumentPageBriefing(),
-                'focusKeyword': await contentService.getCurrentDocumentFocusKeyword()
+                'focusKeyword': await contentService.getCurrentDocumentFocusKeyword(),
+                'documentNodeId': currentDocumentNode?.identifier || '',
+                'workspace': currentWorkspace,
+                'dimensions': activeContentDimensions,
+                'pageRevision': String(Date.now())
             };
             updateWebContextDebounce(requiredChangedEvent, data);
             requiredChangedEvent = false;

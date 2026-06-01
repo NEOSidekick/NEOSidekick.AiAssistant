@@ -1,6 +1,7 @@
 import React, {Component} from 'react';
 import MagicTextAreaEditor from "./MagicTextAreaEditor";
 import {Draft, produce} from "immer";
+import {neos} from "@neos-project/neos-ui-decorators";
 
 import "./index.css";
 
@@ -57,10 +58,13 @@ export function createMagicTextAreaEditorPropsForImageTextEditor(props: any, mod
     });
 }
 
+@neos(globalRegistry => ({
+    i18nRegistry: globalRegistry.get('i18n')
+}))
 export default class ImageAltTextEditor extends Component<any, {}> {
     render() {
         if (!this.props.options?.imagePropertyName) {
-            return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>Incorrect YAML Configuration: ImageAltTextEditor requires an editorOption <i>imagePropertyName</i></div>;
+            return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>{this.props.i18nRegistry.translate('NEOSidekick.AiAssistant:Main:error.imageAltTextEditorMissingImagePropertyName', 'Incorrect YAML configuration: ImageAltTextEditor requires an editorOption imagePropertyName')}</div>;
         }
         return <MagicTextAreaEditor {...createMagicTextAreaEditorPropsForImageTextEditor(this.props, 'image_alt_text')} />
     }

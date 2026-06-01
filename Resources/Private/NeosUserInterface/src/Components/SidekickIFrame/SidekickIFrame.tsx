@@ -36,10 +36,13 @@ export default class SidekickIFrame extends PureComponent<SidekickIFrameProps> {
 
     getUri() {
         const {configuration, activeContentDimensions, interfaceLanguage} = this.props;
-        const iframeSrc = new URL(`${configuration.apiDomain}/chat/`);
+        const iframeSrc = new URL(`${configuration.apiDomain}/agentic-chat/`);
         iframeSrc.searchParams.append('contentLanguage', activeContentDimensions.language ? activeContentDimensions.language[0] : configuration['defaultLanguage']);
         iframeSrc.searchParams.append('interfaceLanguage', interfaceLanguage);
         iframeSrc.searchParams.append('userId', configuration.userId);
+        if (configuration.sessionId) {
+            iframeSrc.searchParams.append('sessionId', configuration.sessionId);
+        }
         iframeSrc.searchParams.append('plattform', 'neos');
         iframeSrc.searchParams.append('domain', configuration.domain);
         iframeSrc.searchParams.append('siteName', configuration.siteName)

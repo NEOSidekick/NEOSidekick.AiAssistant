@@ -213,7 +213,7 @@ export default class AssetListViewItem extends PureComponent<AssetListViewItemPr
                                 disabled={!this.canChangeValue()} />
                         </div>
                     </div>
-                    {Object.values(item.editableProperties).length > 1 && <Alert type="error" message="Expected only one editable property for an asset" />}
+                    {Object.values(item.editableProperties).length > 1 && <Alert type="error" message={this.translationService.translate('NEOSidekick.AiAssistant:Module:error.assetMultipleEditableProperties', 'Expected only one editable property for an asset')} />}
                     {errorMessage && <Alert type="error" message={errorMessage}/>}
                     <div>
                         <button

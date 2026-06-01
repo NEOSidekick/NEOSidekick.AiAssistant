@@ -9,6 +9,7 @@ use Neos\Flow\Package\PackageManager;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
 use Neos\Flow\Security\Cryptography\HashService;
+use Neos\Flow\Session\SessionManagerInterface;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Service\UserService;
@@ -64,6 +65,12 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     protected $packageManager;
 
     /**
+     * @Flow\Inject
+     * @var SessionManagerInterface
+     */
+    protected $sessionManager;
+
+    /**
      * @Flow\InjectConfiguration(path="languageDimensionName")
      * @var string
      */
@@ -85,13 +92,15 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
         return sha1($this->persistenceManager->getIdentifierByObject($this->userService->getBackendUser()));
     }
 
+    public function sessionId(): string
+    {
+        $session = $this->sessionManager->getCurrentSession();
+        return $session->isStarted() ? $session->getId() : '';
+    }
+
     public function apiDomain(): string
     {
-        if (isset($this->settings['developmentBuild']) && $this->settings['developmentBuild'] === true) {
-            return 'https://api-staging.neosidekick.com';
-        }
-
-        return 'https://api.neosidekick.com';
+        return $this->settings['Internal']['apiDomain'];
     }
 
     public function apiKey(): string

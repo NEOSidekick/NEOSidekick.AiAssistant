@@ -2,8 +2,12 @@ type: dictionary
 additionalProperties: false
 properties:
   apikey: { type: string }
-  developmentBuild: { type: boolean }
   defaultLanguage: { type: string, enum: ['de', 'en', 'fr', 'it', 'es']}
+  Internal:
+    type: dictionary
+    additionalProperties: false
+    properties:
+      apiDomain: { type: string }
   chatSidebarEnabled: { type: boolean }
   languageDimensionName: { type: string }
   modifyTextModal:

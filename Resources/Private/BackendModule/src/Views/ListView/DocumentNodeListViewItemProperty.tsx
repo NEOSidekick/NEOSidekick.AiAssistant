@@ -73,7 +73,7 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
             case 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor':
             case 'NEOSidekick.AiAssistant/Inspector/Editors/ImageTitleEditor':
                 if (!propertySchema?.ui?.inspector?.editorOptions?.imagePropertyName) {
-                    return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>Incorrect YAML Configuration: Image Text Editor requires an editorOption <i>imagePropertyName</i></div>;
+                    return <div style={{background: '#ff460d', color: '#fff', padding: '8px'}}>{this.translationService.translate('NEOSidekick.AiAssistant:Main:error.imageTextEditorMissingImagePropertyName', 'Incorrect YAML configuration: Image Text Editor requires an editorOption imagePropertyName')}</div>;
                 }
 
                 let module = propertySchema.ui.inspector.editor === 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor' ? 'image_alt_text' : 'image_title';
@@ -101,9 +101,9 @@ export default class DocumentNodeListViewItemProperty extends PureComponent<Docu
                 )
             default:
                 if (propertySchema?.ui?.inspector?.editor) {
-                    return <Alert message={`[${item.nodeTypeName}:${property.propertyName}] Editor "${propertySchema.ui.inspector.editor}" is currently not supported`}/>
+                    return <Alert message={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:error.unsupportedEditor', '[{0}:{1}] Editor "{2}" is currently not supported', {0: item.nodeTypeName, 1: property.propertyName, 2: propertySchema.ui.inspector.editor})}/>
                 } else {
-                    return <Alert message={`[${item.nodeTypeName}:${property.propertyName}] Editor configuration is missing`}/>
+                    return <Alert message={this.translationService.translate('NEOSidekick.AiAssistant:BackendModule.DocumentNode:error.missingEditorConfiguration', '[{0}:{1}] Editor configuration is missing', {0: item.nodeTypeName, 1: property.propertyName})}/>
                 }
         }
     }

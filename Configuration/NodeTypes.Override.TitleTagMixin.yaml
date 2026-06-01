@@ -8,7 +8,7 @@
         inspector:
           editor: 'NEOSidekick.AiAssistant/Inspector/Editors/MagicTextFieldEditor'
           editorOptions:
-            placeholder: 'Neos.Seo:NodeTypes.SeoMetaTagsMixin:properties.titleOverride.textAreaEditor.placeholder'
+            placeholder: 'Neos.Seo:NodeTypes.TitleTagMixin:properties.titleOverride.textAreaEditor.placeholder'
             module: 'seo_title'
             arguments:
               content: 'SidekickClientEval:documentContent'

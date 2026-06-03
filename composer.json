@@ -19,7 +19,7 @@
         "neos/media": "~8.3 || dev-master",
         "neos/neos-ui": "~8.3 || dev-master",
         "neos/seo": "*",
-        "flowpack/nodetemplates": "^2.1.1",
+        "flowpack/nodetemplates": "^2.1.1 || ^2.2 || dev-master",
         "sitegeist/fusionlinkprototypes": "v1.0.1"
     },
     "require-dev": {

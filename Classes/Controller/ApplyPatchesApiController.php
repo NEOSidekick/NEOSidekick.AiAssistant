@@ -221,5 +221,4 @@ class ApplyPatchesApiController extends ActionController
 
         return null;
     }
-
 }

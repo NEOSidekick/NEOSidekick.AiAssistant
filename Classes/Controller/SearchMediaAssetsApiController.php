@@ -81,6 +81,4 @@ class SearchMediaAssetsApiController extends ActionController
             ], JSON_THROW_ON_ERROR);
         }
     }
-
 }
-

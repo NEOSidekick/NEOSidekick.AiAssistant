@@ -102,5 +102,4 @@ class DocumentNodeListApiController extends ActionController
 
         return $requestedWorkspace !== '' ? $requestedWorkspace : 'live';
     }
-
 }

@@ -99,5 +99,4 @@ class NodeTreeSchemaApiController extends ActionController
 
         return $requestedWorkspace !== '' ? $requestedWorkspace : 'live';
     }
-
 }

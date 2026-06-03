@@ -247,5 +247,4 @@ class SearchNodesExtractor
 
         return null;
     }
-
 }

@@ -45,4 +45,3 @@ trait PropertyExtractionTrait
         return $properties;
     }
 }
-

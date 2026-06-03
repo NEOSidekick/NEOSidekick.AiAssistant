@@ -123,7 +123,7 @@ class AgentController extends ActionController
                 }
 
                 $client = new Client();
-                $response = $client->post($this->externalApiDomain. '/api/agentic-chat/oauth/callback', [
+                $response = $client->post($this->externalApiDomain . '/api/agentic-chat/oauth/callback', [
                     'json' => $payload,
                     'headers' => $headers,
                 ]);

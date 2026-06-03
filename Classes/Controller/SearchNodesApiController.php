@@ -151,5 +151,4 @@ class SearchNodesApiController extends ActionController
 
         return $requestedWorkspace !== '' ? $requestedWorkspace : 'live';
     }
-
 }

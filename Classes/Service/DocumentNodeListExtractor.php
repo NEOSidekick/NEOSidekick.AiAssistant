@@ -167,5 +167,4 @@ class DocumentNodeListExtractor
             'isHiddenInMenu' => (bool)$node->isHiddenInIndex(),
         ];
     }
-
 }

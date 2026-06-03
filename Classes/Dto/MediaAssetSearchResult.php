@@ -76,4 +76,3 @@ final class MediaAssetSearchResult implements JsonSerializable
         ];
     }
 }
-

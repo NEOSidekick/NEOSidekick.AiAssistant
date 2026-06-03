@@ -55,5 +55,4 @@ class NodeTypeSchemaApiController extends ActionController
 
         return json_encode($schema, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
     }
-
 }

@@ -110,14 +110,15 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 
     public function domain(): string
     {
+        $uriFromGlobals = ServerRequest::getUriFromGlobals();
+        $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
+
         $currentDomain = $this->domainRepository->findOneByActiveRequest();
         if ($currentDomain) {
-            $scheme = $currentDomain->getScheme() ?: 'http';
+            $scheme = $currentDomain->getScheme() ?: $schemeFromGlobals;
             return "$scheme://" . $currentDomain->getHostname();
         }
 
-        $uriFromGlobals = ServerRequest::getUriFromGlobals();
-        $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
         return "$schemeFromGlobals://" . $uriFromGlobals->getHost();
     }
 

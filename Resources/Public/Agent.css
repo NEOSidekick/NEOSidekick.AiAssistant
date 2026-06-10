@@ -13,12 +13,14 @@ body {
 }
 
 .auth-button {
+    display: inline-block;
     background: #00adee;
     color: white;
     padding: 15px 30px;
     border: none;
     border-radius: 4px;
     font-size: 16px;
+    text-decoration: none;
     cursor: pointer;
 }
 

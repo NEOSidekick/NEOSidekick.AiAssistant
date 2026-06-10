@@ -14,6 +14,18 @@
             <trans-unit id="authorizeButton" xml:space="preserve">
                 <source>Autorisieren</source>
             </trans-unit>
+            <trans-unit id="continueAuthorizationPageTitle" xml:space="preserve">
+                <source>Autorisierung fortsetzen</source>
+            </trans-unit>
+            <trans-unit id="continueAuthorizationTitle" xml:space="preserve">
+                <source>Autorisierung fortsetzen</source>
+            </trans-unit>
+            <trans-unit id="continueAuthorizationMessage" xml:space="preserve">
+                <source>Dein Neos CMS verwendet strenge Sicherheit mit SameSite-Session-Cookies. Aus dem Grund brauchen wir einen Extra-Klick.</source>
+            </trans-unit>
+            <trans-unit id="continueAuthorizationButton" xml:space="preserve">
+                <source>Autorisierung fortsetzen</source>
+            </trans-unit>
             <trans-unit id="testJwtAuthButton" xml:space="preserve">
                 <source>JWT-Authentifizierung testen</source>
             </trans-unit>

@@ -89,6 +89,16 @@
   httpMethods: ['POST']
 
 -
+  name: 'NEOSidekick Agent Authorization Redirect'
+  uriPattern: 'neosidekick/agent/redirect-to-request-authorization'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'AuthorizationRedirect'
+    '@action':     'index'
+    '@format':     'html'
+  httpMethods: ['GET']
+
+-
   name: 'Agent Authorization Page'
   uriPattern: 'neosidekick/agent/request-authorization'
   defaults:

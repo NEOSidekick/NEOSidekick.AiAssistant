@@ -43,6 +43,7 @@ export default class SidekickIFrame extends PureComponent<SidekickIFrameProps> {
         if (configuration.sessionId) {
             iframeSrc.searchParams.append('sessionId', configuration.sessionId);
         }
+        iframeSrc.searchParams.append('sessionsIsSameSite', configuration.sessionsIsSameSite ? 'true' : 'false');
         iframeSrc.searchParams.append('plattform', 'neos');
         iframeSrc.searchParams.append('domain', configuration.domain);
         iframeSrc.searchParams.append('siteName', configuration.siteName)

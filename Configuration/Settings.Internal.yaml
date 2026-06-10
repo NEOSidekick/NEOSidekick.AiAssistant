@@ -46,6 +46,7 @@ Neos:
           apiKey: '${NEOSidekickInternal.apiKey()}'
           userId: '${NEOSidekickInternal.userId(user)}'
           sessionId: '${NEOSidekickInternal.sessionId()}'
+          sessionsIsSameSite: '${NEOSidekickInternal.sessionsIsSameSite()}'
           siteName: '${NEOSidekickInternal.siteName()}'
           domain: '${NEOSidekickInternal.domain()}'
           referrer: '${NEOSidekickInternal.referrer()}'
@@ -114,7 +115,8 @@ Neos:
   Flow:
     mvc:
       routes:
-        'NEOSidekick.AiAssistant': true
+        'NEOSidekick.AiAssistant':
+          position: 'before Neos.Neos'
     security:
       authentication:
         providers:

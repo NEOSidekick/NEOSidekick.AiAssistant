@@ -39,3 +39,25 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
         </html>
     `
 }
+
+NEOSidekick.AiAssistant.AuthorizationRedirectController.index = Neos.Fusion:Component {
+    authorizationUrl = ${authorizationUrl}
+
+    renderer = afx`
+        <html>
+            <head>
+                <title>{I18n.translate('NEOSidekick.AiAssistant:Agent:continueAuthorizationPageTitle')}</title>
+                <link rel="stylesheet" href={StaticResource.uri('NEOSidekick.AiAssistant', 'Public/Agent.css')} />
+            </head>
+            <body>
+                <div class="auth-container">
+                    <h1>{I18n.translate('NEOSidekick.AiAssistant:Agent:continueAuthorizationTitle')}</h1>
+                    <p>{I18n.translate('NEOSidekick.AiAssistant:Agent:continueAuthorizationMessage')}</p>
+                    <a href={props.authorizationUrl} class="auth-button">
+                        {I18n.translate('NEOSidekick.AiAssistant:Agent:continueAuthorizationButton')}
+                    </a>
+                </div>
+            </body>
+        </html>
+    `
+}

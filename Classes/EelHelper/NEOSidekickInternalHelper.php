@@ -82,6 +82,12 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
      */
     protected $contentDimensions;
 
+    /**
+     * @Flow\InjectConfiguration(package="Neos.Flow", path="session.cookie.samesite")
+     * @var string|null
+     */
+    protected $sessionCookieSameSite;
+
     public function isEnabled(): bool
     {
         return $this->privilegeManager->isPrivilegeTargetGranted('NEOSidekick.AiAssistant:CanUse');
@@ -96,6 +102,11 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     {
         $session = $this->sessionManager->getCurrentSession();
         return $session->isStarted() ? $session->getId() : '';
+    }
+
+    public function sessionsIsSameSite(): bool
+    {
+        return strtolower($this->sessionCookieSameSite ?? '') === 'strict';
     }
 
     public function apiDomain(): string

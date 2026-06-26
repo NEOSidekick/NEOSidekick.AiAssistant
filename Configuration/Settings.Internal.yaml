@@ -47,6 +47,7 @@ Neos:
           userId: '${NEOSidekickInternal.userId(user)}'
           sessionId: '${NEOSidekickInternal.sessionId()}'
           sessionsIsSameSite: '${NEOSidekickInternal.sessionsIsSameSite()}'
+          csrfToken: '${NEOSidekickInternal.csrfToken()}'
           siteName: '${NEOSidekickInternal.siteName()}'
           domain: '${NEOSidekickInternal.domain()}'
           referrer: '${NEOSidekickInternal.referrer()}'

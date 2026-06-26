@@ -5,6 +5,7 @@ export interface SidekickFrontendConfiguration {
     userId: string;
     sessionId: string;
     sessionsIsSameSite: boolean;
+    csrfToken: string;
     siteName: string;
     domain: string;
     referrer: string;
@@ -15,10 +16,18 @@ export interface SidekickFrontendConfiguration {
 }
 
 export interface ServerStreamMessage {
-    data : {
-        eventName: 'write-content' | 'stopped-generation' | 'error' | 'reload-content' | 'show-document-node' | 'show-content-node' | 'get-content-tree';
+    data: {
+        eventName:
+            | "write-content"
+            | "stopped-generation"
+            | "error"
+            | "reload-content"
+            | "show-document-node"
+            | "show-content-node"
+            | "get-content-tree"
+            | "neosidekick-silent-authorize";
         data: {
-            modalTarget?: boolean
+            modalTarget?: boolean;
             nodePath?: string;
             propertyName?: string;
             value?: string;
@@ -30,5 +39,5 @@ export interface ServerStreamMessage {
             contentNodeId?: string;
             href?: string;
         };
-    }
+    };
 }

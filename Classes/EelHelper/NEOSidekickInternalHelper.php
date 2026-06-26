@@ -8,6 +8,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Package\PackageManager;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
+use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Flow\Security\Cryptography\HashService;
 use Neos\Flow\Session\SessionManagerInterface;
 use Neos\Neos\Domain\Repository\DomainRepository;
@@ -71,6 +72,12 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     protected $sessionManager;
 
     /**
+     * @Flow\Inject
+     * @var SecurityContext
+     */
+    protected $securityContext;
+
+    /**
      * @Flow\InjectConfiguration(path="languageDimensionName")
      * @var string
      */
@@ -112,6 +119,15 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     public function apiDomain(): string
     {
         return $this->settings['Internal']['apiDomain'];
+    }
+
+    /**
+     * The backend session's CSRF protection token, exposed to the Neos UI plugin so it can
+     * make CSRF-protected same-origin POSTs (e.g. silent re-authorization to do-authorize).
+     */
+    public function csrfToken(): string
+    {
+        return $this->securityContext->getCsrfProtectionToken();
     }
 
     public function apiKey(): string

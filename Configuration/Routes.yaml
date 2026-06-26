@@ -119,6 +119,16 @@
   httpMethods: ['GET', 'POST']
 
 -
+  name: 'Agent Authorization Action (JSON)'
+  uriPattern: 'neosidekick/agent/do-authorize.json'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'Agent'
+    '@action':     'authorize'
+    '@format':     'json'
+  httpMethods: ['POST']
+
+-
   name: 'Agent Authorization Action'
   uriPattern: 'neosidekick/agent/do-authorize'
   defaults:

@@ -24,6 +24,15 @@ use Neos\Neos\Service\UserService;
  */
 class AgentController extends ActionController
 {
+    /**
+     * Serves both the HTML consent/completion pages and the JSON authorize/test endpoints.
+     * Without application/json, the silent re-auth fetch (Accept: application/json on the
+     * .json route) is rejected with 406 Not Acceptable by Flow's content negotiation.
+     *
+     * @var array<string>
+     */
+    protected $supportedMediaTypes = ['application/json', 'text/html'];
+
     protected $defaultViewObjectName = FusionView::class;
 
     /**
@@ -62,6 +71,15 @@ class AgentController extends ActionController
     protected ?string $externalApiDomain = null;
 
     /**
+     * Browser-facing origin the assistant iframe is loaded from (the postMessage opener).
+     * Distinct from externalApiDomain, which is only the server-to-server callback URL.
+     *
+     * @Flow\InjectConfiguration(path="Internal.apiDomain")
+     * @var string|null
+     */
+    protected ?string $apiDomain = null;
+
+    /**
      * @param FusionView $view
      *
      * @return void
@@ -94,9 +112,12 @@ class AgentController extends ActionController
      * {user_id, account_id, session_id, jwt, state} to Laravel; otherwise returns
      * token data directly (e.g. for development without Laravel).
      *
+     * CSRF-protected: callers must send a valid __csrfToken. The first-time consent popup
+     * supplies it via the Fusion form (Root.fusion); the silent re-auth flow supplies it from
+     * the Neos UI plugin's frontend configuration.
+     *
      * @param string|null $state The OAuth state parameter (Laravel session ID)
      * @return string HTML or JSON response
-     * @Flow\SkipCsrfProtection
      */
     public function authorizeAction(?string $state = null): string
     {
@@ -150,7 +171,12 @@ class AgentController extends ActionController
                 }
 
                 $this->response->setContentType('text/html');
-                return '<!doctype html><html><head><meta charset="utf-8"><title>Authorization Complete</title></head><body><script>(function(){if(window.opener){window.opener.postMessage({eventName:"neosidekick-agent-authorization-complete"},"*");}window.close();})();</script><p>Authorization completed. You can close this window.</p></body></html>';
+                // Target the opener (the embedded assistant iframe) at its explicit browser-facing
+                // origin rather than "*", so the completion signal is never delivered to another
+                // window. This must be the iframe's apiDomain, not the server-to-server callback URL.
+                $openerOrigin = $this->deriveOrigin((string) $this->apiDomain);
+
+                return $this->buildAuthorizationCompleteResponse($openerOrigin);
             }
 
             $this->response->setContentType('application/json');
@@ -184,6 +210,41 @@ class AgentController extends ActionController
                 'message' => 'Failed to encode response: ' . $e->getMessage(),
             ], JSON_THROW_ON_ERROR);
         }
+    }
+
+    /**
+     * Reduces a configured domain (which may carry a path) to a bare postMessage origin
+     * (scheme://host[:port]). Returns null when no trusted HTTP(S) origin can be derived.
+     */
+    protected function deriveOrigin(string $domain): ?string
+    {
+        $parts = parse_url($domain);
+        if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
+            return null;
+        }
+
+        $scheme = strtolower($parts['scheme']);
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+
+        $origin = $scheme . '://' . $parts['host'];
+        if (isset($parts['port'])) {
+            $origin .= ':' . $parts['port'];
+        }
+
+        return $origin;
+    }
+
+    protected function buildAuthorizationCompleteResponse(?string $openerOrigin): string
+    {
+        $postCompletionMessage = '';
+        if ($openerOrigin !== null) {
+            $encodedOrigin = json_encode($openerOrigin, JSON_THROW_ON_ERROR);
+            $postCompletionMessage = 'if(window.opener){window.opener.postMessage({eventName:"neosidekick-agent-authorization-complete"},' . $encodedOrigin . ');}';
+        }
+
+        return '<!doctype html><html><head><meta charset="utf-8"><title>Authorization Complete</title></head><body><script>(function(){' . $postCompletionMessage . 'window.close();})();</script><p>Authorization completed. You can close this window.</p></body></html>';
     }
 
     /**

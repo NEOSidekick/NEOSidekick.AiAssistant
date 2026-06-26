@@ -125,6 +125,7 @@ export class ContentCanvasService {
                 this.focusContentNodePath(message?.data?.data?.contentNodeId || message?.data?.data?.href);
                 break;
             case 'get-content-tree':
+            case 'neosidekick-silent-authorize':
                 // handled in manifest.tsx; this service only handles canvas-modification events
                 break;
             default:

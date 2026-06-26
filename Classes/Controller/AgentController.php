@@ -174,9 +174,9 @@ class AgentController extends ActionController
                 // Target the opener (the embedded assistant iframe) at its explicit browser-facing
                 // origin rather than "*", so the completion signal is never delivered to another
                 // window. This must be the iframe's apiDomain, not the server-to-server callback URL.
-                $openerOrigin = json_encode($this->deriveOrigin((string) $this->apiDomain), JSON_THROW_ON_ERROR);
+                $openerOrigin = $this->deriveOrigin((string) $this->apiDomain);
 
-                return '<!doctype html><html><head><meta charset="utf-8"><title>Authorization Complete</title></head><body><script>(function(){if(window.opener){window.opener.postMessage({eventName:"neosidekick-agent-authorization-complete"},' . $openerOrigin . ');}window.close();})();</script><p>Authorization completed. You can close this window.</p></body></html>';
+                return $this->buildAuthorizationCompleteResponse($openerOrigin);
             }
 
             $this->response->setContentType('application/json');
@@ -214,22 +214,37 @@ class AgentController extends ActionController
 
     /**
      * Reduces a configured domain (which may carry a path) to a bare postMessage origin
-     * (scheme://host[:port]). Falls back to "*" only if the configuration cannot be parsed,
-     * so a misconfiguration never breaks the completion handshake.
+     * (scheme://host[:port]). Returns null when no trusted HTTP(S) origin can be derived.
      */
-    protected function deriveOrigin(string $domain): string
+    protected function deriveOrigin(string $domain): ?string
     {
         $parts = parse_url($domain);
         if ($parts === false || empty($parts['scheme']) || empty($parts['host'])) {
-            return '*';
+            return null;
         }
 
-        $origin = $parts['scheme'] . '://' . $parts['host'];
+        $scheme = strtolower($parts['scheme']);
+        if (!in_array($scheme, ['http', 'https'], true)) {
+            return null;
+        }
+
+        $origin = $scheme . '://' . $parts['host'];
         if (isset($parts['port'])) {
             $origin .= ':' . $parts['port'];
         }
 
         return $origin;
+    }
+
+    protected function buildAuthorizationCompleteResponse(?string $openerOrigin): string
+    {
+        $postCompletionMessage = '';
+        if ($openerOrigin !== null) {
+            $encodedOrigin = json_encode($openerOrigin, JSON_THROW_ON_ERROR);
+            $postCompletionMessage = 'if(window.opener){window.opener.postMessage({eventName:"neosidekick-agent-authorization-complete"},' . $encodedOrigin . ');}';
+        }
+
+        return '<!doctype html><html><head><meta charset="utf-8"><title>Authorization Complete</title></head><body><script>(function(){' . $postCompletionMessage . 'window.close();})();</script><p>Authorization completed. You can close this window.</p></body></html>';
     }
 
     /**

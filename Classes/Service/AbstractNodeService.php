@@ -119,16 +119,22 @@ abstract class AbstractNodeService
         return $reducedNodes;
     }
 
+    /**
+     * A node counts as hidden if itself or any of its parents is not visible.
+     * Visibility includes the hidden flag AND timed visibility
+     * (hiddenBeforeDateTime / hiddenAfterDateTime), see {@see Node::isVisible()}.
+     */
     protected function isNodeHidden(Node $node): bool
     {
+        if (!$node->isVisible()) {
+            return true;
+        }
+
         try {
             $parentNode = $node->findParentNode();
         } catch (NodeException $e) {
             // This is thrown if no more parent node is found and that means our Node is not hidden
             return false;
-        }
-        if ($parentNode->isHidden()) {
-            return true;
         }
 
         return $this->isNodeHidden($parentNode);

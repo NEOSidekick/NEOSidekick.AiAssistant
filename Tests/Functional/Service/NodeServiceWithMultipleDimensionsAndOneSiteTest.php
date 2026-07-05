@@ -77,6 +77,53 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
     }
 
     /**
+     * The backend module frontend always sends nodeTypeFilter and baseNodeTypeFilter,
+     * as empty strings when unset. Empty strings must behave like "not set" (fall back
+     * to the default document/base node types) instead of producing an empty node type
+     * intersection and therefore zero results.
+     * @test
+     */
+    public function itTreatsEmptyStringNodeTypeFiltersAsUnset(): void
+    {
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $controllerContext = $this->createControllerContextForDomain('example.com');
+        $findDocumentNodesFilter = new FindDocumentNodesFilter(
+            filter: 'custom',
+            workspace: $this->currentUserWorkspace,
+            nodeTypeFilter: '',
+            baseNodeTypeFilter: ''
+        );
+        $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
+
+        $this->assertCount(8, $foundNodes);
+    }
+
+    /**
+     * Pages hidden via timed visibility (hiddenAfterDateTime in the past) must be
+     * excluded just like pages with the hidden flag — including their subpages.
+     * @test
+     */
+    public function itDoesNotFindTimedHiddenPages(): void
+    {
+        $nodeToBeHidden = $this->rootNode->getNode('/sites/example/node-wan-kenodi');
+        $nodeToBeHidden->setHiddenAfterDateTime(new \DateTime('-1 day'));
+
+        $this->saveNodesAndTearDownRootNodeAndRepository();
+        $this->setUpRootNodeAndRepository();
+
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $controllerContext = $this->createControllerContextForDomain('example.com');
+        $findDocumentNodesFilter = new FindDocumentNodesFilter('custom', $this->currentUserWorkspace);
+        $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
+
+        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertCount(6, $foundNodes);
+    }
+
+    /**
      * @test
      */
     public function itDoesNotFindRemovedPages(): void

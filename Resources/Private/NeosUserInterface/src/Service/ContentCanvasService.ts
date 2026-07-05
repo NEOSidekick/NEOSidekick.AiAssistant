@@ -21,6 +21,7 @@ export class ContentCanvasService {
     private iFrameApiService: IFrameApiService;
     private currentlyHandledNodePath: string | null = null;
     private workspaceInfoRefreshPromise: Promise<void> | null = null;
+    private workspaceInfoRefreshQueued: boolean = false;
 
     constructor(globalRegistry: SynchronousMetaRegistry<any>, store: Store, iFrameApiService: IFrameApiService) {
         this.globalRegistry = globalRegistry;
@@ -149,6 +150,11 @@ export class ContentCanvasService {
 
     private refreshWorkspaceInfo(): void {
         if (this.workspaceInfoRefreshPromise) {
+            // A refresh is already in flight. Its response was computed before the content
+            // change that triggered THIS call, so simply returning would leave the publish
+            // state stale (the canvas/tree reloads run unconditionally, but this one would
+            // be dropped). Queue exactly one trailing refresh instead.
+            this.workspaceInfoRefreshQueued = true;
             return;
         }
 
@@ -163,6 +169,10 @@ export class ContentCanvasService {
             })
             .finally(() => {
                 this.workspaceInfoRefreshPromise = null;
+                if (this.workspaceInfoRefreshQueued) {
+                    this.workspaceInfoRefreshQueued = false;
+                    this.refreshWorkspaceInfo();
+                }
             });
     }
 

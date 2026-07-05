@@ -81,7 +81,11 @@ final class FindDocumentNodesFilter implements LanguageDimensionFilterInterface
         $this->focusKeywordPropertyFilter = $focusKeywordPropertyFilter;
         $this->languageDimensionFilter = $languageDimensionFilter ? explode(',', $languageDimensionFilter) : [];
         $this->nodeTypeFilter = empty($nodeTypeFilter) ? null : $nodeTypeFilter;
-        $this->baseNodeTypeFilter = $baseNodeTypeFilter;
+        // Normalize like $nodeTypeFilter: the backend module frontend always sends this
+        // parameter (as an empty string when unset). An empty string would bypass the
+        // "?? BASE_NODE_TYPE" fallback in NodeService::getNodeTypeFilter() and produce
+        // an empty node type intersection — i.e. no results at all.
+        $this->baseNodeTypeFilter = empty($baseNodeTypeFilter) ? null : $baseNodeTypeFilter;
     }
 
     public function getFilter(): string

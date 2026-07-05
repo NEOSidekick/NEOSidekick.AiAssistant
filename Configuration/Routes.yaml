@@ -89,6 +89,26 @@
   httpMethods: ['POST']
 
 -
+  name:  'Get Preview API'
+  uriPattern: 'neosidekick/api/getpreview'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'GetPreviewApi'
+    '@action':     'index'
+    '@format':     'json'
+  httpMethods: ['GET']
+
+-
+  name:  'Public Preview Render'
+  uriPattern: 'neosidekick/preview'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'PreviewRender'
+    '@action':     'index'
+    '@format':     'html'
+  httpMethods: ['GET']
+
+-
   name: 'NEOSidekick Agent Authorization Redirect'
   uriPattern: 'neosidekick/agent/redirect-to-request-authorization'
   defaults:

@@ -137,4 +137,6 @@ Neos:
               'NEOSidekick.AiAssistant:JwtApiControllers':
                 pattern: ControllerObjectName
                 patternOptions:
-                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\(NodeTypeSchemaApi|NodeTreeSchemaApi|DocumentNodeListApi|SearchNodesApi|SearchMediaAssetsApi|UploadMediaAssetApi|ApplyPatchesApi|WhoAmIApi)Controller'
+                  # Note: PreviewRenderController is intentionally NOT listed here - it is
+                  # public and protected by a signed HMAC token instead (PreviewTokenService)
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\(NodeTypeSchemaApi|NodeTreeSchemaApi|DocumentNodeListApi|SearchNodesApi|SearchMediaAssetsApi|UploadMediaAssetApi|ApplyPatchesApi|WhoAmIApi|GetPreviewApi)Controller'

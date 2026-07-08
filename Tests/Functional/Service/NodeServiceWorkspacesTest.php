@@ -44,7 +44,7 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
     public function itFindsNodesInUserWorkspace(): void
     {
         // Mark the page as hidden in the user workspace only
-        $userContext = $this->contextFactory->create(['workspaceName' => $this->currentUserWorkspace]);
+        $userContext = new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub(['workspaceName' => $this->currentUserWorkspace]);
         $userWsNode = $userContext->getNode('/sites/example/workspace-test');
         $this->assertNotNull($userWsNode, 'Precondition: node must exist in user workspace context');
         $userWsNode->setHidden(true);
@@ -88,7 +88,7 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
     public function itReflectsPublishingStateChanges(): void
     {
         // Hide the node in the user workspace
-        $userContext = $this->contextFactory->create(['workspaceName' => $this->currentUserWorkspace]);
+        $userContext = new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub(['workspaceName' => $this->currentUserWorkspace]);
         $userWsNode = $userContext->getNode('/sites/example/workspace-test');
         $userWsNode->setHidden(true);
 

@@ -37,21 +37,9 @@ class NodeWithImageService extends AbstractNodeService
 
     /**
      * @Flow\Inject
-     * @var WorkspaceRepository
-     */
-    protected $workspaceRepository;
-
-    /**
-     * @Flow\Inject
      * @var FindImageDataFactory
      */
     protected $findImageDataFactory;
-
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
 
     /**
      * @Flow\InjectConfiguration(path="languageDimensionName")
@@ -76,6 +64,8 @@ class NodeWithImageService extends AbstractNodeService
      * @var LoggerInterface
      */
     protected $systemLogger;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * @param FindDocumentNodesFilter     $filter
@@ -94,7 +84,10 @@ class NodeWithImageService extends AbstractNodeService
      */
     public function findDocumentNodesHavingChildNodesWithImages(FindDocumentNodesFilter $filter, array $findDocumentNodeDataDtos, ControllerContext $controllerContext): array
     {
-        $workspace = $this->workspaceRepository->findByIdentifier($filter->getWorkspace());
+
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $workspace = $contentRepository->findWorkspaceByName(\Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName::fromString($filter->getWorkspace()));
         $nodeTypeSchemaDtos = $this->nodeTypeService->getNodeTypesWithImageAlternativeTextOrTitleConfiguration();
         $documentNodeContextPaths = array_keys($findDocumentNodeDataDtos);
 
@@ -137,16 +130,20 @@ class NodeWithImageService extends AbstractNodeService
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
 
         $result = $findDocumentNodeDataDtos;
+        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
         foreach ($itemsReducedByWorkspaceChain as $itemNodeData) {
             $closestAggregateNodeData = $this->findClosestAggregate($itemNodeData);
 
             if ($closestAggregateNodeData === null) {
+                // TODO 9.0 migration: !! NodeData::getContextPath is removed in Neos 9.0 - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
                 $this->systemLogger->warning(sprintf('Nodes must at least have one aggregate ancestor, found node "%s" without.', $itemNodeData->getContextPath()));
                 continue;
             }
 
+            // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
             $context = $this->createContentContext($filter->getWorkspace(), $itemNodeData->getDimensionValues());
-            $contentNode = new Node($itemNodeData, $context);
+            $contentNode = new \Neos\ContentRepository\Core\Projection\ContentGraph\Node($itemNodeData, $context);
+            // TODO 9.0 migration: !! NodeData::getPath is removed in Neos 9.0 - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
             $closestAggregateNode = $context->getNode($closestAggregateNodeData->getPath());
 
             $findDocumentNodeData = $result[$closestAggregateNode->getContextPath()] ?? null;
@@ -155,7 +152,7 @@ class NodeWithImageService extends AbstractNodeService
                 continue;
             }
 
-            $imagePropertiesForNodeType = $nodeTypeSchemaDtos[$contentNode->getNodeType()->getName()];
+            $imagePropertiesForNodeType = $nodeTypeSchemaDtos[$contentNode->nodeTypeName->value];
             /** @var NodeTypeWithImageMetadataSchemaDto $schema */
             foreach ($imagePropertiesForNodeType as $schema) {
                 if (!self::nodeMatchesPropertyFilter($itemNodeData, $filter, $schema)) {

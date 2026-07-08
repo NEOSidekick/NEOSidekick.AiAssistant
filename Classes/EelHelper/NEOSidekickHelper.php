@@ -10,11 +10,13 @@ use Neos\Eel\ProtectedContextAwareInterface;
 
 class NEOSidekickHelper implements ProtectedContextAwareInterface
 {
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
     /**
      * @throws NodeException
      * @throws Exception
      */
-    public function getImageAltText(NodeInterface $node, string $propertyName): ?string
+    public function getImageAltText(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, string $propertyName): ?string
     {
         return $this->getImageText($node, $propertyName, 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor');
     }
@@ -23,7 +25,7 @@ class NEOSidekickHelper implements ProtectedContextAwareInterface
      * @throws NodeException
      * @throws Exception
      */
-    public function getImageTitle(NodeInterface $node, string $propertyName): ?string
+    public function getImageTitle(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, string $propertyName): ?string
     {
         return $this->getImageText($node, $propertyName, 'NEOSidekick.AiAssistant/Inspector/Editors/ImageTitleEditor');
     }
@@ -32,13 +34,14 @@ class NEOSidekickHelper implements ProtectedContextAwareInterface
      * @throws NodeException
      * @throws Exception
      */
-    protected function getImageText(NodeInterface $node, string $propertyName, string $expectedEditor): ?string
+    protected function getImageText(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, string $propertyName, string $expectedEditor): ?string
     {
         if ($node->hasProperty($propertyName)) {
             return $node->getProperty($propertyName);
         }
+        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
 
-        $propertyConfiguration = $node->getNodeType()->getFullConfiguration()['properties'][$propertyName];
+        $propertyConfiguration = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)->getFullConfiguration()['properties'][$propertyName];
         $editor = $propertyConfiguration['ui']['inspector']['editor'];
         $editorOptions = $propertyConfiguration['ui']['inspector']['editorOptions'] ?? [];
         $imagePropertyName = $editorOptions['imagePropertyName'] ?? null;

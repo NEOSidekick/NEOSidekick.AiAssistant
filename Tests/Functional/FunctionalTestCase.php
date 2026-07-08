@@ -42,11 +42,13 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     protected ContextFactory $contextFactory;
     protected ?NodeDataRepository $nodeDataRepository = null;
     protected WorkspaceRepository $workspaceRepository;
-    protected ?Node $rootNode = null;
-    protected ?Node $sitesNode = null;
-    protected ?Workspace $liveWorkspace = null;
-    protected ?Workspace $groupWorkspace = null;
-    protected ?NodeTypeManager $nodeTypeManager = null;
+    protected ?\Neos\ContentRepository\Core\Projection\ContentGraph\Node $rootNode = null;
+    protected ?\Neos\ContentRepository\Core\Projection\ContentGraph\Node $sitesNode = null;
+    protected ?\Neos\ContentRepository\Core\SharedModel\Workspace\Workspace $liveWorkspace = null;
+    protected ?\Neos\ContentRepository\Core\SharedModel\Workspace\Workspace $groupWorkspace = null;
+    protected ?\Neos\ContentRepository\Core\NodeType\NodeTypeManager $nodeTypeManager = null;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * @return void
@@ -54,7 +56,10 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     public function setUp(): void
     {
         parent::setUp();
-        $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $contentRepository->getNodeTypeManager() = $this->objectManager->get(\Neos\ContentRepository\Core\NodeType\NodeTypeManager::class);
         $this->currentUserWorkspace = explode('.', uniqid('user-', true))[0];
         $this->currentGroupWorkspace = explode('.', uniqid('group-', true))[0];
         $this->setUpRootNodeAndRepository();
@@ -134,16 +139,16 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 
         $this->workspaceRepository = $this->objectManager->get(WorkspaceRepository::class);
         if ($this->liveWorkspace === null) {
-            $this->liveWorkspace = new Workspace('live');
+            $this->liveWorkspace = new \Neos\ContentRepository\Core\SharedModel\Workspace\Workspace('live');
             $this->workspaceRepository->add($this->liveWorkspace);
-            $this->groupWorkspace = new Workspace($this->currentGroupWorkspace, $this->liveWorkspace);
+            $this->groupWorkspace = new \Neos\ContentRepository\Core\SharedModel\Workspace\Workspace($this->currentGroupWorkspace, $this->liveWorkspace);
             $this->workspaceRepository->add($this->groupWorkspace);
-            $this->workspaceRepository->add(new Workspace($this->currentUserWorkspace, $this->groupWorkspace));
+            $this->workspaceRepository->add(new \Neos\ContentRepository\Core\SharedModel\Workspace\Workspace($this->currentUserWorkspace, $this->groupWorkspace));
             $this->persistenceManager->persistAll();
         }
 
-        $liveContext = $this->contextFactory->create(['workspaceName' => 'live']);
-        $personalContext = $this->contextFactory->create(['workspaceName' => $this->currentUserWorkspace]);
+        $liveContext = new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub(['workspaceName' => 'live']);
+        $personalContext = new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub(['workspaceName' => $this->currentUserWorkspace]);
 
         // Make sure the Workspace was created.
         $this->liveWorkspace = $personalContext->getWorkspace()->getBaseWorkspace()->getBaseWorkspace();
@@ -164,7 +169,6 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         }
         /** @var NodeFactory $nodeFactory */
         $nodeFactory = $this->objectManager->get(NodeFactory::class);
-        $nodeFactory->reset();
         $this->contextFactory->reset();
         // Routing (NodeFindingService) uses Neos ContentContextFactory; tests used to reset only the base CR
         // ContextFactory singleton, leaving stale contextInstances and breaking findImportantPages / URI resolve.
@@ -197,7 +201,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $this->persistenceManager->persistAll();
 
         // Remove all nodes under /sites in the live context
-        $liveContext = $this->contextFactory->create(['workspaceName' => 'live']);
+        $liveContext = new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub(['workspaceName' => 'live']);
         $sitesNode = $liveContext->getNode('/sites');
         if ($sitesNode !== null) {
             foreach ($sitesNode->getChildNodes() as $child) {
@@ -208,20 +212,21 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     }
 
     /**
-     * @param Node $parentNode
+     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $parentNode
      * @param string        $title
      * @param array         $imageFixtureFilenames
      *
-     * @return NodeInterface
+     * @return \Neos\ContentRepository\Core\Projection\ContentGraph\Node
      * @throws \Neos\ContentRepository\Exception\NodeConfigurationException
      * @throws \Neos\ContentRepository\Exception\NodeException
      */
-    protected function createPageWithImageNodes(NodeInterface $parentNode, string $nodeName, string $title, array $imageFixtureFilenames): NodeInterface
+    protected function createPageWithImageNodes(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $parentNode, string $nodeName, string $title, array $imageFixtureFilenames): \Neos\ContentRepository\Core\Projection\ContentGraph\Node
     {
-        /** @var Node $documentNode */
+        /** @var \Neos\ContentRepository\Core\Projection\ContentGraph\Node $documentNode */
         $documentNode = $parentNode->createNodeFromTemplate($this->createDocumentNodeTemplate($title), $nodeName);
+        // TODO 9.0 migration: !! Node::setProperty() is not supported by the new CR. Use the "SetNodeProperties" command to change property values.
         $documentNode->setProperty('uriPathSegment', $nodeName);
-        $mainContentCollection = $documentNode->findNamedChildNode(NodeName::fromString('main'));
+        $mainContentCollection = $documentNode->findNamedChildNode(\Neos\ContentRepository\Core\SharedModel\Node\NodeName::fromString('main'));
         foreach ($imageFixtureFilenames as $imageFixtureFilename) {
             $mainContentCollection->createNodeFromTemplate($this->createImageNodeTemplate($imageFixtureFilename), 'image-' . explode('.', $imageFixtureFilename)[0]);
         }
@@ -230,16 +235,24 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 
     protected function createDocumentNodeTemplate(string $title): NodeTemplate
     {
+        // TODO 9.0 migration: !! NodeTemplate is removed in Neos 9.0. Use the "CreateNodeAggregateWithNode" command to create new nodes or "CreateNodeVariant" command to create variants of an existing node in other dimensions.
         $nodeTemplate = new NodeTemplate();
-        $nodeTemplate->setNodeType($this->nodeTypeManager->getNodeType('NEOSidekick.AiAssistant.Testing:Page'));
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $nodeTemplate->setNodeType($contentRepository->getNodeTypeManager()->getNodeType('NEOSidekick.AiAssistant.Testing:Page'));
         $nodeTemplate->setProperty('title', $title);
         return $nodeTemplate;
     }
 
     protected function createImageNodeTemplate(string $imageFixtureFilename): NodeTemplate
     {
+        // TODO 9.0 migration: !! NodeTemplate is removed in Neos 9.0. Use the "CreateNodeAggregateWithNode" command to create new nodes or "CreateNodeVariant" command to create variants of an existing node in other dimensions.
         $nodeTemplate = new NodeTemplate();
-        $nodeTemplate->setNodeType($this->nodeTypeManager->getNodeType('NEOSidekick.AiAssistant.Testing:Image'));
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $nodeTemplate->setNodeType($contentRepository->getNodeTypeManager()->getNodeType('NEOSidekick.AiAssistant.Testing:Image'));
         $nodeTemplate->setProperty('image', $this->importImage($imageFixtureFilename));
         return $nodeTemplate;
     }
@@ -266,8 +279,11 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     {
         $siteRepository = $this->objectManager->get(SiteRepository::class);
         $domainRepository = $this->objectManager->get(DomainRepository::class);
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
 
-        $this->sitesNode->createNode($nodeName, $this->nodeTypeManager->getNodeType('NEOSidekick.AiAssistant.Testing:HomePage'));
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+
+        $this->sitesNode->createNode($nodeName, $contentRepository->getNodeTypeManager()->getNodeType('NEOSidekick.AiAssistant.Testing:HomePage'));
 
         $site = new Site($nodeName);
         $site->setSiteResourcesPackageKey('NEOSidekick.AiAssistant');

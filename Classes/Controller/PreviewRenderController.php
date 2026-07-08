@@ -40,8 +40,6 @@ use Psr\Http\Message\ResponseInterface;
  */
 class PreviewRenderController extends ActionController
 {
-    use CreateContentContextTrait;
-
     /**
      * @var string
      */
@@ -69,6 +67,8 @@ class PreviewRenderController extends ActionController
      * @var ContentDimensionPresetSourceInterface
      */
     protected $contentDimensionPresetSource;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * Render the full frontend HTML for the given node, like the frontend would.
@@ -151,12 +151,13 @@ class PreviewRenderController extends ActionController
      * that FusionView can resolve the correct site node and Fusion setup
      * even without a domain-based request match (multi-site safe).
      */
-    protected function findNode(string $nodeId, string $workspace, array $dimensionsArray): ?NodeInterface
+    protected function findNode(string $nodeId, string $workspace, array $dimensionsArray): ?\Neos\ContentRepository\Core\Projection\ContentGraph\Node
     {
         if ($dimensionsArray === []) {
             $dimensionsArray = $this->getDefaultDimensions();
         }
 
+        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
         $context = $this->createContentContext($workspace, $dimensionsArray);
         $node = $context->getNodeByIdentifier($nodeId);
 
@@ -202,13 +203,17 @@ class PreviewRenderController extends ActionController
     /**
      * Determine the Site the given node belongs to (via its node path).
      */
-    protected function findSiteForNode(NodeInterface $node): ?Site
+    protected function findSiteForNode(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): ?Site
     {
-        if (!str_starts_with($node->getPath(), SiteService::SITES_ROOT_PATH . '/')) {
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
+        // TODO 9.0 migration: Try to remove the (string) cast and make your code more type-safe.
+        if (!str_starts_with((string) $subgraph->findNodePath($node->aggregateId), SiteService::SITES_ROOT_PATH . '/')) {
             return null;
         }
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
 
-        $sitePath = NodePaths::getRelativePathBetween(SiteService::SITES_ROOT_PATH, $node->getPath());
+        // TODO 9.0 migration: Try to remove the (string) cast and make your code more type-safe.
+        $sitePath = NodePaths::getRelativePathBetween(SiteService::SITES_ROOT_PATH, (string) $subgraph->findNodePath($node->aggregateId));
         $siteNodeName = explode('/', $sitePath)[0];
 
         return $this->_siteRepository->findOneByNodeName($siteNodeName);

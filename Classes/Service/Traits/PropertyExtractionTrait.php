@@ -30,10 +30,10 @@ trait PropertyExtractionTrait
      * Iterates over the configured property names and returns
      * only those with non-null values.
      *
-     * @param NodeInterface $node The node to extract properties from
+     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node The node to extract properties from
      * @return array<string, mixed> Extracted properties (key => value)
      */
-    protected function extractSelectedProperties(NodeInterface $node): array
+    protected function extractSelectedProperties(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): array
     {
         $properties = [];
         foreach ($this->getIncludedProperties() as $propertyName) {

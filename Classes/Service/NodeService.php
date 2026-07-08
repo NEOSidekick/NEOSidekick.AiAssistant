@@ -41,7 +41,7 @@ class NodeService extends AbstractNodeService
     protected $findDocumentNodeDataFactory;
 
     /**
-     * @var NodeTypeManager
+     * @var \Neos\ContentRepository\Core\NodeType\NodeTypeManager
      */
     protected $nodeTypeManager;
 
@@ -71,18 +71,23 @@ class NodeService extends AbstractNodeService
      * @var NodeFindingService
      */
     protected $nodeFindingService;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     public function __construct(
         WorkspaceRepository $workspaceRepository,
         FindDocumentNodeDataFactory $findDocumentNodeDataFactory,
-        NodeTypeManager $nodeTypeManager,
+        \Neos\ContentRepository\Core\NodeType\NodeTypeManager $nodeTypeManager,
         SiteService $siteService,
         ApiFacade $apiFacade,
         NodeFindingService $nodeFindingService
     ) {
         $this->workspaceRepository = $workspaceRepository;
         $this->findDocumentNodeDataFactory = $findDocumentNodeDataFactory;
-        $this->nodeTypeManager = $nodeTypeManager;
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $contentRepository->getNodeTypeManager() = $nodeTypeManager;
         $this->siteService = $siteService;
         $this->apiFacade = $apiFacade;
         $this->nodeFindingService = $nodeFindingService;
@@ -117,6 +122,7 @@ class NodeService extends AbstractNodeService
         $mostRelevantInternalSeoUris = $this->apiFacade->getMostRelevantInternalSeoUrisByHosts($hosts, $interfaceLanguage);
 
         $result = [];
+        // TODO 9.0 migration: !! Node::getNodeData() - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
         foreach ($mostRelevantInternalSeoUris as $uri) {
             // Filter out URIs that do not match the current ControllerContext host
             if (!self::uriMatchesControllerContext((string)$uri, $controllerContext)) {
@@ -147,7 +153,7 @@ class NodeService extends AbstractNodeService
             if ($this->isNodeHidden($node)) {
                 continue;
             }
-            $result[$node->getContextPath()] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
+            $result[\Neos\ContentRepository\Core\SharedModel\Node\NodeAddress::fromNode($node)->toJson()] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
         }
 
         // The result should be sorted by the length of the node path, so that the most specific nodes are first.
@@ -184,7 +190,10 @@ class NodeService extends AbstractNodeService
     {
         $currentRequestHost = $controllerContext->getRequest()->getHttpRequest()->getUri()->getHost();
         $siteMatchingCurrentRequestHost = $this->siteService->getSiteByHostName($currentRequestHost);
-        $workspace = $this->workspaceRepository->findByIdentifier($findDocumentNodesFilter->getWorkspace());
+
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $workspace = $contentRepository->findWorkspaceByName(\Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName::fromString($findDocumentNodesFilter->getWorkspace()));
 
         if (!$workspace) {
             throw new InvalidArgumentException('The given workspace does not exist in the database. Please reload the page.', 1713440899886);
@@ -222,15 +231,17 @@ class NodeService extends AbstractNodeService
         });
 
         $result = [];
+        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
         foreach ($itemsWithMatchingPropertyFilter as $nodeData) {
+            // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
             $context = $this->createContentContext($findDocumentNodesFilter->getWorkspace(), $nodeData->getDimensionValues());
-            $node = new Node($nodeData, $context);
+            $node = new \Neos\ContentRepository\Core\Projection\ContentGraph\Node($nodeData, $context);
 
             if ($this->isNodeHidden($node)) {
                 continue;
             }
 
-            $result[$node->getContextPath()] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
+            $result[\Neos\ContentRepository\Core\SharedModel\Node\NodeAddress::fromNode($node)->toJson()] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
         }
 
         return $result;
@@ -243,9 +254,11 @@ class NodeService extends AbstractNodeService
      */
     public function updatePropertiesOnNodes(array $itemsToUpdate): void
     {
+        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
         foreach ($itemsToUpdate as $updateItem) {
             /** @var array{nodePath: string, workspaceName: string, dimensions: array} $contextPathSegments */
             $contextPathSegments = NodePaths::explodeContextPath($updateItem->getNodeContextPath());
+            // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
             $context = $this->createContentContext(
                 $contextPathSegments['workspaceName'],
                 $contextPathSegments['dimensions']
@@ -314,9 +327,15 @@ class NodeService extends AbstractNodeService
     {
         $documentNodeTypeFilter = $findDocumentNodesFilter->getNodeTypeFilter() ?? 'Neos.Neos:Document';
         $baseNodeTypeFilter = $findDocumentNodesFilter->getBaseNodeTypeFilter() ?? self::BASE_NODE_TYPE;
-        $baseNodeTypeSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes($baseNodeTypeFilter, false);
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $baseNodeTypeSubNodeTypes = $contentRepository->getNodeTypeManager()->getSubNodeTypes($baseNodeTypeFilter, false);
         $baseNodeTypeNameWithSubNodeTypeNames = [$baseNodeTypeFilter, ...array_keys($baseNodeTypeSubNodeTypes)];
-        $documentSubNodeTypes = $this->nodeTypeManager->getSubNodeTypes($documentNodeTypeFilter, false);
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $documentSubNodeTypes = $contentRepository->getNodeTypeManager()->getSubNodeTypes($documentNodeTypeFilter, false);
         $documentNodeTypeNameWithSubNodeTypeNames = [$documentNodeTypeFilter, ...array_keys($documentSubNodeTypes)];
         $intersectNodeTypeNames = array_intersect(array_values($baseNodeTypeNameWithSubNodeTypeNames), array_values($documentNodeTypeNameWithSubNodeTypeNames));
         return array_values($intersectNodeTypeNames);
@@ -338,51 +357,13 @@ class NodeService extends AbstractNodeService
         return $candidateHost === $currentHost;
     }
 
-    /**
-     * Resolves the same node aggregate in the dimension its NodeData was created for. The
-     * language dimension is aligned with the matching routing preset (chain), so re-addressed
-     * rows share the context path of rows resolved directly from the origin's own URL.
-     */
-    private function tryToResolveNodeInItsOwnDimension(Node $node, string $workspaceName): ?Node
-    {
-        $dimensions = $node->getNodeData()->getDimensionValues();
-        if (isset($this->languageDimensionName, $dimensions[$this->languageDimensionName][0], $this->contentDimensions[$this->languageDimensionName]['presets'])) {
-            $primaryValue = $dimensions[$this->languageDimensionName][0];
-            foreach ($this->contentDimensions[$this->languageDimensionName]['presets'] as $preset) {
-                if (($preset['values'][0] ?? null) === $primaryValue) {
-                    $dimensions[$this->languageDimensionName] = $preset['values'];
-                    break;
-                }
-            }
-        }
-        $context = $this->createContentContext($workspaceName, $dimensions);
-
-        return $context->getNodeByIdentifier($node->getIdentifier());
-    }
-
-    /**
-     * Writing to a fallback node would materialize a variant (the old CR's implicit
-     * copy-on-write on setProperty), permanently detaching the page from its fallback chain.
-     * Variant creation must remain an explicit editor decision in the Neos UI.
-     * find()/findImportantPages() only emit origin rows, so this guards against stale or
-     * handcrafted context paths.
-     */
-    private function assertNodeIsNotADimensionFallback(?Node $node, string $contextPath): void
-    {
-        if ($node !== null && DimensionFallbackDetector::isDimensionFallback($node)) {
-            throw new InvalidArgumentException(sprintf(
-                'Node "%s" is a dimension fallback and cannot be edited here. Create the variant in the Neos UI first.',
-                $contextPath
-            ), 1752060000001);
-        }
-    }
-
-    protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, Node $node): bool
+    protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): bool
     {
         if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
             return true;
         }
-        $nodeLanguageDimensionValues = $node->getDimensions()[$this->languageDimensionName];
+        // TODO 9.0 migration: Try to remove the toLegacyDimensionArray() call and make your codebase more typesafe.
+        $nodeLanguageDimensionValues = $node->originDimensionSpacePoint->toLegacyDimensionArray()[$this->languageDimensionName];
         return sizeof(array_intersect($nodeLanguageDimensionValues, $findDocumentNodesFilter->getLanguageDimensionFilter())) > 0;
     }
 }

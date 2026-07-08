@@ -26,12 +26,6 @@ class NodeTypeService
     private const CACHE_ENTRY_IDENTIFIER = 'nodeTypesWithImageAlternativeTextOrTitleConfiguration';
 
     /**
-     * @Flow\Inject()
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
      * @var VariableFrontend
      */
     protected $cache;
@@ -41,14 +35,19 @@ class NodeTypeService
      * @var LoggerInterface
      */
     protected $logger;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     public function getNodeTypesWithImageAlternativeTextOrTitleConfiguration(): array
     {
         if ($this->cache->has(self::CACHE_ENTRY_IDENTIFIER)) {
             return $this->cache->get(self::CACHE_ENTRY_IDENTIFIER);
         }
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
 
-        $nodeTypes = $this->nodeTypeManager->getNodeTypes();
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+
+        $nodeTypes = $contentRepository->getNodeTypeManager()->getNodeTypes();
         $matchingNodeTypes = $this->findMatchingNodeTypes($nodeTypes);
 
         $nodeTypeDtos = $this->createNodeTypeDtos($matchingNodeTypes);
@@ -83,7 +82,7 @@ class NodeTypeService
     /**
      * @throws NodeTypeConfigurationException
      */
-    private function processNodeTypeProperties(NodeType $nodeType): array
+    private function processNodeTypeProperties(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType): array
     {
         $imagePropertiesWithinNodeTypeHavingAlternativeOrTitleText = [];
 
@@ -95,7 +94,7 @@ class NodeTypeService
             $imageTextPropertyConfigurationDto = $this->processPropertyConfiguration($nodeType, $propertyName, $propertyConfiguration);
             if ($imageTextPropertyConfigurationDto) {
                 if (isset($imagePropertiesWithinNodeTypeHavingAlternativeOrTitleText[$imageTextPropertyConfigurationDto->getImagePropertyName()][$imageTextPropertyConfigurationDto->getNodeTypeKey()])) {
-                    throw new NodeTypeConfigurationException(sprintf('Error in node type "%s": There is already a "%s" property configured for image property "%s"', $nodeType->getName(), str_replace('PropertyName', '', $imageTextPropertyConfigurationDto->getNodeTypeKey()), $imageTextPropertyConfigurationDto->getImagePropertyName()), 1729598970759);
+                    throw new NodeTypeConfigurationException(sprintf('Error in node type "%s": There is already a "%s" property configured for image property "%s"', $nodeType->name->value, str_replace('PropertyName', '', $imageTextPropertyConfigurationDto->getNodeTypeKey()), $imageTextPropertyConfigurationDto->getImagePropertyName()), 1729598970759);
                 }
 
                 $imagePropertiesWithinNodeTypeHavingAlternativeOrTitleText[$imageTextPropertyConfigurationDto->getImagePropertyName()][$imageTextPropertyConfigurationDto->getNodeTypeKey()] = $imageTextPropertyConfigurationDto->getTextPropertyName();
@@ -110,7 +109,7 @@ class NodeTypeService
         return str_starts_with($propertyName, '_') || str_starts_with($propertyName, 'neos_');
     }
 
-    private function processPropertyConfiguration(NodeType $nodeType, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
+    private function processPropertyConfiguration(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
     {
         $editor = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editor');
         $module = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.module');
@@ -131,7 +130,7 @@ class NodeTypeService
         return null;
     }
 
-    private function getImageTextPropertyConfigurationByModule(NodeType $nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
+    private function getImageTextPropertyConfigurationByModule(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
     {
         $url = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.arguments.url', '');
         if (preg_match(self::ASSET_URI_EXPRESSION, $url, $matches)) {
@@ -148,7 +147,7 @@ class NodeTypeService
         return null;
     }
 
-    private function getImageTextPropertyConfigurationByEditor(NodeType $nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
+    private function getImageTextPropertyConfigurationByEditor(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
     {
         $imageProperty = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.imagePropertyName');
         if ($imageProperty && array_key_exists($imageProperty, $nodeType->getProperties())) {

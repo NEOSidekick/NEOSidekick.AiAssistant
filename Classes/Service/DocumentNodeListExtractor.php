@@ -21,17 +21,10 @@ use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
  */
 class DocumentNodeListExtractor
 {
-    use CreateContentContextTrait;
     use PropertyExtractionTrait;
 
     private const DOCUMENT_TYPE = 'Neos.Neos:Document';
     private const SITE_TYPE = 'Neos.Neos:Site';
-
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
 
     /**
      * Properties to include in the document list response.
@@ -41,6 +34,8 @@ class DocumentNodeListExtractor
      * @var array|null
      */
     protected ?array $includedProperties = null;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * Get the list of properties to include.
@@ -69,6 +64,7 @@ class DocumentNodeListExtractor
         string $nodeTypeFilter = self::DOCUMENT_TYPE,
         int $depth = -1
     ): array {
+        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
         $context = $this->createContentContext($workspace, $dimensions);
         $siteNode = $this->resolveSiteNode($context, $siteNodeName);
 
@@ -79,14 +75,15 @@ class DocumentNodeListExtractor
         $documents = [];
         $this->traverseDocuments($siteNode, $nodeTypeFilter, $depth, 0, $documents);
 
+        // TODO 9.0 migration: Check if you could change your code to work with the NodeAggregateId value object instead.
         return [
             'generatedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
             'workspace' => $workspace,
             'dimensions' => $dimensions,
             'site' => [
-                'name' => $siteNode->getName(),
-                'nodeType' => $siteNode->getNodeType()->getName(),
-                'identifier' => $siteNode->getIdentifier(),
+                'name' => $siteNode->nodeName,
+                'nodeType' => $siteNode->nodeTypeName->value,
+                'identifier' => $siteNode->aggregateId->value,
             ],
             'documents' => $documents,
             'documentCount' => count($documents),
@@ -96,7 +93,7 @@ class DocumentNodeListExtractor
     /**
      * Resolve the site node to query.
      */
-    private function resolveSiteNode(ContentContext $context, ?string $siteNodeName): ?NodeInterface
+    private function resolveSiteNode(\Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context, ?string $siteNodeName): ?\Neos\ContentRepository\Core\Projection\ContentGraph\Node
     {
         // If a specific site is requested, resolve it directly
         if ($siteNodeName !== null) {
@@ -124,7 +121,7 @@ class DocumentNodeListExtractor
      * Recursively traverse document nodes.
      */
     private function traverseDocuments(
-        NodeInterface $node,
+        \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node,
         string $nodeTypeFilter,
         int $maxDepth,
         int $currentDepth,
@@ -134,14 +131,17 @@ class DocumentNodeListExtractor
         if ($maxDepth >= 0 && $currentDepth > $maxDepth) {
             return;
         }
+        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
 
         // Add current node if it matches the filter
-        if ($node->getNodeType()->isOfType($nodeTypeFilter)) {
+        if ($contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)->isOfType($nodeTypeFilter)) {
             $documents[] = $this->extractDocumentData($node, $currentDepth);
         }
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
 
         // Traverse child documents
-        $childDocuments = $node->getChildNodes(self::DOCUMENT_TYPE);
+        // TODO 9.0 migration: Try to remove the iterator_to_array($nodes) call.
+        $childDocuments = iterator_to_array($subgraph->findChildNodes($node->aggregateId, \Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter::create()));
         foreach ($childDocuments as $childNode) {
             $this->traverseDocuments($childNode, $nodeTypeFilter, $maxDepth, $currentDepth + 1, $documents);
         }
@@ -150,14 +150,18 @@ class DocumentNodeListExtractor
     /**
      * Extract data from a single document node.
      */
-    private function extractDocumentData(NodeInterface $node, int $depth): array
+    private function extractDocumentData(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, int $depth): array
     {
-        $childDocuments = $node->getChildNodes(self::DOCUMENT_TYPE);
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
+        // TODO 9.0 migration: Try to remove the iterator_to_array($nodes) call.
+        $childDocuments = iterator_to_array($subgraph->findChildNodes($node->aggregateId, \Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter::create()));
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
 
+        // TODO 9.0 migration: Try to remove the (string) cast and make your code more type-safe.
         return [
             'identifier' => $node->getIdentifier(),
-            'nodeType' => $node->getNodeType()->getName(),
-            'path' => $node->getPath(),
+            'nodeType' => $node->nodeTypeName->value,
+            'path' => (string) $subgraph->findNodePath($node->aggregateId),
             'depth' => $depth,
             'title' => $node->getProperty('title') ?? $node->getName(),
             'uriPath' => $node->getProperty('uriPathSegment') ?? '',

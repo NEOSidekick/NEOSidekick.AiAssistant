@@ -25,8 +25,6 @@ use Neos\Neos\Controller\CreateContentContextTrait;
  */
 class NodeTreeExtractor
 {
-    use CreateContentContextTrait;
-
     /**
      * The NodeType name for ContentCollection which indicates the node itself is a collection.
      */
@@ -37,11 +35,8 @@ class NodeTreeExtractor
      */
     private const DEFAULT_MAX_DEPTH = 50;
 
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * Extract the node tree starting from a given node.
@@ -55,6 +50,7 @@ class NodeTreeExtractor
      */
     public function extract(string $nodeId, string $workspace, array $dimensions, ?int $maxDepth = null): array
     {
+        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
         $context = $this->createContentContext($workspace, $dimensions);
         $node = $context->getNodeByIdentifier($nodeId);
 
@@ -78,16 +74,17 @@ class NodeTreeExtractor
     /**
      * Extract data for a single node including its children.
      *
-     * @param NodeInterface $node The node to extract
+     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node The node to extract
      * @param int $currentDepth Current recursion depth
      * @param int $maxDepth Maximum allowed depth
      * @return array{id: string, nodeType: string, properties: array, children: array}
      */
-    private function extractNode(NodeInterface $node, int $currentDepth, int $maxDepth): array
+    private function extractNode(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, int $currentDepth, int $maxDepth): array
     {
+        // TODO 9.0 migration: Check if you could change your code to work with the NodeAggregateId value object instead.
         return [
-            'id' => $node->getIdentifier(),
-            'nodeType' => $node->getNodeType()->getName(),
+            'id' => $node->aggregateId->value,
+            'nodeType' => $node->nodeTypeName->value,
             'properties' => $this->extractProperties($node),
             'children' => $this->extractChildren($node, $currentDepth, $maxDepth),
         ];
@@ -101,9 +98,9 @@ class NodeTreeExtractor
      *
      * @return array<string, mixed>
      */
-    private function extractProperties(NodeInterface $node): array
+    private function extractProperties(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): array
     {
-        $properties = $node->getProperties();
+        $properties = $node->properties;
         $result = [];
 
         foreach ($properties as $propertyName => $propertyValue) {
@@ -183,19 +180,20 @@ class NodeTreeExtractor
      * - '_self' slot if the node IS a ContentCollection
      * - Named slots for each configured childNode
      *
-     * @param NodeInterface $node The node to extract children from
+     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node The node to extract children from
      * @param int $currentDepth Current recursion depth
      * @param int $maxDepth Maximum allowed depth
      * @return array<string, array{allowedTypes: array<string>, nodes: array}>
      */
-    private function extractChildren(NodeInterface $node, int $currentDepth, int $maxDepth): array
+    private function extractChildren(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, int $currentDepth, int $maxDepth): array
     {
         // Prevent stack overflow on deeply nested trees
         if ($currentDepth >= $maxDepth) {
             return [];
         }
+        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
 
-        $nodeType = $node->getNodeType();
+        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName);
         $children = [];
 
         // Check if node IS a ContentCollection (gets _self slot)
@@ -203,9 +201,11 @@ class NodeTreeExtractor
             $allowedTypes = $this->extractAllowedTypesFromConstraints(
                 $nodeType->getConfiguration('constraints.nodeTypes') ?? []
             );
+            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
 
             // Get all direct child nodes (the content inside this collection)
-            $childNodes = $node->getChildNodes();
+            // TODO 9.0 migration: Try to remove the iterator_to_array($nodes) call.
+            $childNodes = iterator_to_array($subgraph->findChildNodes($node->aggregateId, \Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter::create()));
             $serializedChildren = [];
             foreach ($childNodes as $childNode) {
                 // Skip auto-created child nodes (those are handled via named slots)
@@ -231,9 +231,11 @@ class NodeTreeExtractor
             }
 
             $allowedTypes = $this->resolveChildNodeAllowedTypes($childNodeConfig);
+            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($childNode);
 
             // Get the content inside this named slot
-            $slotChildren = $childNode->getChildNodes();
+            // TODO 9.0 migration: Try to remove the iterator_to_array($nodes) call.
+            $slotChildren = iterator_to_array($subgraph->findChildNodes($childNode->aggregateId, \Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter::create()));
             $serializedSlotChildren = [];
             foreach ($slotChildren as $slotChild) {
                 $serializedSlotChildren[] = $this->extractNode($slotChild, $currentDepth + 1, $maxDepth);
@@ -241,9 +243,10 @@ class NodeTreeExtractor
 
             // Include the ContentCollection node's id and nodeType
             // so it can be represented as a proper node in JSX
+            // TODO 9.0 migration: Check if you could change your code to work with the NodeAggregateId value object instead.
             $children[$childNodeName] = [
-                'id' => $childNode->getIdentifier(),
-                'nodeType' => $childNode->getNodeType()->getName(),
+                'id' => $childNode->aggregateId->value,
+                'nodeType' => $childNode->nodeTypeName->value,
                 'allowedTypes' => $allowedTypes,
                 'nodes' => $serializedSlotChildren,
             ];
@@ -258,10 +261,10 @@ class NodeTreeExtractor
      * Auto-created childNodes are configured in the NodeType's childNodes
      * config and should be handled as named slots, not as _self content.
      */
-    private function isAutoCreatedChildNode(NodeInterface $childNode, NodeType $parentNodeType): bool
+    private function isAutoCreatedChildNode(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $childNode, \Neos\ContentRepository\Core\NodeType\NodeType $parentNodeType): bool
     {
         $childNodesConfig = $parentNodeType->getConfiguration('childNodes') ?? [];
-        return isset($childNodesConfig[$childNode->getName()]);
+        return isset($childNodesConfig[$childNode->nodeName]);
     }
 
     /**

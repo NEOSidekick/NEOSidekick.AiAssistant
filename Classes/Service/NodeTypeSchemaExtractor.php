@@ -27,15 +27,6 @@ class NodeTypeSchemaExtractor
     private const CONTENT_COLLECTION_TYPE = 'Neos.Neos:ContentCollection';
 
     /**
-     * NodeTypeManager provides FULLY RESOLVED NodeTypes.
-     * All SuperType properties are already merged, all presets are already applied.
-     *
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
      * @Flow\Inject
      * @var Translator
      */
@@ -48,6 +39,8 @@ class NodeTypeSchemaExtractor
      * @var string
      */
     protected string $defaultLanguage = 'en';
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * Extract raw NodeType schema for all NodeTypes.
@@ -58,7 +51,10 @@ class NodeTypeSchemaExtractor
      */
     public function extract(bool $includeAbstract = false, string $filter = ''): array
     {
-        $nodeTypes = $this->nodeTypeManager->getNodeTypes($includeAbstract);
+        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+
+        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $nodeTypes = $contentRepository->getNodeTypeManager()->getNodeTypes($includeAbstract);
 
         $schema = [];
         foreach ($nodeTypes as $nodeTypeName => $nodeType) {
@@ -81,16 +77,16 @@ class NodeTypeSchemaExtractor
      *
      * @return array{name: string, superTypes: array<string>, isContentCollection: bool, properties: array, childNodes: array, constraints: array}
      */
-    private function extractNodeType(NodeType $nodeType): array
+    private function extractNodeType(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType): array
     {
         // Get declared superTypes (only the direct ones, not inherited)
         $superTypes = [];
         foreach ($nodeType->getDeclaredSuperTypes() as $superType) {
-            $superTypes[] = $superType->getName();
+            $superTypes[] = $superType->name->value;
         }
 
         return [
-            'name' => $nodeType->getName(),
+            'name' => $nodeType->name->value,
             'superTypes' => $superTypes,
             'isContentCollection' => $nodeType->isOfType(self::CONTENT_COLLECTION_TYPE),
             'properties' => $this->extractProperties($nodeType),
@@ -107,7 +103,7 @@ class NodeTypeSchemaExtractor
      *
      * @return array<string, array>
      */
-    private function extractProperties(NodeType $nodeType): array
+    private function extractProperties(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType): array
     {
         $properties = $nodeType->getProperties();
         $result = [];

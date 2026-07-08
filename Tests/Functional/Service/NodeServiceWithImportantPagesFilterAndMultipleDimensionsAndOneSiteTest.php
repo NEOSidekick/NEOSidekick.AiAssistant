@@ -20,11 +20,12 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         parent::setUp();
         $exampleSiteNode = $this->rootNode->getNode('/sites/example');
         $page1 = $this->createPageWithImageNodes($exampleSiteNode, 'node-wan-kenodi', 'Seite 1', ['image1.jpg', 'image2.jpg']);
+        // TODO 9.0 migration: !! Node::setProperty() is not supported by the new CR. Use the "SetNodeProperties" command to change property values.
         $page1->setProperty('focusKeyword', 'some-value');
         $page1a = $this->createPageWithImageNodes($page1, 'lady-eleonode-rootford', 'Unterseite 1', ['image1.jpg', 'image2.jpg']);
         $page2 = $this->createPageWithImageNodes($exampleSiteNode, 'node-mc-nodeface', 'Seite 2', ['image1.jpg', 'image2.jpg']);
 
-        $englishContext = $this->contextFactory->create([
+        $englishContext = new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub([
             'workspaceName' => $this->currentUserWorkspace,
             'dimensions' => ['language' => ['en']]
         ]);

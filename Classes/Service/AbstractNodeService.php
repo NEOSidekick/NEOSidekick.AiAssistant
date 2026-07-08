@@ -15,13 +15,13 @@ use Neos\Neos\Controller\CreateContentContextTrait;
 
 abstract class AbstractNodeService
 {
-    use CreateContentContextTrait;
-
     /**
      * @Flow\Inject
      * @var EntityManagerInterface
      */
     protected $entityManager;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * @param IterableResult $iterator
@@ -47,8 +47,9 @@ abstract class AbstractNodeService
      */
     protected function createQueryBuilder(array $workspaces): QueryBuilder
     {
-        $workspacesNames = array_map(static function (Workspace $workspace) {
-            return $workspace->getName();
+        // TODO 9.0 migration: Check if you could change your code to work with the WorkspaceName value object instead.
+        $workspacesNames = array_map(static function (\Neos\ContentRepository\Core\SharedModel\Workspace\Workspace $workspace) {
+            return $workspace->workspaceName->value;
         }, $workspaces);
 
         $queryBuilder = $this->entityManager->createQueryBuilder();
@@ -89,7 +90,7 @@ abstract class AbstractNodeService
      * @copyright Taken from and adapted: \Neos\ContentRepository\Domain\Repository\NodeDataRepository::reduceNodeVariantsByWorkspacesAndDimensions
      *
      * @param array<NodeData> $nodes
-     * @param array<Workspace> $workspaces
+     * @param array<\Neos\ContentRepository\Core\SharedModel\Workspace\Workspace> $workspaces
      *
      * @return array<NodeData>
      */
@@ -99,15 +100,19 @@ abstract class AbstractNodeService
 
         $minimalWorkspacePositionByIdentifier = [];
 
+        // TODO 9.0 migration: Check if you could change your code to work with the WorkspaceName value object instead.
         $workspaceNames = array_map(
-            static function (Workspace $workspace) {
-                return $workspace->getName();
+            static function (\Neos\ContentRepository\Core\SharedModel\Workspace\Workspace $workspace) {
+                return $workspace->workspaceName->value;
             },
             $workspaces
         );
+        // TODO 9.0 migration: !! NodeData::getDimensionsHash is removed in Neos 9.0 - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
         foreach ($nodes as $node) {
             // Find the position of the workspace, a smaller value means more priority
+            // TODO 9.0 migration: !! NodeData::getWorkspace is removed in Neos 9.0 - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
             $workspacePosition = array_search($node->getWorkspace()->getName(), $workspaceNames, true);
+            // TODO 9.0 migration: !! NodeData::getDimensionsHash is removed in Neos 9.0 - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
             $identifier = $node->getIdentifier() . '-' . $node->getDimensionsHash();
             // Yes, it seems to work comparing arrays that way!
             if (!isset($minimalWorkspacePositionByIdentifier[$identifier]) || $workspacePosition < $minimalWorkspacePositionByIdentifier[$identifier]) {
@@ -119,15 +124,16 @@ abstract class AbstractNodeService
         return $reducedNodes;
     }
 
-    protected function isNodeHidden(Node $node): bool
+    protected function isNodeHidden(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): bool
     {
         try {
-            $parentNode = $node->findParentNode();
+            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
+            $parentNode = $subgraph->findParentNode($node->aggregateId);
         } catch (NodeException $e) {
             // This is thrown if no more parent node is found and that means our Node is not hidden
             return false;
         }
-        if ($parentNode->isHidden()) {
+        if ($parentNode->tags->contain(\Neos\Neos\Domain\SubtreeTagging\NeosSubtreeTag::disabled())) {
             return true;
         }
 

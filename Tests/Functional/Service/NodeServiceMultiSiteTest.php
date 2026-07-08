@@ -29,7 +29,7 @@ class NodeServiceMultiSiteTest extends FunctionalTestCase
         $this->createPageWithImageNodes($example2SiteNode, 'node-two-mc-nodeface', 'Seite 2 (Site 2)', ['image1.jpg', 'image2.jpg']);
 
         // Create EN variants for both sites
-        $englishContext = $this->contextFactory->create([
+        $englishContext = new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub([
             'workspaceName' => $this->currentUserWorkspace,
             'dimensions' => ['language' => ['en']]
         ]);

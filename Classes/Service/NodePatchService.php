@@ -40,18 +40,6 @@ class NodePatchService
 
     /**
      * @Flow\Inject
-     * @var ContextFactoryInterface
-     */
-    protected $contextFactory;
-
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
-     * @Flow\Inject
      * @var PatchValidator
      */
     protected $patchValidator;
@@ -67,6 +55,8 @@ class NodePatchService
      * @var PropertyNormalizer
      */
     protected $propertyNormalizer;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * Apply a batch of patches to the content repository.
@@ -163,11 +153,11 @@ class NodePatchService
      *
      * @param AbstractPatch $patch The patch to execute
      * @param int $index The index of the patch in the batch
-     * @param Context $context The content context
+     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context The content context
      * @return array<string, mixed> The result of the patch operation
      * @throws PatchFailedException
      */
-    private function executePatch(AbstractPatch $patch, int $index, Context $context): array
+    private function executePatch(AbstractPatch $patch, int $index, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): array
     {
         if ($patch instanceof CreateNodePatch) {
             return $this->executeCreateNode($patch, $index, $context);
@@ -209,11 +199,11 @@ class NodePatchService
      *
      * @param CreateNodePatch $patch
      * @param int $index
-     * @param Context $context
+     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
      * @return array<string, mixed> The result with all created node details
      * @throws PatchFailedException
      */
-    private function executeCreateNode(CreateNodePatch $patch, int $index, Context $context): array
+    private function executeCreateNode(CreateNodePatch $patch, int $index, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): array
     {
         try {
             $referenceNode = $context->getNodeByIdentifier($patch->getPositionRelativeToNodeId());
@@ -225,8 +215,11 @@ class NodePatchService
                     $patch->getPositionRelativeToNodeId()
                 );
             }
+            // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
 
-            $nodeType = $this->nodeTypeManager->getNodeType($patch->getNodeType());
+            $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+
+            $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($patch->getNodeType());
 
             // Create the node based on position
             if ($patch->getPosition() === 'into') {
@@ -295,25 +288,28 @@ class NodePatchService
      * were created, including auto-created child nodes (fixed children)
      * and nodes created by NodeTemplates.
      *
-     * @param NodeInterface $node The node to start collecting from
+     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node The node to start collecting from
      * @param int $depth The depth relative to the main created node (0 = main node)
      * @return array<int, CreatedNodeInfo>
      */
-    private function collectCreatedNodes(NodeInterface $node, int $depth): array
+    private function collectCreatedNodes(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, int $depth): array
     {
         $createdNodes = [];
 
         // Add the current node
+        // TODO 9.0 migration: Check if you could change your code to work with the NodeAggregateId value object instead.
         $createdNodes[] = new CreatedNodeInfo(
-            $node->getIdentifier(),
-            $node->getNodeType()->getName(),
-            $node->getName(),
+            $node->aggregateId->value,
+            $node->nodeTypeName->value,
+            $node->nodeName,
             $this->extractNodeProperties($node),
             $depth
         );
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
 
         // Recursively collect all child nodes
-        foreach ($node->getChildNodes() as $childNode) {
+        // TODO 9.0 migration: Try to remove the iterator_to_array($nodes) call.
+        foreach (iterator_to_array($subgraph->findChildNodes($node->aggregateId, \Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter::create())) as $childNode) {
             $createdNodes = array_merge(
                 $createdNodes,
                 $this->collectCreatedNodes($childNode, $depth + 1)
@@ -329,12 +325,12 @@ class NodePatchService
      * Excludes properties starting with underscore (except _hidden),
      * and serializes assets appropriately.
      *
-     * @param NodeInterface $node
+     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node
      * @return array<string, mixed>
      */
-    private function extractNodeProperties(NodeInterface $node): array
+    private function extractNodeProperties(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): array
     {
-        $properties = $node->getProperties();
+        $properties = $node->properties;
         $result = [];
 
         foreach ($properties as $propertyName => $propertyValue) {
@@ -407,11 +403,11 @@ class NodePatchService
      *
      * @param UpdateNodePatch $patch
      * @param int $index
-     * @param Context $context
+     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
      * @return string The node's identifier
      * @throws PatchFailedException
      */
-    private function executeUpdateNode(UpdateNodePatch $patch, int $index, Context $context): string
+    private function executeUpdateNode(UpdateNodePatch $patch, int $index, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): string
     {
         try {
             $node = $context->getNodeByIdentifier($patch->getNodeId());
@@ -462,11 +458,11 @@ class NodePatchService
      *
      * @param MoveNodePatch $patch
      * @param int $index
-     * @param Context $context
+     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
      * @return string The node's identifier
      * @throws PatchFailedException
      */
-    private function executeMoveNode(MoveNodePatch $patch, int $index, Context $context): string
+    private function executeMoveNode(MoveNodePatch $patch, int $index, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): string
     {
         try {
             $node = $context->getNodeByIdentifier($patch->getNodeId());
@@ -521,11 +517,11 @@ class NodePatchService
      *
      * @param DeleteNodePatch $patch
      * @param int $index
-     * @param Context $context
+     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
      * @return string The node's identifier
      * @throws PatchFailedException
      */
-    private function executeDeleteNode(DeleteNodePatch $patch, int $index, Context $context): string
+    private function executeDeleteNode(DeleteNodePatch $patch, int $index, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): string
     {
         try {
             $node = $context->getNodeByIdentifier($patch->getNodeId());
@@ -560,9 +556,9 @@ class NodePatchService
      *
      * @param string $workspace
      * @param array<string, array<int, string>> $dimensions
-     * @return Context
+     * @return \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub
      */
-    private function createContext(string $workspace, array $dimensions): Context
+    private function createContext(string $workspace, array $dimensions): \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub
     {
         $contextProperties = [
             'workspaceName' => $workspace,
@@ -584,20 +580,20 @@ class NodePatchService
             $contextProperties['targetDimensions'] = $targetDimensions;
         }
 
-        return $this->contextFactory->create($contextProperties);
+        return new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub($contextProperties);
     }
 
     /**
      * Generate a unique node name based on the node type.
      *
-     * @param NodeInterface $parentNode
-     * @param NodeType $nodeType
+     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $parentNode
+     * @param \Neos\ContentRepository\Core\NodeType\NodeType $nodeType
      * @return string
      */
-    private function generateUniqueNodeName(NodeInterface $parentNode, NodeType $nodeType): string
+    private function generateUniqueNodeName(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $parentNode, \Neos\ContentRepository\Core\NodeType\NodeType $nodeType): string
     {
         // Create a base name from the node type (e.g., "CodeQ.Site:Content.Text" -> "text")
-        $nodeTypeParts = explode(':', $nodeType->getName());
+        $nodeTypeParts = explode(':', $nodeType->name->value);
         $shortName = end($nodeTypeParts);
         $shortNameParts = explode('.', $shortName);
         $baseName = strtolower(end($shortNameParts));

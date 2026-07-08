@@ -20,8 +20,6 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
  */
 class FindDocumentNodeDataFactory
 {
-    use CreateContentContextTrait;
-
     /**
      * @Flow\Inject
      * @var LinkingService
@@ -33,6 +31,8 @@ class FindDocumentNodeDataFactory
      * @var string
      */
     protected string $languageDimensionName;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
      * @throws NodeException
@@ -44,23 +44,26 @@ class FindDocumentNodeDataFactory
      * @throws MissingActionNameException
      * @throws IllegalObjectTypeException
      */
-    public function createFromNode(Node $node, ControllerContext $controllerContext): FindDocumentNodeData
+    public function createFromNode(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, ControllerContext $controllerContext): FindDocumentNodeData
     {
         $publicUri = $previewUri = $this->nodeLinkingService->createNodeUri($controllerContext, $node, null, 'html', true);
-        if ($node->getContext()->getWorkspace()->getBaseWorkspace()) {
+        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
+        if ($contentRepository->findWorkspaceByName($node->workspaceName)->getBaseWorkspace()) {
+            // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
             $liveContext = $this->createContentContext('live', $node->getDimensions());
             $nodeInLiveContext = $liveContext->getNodeByIdentifier((string) $node->getNodeAggregateIdentifier());
             if ($nodeInLiveContext) {
                 $publicUri = $this->nodeLinkingService->createNodeUri($controllerContext, $nodeInLiveContext, null, 'html', true);
             }
         }
+        // TODO 9.0 migration: !! Node::getNodeData() - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
         return new FindDocumentNodeData(
             sprintf('%s-%s', $node->getNodeData()->getIdentifier(), $node->getNodeData()->getDimensionsHash()),
-            $node->getContextPath(),
-            $node->getNodeType()->getName(),
+            \Neos\ContentRepository\Core\SharedModel\Node\NodeAddress::fromNode($node)->toJson(),
+            $node->nodeTypeName->value,
             $publicUri,
             $previewUri,
-            (array)$node->getProperties(),
+            (array)$node->properties,
             // todo inspect [0] syntax... maybe we also need a mapping? replace default value and/or discuss setup with and without language dimensions
             Arrays::getValueByPath($node->getNodeData()->getDimensionValues(), $this->languageDimensionName . '.0') ?: 'de'
         );

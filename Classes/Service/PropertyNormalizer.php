@@ -41,10 +41,10 @@ class PropertyNormalizer
      * for asset-type properties. This allows LLMs to use either format.
      *
      * @param array<string, mixed> $properties The properties to normalize
-     * @param NodeType $nodeType The NodeType to check property types against
+     * @param \Neos\ContentRepository\Core\NodeType\NodeType $nodeType The NodeType to check property types against
      * @return array<string, mixed> Normalized properties
      */
-    public function normalizeProperties(array $properties, NodeType $nodeType): array
+    public function normalizeProperties(array $properties, \Neos\ContentRepository\Core\NodeType\NodeType $nodeType): array
     {
         $normalized = [];
         foreach ($properties as $propertyName => $propertyValue) {
@@ -61,10 +61,10 @@ class PropertyNormalizer
      *
      * @param mixed $value The property value to normalize
      * @param string $propertyName The property name
-     * @param NodeType $nodeType The NodeType containing the property definition
+     * @param \Neos\ContentRepository\Core\NodeType\NodeType $nodeType The NodeType containing the property definition
      * @return mixed The normalized value
      */
-    private function normalizePropertyValue(mixed $value, string $propertyName, NodeType $nodeType): mixed
+    private function normalizePropertyValue(mixed $value, string $propertyName, \Neos\ContentRepository\Core\NodeType\NodeType $nodeType): mixed
     {
         // Handle null and non-array values directly
         if (!is_array($value)) {

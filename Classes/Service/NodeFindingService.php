@@ -14,8 +14,6 @@ use Neos\Neos\Routing\FrontendNodeRoutePartHandlerInterface;
 
 class NodeFindingService
 {
-    use CreateContentContextTrait;
-
     /**
      * @Flow\InjectConfiguration(package="Neos.Flow", path="mvc.routes")
      * @var array
@@ -32,9 +30,9 @@ class NodeFindingService
      * @param mixed  $term
      * @param string $targetWorkspaceName
      *
-     * @return Node|null
+     * @return \Neos\ContentRepository\Core\Projection\ContentGraph\Node|null
      */
-    public function tryToResolvePublicUriToNode(mixed $term, string $targetWorkspaceName): ?Node
+    public function tryToResolvePublicUriToNode(mixed $term, string $targetWorkspaceName): ?\Neos\ContentRepository\Core\Projection\ContentGraph\Node
     {
         if (!preg_match('/(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/', $term)) {
             return null;
@@ -64,6 +62,7 @@ class NodeFindingService
         $nodeContextPath = $matchResult->getMatchedValue();
         $nodeContextPathSegments = NodePaths::explodeContextPath($nodeContextPath);
         $nodePath = $nodeContextPathSegments['nodePath'];
+        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
         $context = $this->createContentContext($targetWorkspaceName, $nodeContextPathSegments['dimensions']);
         $matchingNode = $context->getNode($nodePath);
 
@@ -79,7 +78,7 @@ class NodeFindingService
      */
     private function matchPathWithRouteHandler(string $path, string $uriPathSuffix, RouteParameters $routeParameters)
     {
-        $routeHandler = $this->objectManager->get(FrontendNodeRoutePartHandlerInterface::class);
+        $routeHandler = $this->objectManager->get(\Neos\Neos\FrontendRouting\FrontendNodeRoutePartHandlerInterface::class);
         $routeHandler->setName('node');
         $routeHandler->setOptions(['uriPathSuffix' => $uriPathSuffix]);
         return $routeHandler->matchWithParameters($path, $routeParameters);

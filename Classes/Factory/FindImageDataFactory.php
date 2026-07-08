@@ -41,7 +41,7 @@ class FindImageDataFactory
     protected $resourceManager;
 
     /**
-     * @param Node                               $node
+     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node
      * @param NodeTypeWithImageMetadataSchemaDto $schema
      * @param ControllerContext                  $controllerContext
      *
@@ -55,7 +55,7 @@ class FindImageDataFactory
      * @throws AssetServiceException
      * @throws ThumbnailServiceException
      */
-    public function createFromNodeAndSchema(Node $node, NodeTypeWithImageMetadataSchemaDto $schema, ControllerContext $controllerContext): ?FindImageData
+    public function createFromNodeAndSchema(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, NodeTypeWithImageMetadataSchemaDto $schema, ControllerContext $controllerContext): ?FindImageData
     {
         $asset = $node->getProperty($schema->getImagePropertyName());
 
@@ -68,9 +68,10 @@ class FindImageDataFactory
         // todo we directly access the array offset "src" -> we need a better check or accept an exception
         $thumbnailUri = $this->assetService->getThumbnailUriAndSizeForAsset($asset, $thumbnailConfiguration, $controllerContext->getRequest())['src'];
         $fullsizeUri = $this->resourceManager->getPublicPersistentResourceUri($asset->getResource());
+        // TODO 9.0 migration: !! Node::getIndex() is not supported. You can fetch all siblings and inspect the ordering
         return new FindImageData(
-            $node->getContextPath(),
-            $node->getNodeType()->getName(),
+            \Neos\ContentRepository\Core\SharedModel\Node\NodeAddress::fromNode($node)->toJson(),
+            $node->nodeTypeName->value,
             $node->getIndex(),
             $asset->getResource()->getFilename(),
             $fullsizeUri,

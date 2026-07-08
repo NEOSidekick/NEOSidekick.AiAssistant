@@ -91,8 +91,8 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
      */
     protected $languageDimensionName;
 
-    #[Flow\Inject]
-    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
      * @Flow\InjectConfiguration(package="Neos.Flow", path="session.cookie.samesite")
@@ -107,8 +107,7 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
      */
     public function contentDimensionsByName(): array
     {
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepositoryId = \Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default');
+        $contentRepositoryId = $this->contentRepositoryProvider->getContentRepositoryId();
         return (new \Neos\Neos\Ui\Fusion\Helper\ContentDimensionsHelper())->contentDimensionsByName($contentRepositoryId);
     }
 
@@ -286,7 +285,7 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
      * dimension values (formerly "presets") now come from the content repository's
      * dimension source.
      *
-     * TODO 9.0 migration (manual): Neos 8 preset identifiers could differ from dimension
+     * NOTE (Neos 9 migration decision): Neos 8 preset identifiers could differ from dimension
      * values and carry `options` config; in Neos 9 the dimension VALUES are the identifiers
      * and per-value configuration is read from the value's `configuration` array
      * (Neos.ContentRepositoryRegistry.contentRepositories.default.contentDimensions.<dim>.values.<value>).
@@ -296,10 +295,7 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
         if (!isset($this->languageDimensionName) || $this->languageDimensionName === '') {
             return null;
         }
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(
-            \Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default')
-        );
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
 
         return $contentRepository->getContentDimensionSource()->getDimension(
             new \Neos\ContentRepository\Core\Dimension\ContentDimensionId($this->languageDimensionName)

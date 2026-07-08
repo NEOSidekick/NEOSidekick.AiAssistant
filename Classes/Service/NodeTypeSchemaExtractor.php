@@ -40,7 +40,7 @@ class NodeTypeSchemaExtractor
      */
     protected string $defaultLanguage = 'en';
     #[\Neos\Flow\Annotations\Inject]
-    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
      * Extract raw NodeType schema for all NodeTypes.
@@ -51,8 +51,7 @@ class NodeTypeSchemaExtractor
      */
     public function extract(bool $includeAbstract = false, string $filter = ''): array
     {
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $nodeTypes = $contentRepository->getNodeTypeManager()->getNodeTypes($includeAbstract);
 
         $schema = [];

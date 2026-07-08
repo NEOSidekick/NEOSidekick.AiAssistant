@@ -1,5 +1,7 @@
 NEOSidekick:
   AiAssistant:
+    # The content repository this package operates on (single-CR assumption, see ContentRepositoryProvider)
+    contentRepositoryId: 'default'
     apikey: ''
     defaultLanguage: 'en'
     chatSidebarEnabled: true

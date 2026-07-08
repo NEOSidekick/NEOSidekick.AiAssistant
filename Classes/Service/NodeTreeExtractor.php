@@ -41,6 +41,8 @@ class NodeTreeExtractor
 
     #[Flow\Inject]
     protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
      * Extract the node tree starting from a given node.
@@ -54,8 +56,7 @@ class NodeTreeExtractor
      */
     public function extract(string $nodeId, string $workspace, array $dimensions, ?int $maxDepth = null): array
     {
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $subgraph = $contentRepository->getContentSubgraph(
             WorkspaceName::fromString($workspace),
             DimensionSpacePoint::fromArray($this->dimensionCoordinatesFromDimensionsArray($dimensions))

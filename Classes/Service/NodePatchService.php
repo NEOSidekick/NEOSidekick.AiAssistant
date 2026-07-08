@@ -61,6 +61,8 @@ use NEOSidekick\AiAssistant\Exception\PatchFailedException;
  */
 class NodePatchService
 {
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
     /**
      * @Flow\Inject
      * @var PatchValidator
@@ -127,8 +129,7 @@ class NodePatchService
 
         // Resolve the content subgraph for the workspace and dimensions
         try {
-            // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-            $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+            $contentRepository = $this->contentRepositoryProvider->getContentRepository();
             // getContentSubgraph() applies no visibility restrictions, matching the
             // former context flags invisibleContentShown/inaccessibleContentShown = true
             $subgraph = $contentRepository->getContentSubgraph(
@@ -157,7 +158,7 @@ class NodePatchService
         }
 
         if ($dryRun) {
-            // TODO 9.0 migration (manual): the old implementation executed the patches in a
+            // NOTE (Neos 9 migration decision): the old implementation executed the patches in a
             // database transaction and rolled back afterwards, so dry-run results contained
             // e.g. the created node details. The event-sourced content repository has no
             // rollback, so dry-run now stops after validation and returns minimal results.
@@ -185,7 +186,7 @@ class NodePatchService
 
             return PatchResult::success($dryRun, $results);
         } catch (PatchFailedException $e) {
-            // TODO 9.0 migration (manual): patches applied before the failing one are NOT
+            // NOTE (Neos 9 migration decision): patches applied before the failing one are NOT
             // rolled back anymore (event-sourced CR commands cannot be wrapped in a DB
             // transaction), hence rollbackPerformed=false in the result.
             return PatchResult::failure(
@@ -557,7 +558,7 @@ class NodePatchService
             $references = $this->referencesProcessor->processAndValidateReferences($transientNode, $processingErrors);
             $this->throwOnProcessingErrors($processingErrors, $index, 'updateNode', $patch->getNodeId());
 
-            // TODO 9.0 migration (manual): properties are written to the node's origin dimension
+            // NOTE (Neos 9 migration decision): properties are written to the node's origin dimension
             // space point; the old Context-based code would have materialized a new variant for
             // the requested dimensions if the node only existed as a fallback.
             if (!empty($propertyValues)) {
@@ -779,7 +780,7 @@ class NodePatchService
         }
         foreach (array_keys($properties) as $propertyName) {
             if (str_starts_with((string)$propertyName, '_')) {
-                // TODO 9.0 migration (manual): internal properties other than "_hidden"
+                // NOTE (Neos 9 migration decision): internal properties other than "_hidden"
                 // (e.g. "_name", "_nodeType") are silently ignored now.
                 unset($properties[$propertyName]);
             }

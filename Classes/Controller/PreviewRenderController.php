@@ -61,8 +61,8 @@ class PreviewRenderController extends ActionController
      */
     protected $previewTokenService;
 
-    #[Flow\Inject]
-    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
      * Render the full frontend HTML for the given node, like the frontend would.
@@ -149,8 +149,7 @@ class PreviewRenderController extends ActionController
      */
     protected function findNode(string $nodeId, string $workspace, array $dimensionsArray): ?Node
     {
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
 
         try {
             if ($dimensionsArray === []) {

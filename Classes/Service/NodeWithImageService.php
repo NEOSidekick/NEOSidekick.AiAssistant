@@ -28,6 +28,8 @@ use Psr\Log\LoggerInterface;
  */
 class NodeWithImageService extends AbstractNodeService
 {
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
     /**
      * @Flow\Inject
      * @var FindImageDataFactory
@@ -67,8 +69,7 @@ class NodeWithImageService extends AbstractNodeService
      */
     public function findDocumentNodesHavingChildNodesWithImages(FindDocumentNodesFilter $filter, array $findDocumentNodeDataDtos, ControllerContext $controllerContext): array
     {
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $workspace = $contentRepository->findWorkspaceByName(WorkspaceName::fromString($filter->getWorkspace()));
 
         if (!$workspace) {
@@ -93,7 +94,7 @@ class NodeWithImageService extends AbstractNodeService
                 continue;
             }
 
-            // TODO 9.0 migration (manual): the old NodeData query also matched content variants without the language
+            // NOTE (Neos 9 migration decision): the old NodeData query also matched content variants without the language
             // dimension; we now filter by the document's dimension space point (a document address is dimension-specific).
             if (!empty($languageDimensionFilter)) {
                 $languageCoordinate = $documentNodeAddress->dimensionSpacePoint->getCoordinate(new ContentDimensionId($this->languageDimensionName));
@@ -116,7 +117,7 @@ class NodeWithImageService extends AbstractNodeService
 
             // The document node itself can also carry image properties (the old query matched the exact path, too)
             $nodesToInspect = [$documentNode];
-            // TODO 9.0 migration (manual): the old query ordered content nodes by path length and sorting index across
+            // NOTE (Neos 9 migration decision): the old query ordered content nodes by path length and sorting index across
             // all documents; findDescendantNodes uses the graph's natural (tree) order, so image order can differ slightly.
             foreach ($subgraph->findDescendantNodes($documentNode->aggregateId, FindDescendantNodesFilter::create(nodeTypes: $contentNodeTypesFilter)) as $descendantNode) {
                 $nodesToInspect[] = $descendantNode;
@@ -128,7 +129,7 @@ class NodeWithImageService extends AbstractNodeService
                     continue;
                 }
 
-                // TODO 9.0 migration (manual): the old code attributed content to the closest "aggregate" ancestor;
+                // NOTE (Neos 9 migration decision): the old code attributed content to the closest "aggregate" ancestor;
                 // we attribute to the closest document ancestor, which differs for content node types with aggregate=true.
                 $closestDocumentNode = $subgraph->findClosestNode($contentNode->aggregateId, FindClosestNodeFilter::create(nodeTypes: NodeTypeNameFactory::NAME_DOCUMENT));
                 if ($closestDocumentNode === null) {

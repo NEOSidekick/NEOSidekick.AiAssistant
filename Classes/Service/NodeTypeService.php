@@ -36,15 +36,14 @@ class NodeTypeService
      */
     protected $logger;
     #[\Neos\Flow\Annotations\Inject]
-    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     public function getNodeTypesWithImageAlternativeTextOrTitleConfiguration(): array
     {
         if ($this->cache->has(self::CACHE_ENTRY_IDENTIFIER)) {
             return $this->cache->get(self::CACHE_ENTRY_IDENTIFIER);
         }
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
 
         $nodeTypes = $contentRepository->getNodeTypeManager()->getNodeTypes();
         $matchingNodeTypes = $this->findMatchingNodeTypes($nodeTypes);

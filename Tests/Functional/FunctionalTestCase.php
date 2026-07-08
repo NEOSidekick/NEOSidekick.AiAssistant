@@ -77,8 +77,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     {
         parent::setUp();
         $this->contentRepositoryRegistry = $this->objectManager->get(ContentRepositoryRegistry::class);
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepositoryId = ContentRepositoryId::fromString('default');
+        $contentRepositoryId = $this->objectManager->get(\NEOSidekick\AiAssistant\Service\ContentRepositoryProvider::class)->getContentRepositoryId();
 
         // Flow's testable persistence drops the non-ORM cr_* tables when it (re)compiles the
         // test schema, so the (idempotent) CR setup must run per test; prune isolates state.

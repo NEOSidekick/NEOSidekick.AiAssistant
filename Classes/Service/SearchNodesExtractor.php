@@ -45,7 +45,7 @@ class SearchNodesExtractor
     protected ?array $includedProperties = null;
 
     #[\Neos\Flow\Annotations\Inject]
-    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
      * Get the list of properties to include in results.
@@ -79,8 +79,7 @@ class SearchNodesExtractor
         ?string $nodeTypeFilter = null,
         ?string $pathStartingPoint = null
     ): array {
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $workspaceObject = $contentRepository->findWorkspaceByName(WorkspaceName::fromString($workspace));
         if ($workspaceObject === null) {
             throw new \InvalidArgumentException(
@@ -219,7 +218,7 @@ class SearchNodesExtractor
      */
     private function extractNodeData(ContentSubgraphInterface $subgraph, Node $node): array
     {
-        // TODO 9.0 migration (manual): node paths now use the absolute path format
+        // NOTE (Neos 9 migration decision): node paths now use the absolute path format
         // "/<Neos.Neos:Sites>/site/..." instead of the legacy "/sites/site/..." format.
         $path = $this->tryRetrieveNodePath($subgraph, $node);
         $depth = $path !== null ? AbsoluteNodePath::fromString($path)->getDepth() : 0;
@@ -269,7 +268,7 @@ class SearchNodesExtractor
     {
         $coordinates = [];
         foreach ($dimensions as $dimensionName => $dimensionValues) {
-            // TODO 9.0 migration (manual): legacy dimension arrays carried fallback values; only the primary value is used now
+            // NOTE (Neos 9 migration decision): legacy dimension arrays carried fallback values; only the primary value is used now
             $coordinates[$dimensionName] = is_array($dimensionValues) ? (string)reset($dimensionValues) : (string)$dimensionValues;
         }
         if ($coordinates !== []) {

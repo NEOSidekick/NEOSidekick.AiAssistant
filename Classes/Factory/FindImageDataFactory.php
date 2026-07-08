@@ -92,7 +92,7 @@ class FindImageDataFactory
     }
 
     /**
-     * TODO 9.0 migration (manual): Node::getIndex() is removed; we return the node's position among its
+     * NOTE (Neos 9 migration decision): Node::getIndex() is removed; we return the node's position among its
      * siblings, which preserves the relative ordering but not the legacy sorting index values.
      */
     private function resolveNodeOrderIndex(Node $node): int

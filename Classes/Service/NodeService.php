@@ -26,6 +26,8 @@ use Psr\Http\Client\ClientExceptionInterface;
 
 class NodeService extends AbstractNodeService
 {
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
     private const BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
 
     /**
@@ -80,15 +82,14 @@ class NodeService extends AbstractNodeService
     public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage = 'en'): array
     {
         $currentRequestUri = $controllerContext->getRequest()->getHttpRequest()->getUri();
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $languageDimension = isset($this->languageDimensionName)
             ? $contentRepository->getContentDimensionSource()->getDimension(new ContentDimensionId($this->languageDimensionName))
             : null;
 
         $hosts = [];
         if ($languageDimension !== null) {
-            // TODO 9.0 migration (manual): the per-language uriSegment now comes from the site's dimension resolver
+            // NOTE (Neos 9 migration decision): the per-language uriSegment now comes from the site's dimension resolver
             // configuration (Neos.Neos.sites.*.contentDimensions.resolver.options.segments) instead of the removed
             // Neos.ContentRepository.contentDimensions presets; when no mapping is configured we fall back to the
             // dimension value itself, mirroring Neos' AutoUriPathResolver default behavior.
@@ -153,8 +154,7 @@ class NodeService extends AbstractNodeService
         $currentRequestHost = $controllerContext->getRequest()->getHttpRequest()->getUri()->getHost();
         $siteMatchingCurrentRequestHost = $this->siteService->getSiteByHostName($currentRequestHost);
 
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $workspace = $contentRepository->findWorkspaceByName(WorkspaceName::fromString($findDocumentNodesFilter->getWorkspace()));
 
         if (!$workspace) {
@@ -165,7 +165,7 @@ class NodeService extends AbstractNodeService
         // The subgraphs of the requested workspace already contain the nodes inherited from its base workspaces
         // and NodeVisibility::excludeDisabledAndRemoved() excludes disabled nodes, replacing the old workspace-chain
         // reduction and the "hidden"/"removed" query constraints.
-        // TODO 9.0 migration (manual): the old query ordered by path length and sorting index; findDescendantNodes
+        // NOTE (Neos 9 migration decision): the old query ordered by path length and sorting index; findDescendantNodes
         // returns nodes in the graph's natural (tree) order per dimension space point, so the result order can differ.
         $nodesByVariant = $this->findDocumentNodesInWorkspace(
             $contentRepository,
@@ -280,8 +280,7 @@ class NodeService extends AbstractNodeService
     {
         $documentNodeTypeFilter = $findDocumentNodesFilter->getNodeTypeFilter() ?? 'Neos.Neos:Document';
         $baseNodeTypeFilter = $findDocumentNodesFilter->getBaseNodeTypeFilter() ?? self::BASE_NODE_TYPE;
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $nodeTypeManager = $contentRepository->getNodeTypeManager();
 
         $baseNodeTypeSubNodeTypes = $nodeTypeManager->getSubNodeTypes($baseNodeTypeFilter, false);

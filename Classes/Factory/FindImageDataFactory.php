@@ -2,9 +2,10 @@
 
 namespace NEOSidekick\AiAssistant\Factory;
 
-use Neos\ContentRepository\Domain\Model\Node;
-use Neos\ContentRepository\Exception\NodeException;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Exception;
 use Neos\Flow\Mvc\Controller\ControllerContext;
@@ -41,21 +42,25 @@ class FindImageDataFactory
     protected $resourceManager;
 
     /**
-     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node
+     * @Flow\Inject
+     * @var ContentRepositoryRegistry
+     */
+    protected $contentRepositoryRegistry;
+
+    /**
+     * @param Node                               $node
      * @param NodeTypeWithImageMetadataSchemaDto $schema
      * @param ControllerContext                  $controllerContext
      *
      * @return FindImageData|null
      * @throws Exception
      * @throws MissingActionNameException
-     * @throws NodeException
-     * @throws NodeTypeNotFoundException
      * @throws \Neos\Flow\Property\Exception
      * @throws \Neos\Flow\Security\Exception
      * @throws AssetServiceException
      * @throws ThumbnailServiceException
      */
-    public function createFromNodeAndSchema(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, NodeTypeWithImageMetadataSchemaDto $schema, ControllerContext $controllerContext): ?FindImageData
+    public function createFromNodeAndSchema(Node $node, NodeTypeWithImageMetadataSchemaDto $schema, ControllerContext $controllerContext): ?FindImageData
     {
         $asset = $node->getProperty($schema->getImagePropertyName());
 
@@ -68,19 +73,44 @@ class FindImageDataFactory
         // todo we directly access the array offset "src" -> we need a better check or accept an exception
         $thumbnailUri = $this->assetService->getThumbnailUriAndSizeForAsset($asset, $thumbnailConfiguration, $controllerContext->getRequest())['src'];
         $fullsizeUri = $this->resourceManager->getPublicPersistentResourceUri($asset->getResource());
-        // TODO 9.0 migration: !! Node::getIndex() is not supported. You can fetch all siblings and inspect the ordering
+        $alternativeTextPropertyName = $schema->getAlternativeTextPropertyName();
+        $titleTextPropertyName = $schema->getTitleTextPropertyName();
+
         return new FindImageData(
-            \Neos\ContentRepository\Core\SharedModel\Node\NodeAddress::fromNode($node)->toJson(),
+            NodeAddress::fromNode($node)->toJson(),
             $node->nodeTypeName->value,
-            $node->getIndex(),
+            $this->resolveNodeOrderIndex($node),
             $asset->getResource()->getFilename(),
             $fullsizeUri,
             $thumbnailUri,
             $schema->getImagePropertyName(),
-            $schema->getAlternativeTextPropertyName(),
-            $node->getProperty($schema->getAlternativeTextPropertyName()),
-            $schema->getTitleTextPropertyName(),
-            $node->getProperty($schema->getTitleTextPropertyName())
+            $alternativeTextPropertyName,
+            $alternativeTextPropertyName ? $node->getProperty($alternativeTextPropertyName) : null,
+            $titleTextPropertyName,
+            $titleTextPropertyName ? $node->getProperty($titleTextPropertyName) : null
         );
+    }
+
+    /**
+     * TODO 9.0 migration (manual): Node::getIndex() is removed; we return the node's position among its
+     * siblings, which preserves the relative ordering but not the legacy sorting index values.
+     */
+    private function resolveNodeOrderIndex(Node $node): int
+    {
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
+        $parentNode = $subgraph->findParentNode($node->aggregateId);
+        if ($parentNode === null) {
+            return 0;
+        }
+
+        $position = 0;
+        foreach ($subgraph->findChildNodes($parentNode->aggregateId, FindChildNodesFilter::create()) as $siblingNode) {
+            if ($siblingNode->aggregateId->equals($node->aggregateId)) {
+                return $position;
+            }
+            $position++;
+        }
+
+        return 0;
     }
 }

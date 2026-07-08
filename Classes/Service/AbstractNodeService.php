@@ -2,141 +2,92 @@
 
 namespace NEOSidekick\AiAssistant\Service;
 
-use Doctrine\ORM\EntityManagerInterface;
-use Doctrine\ORM\Internal\Hydration\IterableResult;
-use Doctrine\ORM\QueryBuilder;
-use Generator;
-use Neos\ContentRepository\Domain\Model\Node;
-use Neos\ContentRepository\Domain\Model\NodeData;
-use Neos\ContentRepository\Domain\Model\Workspace;
-use Neos\ContentRepository\Exception\NodeException;
-use Neos\Flow\Annotations as Flow;
-use Neos\Neos\Controller\CreateContentContextTrait;
+use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindDescendantNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Neos\Neos\Domain\SubtreeTagging\NeosSubtreeTag;
 
 abstract class AbstractNodeService
 {
-    /**
-     * @Flow\Inject
-     * @var EntityManagerInterface
-     */
-    protected $entityManager;
     #[\Neos\Flow\Annotations\Inject]
     protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
     /**
-     * @param IterableResult $iterator
+     * Enumerates nodes matching the given node type names below the given site (or all sites) in the given
+     * workspace, across all dimension space points of the content repository.
      *
-     * @return Generator
-     * @copyright Taken from and adapted: \Neos\Flow\Persistence\Doctrine\Repository::iterate()
+     * This replaces the old NodeData Doctrine machinery (createQueryBuilder(),
+     * addDimensionJoinConstraintsToQueryBuilder(), reduceNodeVariantsByWorkspaces()):
+     * - the content graph of the requested workspace already contains the nodes inherited from its base
+     *   workspaces, so no manual workspace-chain reduction is needed anymore;
+     * - VisibilityConstraints::default() excludes disabled ("hidden") and soft-removed nodes, replacing the
+     *   old "n.hidden = false AND n.removed = false" constraints.
      *
+     * The result contains one entry per (nodeAggregateId, originDimensionSpacePoint), mirroring the old
+     * one-row-per-NodeData semantics: a variant that is merely visible in other dimension space points
+     * through fallbacks is not duplicated.
+     *
+     * @param array<string> $nodeTypeNames allowed node type names (already expanded to include subtypes)
+     *
+     * @return array<string, Node> keyed by "<nodeAggregateId>|<originDimensionSpacePointHash>"
      */
-    protected static function iterate(IterableResult $iterator): Generator
-    {
-        foreach ($iterator as $object) {
-            $object = current($object);
-            yield $object;
+    protected function findDocumentNodesInWorkspace(
+        ContentRepository $contentRepository,
+        WorkspaceName $workspaceName,
+        array $nodeTypeNames,
+        ?string $siteNodeName = null
+    ): array {
+        if ($nodeTypeNames === []) {
+            return [];
         }
-    }
 
-    /**
-     * @param array $workspaces
-     *
-     * @return QueryBuilder
-     * @copyright Taken from and adapted: \Neos\ContentRepository\Domain\Repository\NodeDataRepository::createQueryBuilder()
-     *
-     */
-    protected function createQueryBuilder(array $workspaces): QueryBuilder
-    {
-        // TODO 9.0 migration: Check if you could change your code to work with the WorkspaceName value object instead.
-        $workspacesNames = array_map(static function (\Neos\ContentRepository\Core\SharedModel\Workspace\Workspace $workspace) {
-            return $workspace->workspaceName->value;
-        }, $workspaces);
+        $nodesByVariant = [];
+        foreach ($contentRepository->getVariationGraph()->getDimensionSpacePoints() as $dimensionSpacePoint) {
+            $subgraph = $contentRepository->getContentGraph($workspaceName)
+                ->getSubgraph($dimensionSpacePoint, VisibilityConstraints::default());
+            $sitesRootNode = $subgraph->findRootNodeByType(NodeTypeName::fromString('Neos.Neos:Sites'));
+            if ($sitesRootNode === null) {
+                continue;
+            }
+            $entryNode = $sitesRootNode;
+            if ($siteNodeName !== null) {
+                $entryNode = $subgraph->findNodeByPath(NodeName::fromString($siteNodeName), $sitesRootNode->aggregateId);
+                if ($entryNode === null) {
+                    continue;
+                }
+            }
 
-        $queryBuilder = $this->entityManager->createQueryBuilder();
+            $candidateNodes = [];
+            // The old query matched the site node itself as well ("n.path = :currentSitePath OR LIKE ...")
+            if ($entryNode !== $sitesRootNode && in_array($entryNode->nodeTypeName->value, $nodeTypeNames, true)) {
+                $candidateNodes[] = $entryNode;
+            }
+            foreach ($subgraph->findDescendantNodes(
+                $entryNode->aggregateId,
+                FindDescendantNodesFilter::create(nodeTypes: implode(',', $nodeTypeNames))
+            ) as $descendantNode) {
+                $candidateNodes[] = $descendantNode;
+            }
 
-        $queryBuilder->select('n')
-            ->from(NodeData::class, 'n')
-            ->where('n.workspace IN (:workspaces)')
-            ->setParameter('workspaces', $workspacesNames);
-
-        return $queryBuilder;
-    }
-
-    /**
-     * @copyright Taken from: Neos\ContentRepository\Domain\Repository\NodeDataRepository::addDimensionJoinConstraintsToQueryBuilder()
-     *
-     * If $dimensions is not empty, adds join constraints to the given $queryBuilder
-     * limiting the query result to matching hits.
-     *
-     * @param QueryBuilder $queryBuilder
-     * @param array $dimensions
-     * @return void
-     */
-    protected function addDimensionJoinConstraintsToQueryBuilder(QueryBuilder $queryBuilder, array $dimensions): void
-    {
-        $count = 0;
-        foreach ($dimensions as $dimensionName => $dimensionValues) {
-            $dimensionAlias = 'd' . $count;
-            $queryBuilder->andWhere(
-                'EXISTS (SELECT ' . $dimensionAlias . ' FROM Neos\ContentRepository\Domain\Model\NodeDimension ' . $dimensionAlias . ' WHERE ' . $dimensionAlias . '.nodeData = n AND ' . $dimensionAlias . '.name = \'' . $dimensionName . '\' AND ' . $dimensionAlias . '.value IN (:' . $dimensionAlias . ')) ' .
-                'OR NOT EXISTS (SELECT ' . $dimensionAlias . '_c FROM Neos\ContentRepository\Domain\Model\NodeDimension ' . $dimensionAlias . '_c WHERE ' . $dimensionAlias . '_c.nodeData = n AND ' . $dimensionAlias . '_c.name = \'' . $dimensionName . '\')'
-            );
-            $queryBuilder->setParameter($dimensionAlias, $dimensionValues);
-            $count++;
-        }
-    }
-
-    /**
-     * @copyright Taken from and adapted: \Neos\ContentRepository\Domain\Repository\NodeDataRepository::reduceNodeVariantsByWorkspacesAndDimensions
-     *
-     * @param array<NodeData> $nodes
-     * @param array<\Neos\ContentRepository\Core\SharedModel\Workspace\Workspace> $workspaces
-     *
-     * @return array<NodeData>
-     */
-    protected function reduceNodeVariantsByWorkspaces(array $nodes, array $workspaces): array
-    {
-        $reducedNodes = [];
-
-        $minimalWorkspacePositionByIdentifier = [];
-
-        // TODO 9.0 migration: Check if you could change your code to work with the WorkspaceName value object instead.
-        $workspaceNames = array_map(
-            static function (\Neos\ContentRepository\Core\SharedModel\Workspace\Workspace $workspace) {
-                return $workspace->workspaceName->value;
-            },
-            $workspaces
-        );
-        // TODO 9.0 migration: !! NodeData::getDimensionsHash is removed in Neos 9.0 - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
-        foreach ($nodes as $node) {
-            // Find the position of the workspace, a smaller value means more priority
-            // TODO 9.0 migration: !! NodeData::getWorkspace is removed in Neos 9.0 - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
-            $workspacePosition = array_search($node->getWorkspace()->getName(), $workspaceNames, true);
-            // TODO 9.0 migration: !! NodeData::getDimensionsHash is removed in Neos 9.0 - the new CR is not based around the concept of NodeData anymore. You need to rewrite your code here.
-            $identifier = $node->getIdentifier() . '-' . $node->getDimensionsHash();
-            // Yes, it seems to work comparing arrays that way!
-            if (!isset($minimalWorkspacePositionByIdentifier[$identifier]) || $workspacePosition < $minimalWorkspacePositionByIdentifier[$identifier]) {
-                $reducedNodes[$identifier] = $node;
-                $minimalWorkspacePositionByIdentifier[$identifier] = $workspacePosition;
+            foreach ($candidateNodes as $node) {
+                $variantKey = $node->aggregateId->value . '|' . $node->originDimensionSpacePoint->hash;
+                // Prefer the variant accessed in its origin dimension space point over fallback appearances
+                if (!isset($nodesByVariant[$variantKey]) || $node->originDimensionSpacePoint->hash === $dimensionSpacePoint->hash) {
+                    $nodesByVariant[$variantKey] = $node;
+                }
             }
         }
 
-        return $reducedNodes;
+        return $nodesByVariant;
     }
 
-    protected function isNodeHidden(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): bool
+    protected function isNodeHidden(Node $node): bool
     {
-        try {
-            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
-            $parentNode = $subgraph->findParentNode($node->aggregateId);
-        } catch (NodeException $e) {
-            // This is thrown if no more parent node is found and that means our Node is not hidden
-            return false;
-        }
-        if ($parentNode->tags->contain(\Neos\Neos\Domain\SubtreeTagging\NeosSubtreeTag::disabled())) {
-            return true;
-        }
-
-        return $this->isNodeHidden($parentNode);
+        // NodeTags contains inherited subtree tags, so this also covers the old recursive parent lookup
+        return $node->tags->contain(NeosSubtreeTag::disabled());
     }
 }

@@ -5,11 +5,19 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
 
     renderer = Neos.Fusion:Component {
         endpoints = Neos.Fusion:DataStructure {
-            overview = Sitegeist.FusionLinkPrototypes:ModuleUri {
+            # Sitegeist.FusionLinkPrototypes has no Neos 9 release; core Neos.Fusion:ActionUri is
+            # equivalent as long as the URI is built on the main request (module sub-requests would
+            # namespace the arguments and route back into the module controller).
+            overview = Neos.Fusion:ActionUri {
+                request = ${request.mainRequest}
+                package = 'Neos.Neos'
+                controller = 'Backend\\Module'
                 action = 'index'
+                arguments.module = ${request.mainRequest.arguments.module}
                 absolute = true
             }
-            nodeTypeSchema = Sitegeist.FusionLinkPrototypes:ActionUri {
+            nodeTypeSchema = Neos.Fusion:ActionUri {
+                request = ${request.mainRequest}
                 package = 'Neos.Neos'
                 controller = 'Backend\\Schema'
                 action = 'nodeTypeSchema'
@@ -23,7 +31,8 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
                     }
                 }
             }
-            translations = Sitegeist.FusionLinkPrototypes:ActionUri {
+            translations = Neos.Fusion:ActionUri {
+                request = ${request.mainRequest}
                 package = 'Neos.Neos'
                 controller = 'Backend\\Backend'
                 action = 'xliffAsJson'
@@ -38,14 +47,16 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
                     }
                 }
             }
-            get = Sitegeist.FusionLinkPrototypes:ActionUri {
+            get = Neos.Fusion:ActionUri {
+                request = ${request.mainRequest}
                 package = 'NEOSidekick.AiAssistant'
                 controller = 'BackendService'
                 action = ${props.getAction}
                 absolute = true
                 format = 'json'
             }
-            update = Sitegeist.FusionLinkPrototypes:ActionUri {
+            update = Neos.Fusion:ActionUri {
+                request = ${request.mainRequest}
                 package = 'NEOSidekick.AiAssistant'
                 controller = 'BackendService'
                 action = ${props.updateAction}
@@ -61,9 +72,11 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
             @process.json = ${Json.stringify(value)}
         }
         workspaces = Neos.Fusion:Value {
-            personalWorkspace = ${Neos.Ui.Workspace.getPersonalWorkspace()}
-            allowedTargetWorkspaces = ${Neos.Ui.Workspace.getAllowedTargetWorkspaces()}
-            value = ${Array.set(this.allowedTargetWorkspaces, this.personalWorkspace.name, this.personalWorkspace)}
+            # Neos 9: getPersonalWorkspace() needs a ContentRepositoryId (assigned by
+            # AbstractFusionViewController) and already includes allowedTargetWorkspaces;
+            # the separate getAllowedTargetWorkspaces() helper method is private in Neos 9.
+            personalWorkspace = ${Neos.Ui.Workspace.getPersonalWorkspace(contentRepositoryId)}
+            value = ${Array.set(this.personalWorkspace.allowedTargetWorkspaces, this.personalWorkspace.name, this.personalWorkspace)}
             @process.json = ${Json.stringify(value)}
         }
         moduleConfiguration = ${props.moduleConfiguration}

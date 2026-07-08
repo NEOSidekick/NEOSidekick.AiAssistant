@@ -4,8 +4,8 @@ namespace NEOSidekick\AiAssistant\Service;
 
 use Neos\Cache\Exception;
 use Neos\Cache\Frontend\VariableFrontend;
-use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Core\NodeType\NodeType;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Arrays;
 use NEOSidekick\AiAssistant\Dto\ImageTextPropertyConfigurationDto;
@@ -44,8 +44,7 @@ class NodeTypeService
             return $this->cache->get(self::CACHE_ENTRY_IDENTIFIER);
         }
         // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-
-        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
 
         $nodeTypes = $contentRepository->getNodeTypeManager()->getNodeTypes();
         $matchingNodeTypes = $this->findMatchingNodeTypes($nodeTypes);
@@ -72,7 +71,7 @@ class NodeTypeService
 
             $nodeTypeMatches = $this->processNodeTypeProperties($nodeType);
             if (!empty($nodeTypeMatches)) {
-                $matchingNodeTypes[$nodeType->getName()] = $nodeTypeMatches;
+                $matchingNodeTypes[$nodeType->name->value] = $nodeTypeMatches;
             }
         }
 
@@ -82,7 +81,7 @@ class NodeTypeService
     /**
      * @throws NodeTypeConfigurationException
      */
-    private function processNodeTypeProperties(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType): array
+    private function processNodeTypeProperties(NodeType $nodeType): array
     {
         $imagePropertiesWithinNodeTypeHavingAlternativeOrTitleText = [];
 
@@ -109,7 +108,7 @@ class NodeTypeService
         return str_starts_with($propertyName, '_') || str_starts_with($propertyName, 'neos_');
     }
 
-    private function processPropertyConfiguration(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
+    private function processPropertyConfiguration(NodeType $nodeType, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
     {
         $editor = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editor');
         $module = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.module');
@@ -130,7 +129,7 @@ class NodeTypeService
         return null;
     }
 
-    private function getImageTextPropertyConfigurationByModule(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
+    private function getImageTextPropertyConfigurationByModule(NodeType $nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
     {
         $url = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.arguments.url', '');
         if (preg_match(self::ASSET_URI_EXPRESSION, $url, $matches)) {
@@ -147,7 +146,7 @@ class NodeTypeService
         return null;
     }
 
-    private function getImageTextPropertyConfigurationByEditor(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
+    private function getImageTextPropertyConfigurationByEditor(NodeType $nodeType, string $nodeTypeKey, string $propertyName, array $propertyConfiguration): ?ImageTextPropertyConfigurationDto
     {
         $imageProperty = Arrays::getValueByPath($propertyConfiguration, 'ui.inspector.editorOptions.imagePropertyName');
         if ($imageProperty && array_key_exists($imageProperty, $nodeType->getProperties())) {

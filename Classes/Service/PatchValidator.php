@@ -6,11 +6,17 @@ namespace NEOSidekick\AiAssistant\Service;
 
 use Flowpack\NodeTemplates\Domain\ErrorHandling\ProcessingErrors;
 use Flowpack\NodeTemplates\Domain\NodeCreation\PropertiesProcessor;
+use Flowpack\NodeTemplates\Domain\NodeCreation\ReferencesProcessor;
 use Flowpack\NodeTemplates\Domain\NodeCreation\TransientNode;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\Context;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
+use Neos\ContentRepository\Core\Feature\NodeCreation\Dto\NodeAggregateIdsByNodePaths;
+use Neos\ContentRepository\Core\NodeType\NodeType;
+use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\CreateNodePatch;
@@ -18,7 +24,6 @@ use NEOSidekick\AiAssistant\Dto\Patch\DeleteNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\MoveNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\UpdateNodePatch;
 use NEOSidekick\AiAssistant\Exception\PatchFailedException;
-use NEOSidekick\AiAssistant\Service\PropertyNormalizer;
 
 /**
  * Validates patches before execution using NodeTemplates' PropertiesProcessor.
@@ -37,30 +42,40 @@ class PatchValidator
 
     /**
      * @Flow\Inject
+     * @var ReferencesProcessor
+     */
+    protected $referencesProcessor;
+
+    /**
+     * @Flow\Inject
      * @var PropertyNormalizer
      */
     protected $propertyNormalizer;
-    #[\Neos\Flow\Annotations\Inject]
-    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+
+    /**
+     * @Flow\Inject
+     * @var ContentRepositoryRegistry
+     */
+    protected $contentRepositoryRegistry;
 
     /**
      * Validate a patch before execution.
      *
      * @param AbstractPatch $patch The patch to validate
      * @param int $patchIndex The index of the patch in the batch
-     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context The content context
+     * @param ContentSubgraphInterface $subgraph The content subgraph (workspace + dimensions) to validate against
      * @throws PatchFailedException If validation fails
      */
-    public function validatePatch(AbstractPatch $patch, int $patchIndex, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): void
+    public function validatePatch(AbstractPatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
         if ($patch instanceof CreateNodePatch) {
-            $this->validateCreateNodePatch($patch, $patchIndex, $context);
+            $this->validateCreateNodePatch($patch, $patchIndex, $subgraph);
         } elseif ($patch instanceof UpdateNodePatch) {
-            $this->validateUpdateNodePatch($patch, $patchIndex, $context);
+            $this->validateUpdateNodePatch($patch, $patchIndex, $subgraph);
         } elseif ($patch instanceof MoveNodePatch) {
-            $this->validateMoveNodePatch($patch, $patchIndex, $context);
+            $this->validateMoveNodePatch($patch, $patchIndex, $subgraph);
         } elseif ($patch instanceof DeleteNodePatch) {
-            $this->validateDeleteNodePatch($patch, $patchIndex, $context);
+            $this->validateDeleteNodePatch($patch, $patchIndex, $subgraph);
         }
     }
 
@@ -73,13 +88,15 @@ class PatchValidator
      *
      * @param CreateNodePatch $patch
      * @param int $patchIndex
-     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
+     * @param ContentSubgraphInterface $subgraph
      * @throws PatchFailedException
      */
-    private function validateCreateNodePatch(CreateNodePatch $patch, int $patchIndex, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): void
+    private function validateCreateNodePatch(CreateNodePatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
+        $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
+
         // Validate nodeType exists
-        $nodeType = $this->getNodeType($patch->getNodeType(), $patchIndex, 'createNode');
+        $nodeType = $this->getNodeType($patch->getNodeType(), $patchIndex, 'createNode', $contentRepository);
 
         // Validate nodeType is not abstract (abstract types cannot be instantiated)
         if ($nodeType->isAbstract()) {
@@ -91,7 +108,7 @@ class PatchValidator
         }
 
         // Validate reference node exists (parent for 'into', sibling for 'before'/'after')
-        $referenceNode = $this->getNodeById($patch->getPositionRelativeToNodeId(), $patchIndex, 'createNode', $context);
+        $referenceNode = $this->getNodeById($patch->getPositionRelativeToNodeId(), $patchIndex, 'createNode', $subgraph);
 
         // Validate position
         $this->validatePosition($patch->getPosition(), $patchIndex, 'createNode', $patch->getPositionRelativeToNodeId());
@@ -102,7 +119,6 @@ class PatchValidator
         if ($patch->getPosition() === 'into') {
             $actualParent = $referenceNode;
         } else {
-            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($referenceNode);
             $actualParent = $subgraph->findParentNode($referenceNode->aggregateId);
             if ($actualParent === null) {
                 throw new PatchFailedException(
@@ -113,15 +129,24 @@ class PatchValidator
                 );
             }
         }
-        $contentRepository = $this->contentRepositoryRegistry->get($actualParent->contentRepositoryId);
+
+        $parentNodeType = $contentRepository->getNodeTypeManager()->getNodeType($actualParent->nodeTypeName);
+        if ($parentNodeType === null) {
+            throw new PatchFailedException(
+                sprintf('NodeType "%s" of the parent node is not known to the schema', $actualParent->nodeTypeName->value),
+                $patchIndex,
+                'createNode',
+                $patch->getPositionRelativeToNodeId()
+            );
+        }
 
         // Validate node type is allowed as child of the actual parent
-        if (!$contentRepository->getNodeTypeManager()->getNodeType($actualParent->nodeTypeName)->allowsChildNodeType($nodeType)) {
+        if (!$parentNodeType->allowsChildNodeType($nodeType)) {
             throw new PatchFailedException(
                 sprintf(
                     'NodeType "%s" is not allowed as child of parent node type "%s"',
                     $nodeType->name->value,
-                    $actualParent->getNodeType()->getName()
+                    $actualParent->nodeTypeName->value
                 ),
                 $patchIndex,
                 'createNode',
@@ -130,7 +155,7 @@ class PatchValidator
         }
 
         // Validate properties using PropertiesProcessor
-        $this->validateProperties($patch->getProperties(), $nodeType, $patchIndex, 'createNode', $context);
+        $this->validateProperties($patch->getProperties(), $nodeType, $patchIndex, 'createNode', $subgraph);
     }
 
     /**
@@ -138,17 +163,27 @@ class PatchValidator
      *
      * @param UpdateNodePatch $patch
      * @param int $patchIndex
-     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
+     * @param ContentSubgraphInterface $subgraph
      * @throws PatchFailedException
      */
-    private function validateUpdateNodePatch(UpdateNodePatch $patch, int $patchIndex, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): void
+    private function validateUpdateNodePatch(UpdateNodePatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
         // Validate node exists
-        $node = $this->getNodeById($patch->getNodeId(), $patchIndex, 'updateNode', $context);
-        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
+        $node = $this->getNodeById($patch->getNodeId(), $patchIndex, 'updateNode', $subgraph);
+        $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
+
+        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName);
+        if ($nodeType === null) {
+            throw new PatchFailedException(
+                sprintf('NodeType "%s" of node "%s" is not known to the schema', $node->nodeTypeName->value, $patch->getNodeId()),
+                $patchIndex,
+                'updateNode',
+                $patch->getNodeId()
+            );
+        }
 
         // Validate properties using PropertiesProcessor
-        $this->validateProperties($patch->getProperties(), $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName), $patchIndex, 'updateNode', $context);
+        $this->validateProperties($patch->getProperties(), $nodeType, $patchIndex, 'updateNode', $subgraph);
     }
 
     /**
@@ -156,16 +191,16 @@ class PatchValidator
      *
      * @param MoveNodePatch $patch
      * @param int $patchIndex
-     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
+     * @param ContentSubgraphInterface $subgraph
      * @throws PatchFailedException
      */
-    private function validateMoveNodePatch(MoveNodePatch $patch, int $patchIndex, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): void
+    private function validateMoveNodePatch(MoveNodePatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
         // Validate source node exists
-        $node = $this->getNodeById($patch->getNodeId(), $patchIndex, 'moveNode', $context);
+        $node = $this->getNodeById($patch->getNodeId(), $patchIndex, 'moveNode', $subgraph);
 
         // Validate target node exists
-        $targetNode = $this->getNodeById($patch->getTargetNodeId(), $patchIndex, 'moveNode', $context);
+        $targetNode = $this->getNodeById($patch->getTargetNodeId(), $patchIndex, 'moveNode', $subgraph);
 
         // Validate position
         $this->validatePosition($patch->getPosition(), $patchIndex, 'moveNode', $patch->getNodeId());
@@ -174,7 +209,6 @@ class PatchValidator
         if ($patch->getPosition() === 'into') {
             $newParentNode = $targetNode;
         } else {
-            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($targetNode);
             // For 'before' or 'after', parent will be target's parent
             $newParentNode = $subgraph->findParentNode($targetNode->aggregateId);
             if ($newParentNode === null) {
@@ -186,15 +220,18 @@ class PatchValidator
                 );
             }
         }
-        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
+        $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
+        $nodeTypeManager = $contentRepository->getNodeTypeManager();
+        $newParentNodeType = $nodeTypeManager->getNodeType($newParentNode->nodeTypeName);
+        $nodeType = $nodeTypeManager->getNodeType($node->nodeTypeName);
 
         // Validate node type constraints in the new location
-        if (!$contentRepository->getNodeTypeManager()->getNodeType($newParentNode->nodeTypeName)->allowsChildNodeType($contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName))) {
+        if ($newParentNodeType !== null && $nodeType !== null && !$newParentNodeType->allowsChildNodeType($nodeType)) {
             throw new PatchFailedException(
                 sprintf(
                     'NodeType "%s" is not allowed as child of "%s"',
                     $node->nodeTypeName->value,
-                    $newParentNode->getNodeType()->getName()
+                    $newParentNode->nodeTypeName->value
                 ),
                 $patchIndex,
                 'moveNode',
@@ -208,13 +245,13 @@ class PatchValidator
      *
      * @param DeleteNodePatch $patch
      * @param int $patchIndex
-     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
+     * @param ContentSubgraphInterface $subgraph
      * @throws PatchFailedException
      */
-    private function validateDeleteNodePatch(DeleteNodePatch $patch, int $patchIndex, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): void
+    private function validateDeleteNodePatch(DeleteNodePatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
         // Validate node exists
-        $this->getNodeById($patch->getNodeId(), $patchIndex, 'deleteNode', $context);
+        $this->getNodeById($patch->getNodeId(), $patchIndex, 'deleteNode', $subgraph);
     }
 
     /**
@@ -223,43 +260,56 @@ class PatchValidator
      * @param string $nodeTypeName
      * @param int $patchIndex
      * @param string $operation
-     * @return \Neos\ContentRepository\Core\NodeType\NodeType
+     * @param ContentRepository $contentRepository
+     * @return NodeType
      * @throws PatchFailedException
      */
-    private function getNodeType(string $nodeTypeName, int $patchIndex, string $operation): \Neos\ContentRepository\Core\NodeType\NodeType
+    private function getNodeType(string $nodeTypeName, int $patchIndex, string $operation, ContentRepository $contentRepository): NodeType
     {
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-
-        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
         // Check with hasNodeType() first, because getNodeType() returns a
-        // FallbackNode instead of throwing when a fallback NodeType is configured.
-        if (!$contentRepository->getNodeTypeManager()->hasNodeType($nodeTypeName)) {
+        // FallbackNode instead of null when a fallback NodeType is configured.
+        $nodeTypeManager = $contentRepository->getNodeTypeManager();
+        $nodeType = $nodeTypeManager->hasNodeType($nodeTypeName) ? $nodeTypeManager->getNodeType($nodeTypeName) : null;
+        if ($nodeType === null) {
             throw new PatchFailedException(
                 sprintf('NodeType "%s" does not exist. Hint: Check the TypeScript node type definitions in your system prompt', $nodeTypeName),
                 $patchIndex,
                 $operation
             );
         }
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
 
-        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
-
-        return $contentRepository->getNodeTypeManager()->getNodeType($nodeTypeName);
+        return $nodeType;
     }
 
     /**
      * Get a node by identifier, throwing PatchFailedException if not found.
      *
+     * Accepts both a plain NodeAggregateId string and a NodeAddress JSON string
+     * (as emitted by the read API via NodeAddress::toJson()).
+     *
      * @param string $nodeId
      * @param int $patchIndex
      * @param string $operation
-     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
-     * @return \Neos\ContentRepository\Core\Projection\ContentGraph\Node
+     * @param ContentSubgraphInterface $subgraph
+     * @return Node
      * @throws PatchFailedException
      */
-    private function getNodeById(string $nodeId, int $patchIndex, string $operation, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): \Neos\ContentRepository\Core\Projection\ContentGraph\Node
+    private function getNodeById(string $nodeId, int $patchIndex, string $operation, ContentSubgraphInterface $subgraph): Node
     {
-        $node = $context->getNodeByIdentifier($nodeId);
+        try {
+            $nodeAggregateId = str_starts_with(ltrim($nodeId), '{')
+                ? NodeAddress::fromJsonString($nodeId)->aggregateId
+                : NodeAggregateId::fromString($nodeId);
+        } catch (\Throwable $e) {
+            throw new PatchFailedException(
+                sprintf('Node identifier "%s" is not a valid node aggregate id or node address', $nodeId),
+                $patchIndex,
+                $operation,
+                $nodeId,
+                $e
+            );
+        }
+        $node = $subgraph->findNodeById($nodeAggregateId);
         if ($node === null) {
             throw new PatchFailedException(
                 sprintf('Node with identifier "%s" does not exist', $nodeId),
@@ -304,14 +354,16 @@ class PatchValidator
      * (with 'identifier' key) to plain identifier strings.
      *
      * @param array<string, mixed> $properties
-     * @param \Neos\ContentRepository\Core\NodeType\NodeType $nodeType
+     * @param NodeType $nodeType
      * @param int $patchIndex
      * @param string $operation
-     * @param \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context
+     * @param ContentSubgraphInterface $subgraph
      * @throws PatchFailedException
      */
-    private function validateProperties(array $properties, \Neos\ContentRepository\Core\NodeType\NodeType $nodeType, int $patchIndex, string $operation, \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub $context): void
+    private function validateProperties(array $properties, NodeType $nodeType, int $patchIndex, string $operation, ContentSubgraphInterface $subgraph): void
     {
+        // Internal properties like "_hidden" are handled as node state (disable/enable), not as schema properties
+        $properties = array_filter($properties, static fn($propertyName) => !str_starts_with((string)$propertyName, '_'), ARRAY_FILTER_USE_KEY);
         if (empty($properties)) {
             return;
         }
@@ -320,21 +372,26 @@ class PatchValidator
         // This converts asset objects (with 'identifier' key) to plain identifier strings
         $normalizedProperties = $this->propertyNormalizer->normalizeProperties($properties, $nodeType);
 
-        $processingErrors = ProcessingErrors::create();
-        // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
+        $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
+        $nodeTypeManager = $contentRepository->getNodeTypeManager();
 
-        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
-
-        // Create a transient node to validate properties
+        // Create a transient node to validate properties; the aggregate id is a throw-away placeholder
         $transientNode = TransientNode::forRegular(
+            NodeAggregateId::create(),
+            $subgraph->getWorkspaceName(),
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($subgraph->getDimensionSpacePoint()),
             $nodeType,
-            $contentRepository->getNodeTypeManager(),
-            $context,
+            NodeAggregateIdsByNodePaths::createForNodeType($nodeType->name, $nodeTypeManager),
+            $nodeTypeManager,
+            $subgraph,
             $normalizedProperties
         );
 
-        // Use PropertiesProcessor to validate and process properties
+        $processingErrors = ProcessingErrors::create();
+        // Use PropertiesProcessor to validate and process properties; reference-type
+        // entries are split off by the TransientNode and validated separately
         $this->propertiesProcessor->processAndValidateProperties($transientNode, $processingErrors);
+        $this->referencesProcessor->processAndValidateReferences($transientNode, $processingErrors);
 
         // Check for validation errors
         if ($processingErrors->hasError()) {

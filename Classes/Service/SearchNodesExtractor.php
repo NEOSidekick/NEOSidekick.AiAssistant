@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace NEOSidekick\AiAssistant\Service;
 
-use Neos\ContentRepository\Domain\Factory\NodeFactory;
-use Neos\ContentRepository\Domain\Model\NodeData;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
-use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
-use Neos\ContentRepository\Domain\Utility\NodePaths;
+use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
+use Neos\ContentRepository\Core\Projection\ContentGraph\AbsoluteNodePath;
+use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindClosestNodeFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindDescendantNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
-use Neos\Neos\Controller\CreateContentContextTrait;
+use Neos\Neos\Domain\SubtreeTagging\NeosSubtreeTag;
 use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
 
 /**
@@ -28,6 +34,7 @@ class SearchNodesExtractor
     use PropertyExtractionTrait;
 
     private const DOCUMENT_TYPE = 'Neos.Neos:Document';
+    private const SITES_ROOT_TYPE = 'Neos.Neos:Sites';
 
     /**
      * Properties to include in the search results response.
@@ -37,6 +44,7 @@ class SearchNodesExtractor
      * @var array|null
      */
     protected ?array $includedProperties = null;
+
     #[\Neos\Flow\Annotations\Inject]
     protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
 
@@ -72,11 +80,9 @@ class SearchNodesExtractor
         ?string $nodeTypeFilter = null,
         ?string $pathStartingPoint = null
     ): array {
-
         // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
-        // Resolve workspace object
-        $workspaceObject = $contentRepository->findWorkspaceByName(\Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName::fromString($workspace));
+        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
+        $workspaceObject = $contentRepository->findWorkspaceByName(WorkspaceName::fromString($workspace));
         if ($workspaceObject === null) {
             throw new \InvalidArgumentException(
                 sprintf('Workspace "%s" not found', $workspace),
@@ -84,50 +90,39 @@ class SearchNodesExtractor
             );
         }
 
-        // Use NodeDataRepository::findByProperties for search
+        $dimensionSpacePoint = $this->resolveDimensionSpacePoint($contentRepository, $dimensions);
+        $subgraph = $contentRepository->getContentGraph($workspaceObject->workspaceName)
+            ->getSubgraph($dimensionSpacePoint, VisibilityConstraints::default());
+
         // If no nodeTypeFilter is given, search all content types (not just documents)
         $effectiveNodeTypeFilter = $nodeTypeFilter ?? 'Neos.Neos:Node';
 
-        $nodeDataResults = $this->nodeDataRepository->findByProperties(
-            $query,
-            $effectiveNodeTypeFilter,
-            $workspaceObject,
-            $dimensions,
-            $pathStartingPoint
-        );
+        $entryNode = $this->resolveEntryNode($subgraph, $pathStartingPoint);
 
-        // Create content context for resolving nodes
-        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
-        $context = $this->createContentContext($workspace, $dimensions);
-
-        // Extract result data from NodeData objects
         $resultsByKey = [];
-        foreach ($nodeDataResults as $nodeData) {
-            /** @var NodeData $nodeData */
-            $node = $this->nodeFactory->createFromNodeData($nodeData, $context);
-
-            // Skip nodes that couldn't be resolved in context
-            if ($node === null) {
-                continue;
+        if ($entryNode !== null) {
+            // The searchTerm filter replaces the old NodeDataRepository::findByProperties() fulltext search
+            $matchingNodes = $subgraph->findDescendantNodes(
+                $entryNode->aggregateId,
+                FindDescendantNodesFilter::create(nodeTypes: $effectiveNodeTypeFilter, searchTerm: $query)
+            );
+            foreach ($matchingNodes as $node) {
+                $resultKey = $node->aggregateId->value . '|' . ($this->tryRetrieveNodePath($subgraph, $node) ?? '');
+                $resultsByKey[$resultKey] = $this->extractNodeData($subgraph, $node);
             }
-
-            $resultKey = $node->getIdentifier() . '|' . $node->getPath();
-            $resultsByKey[$resultKey] = $this->extractNodeData($node);
         }
 
-        // Also support direct identifier lookups (UUID) in addition to property search.
+        // Also support direct identifier lookups in addition to property search.
         $nodeByIdentifier = $this->resolveNodeByIdentifier(
-            $context,
+            $contentRepository,
+            $subgraph,
             $query,
             $effectiveNodeTypeFilter,
             $pathStartingPoint
         );
         if ($nodeByIdentifier !== null) {
-            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($nodeByIdentifier);
-            // TODO 9.0 migration: Try to remove the (string) cast and make your code more type-safe.
-            // TODO 9.0 migration: Check if you could change your code to work with the NodeAggregateId value object instead.
-            $resultKey = $nodeByIdentifier->aggregateId->value . '|' . (string) $subgraph->findNodePath($nodeByIdentifier->aggregateId);
-            $resultsByKey[$resultKey] = $this->extractNodeData($nodeByIdentifier);
+            $resultKey = $nodeByIdentifier->aggregateId->value . '|' . ($this->tryRetrieveNodePath($subgraph, $nodeByIdentifier) ?? '');
+            $resultsByKey[$resultKey] = $this->extractNodeData($subgraph, $nodeByIdentifier);
         }
 
         $results = array_values($resultsByKey);
@@ -147,36 +142,37 @@ class SearchNodesExtractor
     /**
      * Resolve a query string as a node identifier and apply existing filters.
      *
-     * @param mixed $context The content context created via CreateContentContextTrait
-     * @param string $identifier Candidate node identifier (UUID)
+     * @param ContentRepository $contentRepository
+     * @param ContentSubgraphInterface $subgraph The subgraph to search in
+     * @param string $identifier Candidate node identifier
      * @param string|null $nodeTypeFilter Effective node type filter to apply
      * @param string|null $pathStartingPoint Optional path prefix filter
-     * @return \Neos\ContentRepository\Core\Projection\ContentGraph\Node|null
+     * @return Node|null
      */
     private function resolveNodeByIdentifier(
-        mixed $context,
+        ContentRepository $contentRepository,
+        ContentSubgraphInterface $subgraph,
         string $identifier,
         ?string $nodeTypeFilter,
         ?string $pathStartingPoint
-    ): ?\Neos\ContentRepository\Core\Projection\ContentGraph\Node {
+    ): ?Node {
         try {
-            $node = $context->getNodeByIdentifier($identifier);
+            $node = $subgraph->findNodeById(NodeAggregateId::fromString($identifier));
         } catch (\Throwable) {
             return null;
         }
 
-        if (!$node instanceof \Neos\ContentRepository\Core\Projection\ContentGraph\Node) {
+        if ($node === null) {
             return null;
         }
-        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
 
-        if ($nodeTypeFilter !== null && !$contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)->isOfType($nodeTypeFilter)) {
+        if ($nodeTypeFilter !== null
+            && $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)?->isOfType($nodeTypeFilter) !== true) {
             return null;
         }
-        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
 
-        // TODO 9.0 migration: Try to remove the (string) cast and make your code more type-safe.
-        if ($pathStartingPoint !== null && !str_starts_with((string) $subgraph->findNodePath($node->aggregateId), $pathStartingPoint)) {
+        if ($pathStartingPoint !== null
+            && !str_starts_with((string)$this->tryRetrieveNodePath($subgraph, $node), $this->normalizePathStartingPoint($pathStartingPoint))) {
             return null;
         }
 
@@ -184,70 +180,103 @@ class SearchNodesExtractor
     }
 
     /**
+     * Resolves the node to start the search from: the given path starting point, or the sites root node.
+     *
+     * Accepts both the Neos 9 absolute path format ("/<Neos.Neos:Sites>/site/...") and the
+     * legacy path format ("/sites/site/...").
+     */
+    private function resolveEntryNode(ContentSubgraphInterface $subgraph, ?string $pathStartingPoint): ?Node
+    {
+        if ($pathStartingPoint === null || $pathStartingPoint === '') {
+            return $subgraph->findRootNodeByType(NodeTypeName::fromString(self::SITES_ROOT_TYPE));
+        }
+
+        $absoluteNodePath = AbsoluteNodePath::tryFromString($this->normalizePathStartingPoint($pathStartingPoint));
+        if ($absoluteNodePath === null) {
+            return null;
+        }
+
+        return $subgraph->findNodeByAbsolutePath($absoluteNodePath);
+    }
+
+    /**
+     * Converts a legacy "/sites/..." path into the Neos 9 absolute path format; other values pass through.
+     */
+    private function normalizePathStartingPoint(string $path): string
+    {
+        if (str_starts_with($path, '/sites')) {
+            $relativePath = ltrim(substr($path, strlen('/sites')), '/');
+            return '/<' . self::SITES_ROOT_TYPE . '>' . ($relativePath !== '' ? '/' . $relativePath : '');
+        }
+        return $path;
+    }
+
+    /**
      * Extract data from a single node.
      *
-     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node The node to extract data from
+     * @param ContentSubgraphInterface $subgraph The subgraph the node was found in
+     * @param Node $node The node to extract data from
      * @return array Extracted node data
      */
-    private function extractNodeData(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): array
+    private function extractNodeData(ContentSubgraphInterface $subgraph, Node $node): array
     {
-        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
-        // TODO 9.0 migration: Try to remove the (string) cast and make your code more type-safe.
-        $path = (string) $subgraph->findNodePath($node->aggregateId);
-        $depth = NodePaths::getPathDepth($path);
+        // TODO 9.0 migration (manual): node paths now use the absolute path format
+        // "/<Neos.Neos:Sites>/site/..." instead of the legacy "/sites/site/..." format.
+        $path = $this->tryRetrieveNodePath($subgraph, $node);
+        $depth = $path !== null ? AbsoluteNodePath::fromString($path)->getDepth() : 0;
 
         // Find parent document for content nodes
-        $parentDocument = $this->findClosestDocumentNode($node);
+        $parentDocument = $subgraph->findClosestNode($node->aggregateId, FindClosestNodeFilter::create(nodeTypes: self::DOCUMENT_TYPE));
 
-        // TODO 9.0 migration: Check if you could change your code to work with the NodeAggregateId value object instead.
         $data = [
             'identifier' => $node->aggregateId->value,
             'nodeType' => $node->nodeTypeName->value,
-            'path' => $path,
+            'path' => $path ?? '',
             'depth' => $depth,
             'properties' => $this->extractSelectedProperties($node),
-            'isHidden' => $node->tags->contain(\Neos\Neos\Domain\SubtreeTagging\NeosSubtreeTag::disabled()),
+            'isHidden' => $node->tags->contain(NeosSubtreeTag::disabled()),
         ];
 
         // Add parent document info if available (for content nodes)
-        if ($parentDocument !== null && $parentDocument !== $node) {
-            // TODO 9.0 migration: Check if you could change your code to work with the NodeAggregateId value object instead.
+        if ($parentDocument !== null && !$parentDocument->aggregateId->equals($node->aggregateId)) {
             $data['parentDocumentIdentifier'] = $parentDocument->aggregateId->value;
-            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($parentDocument);
-            // TODO 9.0 migration: Try to remove the (string) cast and make your code more type-safe.
-            $data['parentDocumentPath'] = (string) $subgraph->findNodePath($parentDocument->aggregateId);
-            $data['parentDocumentTitle'] = $parentDocument->getProperty('title') ?? $parentDocument->nodeName;
+            $data['parentDocumentPath'] = $this->tryRetrieveNodePath($subgraph, $parentDocument) ?? '';
+            $data['parentDocumentTitle'] = $parentDocument->getProperty('title') ?? $parentDocument->name?->value;
         }
 
         return $data;
     }
 
     /**
-     * Find the closest document node (parent page) for a content node.
-     *
-     * @param \Neos\ContentRepository\Core\Projection\ContentGraph\Node $node The node to find the parent document for
-     * @return \Neos\ContentRepository\Core\Projection\ContentGraph\Node|null The closest document node or null
+     * Retrieves the absolute node path as string, or null when the path cannot be built
+     * (e.g. because an ancestor node has no name — node names are optional in Neos 9).
      */
-    private function findClosestDocumentNode(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node): ?\Neos\ContentRepository\Core\Projection\ContentGraph\Node
+    private function tryRetrieveNodePath(ContentSubgraphInterface $subgraph, Node $node): ?string
     {
-        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
-        // If this node is already a document, return it
-        if ($contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)->isOfType(self::DOCUMENT_TYPE)) {
-            return $node;
+        try {
+            return $subgraph->retrieveNodePath($node->aggregateId)->serializeToString();
+        } catch (\InvalidArgumentException) {
+            return null;
         }
-        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
+    }
 
-        // Walk up the tree to find the parent document
-        $current = $subgraph->findParentNode($node->aggregateId);
-        while ($current !== null) {
-            $contentRepository = $this->contentRepositoryRegistry->get($current->contentRepositoryId);
-            if ($contentRepository->getNodeTypeManager()->getNodeType($current->nodeTypeName)->isOfType(self::DOCUMENT_TYPE)) {
-                return $current;
-            }
-            $subgraph = $this->contentRepositoryRegistry->subgraphForNode($current);
-            $current = $subgraph->findParentNode($current->aggregateId);
+    /**
+     * Maps the legacy dimensions array (which allowed a list of fallback values per dimension) to a
+     * dimension space point; when no dimensions are given, the most general dimension space point is used.
+     *
+     * @param array<string, mixed> $dimensions
+     */
+    private function resolveDimensionSpacePoint(ContentRepository $contentRepository, array $dimensions): DimensionSpacePoint
+    {
+        $coordinates = [];
+        foreach ($dimensions as $dimensionName => $dimensionValues) {
+            // TODO 9.0 migration (manual): legacy dimension arrays carried fallback values; only the primary value is used now
+            $coordinates[$dimensionName] = is_array($dimensionValues) ? (string)reset($dimensionValues) : (string)$dimensionValues;
         }
-
-        return null;
+        if ($coordinates !== []) {
+            return DimensionSpacePoint::fromArray($coordinates);
+        }
+        $rootGeneralizations = $contentRepository->getVariationGraph()->getRootGeneralizations();
+        return $rootGeneralizations !== [] ? reset($rootGeneralizations) : DimensionSpacePoint::createWithoutDimensions();
     }
 }

@@ -3,46 +3,47 @@
 namespace NEOSidekick\AiAssistant\EelHelper;
 
 use Exception;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Exception\NodeException;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\Flow\Annotations as Flow;
 use Neos\Eel\ProtectedContextAwareInterface;
 
 class NEOSidekickHelper implements ProtectedContextAwareInterface
 {
-    #[\Neos\Flow\Annotations\Inject]
+    #[Flow\Inject]
     protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+
     /**
-     * @throws NodeException
      * @throws Exception
      */
-    public function getImageAltText(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, string $propertyName): ?string
+    public function getImageAltText(Node $node, string $propertyName): ?string
     {
         return $this->getImageText($node, $propertyName, 'NEOSidekick.AiAssistant/Inspector/Editors/ImageAltTextEditor');
     }
 
     /**
-     * @throws NodeException
      * @throws Exception
      */
-    public function getImageTitle(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, string $propertyName): ?string
+    public function getImageTitle(Node $node, string $propertyName): ?string
     {
         return $this->getImageText($node, $propertyName, 'NEOSidekick.AiAssistant/Inspector/Editors/ImageTitleEditor');
     }
 
     /**
-     * @throws NodeException
      * @throws Exception
      */
-    protected function getImageText(\Neos\ContentRepository\Core\Projection\ContentGraph\Node $node, string $propertyName, string $expectedEditor): ?string
+    protected function getImageText(Node $node, string $propertyName, string $expectedEditor): ?string
     {
         if ($node->hasProperty($propertyName)) {
             return $node->getProperty($propertyName);
         }
         $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
 
-        $propertyConfiguration = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)->getFullConfiguration()['properties'][$propertyName];
-        $editor = $propertyConfiguration['ui']['inspector']['editor'];
+        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName);
+        $propertyConfiguration = $nodeType?->getFullConfiguration()['properties'][$propertyName] ?? null;
+        if ($propertyConfiguration === null) {
+            return null;
+        }
+        $editor = $propertyConfiguration['ui']['inspector']['editor'] ?? null;
         $editorOptions = $propertyConfiguration['ui']['inspector']['editorOptions'] ?? [];
         $imagePropertyName = $editorOptions['imagePropertyName'] ?? null;
         $fallbackAssetPropertyName = $editorOptions['fallbackAssetPropertyName'] ?? null;
@@ -52,7 +53,7 @@ class NEOSidekickHelper implements ProtectedContextAwareInterface
             throw new Exception('NEOSidekick EelHelper expects the editor `' . $expectedEditor . '` for the property `' . $propertyName . '`, instead `' . $editor . '` is configured.');
         }
 
-        if (!$node->hasProperty($imagePropertyName)) {
+        if ($imagePropertyName === null || !$node->hasProperty($imagePropertyName)) {
             return null;
         }
 

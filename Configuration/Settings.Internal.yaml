@@ -55,7 +55,9 @@ Neos:
           chatSidebarEnabled: '${NEOSidekickInternal.chatSidebarEnabled()}'
           modifyTextModalPreferCustomPrompt: '${NEOSidekickInternal.modifyTextModalPreferCustomPrompt()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
-          contentDimensions: '${Neos.Ui.ContentDimensions.contentDimensionsByName()}'
+          # Neos 9: the core helper requires a ContentRepositoryId not available in this Eel
+          # context; our internal helper resolves the default CR and delegates to it.
+          contentDimensions: '${NEOSidekickInternal.contentDimensionsByName()}'
           syncLanguagePresets: '${NEOSidekickInternal.languageDimensionSyncPresets()}'
     modules:
       ai-assistant:

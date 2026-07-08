@@ -57,9 +57,8 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     {
         parent::setUp();
         // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-
         $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
-        $contentRepository->getNodeTypeManager() = $this->objectManager->get(\Neos\ContentRepository\Core\NodeType\NodeTypeManager::class);
+        $this->nodeTypeManager = $contentRepository->getNodeTypeManager();
         $this->currentUserWorkspace = explode('.', uniqid('user-', true))[0];
         $this->currentGroupWorkspace = explode('.', uniqid('group-', true))[0];
         $this->setUpRootNodeAndRepository();

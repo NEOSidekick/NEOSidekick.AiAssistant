@@ -3,23 +3,20 @@
 namespace NEOSidekick\AiAssistant\Service;
 
 use GuzzleHttp\Psr7\Uri;
-use Neos\ContentRepository\Domain\Model\Node;
-use Neos\ContentRepository\Domain\Utility\NodePaths;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Routing\Dto\MatchResult;
 use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
 use Neos\Flow\ObjectManagement\ObjectManagerInterface;
-use Neos\Neos\Controller\CreateContentContextTrait;
-use Neos\Neos\Routing\FrontendNodeRoutePartHandlerInterface;
+use Neos\Neos\FrontendRouting\FrontendNodeRoutePartHandlerInterface;
+use Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult;
+use Neos\Neos\Routing\Exception\NoSiteException;
 
 class NodeFindingService
 {
-    /**
-     * @Flow\InjectConfiguration(package="Neos.Flow", path="mvc.routes")
-     * @var array
-     */
-    protected array $routesConfiguration;
-
     /**
      * @Flow\Inject
      * @var ObjectManagerInterface
@@ -27,12 +24,29 @@ class NodeFindingService
     protected $objectManager;
 
     /**
+     * @Flow\Inject
+     * @var SiteService
+     */
+    protected $siteService;
+
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+
+    /**
+     * Resolves a public URI to the corresponding document node in the given target workspace.
+     *
+     * The URI path is matched through Neos' frontend route part handler
+     * ({@see \Neos\Neos\FrontendRouting\EventSourcedFrontendNodeRoutePartHandler}), which yields a
+     * NodeAddress in the live workspace (including dimension resolution for uriSegment prefixes).
+     * The node is then looked up in the target workspace's content graph at the resolved
+     * dimension space point.
+     *
      * @param mixed  $term
      * @param string $targetWorkspaceName
      *
-     * @return \Neos\ContentRepository\Core\Projection\ContentGraph\Node|null
+     * @return Node|null
      */
-    public function tryToResolvePublicUriToNode(mixed $term, string $targetWorkspaceName): ?\Neos\ContentRepository\Core\Projection\ContentGraph\Node
+    public function tryToResolvePublicUriToNode(mixed $term, string $targetWorkspaceName): ?Node
     {
         if (!preg_match('/(https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|www\.[a-zA-Z0-9][a-zA-Z0-9-]+[a-zA-Z0-9]\.[^\s]{2,}|https?:\/\/(?:www\.|(?!www))[a-zA-Z0-9]+\.[^\s]{2,}|www\.[a-zA-Z0-9]+\.[^\s]{2,})/', $term)) {
             return null;
@@ -42,10 +56,22 @@ class NodeFindingService
         $path = str_starts_with($uri->getPath(), '/') ? substr($uri->getPath(), 1) : $uri->getPath();
         $path = rtrim($path, '/');
 
-        $uriPathSuffix = (string)($this->routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'] ?? '');
+        try {
+            $site = $this->siteService->getSiteByHostName($uri->getHost());
+        } catch (NoSiteException) {
+            return null;
+        }
 
-        $routeParameters = RouteParameters::createEmpty();
-        $routeParameters = $routeParameters->withParameter('requestUriHost', $uri->getHost());
+        $uriPathSuffix = $site->getConfiguration()->uriPathSuffix;
+
+        $routeParameters = RouteParameters::createEmpty()
+            ->withParameter('requestUriHost', $uri->getHost());
+        // The frontend route part handler requires the SiteDetectionResult (site + content repository)
+        // in the route parameters; in a regular request the SiteDetectionMiddleware provides it.
+        $routeParameters = SiteDetectionResult::create(
+            $site->getNodeName(),
+            $site->getConfiguration()->contentRepositoryId
+        )->storeInRouteParameters($routeParameters);
 
         $matchResult = $this->matchPathWithRouteHandler($path, $uriPathSuffix, $routeParameters);
 
@@ -59,18 +85,24 @@ class NodeFindingService
             return null;
         }
 
-        $nodeContextPath = $matchResult->getMatchedValue();
-        $nodeContextPathSegments = NodePaths::explodeContextPath($nodeContextPath);
-        $nodePath = $nodeContextPathSegments['nodePath'];
-        // TODO 9.0 migration: !! CreateContentContextTrait::createContentContext() is removed in Neos 9.0.
-        $context = $this->createContentContext($targetWorkspaceName, $nodeContextPathSegments['dimensions']);
-        $matchingNode = $context->getNode($nodePath);
-
-        if (!$matchingNode) {
+        // The route part handler matches in the live workspace; transfer the resolved address
+        // (aggregate id + dimension space point) into the requested target workspace.
+        try {
+            $nodeAddressInLiveWorkspace = NodeAddress::fromJsonString((string)$matchResult->getMatchedValue());
+        } catch (\InvalidArgumentException) {
             return null;
         }
 
-        return $matchingNode;
+        $contentRepository = $this->contentRepositoryRegistry->get($nodeAddressInLiveWorkspace->contentRepositoryId);
+        $targetWorkspace = $contentRepository->findWorkspaceByName(WorkspaceName::fromString($targetWorkspaceName));
+        if ($targetWorkspace === null) {
+            return null;
+        }
+
+        $subgraph = $contentRepository->getContentGraph($targetWorkspace->workspaceName)
+            ->getSubgraph($nodeAddressInLiveWorkspace->dimensionSpacePoint, VisibilityConstraints::default());
+
+        return $subgraph->findNodeById($nodeAddressInLiveWorkspace->aggregateId);
     }
 
     /**
@@ -78,7 +110,7 @@ class NodeFindingService
      */
     private function matchPathWithRouteHandler(string $path, string $uriPathSuffix, RouteParameters $routeParameters)
     {
-        $routeHandler = $this->objectManager->get(\Neos\Neos\FrontendRouting\FrontendNodeRoutePartHandlerInterface::class);
+        $routeHandler = $this->objectManager->get(FrontendNodeRoutePartHandlerInterface::class);
         $routeHandler->setName('node');
         $routeHandler->setOptions(['uriPathSuffix' => $uriPathSuffix]);
         return $routeHandler->matchWithParameters($path, $routeParameters);

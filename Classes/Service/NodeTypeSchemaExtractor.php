@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace NEOSidekick\AiAssistant\Service;
 
-use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Core\NodeType\NodeType;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\I18n\Locale;
 use Neos\Flow\I18n\Translator;
@@ -52,8 +52,7 @@ class NodeTypeSchemaExtractor
     public function extract(bool $includeAbstract = false, string $filter = ''): array
     {
         // TODO 9.0 migration: Make this code aware of multiple Content Repositories.
-
-        $contentRepository = $this->contentRepositoryRegistry->get(\Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId::fromString('default'));
+        $contentRepository = $this->contentRepositoryRegistry->get(ContentRepositoryId::fromString('default'));
         $nodeTypes = $contentRepository->getNodeTypeManager()->getNodeTypes($includeAbstract);
 
         $schema = [];
@@ -77,7 +76,7 @@ class NodeTypeSchemaExtractor
      *
      * @return array{name: string, superTypes: array<string>, isContentCollection: bool, properties: array, childNodes: array, constraints: array}
      */
-    private function extractNodeType(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType): array
+    private function extractNodeType(NodeType $nodeType): array
     {
         // Get declared superTypes (only the direct ones, not inherited)
         $superTypes = [];
@@ -103,7 +102,7 @@ class NodeTypeSchemaExtractor
      *
      * @return array<string, array>
      */
-    private function extractProperties(\Neos\ContentRepository\Core\NodeType\NodeType $nodeType): array
+    private function extractProperties(NodeType $nodeType): array
     {
         $properties = $nodeType->getProperties();
         $result = [];

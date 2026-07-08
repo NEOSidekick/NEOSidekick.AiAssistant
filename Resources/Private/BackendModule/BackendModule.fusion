@@ -76,7 +76,7 @@ prototype(NEOSidekick.AiAssistant:BackendModule) < prototype(Neos.Fusion:Compone
             # AbstractFusionViewController) and already includes allowedTargetWorkspaces;
             # the separate getAllowedTargetWorkspaces() helper method is private in Neos 9.
             personalWorkspace = ${Neos.Ui.Workspace.getPersonalWorkspace(contentRepositoryId)}
-            value = ${Array.set(this.personalWorkspace.allowedTargetWorkspaces, this.personalWorkspace.name, this.personalWorkspace)}
+            value = ${this.personalWorkspace.allowedTargetWorkspaces ? Array.set(this.personalWorkspace.allowedTargetWorkspaces, this.personalWorkspace.name, this.personalWorkspace) : {}}
             @process.json = ${Json.stringify(value)}
         }
         moduleConfiguration = ${props.moduleConfiguration}

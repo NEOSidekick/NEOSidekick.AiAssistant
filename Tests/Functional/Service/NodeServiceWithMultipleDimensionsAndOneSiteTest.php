@@ -3,38 +3,30 @@
 namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
 use InvalidArgumentException;
-use Neos\ContentRepository\Domain\Utility\NodePaths;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
 
 class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
 {
-    protected array $dimensions = ['de', 'en'];
     protected array $siteHosts = ['example.com'];
 
-    public function setUp(): void
+    protected function setUpContentInLive(): void
     {
-        parent::setUp();
-        $exampleSiteNode = $this->rootNode->getNode('/sites/example');
+        $exampleSiteNode = $this->getNodeByPath('/sites/example');
         $page1 = $this->createPageWithImageNodes($exampleSiteNode, 'node-wan-kenodi', 'Seite 1', ['image1.jpg', 'image2.jpg']);
-        // TODO 9.0 migration: !! Node::setProperty() is not supported by the new CR. Use the "SetNodeProperties" command to change property values.
-        $page1->setProperty('focusKeyword', 'some-value');
-        $page1a = $this->createPageWithImageNodes($page1, 'lady-eleonode-rootford', 'Unterseite 1', ['image1.jpg', 'image2.jpg']);
-        $page2 = $this->createPageWithImageNodes($exampleSiteNode, 'node-mc-nodeface', 'Seite 2', ['image1.jpg', 'image2.jpg']);
+        $this->setNodeProperties($page1, ['focusKeyword' => 'some-value']);
+        $this->createPageWithImageNodes($page1, 'lady-eleonode-rootford', 'Unterseite 1', ['image1.jpg', 'image2.jpg']);
+        $this->createPageWithImageNodes($exampleSiteNode, 'node-mc-nodeface', 'Seite 2', ['image1.jpg', 'image2.jpg']);
+    }
 
-        $englishContext = new \Neos\Rector\ContentRepository90\Legacy\LegacyContextStub([
-            'workspaceName' => $this->currentUserWorkspace,
-            'dimensions' => ['language' => ['en']]
-        ]);
-
-        $exampleSiteNode->createVariantForContext($englishContext);
-        $page1->createVariantForContext($englishContext);
-        $page1a->createVariantForContext($englishContext);
-        $page2->createVariantForContext($englishContext);
-
-        $this->saveNodesAndTearDownRootNodeAndRepository();
-        $this->setUpRootNodeAndRepository();
+    protected function setUpContentInUserWorkspace(): void
+    {
+        // English variants exist only in the user workspace (as on Neos 8: created via a
+        // user-workspace context and never published).
+        foreach (['/sites/example', '/sites/example/node-wan-kenodi', '/sites/example/node-wan-kenodi/lady-eleonode-rootford', '/sites/example/node-mc-nodeface'] as $path) {
+            $this->createLanguageVariant($this->getNodeByPath($path, $this->currentUserWorkspace), self::LANGUAGE_EN, $this->currentUserWorkspace);
+        }
     }
 
     /**
@@ -47,10 +39,10 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $findDocumentNodesFilter = new FindDocumentNodesFilter('custom', $this->currentUserWorkspace);
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
         $this->assertCount(8, $foundNodes);
     }
 
@@ -59,22 +51,20 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
      */
     public function itDoesNotFindHiddenPages(): void
     {
-        $nodeToBeHidden = $this->rootNode->getNode('/sites/example/node-wan-kenodi');
-        // TODO 9.0 migration: !! Node::setHidden() is not supported by the new CR. Use the "EnableNodeAggregate" or "DisableNodeAggregate" command to change the visibility of the node.
-        $nodeToBeHidden->setHidden(true);
-
-        $this->saveNodesAndTearDownRootNodeAndRepository();
-        $this->setUpRootNodeAndRepository();
+        $nodeToBeHidden = $this->getNodeByPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace);
+        $this->disableNode($nodeToBeHidden, $this->currentUserWorkspace);
 
         $nodeService = $this->objectManager->get(NodeService::class);
         $controllerContext = $this->createControllerContextForDomain('example.com');
         $findDocumentNodesFilter = new FindDocumentNodesFilter('custom', $this->currentUserWorkspace);
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace), $foundNodes);
+        // the child is disabled through the inherited subtree tag
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
+        // the English variants (independent dimension value) stay visible
         $this->assertCount(6, $foundNodes);
     }
 
@@ -83,22 +73,17 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
      */
     public function itDoesNotFindRemovedPages(): void
     {
-        $nodeToBeHidden = $this->rootNode->getNode('/sites/example/node-wan-kenodi');
-        // TODO 9.0 migration: !! Node::remove() is not supported by the new CR. Use the "RemoveNodeAggregate" command to remove a node.
-        $nodeToBeHidden->remove();
-
-        $this->saveNodesAndTearDownRootNodeAndRepository();
-        $this->setUpRootNodeAndRepository();
+        $nodeToBeRemoved = $this->getNodeByPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace);
+        $this->removeNode($nodeToBeRemoved, $this->currentUserWorkspace);
 
         $nodeService = $this->objectManager->get(NodeService::class);
         $controllerContext = $this->createControllerContextForDomain('example.com');
         $findDocumentNodesFilter = new FindDocumentNodesFilter('custom', $this->currentUserWorkspace);
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
+        // removing the de variant leaves the independent English variants in place
         $this->assertCount(6, $foundNodes);
     }
 
@@ -109,13 +94,13 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
     {
         $nodeService = $this->objectManager->get(NodeService::class);
         $controllerContext = $this->createControllerContextForDomain('example.com');
-        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: 'de');
+        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: self::LANGUAGE_DE);
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
         $this->assertCount(4, $foundNodes);
     }
 
@@ -129,10 +114,10 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, focusKeywordPropertyFilter: 'only-empty-focus-keywords');
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
         $this->assertCount(6, $foundNodes);
     }
 
@@ -146,10 +131,10 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, focusKeywordPropertyFilter: 'only-existing-focus-keywords');
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
         $this->assertCount(2, $foundNodes);
     }
 
@@ -163,7 +148,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, nodeTypeFilter: 'NEOSidekick.AiAssistant.Testing:HomePage');
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
         $this->assertCount(2, $foundNodes);
     }
 
@@ -189,13 +174,13 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
     {
         $nodeService = $this->objectManager->get(NodeService::class);
         $controllerContext = $this->createControllerContextForDomain('example.com');
-        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: 'en');
+        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: self::LANGUAGE_EN);
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => ['en']]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, ['language' => ['en']]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, ['language' => ['en']]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, ['language' => ['en']]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace, self::LANGUAGE_EN), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, self::LANGUAGE_EN), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, self::LANGUAGE_EN), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, self::LANGUAGE_EN), $foundNodes);
         $this->assertCount(4, $foundNodes);
     }
 }

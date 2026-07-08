@@ -1,5 +1,7 @@
 'NEOSidekick.AiAssistant.Testing:HomePage':
   superTypes:
+    # Neos 9: children of Neos.Neos:Sites must be of type Neos.Neos:Site
+    'Neos.Neos:Site': true
     'Neos.Neos:Document': true
     'Neos.Seo:SeoMetaTagsMixin': true
     'Neos.Seo:TitleTagMixin': true

@@ -144,22 +144,34 @@ class AgentController extends ActionController
                 }
 
                 $client = new Client();
+                // Without http_errors=false Guzzle throws on 4xx/5xx, so Laravel errors (e.g. a
+                // rejected state) would surface as an opaque 502 instead of the actual response.
                 $response = $client->post($this->externalApiDomain . '/api/agentic-chat/oauth/callback', [
                     'json' => $payload,
                     'headers' => $headers,
+                    'http_errors' => false,
                 ]);
 
                 if ($response->getStatusCode() >= 400) {
                     $this->response->setStatusCode($response->getStatusCode());
                     $body = (string) $response->getBody();
-                    if ($body !== '') {
-                        return $body;
+
+                    if ($wantsJsonResponse) {
+                        $this->response->setContentType('application/json');
+                        if ($body !== '') {
+                            return $body;
+                        }
+
+                        return json_encode([
+                            'error' => 'Callback failed',
+                            'message' => 'Laravel callback returned ' . $response->getStatusCode(),
+                        ], JSON_THROW_ON_ERROR);
                     }
 
-                    return json_encode([
-                        'error' => 'Callback failed',
-                        'message' => 'Laravel callback returned ' . $response->getStatusCode(),
-                    ], JSON_THROW_ON_ERROR);
+                    $this->response->setContentType('text/html');
+                    $details = $body !== '' ? $body : 'Laravel callback returned ' . $response->getStatusCode();
+
+                    return '<!doctype html><html><head><meta charset="utf-8"><title>Authorization Failed</title></head><body><h1>Authorization failed</h1><p>' . htmlspecialchars($details, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '</p></body></html>';
                 }
 
                 if ($wantsJsonResponse) {

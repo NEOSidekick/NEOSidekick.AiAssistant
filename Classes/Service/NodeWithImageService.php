@@ -7,7 +7,6 @@ use Neos\ContentRepository\Core\Dimension\ContentDimensionId;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindClosestNodeFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindDescendantNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
@@ -105,10 +104,10 @@ class NodeWithImageService extends AbstractNodeService
 
             // The workspace from the filter wins over the one encoded in the address, mirroring the old content context creation.
             // The content graph already resolves the workspace chain, replacing the old reduceNodeVariantsByWorkspaces().
-            // VisibilityConstraints::default() excludes disabled nodes, replacing the old "n.hidden = false" constraint.
+            // NodeVisibility::excludeDisabledAndRemoved() excludes disabled nodes, replacing the old "n.hidden = false" constraint.
             $subgraph = $subgraphsByDimensionSpacePointHash[$documentNodeAddress->dimensionSpacePoint->hash]
                 ??= $contentRepository->getContentGraph($workspace->workspaceName)
-                    ->getSubgraph($documentNodeAddress->dimensionSpacePoint, VisibilityConstraints::default());
+                    ->getSubgraph($documentNodeAddress->dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved());
 
             $documentNode = $subgraph->findNodeById($documentNodeAddress->aggregateId);
             if ($documentNode === null) {

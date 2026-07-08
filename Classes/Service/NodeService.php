@@ -8,7 +8,6 @@ use Neos\ContentRepository\Core\Dimension\ContentDimensionId;
 use Neos\ContentRepository\Core\Feature\NodeModification\Command\SetNodeProperties;
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
@@ -164,7 +163,7 @@ class NodeService extends AbstractNodeService
 
         $includeNodeTypes = $this->getNodeTypeFilter($findDocumentNodesFilter);
         // The subgraphs of the requested workspace already contain the nodes inherited from its base workspaces
-        // and VisibilityConstraints::default() excludes disabled nodes, replacing the old workspace-chain
+        // and NodeVisibility::excludeDisabledAndRemoved() excludes disabled nodes, replacing the old workspace-chain
         // reduction and the "hidden"/"removed" query constraints.
         // TODO 9.0 migration (manual): the old query ordered by path length and sorting index; findDescendantNodes
         // returns nodes in the graph's natural (tree) order per dimension space point, so the result order can differ.
@@ -226,7 +225,7 @@ class NodeService extends AbstractNodeService
         $nodeAddress = NodeAddress::fromJsonString($nodeAddressJson);
         $contentRepository = $this->contentRepositoryRegistry->get($nodeAddress->contentRepositoryId);
         $subgraph = $contentRepository->getContentGraph($nodeAddress->workspaceName)
-            ->getSubgraph($nodeAddress->dimensionSpacePoint, VisibilityConstraints::withoutRestrictions());
+            ->getSubgraph($nodeAddress->dimensionSpacePoint, NodeVisibility::excludeRemoved());
         $node = $subgraph->findNodeById($nodeAddress->aggregateId);
         if ($node === null) {
             throw new InvalidArgumentException(sprintf('Node "%s" was not found and cannot be updated.', $nodeAddressJson), 1713440899887);

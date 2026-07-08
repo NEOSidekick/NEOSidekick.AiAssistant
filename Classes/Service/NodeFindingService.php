@@ -4,7 +4,6 @@ namespace NEOSidekick\AiAssistant\Service;
 
 use GuzzleHttp\Psr7\Uri;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
@@ -100,7 +99,7 @@ class NodeFindingService
         }
 
         $subgraph = $contentRepository->getContentGraph($targetWorkspace->workspaceName)
-            ->getSubgraph($nodeAddressInLiveWorkspace->dimensionSpacePoint, VisibilityConstraints::default());
+            ->getSubgraph($nodeAddressInLiveWorkspace->dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved());
 
         return $subgraph->findNodeById($nodeAddressInLiveWorkspace->aggregateId);
     }

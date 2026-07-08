@@ -12,7 +12,6 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindClosestNodeFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindDescendantNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
@@ -92,7 +91,7 @@ class SearchNodesExtractor
 
         $dimensionSpacePoint = $this->resolveDimensionSpacePoint($contentRepository, $dimensions);
         $subgraph = $contentRepository->getContentGraph($workspaceObject->workspaceName)
-            ->getSubgraph($dimensionSpacePoint, VisibilityConstraints::default());
+            ->getSubgraph($dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved());
 
         // If no nodeTypeFilter is given, search all content types (not just documents)
         $effectiveNodeTypeFilter = $nodeTypeFilter ?? 'Neos.Neos:Node';

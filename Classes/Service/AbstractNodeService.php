@@ -6,7 +6,6 @@ use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindDescendantNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Neos\Domain\SubtreeTagging\NeosSubtreeTag;
@@ -24,7 +23,7 @@ abstract class AbstractNodeService
      * addDimensionJoinConstraintsToQueryBuilder(), reduceNodeVariantsByWorkspaces()):
      * - the content graph of the requested workspace already contains the nodes inherited from its base
      *   workspaces, so no manual workspace-chain reduction is needed anymore;
-     * - VisibilityConstraints::default() excludes disabled ("hidden") and soft-removed nodes, replacing the
+     * - NodeVisibility::excludeDisabledAndRemoved() excludes disabled ("hidden") and soft-removed nodes, replacing the
      *   old "n.hidden = false AND n.removed = false" constraints.
      *
      * The result contains one entry per (nodeAggregateId, originDimensionSpacePoint), mirroring the old
@@ -48,7 +47,7 @@ abstract class AbstractNodeService
         $nodesByVariant = [];
         foreach ($contentRepository->getVariationGraph()->getDimensionSpacePoints() as $dimensionSpacePoint) {
             $subgraph = $contentRepository->getContentGraph($workspaceName)
-                ->getSubgraph($dimensionSpacePoint, VisibilityConstraints::default());
+                ->getSubgraph($dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved());
             $sitesRootNode = $subgraph->findRootNodeByType(NodeTypeName::fromString('Neos.Neos:Sites'));
             if ($sitesRootNode === null) {
                 continue;

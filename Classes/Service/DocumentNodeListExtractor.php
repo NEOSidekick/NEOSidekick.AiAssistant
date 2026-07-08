@@ -11,7 +11,6 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\CountChildNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
@@ -86,7 +85,7 @@ class DocumentNodeListExtractor
 
         $dimensionSpacePoint = $this->resolveDimensionSpacePoint($contentRepository, $dimensions);
         $subgraph = $contentRepository->getContentGraph($workspaceObject->workspaceName)
-            ->getSubgraph($dimensionSpacePoint, VisibilityConstraints::default());
+            ->getSubgraph($dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved());
 
         $siteNode = $this->resolveSiteNode($contentRepository, $subgraph, $siteNodeName);
 

@@ -4,10 +4,10 @@ namespace NEOSidekick\AiAssistant\Factory;
 
 use Neos\ContentRepository\Core\Dimension\ContentDimensionId;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
-use Neos\ContentRepository\Core\Projection\ContentGraph\VisibilityConstraints;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
+use NEOSidekick\AiAssistant\Service\NodeVisibility;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Exception\NoMatchingRouteException;
 use Neos\Neos\FrontendRouting\NodeUriBuilderFactory;
@@ -48,7 +48,7 @@ class FindDocumentNodeDataFactory
         $workspace = $contentRepository->findWorkspaceByName($node->workspaceName);
         if ($workspace !== null && !$workspace->isRootWorkspace()) {
             $nodeInLiveWorkspace = $contentRepository->getContentGraph(WorkspaceName::forLive())
-                ->getSubgraph($node->dimensionSpacePoint, VisibilityConstraints::default())
+                ->getSubgraph($node->dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved())
                 ->findNodeById($node->aggregateId);
             if ($nodeInLiveWorkspace !== null) {
                 try {

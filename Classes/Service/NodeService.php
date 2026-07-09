@@ -9,7 +9,6 @@ use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
 use Neos\ContentRepository\Core\Feature\NodeModification\Command\SetNodeProperties;
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
-use Neos\ContentRepository\Core\Feature\NodeVariation\Command\CreateNodeVariant;
 use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
@@ -147,6 +146,20 @@ class NodeService extends AbstractNodeService
             if ($node === null) {
                 continue;
             }
+            // Fallback URLs (e.g. /uk serving en_US content) are re-addressed to their ORIGIN
+            // dimension: fallback pages are not editable rows — offering them would either write
+            // to the origin or materialize a variant as a save side effect, both of which break
+            // the fallback concept. The underlying page stays in the list (deduped by its origin
+            // address), so editing it improves every URL it shines through to.
+            $originDimensionSpacePoint = $node->originDimensionSpacePoint->toDimensionSpacePoint();
+            if (!$node->dimensionSpacePoint->equals($originDimensionSpacePoint)) {
+                $node = $contentRepository->getContentGraph($node->workspaceName)
+                    ->getSubgraph($originDimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved())
+                    ->findNodeById($node->aggregateId);
+                if ($node === null) {
+                    continue;
+                }
+            }
             if (!self::nodeMatchesPropertyFilter($node, $findDocumentNodesFilter)) {
                 continue;
             }
@@ -259,17 +272,19 @@ class NodeService extends AbstractNodeService
         if ($node === null) {
             throw new InvalidArgumentException(sprintf('Node "%s" was not found and cannot be updated.', $nodeAddressJson), 1713440899887);
         }
-        // Copy-on-write like the old CR contexts: when the addressed dimension differs from the
-        // node's origin (a fallback page, e.g. /uk serving en_US content), materialize the variant
-        // first — writing to the origin would silently change the content of the origin language.
+        // Writes to fallback addresses are rejected: writing to the origin would silently change
+        // the source language's content, and materializing a variant as a save side effect would
+        // permanently detach the page from its fallback chain (variant creation must stay an
+        // explicit editor decision in the Neos UI). find()/findImportantPages() only emit
+        // origin-addressed rows, so this is a defense against stale or handcrafted addresses.
         $targetOrigin = OriginDimensionSpacePoint::fromDimensionSpacePoint($nodeAddress->dimensionSpacePoint);
         if (!$node->originDimensionSpacePoint->equals($targetOrigin)) {
-            $contentRepository->handle(CreateNodeVariant::create(
-                $nodeAddress->workspaceName,
-                $nodeAddress->aggregateId,
-                $node->originDimensionSpacePoint,
-                $targetOrigin
-            ));
+            throw new InvalidArgumentException(sprintf(
+                'Node "%s" is a fallback of dimension %s in the addressed dimension %s and cannot be edited here. Create the variant in the Neos UI first.',
+                $nodeAddress->aggregateId->value,
+                $node->originDimensionSpacePoint->toJson(),
+                $nodeAddress->dimensionSpacePoint->toJson()
+            ), 1752060000001);
         }
         $contentRepository->handle(SetNodeProperties::create(
             $nodeAddress->workspaceName,

@@ -361,14 +361,14 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
      * Creates a Testing:Page document (tethered "main" collection included) with the given
      * image content nodes, in the live workspace, origin language "de".
      */
-    protected function createPageWithImageNodes(Node $parentNode, string $nodeName, string $title, array $imageFixtureFilenames): Node
+    protected function createPageWithImageNodes(Node $parentNode, string $nodeName, string $title, array $imageFixtureFilenames, ?string $language = null): Node
     {
         $documentNodeAggregateId = NodeAggregateId::create();
         $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
             WorkspaceName::forLive(),
             $documentNodeAggregateId,
             NodeTypeName::fromString('NEOSidekick.AiAssistant.Testing:Page'),
-            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint()),
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint($language)),
             $parentNode->aggregateId,
             initialPropertyValues: PropertyValuesToWrite::fromArray([
                 'title' => $title,
@@ -376,7 +376,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
             ])
         )->withNodeName(NodeName::fromString($nodeName)));
 
-        $subgraph = $this->subgraph();
+        $subgraph = $this->subgraph('live', $language);
         $mainContentCollection = $subgraph->findNodeByPath(NodeName::fromString('main'), $documentNodeAggregateId);
         $this->assertNotNull($mainContentCollection, 'Tethered "main" child was not created');
 
@@ -385,7 +385,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
                 WorkspaceName::forLive(),
                 NodeAggregateId::create(),
                 NodeTypeName::fromString('NEOSidekick.AiAssistant.Testing:Image'),
-                OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint()),
+                OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint($language)),
                 $mainContentCollection->aggregateId,
                 initialPropertyValues: PropertyValuesToWrite::fromArray([
                     'image' => $this->importImage($imageFixtureFilename),

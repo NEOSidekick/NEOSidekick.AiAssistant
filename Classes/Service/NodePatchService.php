@@ -558,9 +558,23 @@ class NodePatchService
             $references = $this->referencesProcessor->processAndValidateReferences($transientNode, $processingErrors);
             $this->throwOnProcessingErrors($processingErrors, $index, 'updateNode', $patch->getNodeId());
 
-            // NOTE (Neos 9 migration decision): properties are written to the node's origin dimension
-            // space point; the old Context-based code would have materialized a new variant for
-            // the requested dimensions if the node only existed as a fallback.
+            // Fallback nodes (origin differs from the requested dimension) are not editable:
+            // writing to the origin would change the source language's content, materializing a
+            // variant as a side effect would detach the page from its fallback chain. Variant
+            // creation must remain an explicit editor decision in the Neos UI.
+            if (!$node->originDimensionSpacePoint->toDimensionSpacePoint()->equals($subgraph->getDimensionSpacePoint())) {
+                throw new PatchFailedException(
+                    sprintf(
+                        'Node "%s" is a fallback of dimension %s in the requested dimension %s and cannot be edited. Create the variant in the Neos UI first.',
+                        $patch->getNodeId(),
+                        $node->originDimensionSpacePoint->toJson(),
+                        $subgraph->getDimensionSpacePoint()->toJson()
+                    ),
+                    $index,
+                    'updateNode',
+                    $patch->getNodeId()
+                );
+            }
             if (!empty($propertyValues)) {
                 $contentRepository->handle(SetNodeProperties::create(
                     $node->workspaceName,

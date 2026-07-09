@@ -3,87 +3,84 @@
 namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
 use InvalidArgumentException;
-use Neos\ContentRepository\Domain\Utility\NodePaths;
-use Neos\Utility\ObjectAccess;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
-use NEOSidekick\AiAssistant\Service\NodeFindingService;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
 
 /**
- * Fallback pages (a preset serving another preset's content through its fallback chain,
- * e.g. en_UK -> en) are NOT editable rows:
+ * Fallback pages (a dimension serving another dimension's content through a specialization,
+ * e.g. en_UK falling back to en_US) are NOT editable rows:
  * - findImportantPages() re-addresses fallback URLs to their origin dimension (deduped),
  * - real variants keep their own dimension,
- * - updatePropertiesOnNodes() rejects writes to fallback context paths: the old CR's
- *   implicit copy-on-write on setProperty() would materialize a variant as a save side
- *   effect and permanently detach the page from its fallback chain. Variant creation
- *   must remain an explicit editor decision in the Neos UI.
+ * - updatePropertiesOnNodes() rejects writes to fallback addresses — neither writing to the
+ *   origin nor materializing a variant as a save side effect (which would detach the page
+ *   from its fallback chain) is acceptable; variant creation stays an explicit decision.
+ *
+ * Uses the distribution's specialization pair (e.g. Neos.Demo: en_US → en_UK); skips when
+ * the hosting distribution configures no language specialization.
  */
 class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
 {
-    protected array $dimensions = ['en', 'en_UK'];
     protected array $siteHosts = ['example.com'];
 
-    public function setUp(): void
+    private ?string $generalizationValue = null;
+    private ?string $specializationValue = null;
+
+    protected function setUpContentInLive(): void
     {
-        parent::setUp();
-        $exampleSiteNode = $this->rootNode->getNode('/sites/example');
+        [$this->generalizationValue, $this->specializationValue] = $this->findSpecializationPair();
+        if ($this->generalizationValue === null) {
+            return; // tests will skip
+        }
 
-        $englishContext = $this->contextFactory->create([
-            'workspaceName' => 'live',
-            'dimensions' => ['language' => ['en']]
-        ]);
-        $englishSiteNode = $exampleSiteNode->createVariantForContext($englishContext);
+        // The site node exists in the primary language; add a variant in the generalization
+        // language so pages can live below it there.
+        $siteNode = $this->getNodeByPath('/sites/example');
+        if ($this->generalizationValue !== $this->primaryLanguage()) {
+            $this->createLanguageVariant($siteNode, $this->generalizationValue);
+        }
 
-        // A page existing ONLY in en - served in en_UK through the fallback chain
-        $this->createPageWithImageNodes($englishSiteNode, 'fallback-page', 'Fallback Page', ['image1.jpg']);
+        // A page existing ONLY in the generalization — covered in the specialization via fallback
+        $siteNodeInGeneralization = $this->getNodeByPath('/sites/example', 'live', $this->generalizationValue);
+        $this->createPageWithImageNodes($siteNodeInGeneralization, 'fallback-page', 'Fallback Page', ['image1.jpg'], $this->generalizationValue);
 
-        // A page with a REAL en_UK variant
-        $variantPage = $this->createPageWithImageNodes($englishSiteNode, 'variant-page', 'Variant Page', ['image1.jpg']);
-        $ukContext = $this->contextFactory->create([
-            'workspaceName' => 'live',
-            'dimensions' => ['language' => ['en_UK', 'en']],
-            'targetDimensions' => ['language' => 'en_UK'],
-        ]);
-        $variantPage->createVariantForContext($ukContext);
-
-        $this->saveNodesAndTearDownRootNodeAndRepository();
-        $this->setUpRootNodeAndRepository();
+        // A page with a REAL variant in the specialization
+        $variantPage = $this->createPageWithImageNodes($siteNodeInGeneralization, 'variant-page', 'Variant Page', ['image1.jpg'], $this->generalizationValue);
+        $this->createLanguageVariant($variantPage, $this->specializationValue);
     }
 
-    private function findImportantPagesForCandidates(array $candidateUrls): array
+    /**
+     * @return array{0: ?string, 1: ?string} [generalization, specialization] language values
+     */
+    private function findSpecializationPair(): array
     {
-        $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
-            ->disableOriginalConstructor()
-            ->getMock();
-        $apiFacadeMock
-            ->method('getMostRelevantInternalSeoUrisByHosts')
-            ->willReturn($candidateUrls);
-
-        /** @var NodeService $nodeService */
-        $nodeService = $this->objectManager->get(NodeService::class);
-        $this->inject($nodeService, 'apiFacade', $apiFacadeMock);
-
-        $findDocumentNodesFilter = new FindDocumentNodesFilter(
-            filter: 'important-pages',
-            workspace: 'live',
-            languageDimensionFilter: 'en,en_UK'
-        );
-        $controllerContext = $this->createControllerContextForDomain('example.com');
-
-        return $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
+        $dimensionId = $this->languageDimensionId();
+        if ($dimensionId === null) {
+            return [null, null];
+        }
+        $dimension = $this->contentRepository->getContentDimensionSource()->getDimension($dimensionId);
+        foreach ($dimension->values as $value) {
+            if ($value->specializationDepth->value === 1) {
+                foreach ($dimension->values as $generalization) {
+                    if ($generalization->specializationDepth->value === 0
+                        && $dimension->getGeneralization($value)?->value === $generalization->value) {
+                        return [$generalization->value, $value->value];
+                    }
+                }
+            }
+        }
+        return [null, null];
     }
 
-    private function getDefaultUriSuffix(): string
+    private function requireSpecializationPair(): void
     {
-        /** @var NodeFindingService $nodeFindingService */
-        $nodeFindingService = $this->objectManager->get(NodeFindingService::class);
-        $routesConfiguration = ObjectAccess::getProperty($nodeFindingService, 'routesConfiguration', true);
-
-        return $routesConfiguration['Neos.Neos']['variables']['defaultUriSuffix'] ?? '';
+        if ($this->generalizationValue === null || $this->specializationValue === null) {
+            $this->markTestSkipped('This test needs a language dimension with a specialization (fallback) pair.');
+        }
     }
 
     /**
@@ -91,17 +88,27 @@ class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
      */
     public function importantPagesReAddressesFallbackUrlsToTheirOrigin(): void
     {
-        $foundNodes = $this->findImportantPagesForCandidates([
-            'https://example.com/uk/fallback-page' . $this->getDefaultUriSuffix(),
-        ]);
+        $this->requireSpecializationPair();
+
+        $fallbackUrl = 'https://example.com/' . $this->languageUriSegment($this->specializationValue) . '/fallback-page' . $this->getUriPathSuffix();
+        $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)->disableOriginalConstructor()->getMock();
+        $apiFacadeMock->method('getMostRelevantInternalSeoUrisByHosts')->willReturn([$fallbackUrl]);
+
+        /** @var NodeService $nodeService */
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $this->inject($nodeService, 'apiFacade', $apiFacadeMock);
+
+        $filter = new FindDocumentNodesFilter(
+            filter: 'important-pages',
+            workspace: 'live',
+            languageDimensionFilter: $this->generalizationValue . ',' . $this->specializationValue
+        );
+        $foundNodes = $nodeService->findImportantPages($filter, $this->createControllerContextForDomain('example.com'), 'de');
 
         $this->assertCount(1, $foundNodes, 'The fallback URL must resolve to exactly one (origin-addressed) row');
-        $originContextPath = NodePaths::generateContextPath(
-            '/sites/example/fallback-page',
-            'live',
-            ['language' => $this->getRoutingLanguageDimensionValuesForPreset('en')]
-        );
-        $this->assertArrayHasKey($originContextPath, $foundNodes, 'The row must be addressed in the ORIGIN dimension');
+        $originKey = $this->addressForPath('/sites/example/fallback-page', 'live', $this->generalizationValue);
+        $this->assertArrayHasKey($originKey, $foundNodes, 'The row must be addressed in the ORIGIN dimension');
+        $this->assertSame($this->generalizationValue, reset($foundNodes)->getLanguage(), 'The row must be labeled with the origin language');
     }
 
     /**
@@ -109,30 +116,42 @@ class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
      */
     public function importantPagesKeepsRealVariantsInTheirOwnDimension(): void
     {
-        $foundNodes = $this->findImportantPagesForCandidates([
-            'https://example.com/uk/variant-page' . $this->getDefaultUriSuffix(),
-        ]);
+        $this->requireSpecializationPair();
+
+        $variantUrl = 'https://example.com/' . $this->languageUriSegment($this->specializationValue) . '/variant-page' . $this->getUriPathSuffix();
+        $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)->disableOriginalConstructor()->getMock();
+        $apiFacadeMock->method('getMostRelevantInternalSeoUrisByHosts')->willReturn([$variantUrl]);
+
+        /** @var NodeService $nodeService */
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $this->inject($nodeService, 'apiFacade', $apiFacadeMock);
+
+        $filter = new FindDocumentNodesFilter(
+            filter: 'important-pages',
+            workspace: 'live',
+            languageDimensionFilter: $this->generalizationValue . ',' . $this->specializationValue
+        );
+        $foundNodes = $nodeService->findImportantPages($filter, $this->createControllerContextForDomain('example.com'), 'de');
 
         $this->assertCount(1, $foundNodes);
-        $variantContextPath = NodePaths::generateContextPath(
-            '/sites/example/variant-page',
-            'live',
-            ['language' => ['en_UK', 'en']]
-        );
-        $this->assertArrayHasKey($variantContextPath, $foundNodes, 'A real variant must stay addressed in its own dimension');
+        $variantKey = $this->addressForPath('/sites/example/variant-page', 'live', $this->specializationValue);
+        $this->assertArrayHasKey($variantKey, $foundNodes, 'A real variant must stay addressed in its own dimension');
     }
 
     /**
      * @test
      */
-    public function updateRejectsWritesToFallbackContextPaths(): void
+    public function updateRejectsWritesToFallbackAddresses(): void
     {
-        // explicit chain order: the first value is the context's target dimension
-        $fallbackContextPath = NodePaths::generateContextPath(
-            '/sites/example/fallback-page',
-            'live',
-            ['language' => ['en_UK', 'en']]
-        );
+        $this->requireSpecializationPair();
+
+        $node = $this->getNodeByPath('/sites/example/fallback-page', 'live', $this->generalizationValue);
+        $fallbackAddress = NodeAddress::create(
+            $this->contentRepository->id,
+            WorkspaceName::forLive(),
+            $this->dimensionSpacePoint($this->specializationValue),
+            $node->aggregateId
+        )->toJson();
 
         /** @var NodeService $nodeService */
         $nodeService = $this->objectManager->get(NodeService::class);
@@ -141,7 +160,7 @@ class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
         $this->expectExceptionCode(1752060000001);
         $nodeService->updatePropertiesOnNodes([
             UpdateNodeProperties::fromArray([
-                'nodeContextPath' => $fallbackContextPath,
+                'nodeContextPath' => $fallbackAddress,
                 'properties' => ['focusKeyword' => 'must-not-be-written'],
                 'images' => [],
             ]),
@@ -153,39 +172,30 @@ class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
      */
     public function updateAcceptsWritesToRealVariants(): void
     {
-        // explicit chain order: the first value is the context's target dimension
-        $variantContextPath = NodePaths::generateContextPath(
-            '/sites/example/variant-page',
-            'live',
-            ['language' => ['en_UK', 'en']]
-        );
+        $this->requireSpecializationPair();
+
+        $variantNode = $this->getNodeByPath('/sites/example/variant-page', 'live', $this->specializationValue);
+        $variantAddress = NodeAddress::create(
+            $this->contentRepository->id,
+            WorkspaceName::forLive(),
+            $this->dimensionSpacePoint($this->specializationValue),
+            $variantNode->aggregateId
+        )->toJson();
 
         /** @var NodeService $nodeService */
         $nodeService = $this->objectManager->get(NodeService::class);
         $nodeService->updatePropertiesOnNodes([
             UpdateNodeProperties::fromArray([
-                'nodeContextPath' => $variantContextPath,
+                'nodeContextPath' => $variantAddress,
                 'properties' => ['focusKeyword' => 'variant-keyword'],
                 'images' => [],
             ]),
         ]);
 
-        $this->saveNodesAndTearDownRootNodeAndRepository();
-        $this->setUpRootNodeAndRepository();
-
-        $ukContext = $this->contextFactory->create([
-            'workspaceName' => 'live',
-            'dimensions' => ['language' => ['en_UK', 'en']],
-            'targetDimensions' => ['language' => 'en_UK'],
-        ]);
-        $this->assertSame('variant-keyword', $ukContext->getNode('/sites/example/variant-page')->getProperty('focusKeyword'));
-
-        // ...and the origin (en) stays untouched
-        $enContext = $this->contextFactory->create([
-            'workspaceName' => 'live',
-            'dimensions' => ['language' => ['en']],
-            'targetDimensions' => ['language' => 'en'],
-        ]);
-        $this->assertNull($enContext->getNode('/sites/example/fallback-page')->getProperty('focusKeyword'));
+        $updated = $this->getNodeByPath('/sites/example/variant-page', 'live', $this->specializationValue);
+        $this->assertSame('variant-keyword', $updated->getProperty('focusKeyword'));
+        // ...and the generalization stays untouched
+        $generalization = $this->getNodeByPath('/sites/example/variant-page', 'live', $this->generalizationValue);
+        $this->assertNull($generalization->getProperty('focusKeyword'));
     }
 }

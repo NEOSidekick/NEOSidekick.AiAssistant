@@ -26,6 +26,12 @@ test.describe('Neos 9 demo: alt-text backend module (real API)', () => {
         await startButton.click();
         console.log('[e2e] module started');
 
+        // Precondition not met? (all asset titles already populated) → skip, don't fail
+        const noItems = await page.locator('#appContainer')
+            .getByText(/no items that match|keine Einträge/i)
+            .waitFor({ state: 'visible', timeout: 15_000 }).then(() => true).catch(() => false);
+        test.skip(noItems, 'No image asset without a title left on this instance (see spec requirements)');
+
         // Step 2: list view shows asset items with editors
         const textareas = page.locator('#appContainer textarea');
         await expect(textareas.first()).toBeVisible({ timeout: 60_000 });

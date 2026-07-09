@@ -8,7 +8,6 @@ use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use NEOSidekick\AiAssistant\Service\NodePatchService;
-use Neos\Neos\Service\UserService;
 
 /**
  * API controller to apply atomic patches to nodes.
@@ -28,11 +27,8 @@ class ApplyPatchesApiController extends ActionController
      */
     protected $patchService;
 
-    /**
-     * @Flow\Inject
-     * @var UserService
-     */
-    protected UserService $userService;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\PersonalWorkspaceService $personalWorkspaceService;
 
     /**
      * @var string[]
@@ -97,7 +93,7 @@ class ApplyPatchesApiController extends ActionController
         }
 
         // Resolve workspace from authenticated user
-        $workspace = $this->userService->getPersonalWorkspaceName();
+        $workspace = $this->personalWorkspaceService->getPersonalWorkspaceName();
         if ($workspace === null) {
             $this->response->setStatusCode(401);
             return json_encode([

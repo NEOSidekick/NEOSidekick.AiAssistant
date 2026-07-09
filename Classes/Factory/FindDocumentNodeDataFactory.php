@@ -60,8 +60,10 @@ class FindDocumentNodeDataFactory
             }
         }
 
-        // The origin dimension space point replaces the old NodeData dimension values (single value per dimension)
-        $language = $node->originDimensionSpacePoint->getCoordinate(new ContentDimensionId($this->languageDimensionName)) ?: 'de';
+        // The language shown/edited is the dimension the node is SERVED in (subgraph dimension):
+        // for fallback pages (/uk serving en_US content) this is en_UK, like the old CR context
+        // dimensions — the origin would mislabel every fallback row with its source language.
+        $language = $node->dimensionSpacePoint->getCoordinate(new ContentDimensionId($this->languageDimensionName)) ?: 'de';
 
         return new FindDocumentNodeData(
             // Keeps the old "<identifier>-<dimensionsHash>" shape with the Neos 9 equivalents

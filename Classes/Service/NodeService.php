@@ -6,8 +6,10 @@ use InvalidArgumentException;
 use JsonException;
 use Neos\ContentRepository\Core\Dimension\ContentDimensionId;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
 use Neos\ContentRepository\Core\Feature\NodeModification\Command\SetNodeProperties;
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
+use Neos\ContentRepository\Core\Feature\NodeVariation\Command\CreateNodeVariant;
 use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
@@ -257,10 +259,22 @@ class NodeService extends AbstractNodeService
         if ($node === null) {
             throw new InvalidArgumentException(sprintf('Node "%s" was not found and cannot be updated.', $nodeAddressJson), 1713440899887);
         }
+        // Copy-on-write like the old CR contexts: when the addressed dimension differs from the
+        // node's origin (a fallback page, e.g. /uk serving en_US content), materialize the variant
+        // first — writing to the origin would silently change the content of the origin language.
+        $targetOrigin = OriginDimensionSpacePoint::fromDimensionSpacePoint($nodeAddress->dimensionSpacePoint);
+        if (!$node->originDimensionSpacePoint->equals($targetOrigin)) {
+            $contentRepository->handle(CreateNodeVariant::create(
+                $nodeAddress->workspaceName,
+                $nodeAddress->aggregateId,
+                $node->originDimensionSpacePoint,
+                $targetOrigin
+            ));
+        }
         $contentRepository->handle(SetNodeProperties::create(
             $nodeAddress->workspaceName,
             $nodeAddress->aggregateId,
-            $node->originDimensionSpacePoint,
+            $targetOrigin,
             PropertyValuesToWrite::fromArray($properties)
         ));
     }
@@ -344,8 +358,10 @@ class NodeService extends AbstractNodeService
         if ($contentRepository->getContentDimensionSource()->getDimension($languageDimensionId) === null) {
             return true;
         }
-        // The origin dimension space point replaces the old NodeData dimension values (single value per dimension now)
-        $nodeLanguageDimensionValue = $node->originDimensionSpacePoint->getCoordinate($languageDimensionId);
+        // Match against the dimension the node is served in (the subgraph/address dimension):
+        // fallback pages (e.g. /uk serving en_US content) count as their served language, like
+        // the old CR context dimensions did — not as their origin.
+        $nodeLanguageDimensionValue = $node->dimensionSpacePoint->getCoordinate($languageDimensionId);
         return $nodeLanguageDimensionValue !== null
             && in_array($nodeLanguageDimensionValue, $findDocumentNodesFilter->getLanguageDimensionFilter(), true);
     }

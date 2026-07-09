@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - 'main'
+      - 'feature/neos9-compatibility'
   pull_request:
     branches:
       - 'main'
@@ -16,9 +17,25 @@ jobs:
       fail-fast: false
       matrix:
         php-versions: ['8.3', '8.4']
-        neos-versions: ['8.3', '8.4']
+        neos-versions: ['9.0', '9.1']
         dependencies: ['locked']
     runs-on: ubuntu-latest
+
+    # The Neos 9 content graph requires MariaDB/MySQL — the functional tests cannot run
+    # on the base distribution's SQLite Testing default anymore. Same setup as
+    # neos/neos-development-collection's build.yml (MariaDB baseline + Testing settings
+    # written in a dedicated step below).
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_USER: neos
+          MYSQL_PASSWORD: neos
+          MYSQL_DATABASE: flow_functional_testing
+          MYSQL_ROOT_PASSWORD: neos
+        ports:
+          - '3306:3306'
+        options: --health-cmd="mariadb-admin ping -pneos" --health-interval=10s --health-timeout=5s --health-retries=3
 
     env:
       FLOW_CONTEXT: Testing
@@ -30,7 +47,7 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ matrix.php-versions }}
-          extensions: mbstring, xml, json, zlib, iconv, intl, pdo_sqlite, mysql, pgsql, redis, memcached, memcache, apcu
+          extensions: mbstring, xml, json, zlib, iconv, intl, mysql, pgsql, redis, memcached, memcache, apcu
           ini-values: date.timezone="Africa/Tunis", opcache.fast_shutdown=0, apc.enable_cli=on
 
       - name: Install Neos Project and other dependencies
@@ -71,6 +88,25 @@ jobs:
 
       - name: Set Flow Context
         run: echo "FLOW_CONTEXT=${{ env.FLOW_CONTEXT }}" >> $GITHUB_ENV
+
+      # The base distribution ships a SQLite Testing configuration; point the Testing
+      # context at the MariaDB service instead (the plugin's own Configuration/Testing
+      # contributes the rest: catch-up hook disabling, reflection excludes, uriPathSuffix).
+      - name: Configure Testing database
+        run: |
+          cat > "${{ env.NEOS_FOLDER }}Configuration/Testing/Settings.yaml" <<EOF
+          Neos:
+            Flow:
+              persistence:
+                backendOptions:
+                  driver: pdo_mysql
+                  charset: utf8mb4
+                  host: '127.0.0.1'
+                  port: 3306
+                  user: 'neos'
+                  password: 'neos'
+                  dbname: 'flow_functional_testing'
+          EOF
 
       - name: Run style tests
         run: |

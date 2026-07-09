@@ -65,10 +65,12 @@ abstract class AbstractNodeService
             if ($entryNode !== $sitesRootNode && in_array($entryNode->nodeTypeName->value, $nodeTypeNames, true)) {
                 $candidateNodes[] = $entryNode;
             }
-            foreach ($subgraph->findDescendantNodes(
-                $entryNode->aggregateId,
-                FindDescendantNodesFilter::create(nodeTypes: implode(',', $nodeTypeNames))
-            ) as $descendantNode) {
+            foreach (
+                $subgraph->findDescendantNodes(
+                    $entryNode->aggregateId,
+                    FindDescendantNodesFilter::create(nodeTypes: implode(',', $nodeTypeNames))
+                ) as $descendantNode
+            ) {
                 $candidateNodes[] = $descendantNode;
             }
 

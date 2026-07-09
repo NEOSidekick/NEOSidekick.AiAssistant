@@ -164,13 +164,17 @@ class SearchNodesExtractor
             return null;
         }
 
-        if ($nodeTypeFilter !== null
-            && $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)?->isOfType($nodeTypeFilter) !== true) {
+        if (
+            $nodeTypeFilter !== null
+            && $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)?->isOfType($nodeTypeFilter) !== true
+        ) {
             return null;
         }
 
-        if ($pathStartingPoint !== null
-            && !str_starts_with((string)$this->tryRetrieveNodePath($subgraph, $node), $this->normalizePathStartingPoint($pathStartingPoint))) {
+        if (
+            $pathStartingPoint !== null
+            && !str_starts_with((string)$this->tryRetrieveNodePath($subgraph, $node), $this->normalizePathStartingPoint($pathStartingPoint))
+        ) {
             return null;
         }
 

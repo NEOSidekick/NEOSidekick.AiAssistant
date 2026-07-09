@@ -179,8 +179,10 @@ class NodeService extends AbstractNodeService
             if (!self::nodeMatchesPropertyFilter($node, $findDocumentNodesFilter)) {
                 continue;
             }
-            if (!empty($findDocumentNodesFilter->getLanguageDimensionFilter())
-                && !$this->nodeMatchesLanguageDimensionFilter($findDocumentNodesFilter, $node)) {
+            if (
+                !empty($findDocumentNodesFilter->getLanguageDimensionFilter())
+                && !$this->nodeMatchesLanguageDimensionFilter($findDocumentNodesFilter, $node)
+            ) {
                 continue;
             }
 

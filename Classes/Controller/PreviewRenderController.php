@@ -159,7 +159,7 @@ class PreviewRenderController extends ActionController
             }
             $subgraph = $contentRepository->getContentSubgraph(WorkspaceName::fromString($workspace), $dimensionSpacePoint);
             return $subgraph->findNodeById(NodeAggregateId::fromString($nodeId));
-        } catch (\InvalidArgumentException|\Neos\ContentRepository\Core\SharedModel\Exception\WorkspaceDoesNotExist $e) {
+        } catch (\InvalidArgumentException | \Neos\ContentRepository\Core\SharedModel\Exception\WorkspaceDoesNotExist $e) {
             return null;
         }
     }

@@ -50,16 +50,24 @@ use NEOSidekick\AiAssistant\Service\NodeVisibility;
 
 /**
  * Neos 9 rewrite of the functional test base: all content is created through content
- * repository commands (the old NodeData/Context API is gone). The two test languages are
- * the hosting distribution's dimension values LANGUAGE_DE ("de", uriSegment "de") and
- * LANGUAGE_EN ("en_US", uriSegment "en") — see Configuration/Testing/Settings.yaml for why.
+ * repository commands (the old NodeData/Context API is gone).
+ *
+ * The tests are distribution-agnostic: instead of defining their own content dimensions
+ * (Neos 9 validates the dimension resolver mapping against the dimension source, and Flow's
+ * config merge cannot cleanly REPLACE a distribution's mapping list), the suite adapts to
+ * whatever the hosting distribution configures:
+ * - primaryLanguage(): the first top-level language dimension value that is NOT the site
+ *   default (so generated test URLs keep their URI segment prefix), fallback: first value
+ * - secondaryLanguage(): another top-level value (dimension-variant tests are skipped when
+ *   the distribution defines fewer than two)
+ * - languageUriSegment(): resolved from the site's dimension resolver configuration
+ * Projects without a language dimension run the dimension-independent tests only.
  */
 abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 {
     protected static $testablePersistenceEnabled = true;
 
-    public const LANGUAGE_DE = 'de';
-    public const LANGUAGE_EN = 'en_US';
+    private ?array $rootLanguageValuesCache = null;
 
     /**
      * Hosts to create sites for; the site node name is the first host label (example.com → example).
@@ -158,16 +166,118 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
         $this->inject($nodeService, 'apiFacade', $this->objectManager->get(ApiFacade::class));
     }
 
-    protected function dimensionSpacePoint(string $language = self::LANGUAGE_DE): DimensionSpacePoint
+    /**
+     * The language dimension id from the plugin's languageDimensionName setting, or null
+     * if the hosting distribution configures no such dimension.
+     */
+    protected function languageDimensionId(): ?ContentDimensionId
     {
-        return DimensionSpacePoint::fromArray(['language' => $language]);
+        $dimensionName = $this->objectManager->get(\Neos\Flow\Configuration\ConfigurationManager::class)->getConfiguration(
+            \Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
+            'NEOSidekick.AiAssistant.languageDimensionName'
+        ) ?: 'language';
+        $dimensionId = new ContentDimensionId($dimensionName);
+
+        return $this->contentRepository->getContentDimensionSource()->getDimension($dimensionId) !== null
+            ? $dimensionId
+            : null;
+    }
+
+    /**
+     * Top-level (specialization depth 0) values of the language dimension, ordered with
+     * non-site-default values first — see class docblock.
+     *
+     * @return string[]
+     */
+    private function rootLanguageValues(): array
+    {
+        if ($this->rootLanguageValuesCache !== null) {
+            return $this->rootLanguageValuesCache;
+        }
+        $dimensionId = $this->languageDimensionId();
+        if ($dimensionId === null) {
+            return $this->rootLanguageValuesCache = [];
+        }
+        $dimension = $this->contentRepository->getContentDimensionSource()->getDimension($dimensionId);
+        $rootValues = [];
+        foreach ($dimension->values as $value) {
+            if ($value->specializationDepth->value === 0) {
+                $rootValues[] = $value->value;
+            }
+        }
+        $siteDefault = $this->siteConfigurationPath('contentDimensions.defaultDimensionSpacePoint.' . $dimensionId->value);
+        usort($rootValues, static fn(string $a, string $b) => ($a === $siteDefault) <=> ($b === $siteDefault));
+
+        return $this->rootLanguageValuesCache = $rootValues;
+    }
+
+    /**
+     * The language test content is created in. A non-default value is preferred so that
+     * generated URLs carry the language uri segment (like the Neos 8 suite's "de").
+     */
+    protected function primaryLanguage(): ?string
+    {
+        return $this->rootLanguageValues()[0] ?? null;
+    }
+
+    /**
+     * The language used for variants. Skips the calling test when the hosting distribution
+     * configures fewer than two top-level language values.
+     */
+    protected function secondaryLanguage(): string
+    {
+        $values = $this->rootLanguageValues();
+        if (count($values) < 2) {
+            $this->markTestSkipped('This test needs a language dimension with at least two top-level values.');
+        }
+
+        return $values[1];
+    }
+
+    /**
+     * The uri path segment for a language value, resolved from the site's dimension
+     * resolver configuration (fallback: the value itself, like AutoUriPathResolver).
+     */
+    protected function languageUriSegment(?string $language = null): string
+    {
+        $language = $language ?? $this->primaryLanguage() ?? '';
+        $dimensionId = $this->languageDimensionId();
+        $segments = $this->siteConfigurationPath('contentDimensions.resolver.options.segments') ?? [];
+        foreach ($segments as $segment) {
+            if ($dimensionId !== null && ($segment['dimensionIdentifier'] ?? null) === $dimensionId->value) {
+                return $segment['dimensionValueMapping'][$language] ?? $language;
+            }
+        }
+
+        return $language;
+    }
+
+    private function siteConfigurationPath(string $path): mixed
+    {
+        return $this->objectManager->get(\Neos\Flow\Configuration\ConfigurationManager::class)->getConfiguration(
+            \Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
+            'Neos.Neos.sites.*.' . $path
+        );
+    }
+
+    /**
+     * @param string|null $language a language dimension value; null = primaryLanguage()
+     *                              (empty DimensionSpacePoint on dimension-less projects)
+     */
+    protected function dimensionSpacePoint(?string $language = null): DimensionSpacePoint
+    {
+        $language = $language ?? $this->primaryLanguage();
+
+        return $language === null
+            ? DimensionSpacePoint::createWithoutDimensions()
+            : DimensionSpacePoint::fromArray([$this->languageDimensionId()->value => $language]);
     }
 
     /**
      * Backend-like subgraph (disabled nodes visible) — content creation and assertions on
      * raw structure should not silently miss disabled nodes.
      */
-    protected function subgraph(string $workspace = 'live', string $language = self::LANGUAGE_DE): ContentSubgraphInterface
+    protected function subgraph(string $workspace = 'live', ?string $language = null): ContentSubgraphInterface
     {
         return $this->contentRepository
             ->getContentGraph(WorkspaceName::fromString($workspace))
@@ -177,7 +287,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     /**
      * Resolves an old-style path like "/sites/example/some-page" and returns the node.
      */
-    protected function getNodeByPath(string $path, string $workspace = 'live', string $language = self::LANGUAGE_DE): ?Node
+    protected function getNodeByPath(string $path, string $workspace = 'live', ?string $language = null): ?Node
     {
         $relativePath = ltrim($path, '/');
         if ($relativePath === 'sites' || $relativePath === '') {
@@ -195,7 +305,7 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
      * NodeAddress JSON of the node at the given old-style path — the result array key format
      * of NodeService::find()/findImportantPages() (replaces the old context path assertions).
      */
-    protected function addressForPath(string $path, string $workspace = 'live', string $language = self::LANGUAGE_DE): string
+    protected function addressForPath(string $path, string $workspace = 'live', ?string $language = null): string
     {
         $node = $this->getNodeByPath($path, $workspace, $language);
         $this->assertNotNull($node, sprintf('Node at path "%s" (%s, %s) not found', $path, $workspace, $language));
@@ -377,10 +487,11 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     }
 
     /**
-     * The uriPathSuffix now lives in the site configuration (Neos 9), not in Flow routes settings.
+     * The uriPathSuffix now lives in the site configuration (Neos 9), not in Flow routes
+     * settings; the plugin's Testing settings default it to ".html" for the suffix tests.
      */
     protected function getUriPathSuffix(): string
     {
-        return '.html';
+        return $this->siteConfigurationPath('uriPathSuffix') ?? '';
     }
 }

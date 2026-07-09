@@ -31,7 +31,7 @@ class NodeServiceMultiSiteTest extends FunctionalTestCase
         // English variants for both sites, in the user workspace (as on Neos 8)
         foreach (['/sites/example', '/sites/example/site1-page-a', '/sites/example/site1-page-a/site1-sub-a', '/sites/example/site1-page-b',
                   '/sites/example2', '/sites/example2/node-two-wan-kenodi', '/sites/example2/node-two-wan-kenodi/lady-eleonode-rootford-2', '/sites/example2/node-two-mc-nodeface'] as $path) {
-            $this->createLanguageVariant($this->getNodeByPath($path, $this->currentUserWorkspace), self::LANGUAGE_EN, $this->currentUserWorkspace);
+            $this->createLanguageVariant($this->getNodeByPath($path, $this->currentUserWorkspace), $this->secondaryLanguage(), $this->currentUserWorkspace);
         }
     }
 

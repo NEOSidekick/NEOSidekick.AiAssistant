@@ -1,8 +1,17 @@
 import { test, expect } from '@playwright/test';
 
 /**
- * E2E tests against the Neos 9 demo project (Neos.Demo site content, English backend UI).
- * Run auth.setup.spec.ts first to create tests/.auth/admin.json.
+ * Inspector editors + sidebar chat on Neos 9, using the REAL NEOSidekick API.
+ *
+ * Requirements (any Neos 9 site with this plugin installed qualifies, e.g. Neos.Demo):
+ * - valid NEOSidekick API key configured (NEOSidekick.AiAssistant.apikey)
+ * - backend user with English interface language (label-based selectors)
+ * - the default-selected document uses the plugin's AiPageBriefing mixin
+ *   (added to Neos.Neos:Document automatically by the plugin's default configuration)
+ * - run auth.setup.spec.ts first (creates tests/.auth/admin.json); use --workers=1
+ *
+ * The chat authorization test grants the NEOSidekick agent access to the instance —
+ * run against disposable/testing instances only.
  */
 test.use({ storageState: 'tests/.auth/admin.json', viewport: { width: 1600, height: 900 } });
 

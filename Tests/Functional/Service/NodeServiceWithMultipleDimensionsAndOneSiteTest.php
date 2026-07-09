@@ -25,7 +25,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         // English variants exist only in the user workspace (as on Neos 8: created via a
         // user-workspace context and never published).
         foreach (['/sites/example', '/sites/example/node-wan-kenodi', '/sites/example/node-wan-kenodi/lady-eleonode-rootford', '/sites/example/node-mc-nodeface'] as $path) {
-            $this->createLanguageVariant($this->getNodeByPath($path, $this->currentUserWorkspace), self::LANGUAGE_EN, $this->currentUserWorkspace);
+            $this->createLanguageVariant($this->getNodeByPath($path, $this->currentUserWorkspace), $this->secondaryLanguage(), $this->currentUserWorkspace);
         }
     }
 
@@ -94,7 +94,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
     {
         $nodeService = $this->objectManager->get(NodeService::class);
         $controllerContext = $this->createControllerContextForDomain('example.com');
-        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: self::LANGUAGE_DE);
+        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: $this->primaryLanguage());
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
         $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
@@ -174,13 +174,13 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
     {
         $nodeService = $this->objectManager->get(NodeService::class);
         $controllerContext = $this->createControllerContextForDomain('example.com');
-        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: self::LANGUAGE_EN);
+        $findDocumentNodesFilter = new FindDocumentNodesFilter(filter: 'custom', workspace: $this->currentUserWorkspace, languageDimensionFilter: $this->secondaryLanguage());
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
-        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace, self::LANGUAGE_EN), $foundNodes);
-        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, self::LANGUAGE_EN), $foundNodes);
-        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, self::LANGUAGE_EN), $foundNodes);
-        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, self::LANGUAGE_EN), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace, $this->secondaryLanguage()), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace, $this->secondaryLanguage()), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-wan-kenodi/lady-eleonode-rootford', $this->currentUserWorkspace, $this->secondaryLanguage()), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/node-mc-nodeface', $this->currentUserWorkspace, $this->secondaryLanguage()), $foundNodes);
         $this->assertCount(4, $foundNodes);
     }
 }

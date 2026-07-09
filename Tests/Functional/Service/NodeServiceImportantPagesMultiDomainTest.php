@@ -32,14 +32,14 @@ class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
 
         // Return candidates from both hosts
         $candidates = [
-            'https://example.com/de/site1-page' . $this->getUriPathSuffix(),
-            'https://example2.com/de/site2-page' . $this->getUriPathSuffix(),
+            'https://example.com/' . $this->languageUriSegment() . '/site1-page' . $this->getUriPathSuffix(),
+            'https://example2.com/' . $this->languageUriSegment() . '/site2-page' . $this->getUriPathSuffix(),
         ];
         $apiFacadeMock
             ->expects($this->once())
             ->method('getMostRelevantInternalSeoUrisByHosts')
             ->with(
-                $this->equalTo(['https://example.com/de']),
+                $this->equalTo(['https://example.com/' . $this->languageUriSegment()]),
                 $this->equalTo('de')
             )
             ->willReturn($candidates);
@@ -52,7 +52,7 @@ class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
             filter: 'important-pages',
             workspace: 'live',
             focusKeywordPropertyFilter: 'only-empty-focus-keywords',
-            languageDimensionFilter: self::LANGUAGE_DE
+            languageDimensionFilter: $this->primaryLanguage()
         );
 
         // Ask for example.com context; expect only that site's page is returned

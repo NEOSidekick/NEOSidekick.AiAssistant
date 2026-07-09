@@ -22,10 +22,10 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
         // English variants directly in live (on Neos 8 they were created in the user
         // workspace and published to live so that routing could resolve EN URIs — the
         // end state is identical).
-        $this->createLanguageVariant($exampleSiteNode, self::LANGUAGE_EN);
-        $this->createLanguageVariant($page1, self::LANGUAGE_EN);
-        $this->createLanguageVariant($page1a, self::LANGUAGE_EN);
-        $this->createLanguageVariant($page2, self::LANGUAGE_EN);
+        $this->createLanguageVariant($exampleSiteNode, $this->secondaryLanguage());
+        $this->createLanguageVariant($page1, $this->secondaryLanguage());
+        $this->createLanguageVariant($page1a, $this->secondaryLanguage());
+        $this->createLanguageVariant($page2, $this->secondaryLanguage());
     }
 
     /**
@@ -40,10 +40,10 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
             ->getMock();
 
         $candidates = [];
-        $candidates[] = 'https://example.com/de/node-wan-kenodi' . $this->getUriPathSuffix();
-        $candidates[] = 'https://example.com/de/node-wan-kenodi/lady-eleonode-rootford' . $this->getUriPathSuffix();
-        $candidates[] = 'https://example.com/en/node-wan-kenodi' . $this->getUriPathSuffix();
-        $candidates[] = 'https://example.com/en/node-wan-kenodi/lady-eleonode-rootford' . $this->getUriPathSuffix();
+        $candidates[] = 'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi' . $this->getUriPathSuffix();
+        $candidates[] = 'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi/lady-eleonode-rootford' . $this->getUriPathSuffix();
+        $candidates[] = 'https://example.com/' . $this->languageUriSegment($this->secondaryLanguage()) . '/node-wan-kenodi' . $this->getUriPathSuffix();
+        $candidates[] = 'https://example.com/' . $this->languageUriSegment($this->secondaryLanguage()) . '/node-wan-kenodi/lady-eleonode-rootford' . $this->getUriPathSuffix();
 
         $apiFacadeMock
             ->method('getMostRelevantInternalSeoUrisByHosts')
@@ -56,7 +56,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
             filter: 'important-pages',
             workspace: 'live',
             focusKeywordPropertyFilter: 'only-empty-focus-keywords',
-            languageDimensionFilter: self::LANGUAGE_DE
+            languageDimensionFilter: $this->primaryLanguage()
         );
         $controllerContext = $this->createControllerContextForDomain('example.com');
 
@@ -85,7 +85,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
 
         $candidates = [];
         // Minimal, deterministic candidate list reflecting current implementation
-        $candidates[] = 'https://example.com/de/node-wan-kenodi' . $this->getUriPathSuffix();
+        $candidates[] = 'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi' . $this->getUriPathSuffix();
 
         $apiFacadeMock
             ->method('getMostRelevantInternalSeoUrisByHosts')
@@ -98,7 +98,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
             filter: 'important-pages',
             workspace: 'live',
             focusKeywordPropertyFilter: 'only-existing-focus-keywords',
-            languageDimensionFilter: self::LANGUAGE_DE
+            languageDimensionFilter: $this->primaryLanguage()
         );
         $controllerContext = $this->createControllerContextForDomain('example.com');
         $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');
@@ -115,7 +115,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     public function itResolvesUrlWithConfiguredUriPathSuffix(): void
     {
         $foundNodes = $this->findImportantPagesForCandidates([
-            'https://example.com/de/node-wan-kenodi' . $this->getUriPathSuffix(),
+            'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi' . $this->getUriPathSuffix(),
         ]);
 
         $this->assertCount(1, $foundNodes, 'URL with configured suffix must resolve');
@@ -130,7 +130,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     public function itResolvesUrlWithTrailingSlash(): void
     {
         $foundNodes = $this->findImportantPagesForCandidates([
-            'https://example.com/de/node-wan-kenodi/',
+            'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi/',
         ]);
 
         $this->assertCount(1, $foundNodes, 'Trailing-slash URL must resolve after suffix normalisation');
@@ -145,7 +145,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     public function itResolvesUrlWithoutAnySuffix(): void
     {
         $foundNodes = $this->findImportantPagesForCandidates([
-            'https://example.com/de/node-wan-kenodi',
+            'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi',
         ]);
 
         $this->assertCount(1, $foundNodes, 'Bare URL must resolve after suffix normalisation');
@@ -159,7 +159,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
      */
     public function itDeduplicatesAllUrlVariantsToSameNode(): void
     {
-        $base = 'https://example.com/de/node-wan-kenodi';
+        $base = 'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi';
         $foundNodes = $this->findImportantPagesForCandidates([
             $base . $this->getUriPathSuffix(),
             $base . '/',
@@ -176,7 +176,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
      */
     public function itDeduplicatesCandidates(): void
     {
-        $url = 'https://example.com/de/node-wan-kenodi' . $this->getUriPathSuffix();
+        $url = 'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi' . $this->getUriPathSuffix();
         $foundNodes = $this->findImportantPagesForCandidates([$url, $url, $url]);
 
         $this->assertCount(1, $foundNodes, 'Duplicate candidate URLs must deduplicate to one node');
@@ -191,7 +191,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
      */
     public function itMatchesHostRegardlessOfSchemeAndDefaultPort(): void
     {
-        $basePath = '/de/node-wan-kenodi' . $this->getUriPathSuffix();
+        $basePath = '/' . $this->languageUriSegment() . '/node-wan-kenodi' . $this->getUriPathSuffix();
         $foundNodes = $this->findImportantPagesForCandidates([
             'http://example.com' . $basePath,
             'http://example.com:80' . $basePath,
@@ -224,7 +224,7 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
             filter: 'important-pages',
             workspace: 'live',
             focusKeywordPropertyFilter: 'only-existing-focus-keywords',
-            languageDimensionFilter: self::LANGUAGE_DE
+            languageDimensionFilter: $this->primaryLanguage()
         );
         $controllerContext = $this->createControllerContextForDomain('example.com');
         $foundNodes = $nodeService->findImportantPages($findDocumentNodesFilter, $controllerContext, 'de');

@@ -1,12 +1,12 @@
 # Functional test configuration (Neos 9).
 #
-# DECISION: the tests reuse the content dimensions of the hosting distribution
-# (Neos.Demo: language = en_US [default, uriSegment "en"], en_UK, de [uriSegment "de"])
-# instead of defining their own de/en set like on Neos 8. Reason: Neos 9 validates the
-# dimension resolver mapping against the dimension source, and Flow's config merge cannot
-# cleanly REPLACE the distribution's mapping list (leaf nulls produce invalid mapping
-# entries, layer-internal nulls are merged away before overruling package config).
-# The test base therefore uses "de" and "en_US" as its two languages.
+# The functional tests define NO content dimensions of their own: Neos 9 validates the
+# dimension resolver mapping against the dimension source, and Flow's configuration merge
+# cannot cleanly REPLACE a mapping list a distribution ships (leaf nulls produce invalid
+# mapping entries, layer-internal nulls are merged away before overruling package config).
+# Instead the test base adapts to the hosting distribution's language dimension at runtime
+# (see Tests/Functional/FunctionalTestCase: primaryLanguage()/secondaryLanguage()); tests
+# that need two languages are skipped when the distribution configures fewer.
 #
 # Only leaf-level, conflict-free overrides here:
 Neos:

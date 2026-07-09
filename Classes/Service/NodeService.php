@@ -5,8 +5,10 @@ namespace NEOSidekick\AiAssistant\Service;
 use InvalidArgumentException;
 use JsonException;
 use Neos\ContentRepository\Core\Dimension\ContentDimensionId;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\Feature\NodeModification\Command\SetNodeProperties;
 use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
@@ -14,8 +16,11 @@ use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
+use Neos\Flow\Mvc\Exception\NoMatchingRouteException;
 use Neos\Flow\Security\Exception;
 use Neos\Neos\Exception as NeosException;
+use Neos\Neos\FrontendRouting\Options;
+use Neos\Neos\FrontendRouting\NodeUriBuilderFactory;
 use Neos\Neos\Routing\Exception\NoSiteException;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
@@ -28,6 +33,9 @@ class NodeService extends AbstractNodeService
 {
     #[\Neos\Flow\Annotations\Inject]
     protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
+
+    #[\Neos\Flow\Annotations\Inject]
+    protected NodeUriBuilderFactory $nodeUriBuilderFactory;
     private const BASE_NODE_TYPE = 'NEOSidekick.AiAssistant:Mixin.AiPageBriefing';
 
     /**
@@ -89,19 +97,36 @@ class NodeService extends AbstractNodeService
 
         $hosts = [];
         if ($languageDimension !== null) {
-            // NOTE (Neos 9 migration decision): the per-language uriSegment now comes from the site's dimension resolver
-            // configuration (Neos.Neos.sites.*.contentDimensions.resolver.options.segments) instead of the removed
-            // Neos.ContentRepository.contentDimensions presets; when no mapping is configured we fall back to the
-            // dimension value itself, mirroring Neos' AutoUriPathResolver default behavior.
+            // NOTE (Neos 9 migration decision): the entry URL per language is the router-generated
+            // homepage URI of the site node in that language's dimension space point. Hand-building
+            // "<host>/<uriSegment>" URLs (Neos 8 behavior) breaks for the site-default language,
+            // whose homepage has an EMPTY uri path in Neos 9 (e.g. /en would 404 while / works) —
+            // the NEOSidekick API then wrongly reports the site as not publicly accessible.
             $site = $this->siteService->getSiteByHostName($currentRequestUri->getHost());
-            $uriSegmentsByDimensionValue = self::extractUriSegmentMapping(
-                $site->getConfiguration()->contentDimensionResolverOptions,
-                $this->languageDimensionName
+            $liveContentGraph = $contentRepository->getContentGraph(WorkspaceName::forLive());
+            $sitesRootAggregate = $liveContentGraph->findRootNodeAggregateByType(NodeTypeName::fromString('Neos.Neos:Sites'));
+            $siteNodeAggregate = $sitesRootAggregate === null ? null : $liveContentGraph->findChildNodeAggregateByName(
+                $sitesRootAggregate->nodeAggregateId,
+                $site->getNodeName()->toNodeName()
             );
+            $nodeUriBuilder = $this->nodeUriBuilderFactory->forActionRequest($controllerContext->getRequest());
             foreach ($languageDimension->values as $dimensionValue) {
                 if (sizeof($findDocumentNodesFilter->getLanguageDimensionFilter()) === 0 || in_array($dimensionValue->value, $findDocumentNodesFilter->getLanguageDimensionFilter(), true)) {
-                    $uriSegment = $uriSegmentsByDimensionValue[$dimensionValue->value] ?? $dimensionValue->value;
-                    $hosts[] = $currentRequestUri->getScheme() . '://' . $currentRequestUri->getHost() . '/' . $uriSegment;
+                    if ($siteNodeAggregate === null) {
+                        continue;
+                    }
+                    try {
+                        $homepageUri = $nodeUriBuilder->uriFor(NodeAddress::create(
+                            $contentRepository->id,
+                            WorkspaceName::forLive(),
+                            DimensionSpacePoint::fromArray([$this->languageDimensionName => $dimensionValue->value]),
+                            $siteNodeAggregate->nodeAggregateId
+                        ), Options::createForceAbsolute());
+                    } catch (NoMatchingRouteException) {
+                        // no homepage variant in this language — nothing to crawl there
+                        continue;
+                    }
+                    $hosts[] = rtrim((string)$homepageUri, '/');
                 }
             }
         } else {
@@ -323,27 +348,5 @@ class NodeService extends AbstractNodeService
         $nodeLanguageDimensionValue = $node->originDimensionSpacePoint->getCoordinate($languageDimensionId);
         return $nodeLanguageDimensionValue !== null
             && in_array($nodeLanguageDimensionValue, $findDocumentNodesFilter->getLanguageDimensionFilter(), true);
-    }
-
-    /**
-     * Extracts the dimensionValue => uriPathSegment mapping for the given dimension from a site's
-     * dimension resolver options ({@see \Neos\Neos\FrontendRouting\DimensionResolution\Resolver\UriPathResolver\Segments}).
-     *
-     * @param array<string, mixed> $contentDimensionResolverOptions
-     *
-     * @return array<string, string>
-     */
-    protected static function extractUriSegmentMapping(array $contentDimensionResolverOptions, string $dimensionName): array
-    {
-        $mapping = [];
-        foreach ($contentDimensionResolverOptions['segments'] ?? [] as $segment) {
-            if (($segment['dimensionIdentifier'] ?? null) !== $dimensionName) {
-                continue;
-            }
-            foreach ($segment['dimensionValueMapping'] ?? [] as $dimensionValue => $uriPathSegment) {
-                $mapping[(string)$dimensionValue] = (string)$uriPathSegment;
-            }
-        }
-        return $mapping;
     }
 }

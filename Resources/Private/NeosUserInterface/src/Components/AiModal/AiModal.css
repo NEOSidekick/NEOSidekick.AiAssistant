@@ -52,6 +52,14 @@
   color: #999999;
 }
 
+.result__loading {
+  display: flex;
+  align-items: center;
+  padding: 1rem 0;
+  color: #999999;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
 .button__paddingNone {
   padding: 0;
 }

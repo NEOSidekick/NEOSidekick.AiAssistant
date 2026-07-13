@@ -90,6 +90,43 @@ roles:
 Of course, you can also define the privilege for any
 other role that you are using for example `Neos.Neos:Administrator`.
 
+### Reverse proxy / headless setups (Zebra, Next.js)
+
+If you run Neos headless behind a frontend proxy — for example a
+[Zebra](https://github.com/networkteam/zebra) Next.js frontend that renders the site
+and proxies backend requests to Neos — the proxy **must forward the `/neosidekick/`
+URL prefix** to the Neos backend. All of this package's routes live under that prefix:
+
+- `/neosidekick/api/*` — the internal Agent API consumed by the NEOSidekick platform
+- `/neosidekick/agent/*` — the agent authorization flow (chat sidebar consent)
+- `/neosidekick/aiassistant/*` — the backend UI service
+
+If the proxy only forwards `/neos/` (and assets), every `/neosidekick/*` request is
+served by the frontend instead of Neos and returns the frontend's own 404, so the
+Agent API and the chat authorization silently break.
+
+With Next.js this means adding the prefix to your `middleware.ts` matcher, next to the
+existing `/neos/` entry, for example:
+
+```ts
+export const config = {
+    matcher: [
+        '/neos/:path*',
+        '/neosidekick/:path*', // forward the AiAssistant routes to Neos
+        // …your other proxied paths (assets, etc.)
+    ],
+};
+```
+
+**Public host / trusted proxies.** The plugin reports the site's public domain to the
+NEOSidekick platform so the authorization popup and platform callbacks target the
+correct URL. It first uses the matching Neos `Domain` record for the request; if none
+matches it falls back to the active request's base URI. For that fallback to yield the
+public host (and not the internal upstream host the proxy connects to), configure
+Flow's [trusted proxies](https://flowframework.readthedocs.io/en/stable/TheDefinitiveGuide/PartV/Http.html#trusted-proxies)
+so the forwarded `Host`/`Proto` headers are honoured, **or** add a Neos `Domain`
+record for each public host you serve the backend on.
+
 ### Page-specific AI briefings
 
 By default, we add the mixin `NEOSidekick.AiAssistant:Mixin.AiPageBriefing` to the Neos.Neos:Document NodeType to allow editors to fine-tune the NEOSidekick AI Assistant behavior. 

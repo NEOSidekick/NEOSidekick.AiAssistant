@@ -5,6 +5,8 @@ namespace NEOSidekick\AiAssistant\EelHelper;
 use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Http\BaseUriProvider;
+use Neos\Flow\Http\Exception as HttpException;
 use Neos\Flow\Package\PackageManager;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
@@ -78,6 +80,12 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     protected $securityContext;
 
     /**
+     * @Flow\Inject
+     * @var BaseUriProvider
+     */
+    protected $baseUriProvider;
+
+    /**
      * @Flow\InjectConfiguration(path="languageDimensionName")
      * @var string
      */
@@ -137,16 +145,37 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 
     public function domain(): string
     {
-        $uriFromGlobals = ServerRequest::getUriFromGlobals();
-        $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
-
         $currentDomain = $this->domainRepository->findOneByActiveRequest();
         if ($currentDomain) {
-            $scheme = $currentDomain->getScheme() ?: $schemeFromGlobals;
+            $scheme = $currentDomain->getScheme() ?: $this->schemeFromActiveRequest();
             return "$scheme://" . $currentDomain->getHostname();
         }
 
-        return "$schemeFromGlobals://" . $uriFromGlobals->getHost();
+        // No matching Neos domain record: derive the public base URI from the
+        // active HTTP request rather than the raw superglobals. ServerRequest::
+        // getUriFromGlobals() bypasses Flow's trusted-proxy handling and would
+        // leak the internal upstream host (e.g. "web") whenever the site runs
+        // behind a reverse proxy — for example a headless / Zebra Next.js
+        // frontend. BaseUriProvider honours the configured baseUri and the
+        // trusted-proxy corrected request, so it returns the real public host.
+        try {
+            return rtrim((string)$this->baseUriProvider->getConfiguredBaseUriOrFallbackToCurrentRequest(), '/');
+        } catch (HttpException $exception) {
+            // No active HTTP request (e.g. CLI) and no configured baseUri:
+            // fall back to the previous globals-based behaviour as a last resort.
+            $uriFromGlobals = ServerRequest::getUriFromGlobals();
+            $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
+            return "$schemeFromGlobals://" . $uriFromGlobals->getHost();
+        }
+    }
+
+    private function schemeFromActiveRequest(): string
+    {
+        try {
+            return $this->baseUriProvider->getConfiguredBaseUriOrFallbackToCurrentRequest()->getScheme() ?: 'https';
+        } catch (HttpException $exception) {
+            return ServerRequest::getUriFromGlobals()->getScheme() ?: 'http';
+        }
     }
 
     public function siteName(): string

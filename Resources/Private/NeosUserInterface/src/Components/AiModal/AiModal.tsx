@@ -505,12 +505,20 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                     {this.hasSelectedText() ? '' : this.renderCreateButtons()}
                     {generationState === 'empty' ? '' : <div className="result">
                         <Label><I18n id="NEOSidekick.AiAssistant:AiModal:new-text" fallback="New Text"/>:</Label>
-                        <CKEditor
-                            onChange={(value) => this.setState({generatedText: value})}
-                            value={generatedText}
-                            options={editorOptions}
-                        />
-                        <i className="result__notice"><I18n id="NEOSidekick.AiAssistant:AiModal:disclaimer" fallback="GenAI models can make mistakes. Check important information."/></i>
+                        {generationState === 'loading' && !generatedText
+                            ? <div className="result__loading">
+                                <Icon icon="spinner" spin className="icon--space-right"/>
+                                <I18n id="NEOSidekick.AiAssistant:AiModal:generating" fallback="Sidekick is writing…"/>
+                            </div>
+                            : <React.Fragment>
+                                <CKEditor
+                                    onChange={(value) => this.setState({generatedText: value})}
+                                    value={generatedText}
+                                    options={editorOptions}
+                                />
+                                <i className="result__notice"><I18n id="NEOSidekick.AiAssistant:AiModal:disclaimer" fallback="GenAI models can make mistakes. Check important information."/></i>
+                            </React.Fragment>
+                        }
                     </div>}
                 </div>
             </Dialog>

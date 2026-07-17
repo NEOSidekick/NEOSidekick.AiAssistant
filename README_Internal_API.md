@@ -4,7 +4,9 @@ This document describes the internal HTTP API endpoints provided by the `NEOSide
 
 ## Quick Start
 
-Test the API endpoints with these curl commands (replace with your domain and API key):
+Test the API endpoints with these curl commands (replace `your-site.com` with your
+domain and `your-api-key` with a valid **JWT Bearer token** — see
+[Authentication](#authentication); the static `apikey` setting is not accepted here):
 
 ```bash
 # 1. Get NodeType schema
@@ -61,35 +63,46 @@ curl -X POST "https://your-site.com/neosidekick/api/apply-patches" \
 
 ## Authentication
 
-All API endpoints (except Backend Service) require Bearer token authentication:
+All API endpoints (except Backend Service) are protected by a Flow authentication
+provider (`NEOSidekick.AiAssistant:JwtApi`) and require a **session-bound JSON Web
+Token** as a Bearer token:
 
 ```http
-Authorization: Bearer {apiKey}
+Authorization: Bearer {jwt}
 ```
 
-The API key must match the configured value in `Settings.yaml`:
+> **Note:** `{jwt}` is **not** the static `NEOSidekick.AiAssistant.apikey` setting.
+> The `apikey` setting is the NEOSidekick platform *license key* used by the Neos UI
+> plugin (chat sidebar, inline editors) to talk to `api.neosidekick.com`. It is never
+> accepted as a Bearer token on these API endpoints. In the `curl` examples in this
+> document, `your-api-key` is a placeholder for the JWT described here.
 
-```yaml
-NEOSidekick:
-  AiAssistant:
-    apikey: 'your-secret-api-key'
-```
+### How the token is issued
+
+The JWT is minted by `AgentTokenService` from an **authenticated Neos backend
+session** and signed with Flow's `HashService` encryption key (HS256). Its claims
+include `sub` (the backend account identifier), `user_id`, `account_id` and
+`session_id`. The token carries no expiry of its own — instead it becomes invalid as
+soon as the underlying Neos backend session expires.
+
+An external client never mints the token itself. It is obtained through the agent
+authorization flow: an editor consents in the Neos backend
+(`/neosidekick/agent/request-authorization` → `/neosidekick/agent/do-authorize`), and
+Neos forwards the freshly minted JWT to the NEOSidekick platform's OAuth callback,
+keyed by `state`. The platform then sends that JWT as the Bearer token on every
+subsequent API call.
+
+Because the JWT resolves to a real `Neos.Neos:Backend` account, write operations
+(`apply-patches`) act **as that user** and target their personal workspace.
 
 ### Error Responses
 
-**401 Unauthorized** - Missing or invalid authentication:
+**401 Unauthorized** - Missing or invalid JWT:
 
 ```json
 {
   "error": "Unauthorized",
-  "message": "Missing Authorization header"
-}
-```
-
-```json
-{
-  "error": "Unauthorized",
-  "message": "Invalid API key"
+  "message": "Valid JWT Bearer token required"
 }
 ```
 
@@ -1026,7 +1039,7 @@ curl -X POST "https://example.com/neosidekick/api/apply-patches" \
 
 ### Workspace Limitations
 
-**Important:** Personal workspaces like `user-admin` require a logged-in Neos backend user. This API uses Bearer token authentication which grants access to the API endpoint, but does NOT authenticate as a Neos backend user.
+**Important:** The JWT Bearer token *does* authenticate as a Neos backend user — the account encoded in its `sub`/`account_id` claims. `apply-patches` therefore writes to **that** user's personal workspace (e.g. `user-admin`); it is not a public/anonymous request. A given token can only write to the workspace of the account it was minted for.
 
 ### Error Response
 
@@ -1131,7 +1144,7 @@ These API endpoints follow a split architecture pattern:
 └──────────────────────────────────┘
               │
               │ HTTP GET/POST
-              │ Authorization: Bearer {apiKey}
+              │ Authorization: Bearer {session-bound JWT}
               ▼
 ┌──────────────────────────────────┐
 │      Neos CMS                    │
@@ -1153,12 +1166,12 @@ This architecture ensures:
 
 ## Security Considerations
 
-1. **API Key**: Store securely, never commit to version control. Configure in `Settings.yaml` under `NEOSidekick.AiAssistant.apikey`
+1. **Authentication**: Access is gated by a session-bound JWT (see [Authentication](#authentication)), not a static API key. The token is only as long-lived as the backend session it was minted from.
 2. **HTTPS**: Always use HTTPS in production
-3. **Workspace Access**: API provides data for any workspace - consider access control
+3. **Workspace Access**: Writes act as the backend account encoded in the JWT and land in that user's personal workspace; reads may span workspaces - consider access control
 4. **Hidden Content**: Hidden nodes may be included - handle appropriately
 5. **Rate Limiting**: Consider implementing rate limiting for large sites
-6. **Policy Configuration**: The API controllers are granted public access via `Policy.yaml` with the privilege `NEOSidekick.AiAssistant:PublicApi`. Authentication is handled via Bearer token in the controller, not via Flow's security framework
+6. **Security Framework**: Authentication is enforced by Flow's security framework via the `NEOSidekick.AiAssistant:JwtApi` provider (`JwtProvider` + `JwtToken` + `JwtEntryPoint`, configured in `Settings.Internal.yaml`), which validates the JWT signature, the referenced session and the backend account. The controllers are matched by request pattern; they are **not** granted anonymous/public access.
 
 ---
 
@@ -1193,5 +1206,7 @@ Data extraction services that provide raw data to the controllers:
 ### Configuration
 
 - `Configuration/Routes.yaml` - API route definitions
-- `Configuration/Policy.yaml` - Security policy (grants public access to API controllers)
-- `Configuration/Settings.Internal.yaml` - Authentication pattern configuration
+- `Configuration/Policy.yaml` - Privilege targets for the API controllers (`NEOSidekick.AiAssistant:CanUse`)
+- `Configuration/Settings.Internal.yaml` - JWT authentication provider (`NEOSidekick.AiAssistant:JwtApi`) and request-pattern configuration
+- `Classes/Security/Authentication/**` - JWT token, provider and entry point
+- `Classes/Service/AgentTokenService.php` - Mints and verifies the session-bound JWT

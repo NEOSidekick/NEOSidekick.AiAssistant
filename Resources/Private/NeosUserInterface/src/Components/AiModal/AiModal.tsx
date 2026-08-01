@@ -219,7 +219,7 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                 {this.props.selectedText ?
                     <I18n id="NEOSidekick.AiAssistant:AiModal:modify-text-title" fallback="Revise text"/> :
                     <I18n id="NEOSidekick.AiAssistant:AiModal:create-text-title" fallback="Generate text with AI"/>
-                } (Beta)
+                }
             </div>
         )
     }

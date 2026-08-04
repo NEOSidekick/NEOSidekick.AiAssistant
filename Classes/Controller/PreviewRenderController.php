@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace NEOSidekick\AiAssistant\Controller;
 
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Service\ContentDimensionPresetSourceInterface;
-use Neos\ContentRepository\Domain\Utility\NodePaths;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Security\Context;
-use Neos\Neos\Controller\CreateContentContextTrait;
-use Neos\Neos\Domain\Model\Site;
-use Neos\Neos\Domain\Service\SiteService;
 use Neos\Neos\View\FusionView;
 use NEOSidekick\AiAssistant\Service\PreviewTokenService;
 use Psr\Http\Message\ResponseInterface;
@@ -31,17 +30,15 @@ use Psr\Http\Message\ResponseInterface;
  *   provider request pattern (see Settings.Internal.yaml) - the HMAC token
  *   is the only access control.
  * - Neos normally guards non-live rendering behind backend authentication
- *   (in the routing/NodeConverter layer). We bypass this by building the
- *   content context ourselves and rendering inside
- *   Context::withoutAuthorizationChecks() so node/entity privileges do not
- *   require an authenticated session.
+ *   (the ContentRepositoryAuthProvider denies reading other workspaces for
+ *   anonymous requests). We bypass this by resolving the node and rendering
+ *   inside Context::withoutAuthorizationChecks() so workspace read
+ *   privileges do not require an authenticated session.
  *
  * @noinspection PhpUnused
  */
 class PreviewRenderController extends ActionController
 {
-    use CreateContentContextTrait;
-
     /**
      * @var string
      */
@@ -64,11 +61,8 @@ class PreviewRenderController extends ActionController
      */
     protected $previewTokenService;
 
-    /**
-     * @Flow\Inject
-     * @var ContentDimensionPresetSourceInterface
-     */
-    protected $contentDimensionPresetSource;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
      * Render the full frontend HTML for the given node, like the frontend would.
@@ -99,12 +93,11 @@ class PreviewRenderController extends ActionController
             $dimensionsArray = [];
         }
 
-        // Fetching nodes in a non-live workspace can be subject to node/entity
-        // privileges (e.g. Neos.Neos:Backend.OtherUsersPersonalWorkspaceAccess
-        // on Context::validateWorkspace()) - resolve the node without
-        // authorization checks, as the HMAC token already authorizes this
-        // request. Note: withoutAuthorizationChecks() discards the closure's
-        // return value in Flow 8, so we capture results by reference.
+        // Fetching nodes in a non-live workspace is denied for anonymous
+        // requests by the ContentRepositoryAuthProvider - resolve the node
+        // without authorization checks, as the HMAC token already authorizes
+        // this request. Note: withoutAuthorizationChecks() discards the
+        // closure's return value in Flow, so we capture results by reference.
         $node = null;
         $this->securityContext->withoutAuthorizationChecks(function () use (&$node, $nodeId, $workspace, $dimensionsArray): void {
             $node = $this->findNode($nodeId, $workspace, $dimensionsArray);
@@ -116,20 +109,24 @@ class PreviewRenderController extends ActionController
             return 'Node not found';
         }
 
-        // Render exactly like Neos' own Frontend\NodeController does
+        // Render exactly like Neos' own Frontend\NodeController does.
+        // The Neos 9 FusionView resolves the site node and Site itself via
+        // the closest Neos.Neos:Site ancestor (multi-site safe), so no
+        // site-specific context needs to be built here anymore.
         $this->view->assign('value', $node);
+        $this->view->assign('request', $this->request);
 
         // Neos only renders non-live workspaces for authenticated backend
-        // users; out-of-session rendering works because we already have the
-        // node in a self-built context and disable authorization checks for
-        // anything the Fusion rendering touches.
+        // users; out-of-session rendering works because we already resolved
+        // the node and disable authorization checks for anything the Fusion
+        // rendering touches.
         $output = null;
         $this->securityContext->withoutAuthorizationChecks(function () use (&$output): void {
             $output = $this->view->render();
         });
 
         // Neos.Neos:Page is a Neos.Fusion:Http.Message, so FusionView may
-        // return a full PSR-7 response instead of a plain string.
+        // return a full PSR-7 response instead of a plain stream.
         if ($output instanceof ResponseInterface) {
             $this->response->setStatusCode($output->getStatusCode());
             foreach ($output->getHeaders() as $headerName => $headerValues) {
@@ -147,70 +144,65 @@ class PreviewRenderController extends ActionController
      * Find the document node by aggregate identifier in the given workspace
      * and dimensions.
      *
-     * The context is (re-)created with the Site matching the node's path so
-     * that FusionView can resolve the correct site node and Fusion setup
-     * even without a domain-based request match (multi-site safe).
+     * Must run inside Context::withoutAuthorizationChecks() so that the
+     * ContentRepositoryAuthProvider grants read access to the workspace.
      */
-    protected function findNode(string $nodeId, string $workspace, array $dimensionsArray): ?NodeInterface
+    protected function findNode(string $nodeId, string $workspace, array $dimensionsArray): ?Node
     {
-        if ($dimensionsArray === []) {
-            $dimensionsArray = $this->getDefaultDimensions();
-        }
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
 
-        $context = $this->createContentContext($workspace, $dimensionsArray);
-        $node = $context->getNodeByIdentifier($nodeId);
-
-        if ($node === null) {
+        try {
+            if ($dimensionsArray === []) {
+                $dimensionSpacePoint = $this->getDefaultDimensionSpacePoint($contentRepository);
+            } else {
+                $dimensionSpacePoint = DimensionSpacePoint::fromArray($this->dimensionCoordinatesFromLegacyDimensionsArray($dimensionsArray));
+            }
+            $subgraph = $contentRepository->getContentSubgraph(WorkspaceName::fromString($workspace), $dimensionSpacePoint);
+            return $subgraph->findNodeById(NodeAggregateId::fromString($nodeId));
+        } catch (\InvalidArgumentException | \Neos\ContentRepository\Core\SharedModel\Exception\WorkspaceDoesNotExist $e) {
             return null;
         }
-
-        $site = $this->findSiteForNode($node);
-        if ($site === null) {
-            return $node;
-        }
-
-        $contextProperties = $node->getContext()->getProperties();
-        $contextProperties['currentSite'] = $site;
-        if ($domain = $site->getFirstActiveDomain()) {
-            $contextProperties['currentDomain'] = $domain;
-        }
-        $siteContext = $this->_contextFactory->create($contextProperties);
-
-        return $siteContext->getNodeByIdentifier($nodeId);
     }
 
     /**
-     * Fall back to the default preset values of all configured content
-     * dimensions, so preview URLs without explicit dimensions work on
-     * dimension-enabled sites.
+     * Preview URLs historically carry dimensions in the legacy context format
+     * (['language' => ['de', 'en']] with fallback chains). A DimensionSpacePoint
+     * has exactly one coordinate per dimension, so we use the first (primary)
+     * value of each fallback chain; plain scalar values are accepted as-is.
      *
-     * @return array<string, array<string>>
+     * @param array<string, mixed> $dimensionsArray
+     * @return array<string, string>
      */
-    protected function getDefaultDimensions(): array
+    protected function dimensionCoordinatesFromLegacyDimensionsArray(array $dimensionsArray): array
     {
-        $dimensions = [];
-        foreach ($this->contentDimensionPresetSource->getAllPresets() as $dimensionName => $dimensionConfiguration) {
-            $defaultPreset = $dimensionConfiguration['presets'][$dimensionConfiguration['defaultPreset']] ?? null;
-            if (is_array($defaultPreset) && isset($defaultPreset['values'])) {
-                $dimensions[$dimensionName] = $defaultPreset['values'];
+        $coordinates = [];
+        foreach ($dimensionsArray as $dimensionName => $dimensionValues) {
+            if (is_array($dimensionValues)) {
+                $firstValue = reset($dimensionValues);
+                if (is_string($firstValue)) {
+                    $coordinates[$dimensionName] = $firstValue;
+                }
+            } elseif (is_string($dimensionValues)) {
+                $coordinates[$dimensionName] = $dimensionValues;
             }
         }
 
-        return $dimensions;
+        return $coordinates;
     }
 
     /**
-     * Determine the Site the given node belongs to (via its node path).
+     * Fall back to a default dimension space point (the first root
+     * generalization of the content repository's variation graph, like
+     * Neos' own FusionExceptionView does), so preview URLs without explicit
+     * dimensions work on dimension-enabled sites.
      */
-    protected function findSiteForNode(NodeInterface $node): ?Site
+    protected function getDefaultDimensionSpacePoint(\Neos\ContentRepository\Core\ContentRepository $contentRepository): DimensionSpacePoint
     {
-        if (!str_starts_with($node->getPath(), SiteService::SITES_ROOT_PATH . '/')) {
-            return null;
-        }
+        $rootGeneralizations = $contentRepository->getVariationGraph()->getRootGeneralizations();
+        $firstRootGeneralization = reset($rootGeneralizations);
 
-        $sitePath = NodePaths::getRelativePathBetween(SiteService::SITES_ROOT_PATH, $node->getPath());
-        $siteNodeName = explode('/', $sitePath)[0];
-
-        return $this->_siteRepository->findOneByNodeName($siteNodeName);
+        return $firstRootGeneralization instanceof DimensionSpacePoint
+            ? $firstRootGeneralization
+            : DimensionSpacePoint::createWithoutDimensions();
     }
 }

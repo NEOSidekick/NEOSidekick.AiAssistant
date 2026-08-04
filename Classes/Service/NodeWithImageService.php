@@ -2,26 +2,25 @@
 
 namespace NEOSidekick\AiAssistant\Service;
 
-use Doctrine\ORM\EntityManagerInterface;
 use InvalidArgumentException;
-use Neos\ContentRepository\Domain\Model\Node;
-use Neos\ContentRepository\Domain\Model\NodeData;
-use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
-use Neos\ContentRepository\Domain\Utility\NodePaths;
-use Neos\ContentRepository\Exception\NodeException;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\ContentRepository\Core\Dimension\ContentDimensionId;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindClosestNodeFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindDescendantNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Exception;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Media\Exception\AssetServiceException;
 use Neos\Media\Exception\ThumbnailServiceException;
+use Neos\Neos\Domain\Service\NodeTypeNameFactory;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\NodeTypeWithImageMetadataSchemaDto;
 use NEOSidekick\AiAssistant\Factory\FindImageDataFactory;
-use PDO;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -29,18 +28,8 @@ use Psr\Log\LoggerInterface;
  */
 class NodeWithImageService extends AbstractNodeService
 {
-    /**
-     * @Flow\Inject
-     * @var EntityManagerInterface
-     */
-    protected $entityManager;
-
-    /**
-     * @Flow\Inject
-     * @var WorkspaceRepository
-     */
-    protected $workspaceRepository;
-
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
     /**
      * @Flow\Inject
      * @var FindImageDataFactory
@@ -48,22 +37,10 @@ class NodeWithImageService extends AbstractNodeService
     protected $findImageDataFactory;
 
     /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
      * @Flow\InjectConfiguration(path="languageDimensionName")
      * @var string
      */
     protected $languageDimensionName;
-
-    /**
-     * @Flow\InjectConfiguration(package="Neos.ContentRepository", path="contentDimensions")
-     * @var array
-     */
-    protected $contentDimensions;
 
     /**
      * @Flow\Inject
@@ -78,13 +55,11 @@ class NodeWithImageService extends AbstractNodeService
     protected $systemLogger;
 
     /**
-     * @param FindDocumentNodesFilter     $filter
-     * @param array<FindDocumentNodeData> $findDocumentNodeDataDtos
-     * @param ControllerContext           $controllerContext
+     * @param FindDocumentNodesFilter             $filter
+     * @param array<string, FindDocumentNodeData> $findDocumentNodeDataDtos keyed by the document node's NodeAddress JSON string
+     * @param ControllerContext                   $controllerContext
      *
      * @return array
-     * @throws NodeException
-     * @throws NodeTypeNotFoundException
      * @throws Exception
      * @throws MissingActionNameException
      * @throws \Neos\Flow\Property\Exception
@@ -94,79 +69,90 @@ class NodeWithImageService extends AbstractNodeService
      */
     public function findDocumentNodesHavingChildNodesWithImages(FindDocumentNodesFilter $filter, array $findDocumentNodeDataDtos, ControllerContext $controllerContext): array
     {
-        $workspace = $this->workspaceRepository->findByIdentifier($filter->getWorkspace());
-        $nodeTypeSchemaDtos = $this->nodeTypeService->getNodeTypesWithImageAlternativeTextOrTitleConfiguration();
-        $documentNodeContextPaths = array_keys($findDocumentNodeDataDtos);
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
+        $workspace = $contentRepository->findWorkspaceByName(WorkspaceName::fromString($filter->getWorkspace()));
 
         if (!$workspace) {
             throw new InvalidArgumentException('The given workspace does not exist in the database. Please reload the page.', 1713440899886);
         }
 
-        $workspaceChain = array_merge([$workspace], array_values($workspace->getBaseWorkspaces()));
-        $contentNodesQueryBuilder = $this->createQueryBuilder($workspaceChain);
-
-        $contentNodesQueryBuilder->andWhere('n.nodeType IN (:includeNodeTypes)');
-        $contentNodesQueryBuilder->setParameter('includeNodeTypes', array_keys($nodeTypeSchemaDtos));
-
-        $contentNodesQueryBuilder->andWhere('n.removed = :false');
-        $contentNodesQueryBuilder->andWhere('n.hidden = :false');
-        $contentNodesQueryBuilder->setParameter('false', false, PDO::PARAM_BOOL);
-
-        // Only find nodes that are below or equal to the paths of the found document nodes
-        $pathConstraints = $contentNodesQueryBuilder->expr()->orX();
-        foreach ($documentNodeContextPaths as $contextPath) {
-            $path = NodePaths::explodeContextPath($contextPath)['nodePath'];
-            $pathConstraints->add($contentNodesQueryBuilder->expr()->eq('n.path', $contentNodesQueryBuilder->expr()->literal($path)));
-            $pathConstraints->add($contentNodesQueryBuilder->expr()->like('n.path', $contentNodesQueryBuilder->expr()->literal($path . '%')));
+        $nodeTypeSchemaDtos = $this->nodeTypeService->getNodeTypesWithImageAlternativeTextOrTitleConfiguration();
+        if ($nodeTypeSchemaDtos === []) {
+            return [];
         }
-        $contentNodesQueryBuilder->andWhere($pathConstraints);
-
-        if (!empty($filter->getLanguageDimensionFilter())) {
-            $this->addDimensionJoinConstraintsToQueryBuilder(
-                $contentNodesQueryBuilder,
-                [$this->languageDimensionName => $filter->getLanguageDimensionFilter()]
-            );
-        }
-
-        $contentNodesQueryBuilder->addOrderBy('LENGTH(n.path)', 'ASC');
-        $contentNodesQueryBuilder->addOrderBy('n.index', 'ASC');
-        $contentNodesQueryBuilder->addOrderBy('n.dimensionsHash', 'DESC');
-
-        $items = $contentNodesQueryBuilder->getQuery()->getResult();
-
-        $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
+        $contentNodeTypesFilter = implode(',', array_keys($nodeTypeSchemaDtos));
+        $languageDimensionFilter = $filter->getLanguageDimensionFilter();
 
         $result = $findDocumentNodeDataDtos;
-        foreach ($itemsReducedByWorkspaceChain as $itemNodeData) {
-            $closestAggregateNodeData = $this->findClosestAggregate($itemNodeData);
+        $subgraphsByDimensionSpacePointHash = [];
 
-            if ($closestAggregateNodeData === null) {
-                $this->systemLogger->warning(sprintf('Nodes must at least have one aggregate ancestor, found node "%s" without.', $itemNodeData->getContextPath()));
+        foreach ($findDocumentNodeDataDtos as $documentNodeAddressJson => $findDocumentNodeData) {
+            try {
+                $documentNodeAddress = NodeAddress::fromJsonString((string)$documentNodeAddressJson);
+            } catch (InvalidArgumentException $e) {
+                $this->systemLogger->warning(sprintf('Could not parse document node address "%s": %s', $documentNodeAddressJson, $e->getMessage()));
                 continue;
             }
 
-            $context = $this->createContentContext($filter->getWorkspace(), $itemNodeData->getDimensionValues());
-            $contentNode = new Node($itemNodeData, $context);
-            $closestAggregateNode = $context->getNode($closestAggregateNodeData->getPath());
+            // NOTE (Neos 9 migration decision): the old NodeData query also matched content variants without the language
+            // dimension; we now filter by the document's dimension space point (a document address is dimension-specific).
+            if (!empty($languageDimensionFilter)) {
+                $languageCoordinate = $documentNodeAddress->dimensionSpacePoint->getCoordinate(new ContentDimensionId($this->languageDimensionName));
+                if ($languageCoordinate !== null && !in_array($languageCoordinate, $languageDimensionFilter, true)) {
+                    continue;
+                }
+            }
 
-            $findDocumentNodeData = $result[$closestAggregateNode->getContextPath()] ?? null;
-            // Skip if the document closest aggregate is not in the list of filtered document nodes
-            if (!$findDocumentNodeData) {
+            // The workspace from the filter wins over the one encoded in the address, mirroring the old content context creation.
+            // The content graph already resolves the workspace chain, replacing the old reduceNodeVariantsByWorkspaces().
+            // NodeVisibility::excludeDisabledAndRemoved() excludes disabled nodes, replacing the old "n.hidden = false" constraint.
+            $subgraph = $subgraphsByDimensionSpacePointHash[$documentNodeAddress->dimensionSpacePoint->hash]
+                ??= $contentRepository->getContentGraph($workspace->workspaceName)
+                    ->getSubgraph($documentNodeAddress->dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved());
+
+            $documentNode = $subgraph->findNodeById($documentNodeAddress->aggregateId);
+            if ($documentNode === null) {
                 continue;
             }
 
-            $imagePropertiesForNodeType = $nodeTypeSchemaDtos[$contentNode->getNodeType()->getName()];
-            /** @var NodeTypeWithImageMetadataSchemaDto $schema */
-            foreach ($imagePropertiesForNodeType as $schema) {
-                if (!self::nodeMatchesPropertyFilter($itemNodeData, $filter, $schema)) {
+            // The document node itself can also carry image properties (the old query matched the exact path, too)
+            $nodesToInspect = [$documentNode];
+            // NOTE (Neos 9 migration decision): the old query ordered content nodes by path length and sorting index across
+            // all documents; findDescendantNodes uses the graph's natural (tree) order, so image order can differ slightly.
+            foreach ($subgraph->findDescendantNodes($documentNode->aggregateId, FindDescendantNodesFilter::create(nodeTypes: $contentNodeTypesFilter)) as $descendantNode) {
+                $nodesToInspect[] = $descendantNode;
+            }
+
+            foreach ($nodesToInspect as $contentNode) {
+                $imagePropertiesForNodeType = $nodeTypeSchemaDtos[$contentNode->nodeTypeName->value] ?? null;
+                if (!$imagePropertiesForNodeType) {
                     continue;
                 }
 
-                $findImageData = $this->findImageDataFactory->createFromNodeAndSchema($contentNode, $schema, $controllerContext);
-                if (!$findImageData) {
+                // NOTE (Neos 9 migration decision): the old code attributed content to the closest "aggregate" ancestor;
+                // we attribute to the closest document ancestor, which differs for content node types with aggregate=true.
+                $closestDocumentNode = $subgraph->findClosestNode($contentNode->aggregateId, FindClosestNodeFilter::create(nodeTypes: NodeTypeNameFactory::NAME_DOCUMENT));
+                if ($closestDocumentNode === null) {
+                    $this->systemLogger->warning(sprintf('Nodes must at least have one document ancestor, found node "%s" without.', NodeAddress::fromNode($contentNode)->toJson()));
                     continue;
                 }
-                $result[$findDocumentNodeData->getNodeContextPath()] = $findDocumentNodeData->withAddedImage($findImageData);
+                // Content below a nested document is attributed to that document when it is iterated itself
+                if (!$closestDocumentNode->aggregateId->equals($documentNode->aggregateId)) {
+                    continue;
+                }
+
+                /** @var NodeTypeWithImageMetadataSchemaDto $schema */
+                foreach ($imagePropertiesForNodeType as $schema) {
+                    if (!self::nodeMatchesPropertyFilter($contentNode, $filter, $schema)) {
+                        continue;
+                    }
+
+                    $findImageData = $this->findImageDataFactory->createFromNodeAndSchema($contentNode, $schema, $controllerContext);
+                    if (!$findImageData) {
+                        continue;
+                    }
+                    $result[$documentNodeAddressJson] = $result[$documentNodeAddressJson]->withAddedImage($findImageData);
+                }
             }
         }
 
@@ -176,37 +162,18 @@ class NodeWithImageService extends AbstractNodeService
     }
 
     /**
-     * @param NodeData $nodeData
-     *
-     * @return NodeData|null
-     * @throws NodeTypeNotFoundException
-     */
-    protected function findClosestAggregate(NodeData $nodeData): ?NodeData
-    {
-        $currentNode = $nodeData;
-        while ($currentNode !== null) {
-            if ($currentNode->getNodeType()->isAggregate()) {
-                return $currentNode;
-            }
-            $currentNode = $currentNode->getParent();
-        }
-        return null;
-    }
-
-    /**
-     * @param NodeData                           $nodeData
+     * @param Node                               $node
      * @param FindDocumentNodesFilter            $filter
      * @param NodeTypeWithImageMetadataSchemaDto $schema
      *
      * @return bool
-     * @throws NodeException
      */
-    private static function nodeMatchesPropertyFilter(NodeData $nodeData, FindDocumentNodesFilter $filter, NodeTypeWithImageMetadataSchemaDto $schema): bool
+    private static function nodeMatchesPropertyFilter(Node $node, FindDocumentNodesFilter $filter, NodeTypeWithImageMetadataSchemaDto $schema): bool
     {
         $alternativeTextPropertyName = $schema->getAlternativeTextPropertyName();
-        $alternativeTextPropertyValue = ($alternativeTextPropertyName && $nodeData->hasProperty($alternativeTextPropertyName)) ? $nodeData->getProperty($alternativeTextPropertyName) : null;
+        $alternativeTextPropertyValue = ($alternativeTextPropertyName && $node->hasProperty($alternativeTextPropertyName)) ? $node->getProperty($alternativeTextPropertyName) : null;
         $titleTextPropertyName = $schema->getTitleTextPropertyName();
-        $titleTextPropertyValue = ($titleTextPropertyName && $nodeData->hasProperty($titleTextPropertyName)) ? $nodeData->getProperty($titleTextPropertyName) : null;
+        $titleTextPropertyValue = ($titleTextPropertyName && $node->hasProperty($titleTextPropertyName)) ? $node->getProperty($titleTextPropertyName) : null;
         $propertyValuesMatchFilter = match ($filter->getImagePropertiesFilter()) {
             'none' => true,
             'only-empty-alternative-text-or-title-text' => ($alternativeTextPropertyName && empty($alternativeTextPropertyValue)) || ($titleTextPropertyName && empty($titleTextPropertyValue)),
@@ -216,7 +183,7 @@ class NodeWithImageService extends AbstractNodeService
             'only-existing-title-text' => $titleTextPropertyName && !empty($titleTextPropertyValue),
         };
 
-        $imagePropertyIsNotEmpty = $nodeData->hasProperty($schema->getImagePropertyName()) && $nodeData->getProperty($schema->getImagePropertyName()) !== null;
+        $imagePropertyIsNotEmpty = $node->hasProperty($schema->getImagePropertyName()) && $node->getProperty($schema->getImagePropertyName()) !== null;
 
         return $propertyValuesMatchFilter && $imagePropertyIsNotEmpty;
     }

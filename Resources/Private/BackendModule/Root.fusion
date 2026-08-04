@@ -1,6 +1,5 @@
 include: resource://Neos.Fusion/Private/Fusion/Root.fusion
 include: resource://Neos.Neos.Ui/Private/Fusion/Prototypes/RenderConfiguration.fusion
-include: resource://Sitegeist.FusionLinkPrototypes/Private/Fusion/Root.fusion
 include: ./BackendModule.fusion
 
 NEOSidekick.AiAssistant.BackendModule.ImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {

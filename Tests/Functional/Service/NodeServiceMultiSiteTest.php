@@ -2,50 +2,37 @@
 
 namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
-use Neos\ContentRepository\Domain\Utility\NodePaths;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
 
 class NodeServiceMultiSiteTest extends FunctionalTestCase
 {
-    protected array $dimensions = ['de', 'en'];
     protected array $siteHosts = ['example.com', 'example2.com'];
 
-    public function setUp(): void
+    protected function setUpContentInLive(): void
     {
-        parent::setUp();
-
         // Create content for example.com
-        $exampleSiteNode = $this->rootNode->getNode('/sites/example');
+        $exampleSiteNode = $this->getNodeByPath('/sites/example');
         $page1 = $this->createPageWithImageNodes($exampleSiteNode, 'site1-page-a', 'Site1 Page A', ['image1.jpg', 'image2.jpg']);
         $this->createPageWithImageNodes($page1, 'site1-sub-a', 'Site1 Sub A', ['image1.jpg', 'image2.jpg']);
         $this->createPageWithImageNodes($exampleSiteNode, 'site1-page-b', 'Site1 Page B', ['image1.jpg', 'image2.jpg']);
 
         // Create content for example2.com
-        $example2SiteNode = $this->rootNode->getNode('/sites/example2');
+        $example2SiteNode = $this->getNodeByPath('/sites/example2');
         $page1b = $this->createPageWithImageNodes($example2SiteNode, 'node-two-wan-kenodi', 'Seite 1 (Site 2)', ['image1.jpg', 'image2.jpg']);
         $this->createPageWithImageNodes($page1b, 'lady-eleonode-rootford-2', 'Unterseite 1 (Site 2)', ['image1.jpg', 'image2.jpg']);
         $this->createPageWithImageNodes($example2SiteNode, 'node-two-mc-nodeface', 'Seite 2 (Site 2)', ['image1.jpg', 'image2.jpg']);
 
-        // Create EN variants for both sites
-        $englishContext = $this->contextFactory->create([
-            'workspaceName' => $this->currentUserWorkspace,
-            'dimensions' => ['language' => ['en']]
-        ]);
+    }
 
-        $exampleSiteNode->createVariantForContext($englishContext);
-        $exampleSiteNode->getNode('site1-page-a')->createVariantForContext($englishContext);
-        $exampleSiteNode->getNode('site1-page-a/site1-sub-a')->createVariantForContext($englishContext);
-        $exampleSiteNode->getNode('site1-page-b')->createVariantForContext($englishContext);
-
-        $example2SiteNode->createVariantForContext($englishContext);
-        $example2SiteNode->getNode('node-two-wan-kenodi')->createVariantForContext($englishContext);
-        $example2SiteNode->getNode('node-two-wan-kenodi/lady-eleonode-rootford-2')->createVariantForContext($englishContext);
-        $example2SiteNode->getNode('node-two-mc-nodeface')->createVariantForContext($englishContext);
-
-        $this->saveNodesAndTearDownRootNodeAndRepository();
-        $this->setUpRootNodeAndRepository();
+    protected function setUpContentInUserWorkspace(): void
+    {
+        // English variants for both sites, in the user workspace (as on Neos 8)
+        foreach (['/sites/example', '/sites/example/site1-page-a', '/sites/example/site1-page-a/site1-sub-a', '/sites/example/site1-page-b',
+                  '/sites/example2', '/sites/example2/node-two-wan-kenodi', '/sites/example2/node-two-wan-kenodi/lady-eleonode-rootford-2', '/sites/example2/node-two-mc-nodeface'] as $path) {
+            $this->createLanguageVariant($this->getNodeByPath($path, $this->currentUserWorkspace), $this->secondaryLanguage(), $this->currentUserWorkspace);
+        }
     }
 
     /**
@@ -60,15 +47,15 @@ class NodeServiceMultiSiteTest extends FunctionalTestCase
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
         // Ensure nodes from example.com are present
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/site1-page-a', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/site1-page-a/site1-sub-a', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example/site1-page-b', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        // Assert nodes from /sites/example2 (not current domain) are not present
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example2', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example2/node-two-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example2/node-two-wan-kenodi/lady-eleonode-rootford-2', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example2/node-two-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/site1-page-a', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/site1-page-a/site1-sub-a', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example/site1-page-b', $this->currentUserWorkspace), $foundNodes);
+        // ...and nodes from example2.com are not
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example2', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example2/node-two-wan-kenodi', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example2/node-two-wan-kenodi/lady-eleonode-rootford-2', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example2/node-two-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
     }
 
     /**
@@ -83,14 +70,14 @@ class NodeServiceMultiSiteTest extends FunctionalTestCase
         $foundNodes = $nodeService->find($findDocumentNodesFilter, $controllerContext);
 
         // Assert nodes from /sites/example2 (current domain) are present
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example2', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example2/node-two-wan-kenodi', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example2/node-two-wan-kenodi/lady-eleonode-rootford-2', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayHasKey(NodePaths::generateContextPath('/sites/example2/node-two-mc-nodeface', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        // Assert nodes from /sites/example (not current domain) are not present
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/site1-page-a', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/site1-page-a/site1-sub-a', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
-        $this->assertArrayNotHasKey(NodePaths::generateContextPath('/sites/example/site1-page-b', $this->currentUserWorkspace, ['language' => $this->getStoredLanguageDimensionValuesForPreset('de')]), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example2', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example2/node-two-wan-kenodi', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example2/node-two-wan-kenodi/lady-eleonode-rootford-2', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayHasKey($this->addressForPath('/sites/example2/node-two-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
+        // ...and nodes from /sites/example are not
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example/site1-page-a', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example/site1-page-a/site1-sub-a', $this->currentUserWorkspace), $foundNodes);
+        $this->assertArrayNotHasKey($this->addressForPath('/sites/example/site1-page-b', $this->currentUserWorkspace), $foundNodes);
     }
 }

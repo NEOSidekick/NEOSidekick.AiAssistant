@@ -2,9 +2,10 @@
 
 namespace NEOSidekick\AiAssistant\Factory;
 
-use Neos\ContentRepository\Domain\Model\Node;
-use Neos\ContentRepository\Exception\NodeException;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Exception;
 use Neos\Flow\Mvc\Controller\ControllerContext;
@@ -41,6 +42,12 @@ class FindImageDataFactory
     protected $resourceManager;
 
     /**
+     * @Flow\Inject
+     * @var ContentRepositoryRegistry
+     */
+    protected $contentRepositoryRegistry;
+
+    /**
      * @param Node                               $node
      * @param NodeTypeWithImageMetadataSchemaDto $schema
      * @param ControllerContext                  $controllerContext
@@ -48,8 +55,6 @@ class FindImageDataFactory
      * @return FindImageData|null
      * @throws Exception
      * @throws MissingActionNameException
-     * @throws NodeException
-     * @throws NodeTypeNotFoundException
      * @throws \Neos\Flow\Property\Exception
      * @throws \Neos\Flow\Security\Exception
      * @throws AssetServiceException
@@ -68,18 +73,44 @@ class FindImageDataFactory
         // todo we directly access the array offset "src" -> we need a better check or accept an exception
         $thumbnailUri = $this->assetService->getThumbnailUriAndSizeForAsset($asset, $thumbnailConfiguration, $controllerContext->getRequest())['src'];
         $fullsizeUri = $this->resourceManager->getPublicPersistentResourceUri($asset->getResource());
+        $alternativeTextPropertyName = $schema->getAlternativeTextPropertyName();
+        $titleTextPropertyName = $schema->getTitleTextPropertyName();
+
         return new FindImageData(
-            $node->getContextPath(),
-            $node->getNodeType()->getName(),
-            $node->getIndex(),
+            NodeAddress::fromNode($node)->toJson(),
+            $node->nodeTypeName->value,
+            $this->resolveNodeOrderIndex($node),
             $asset->getResource()->getFilename(),
             $fullsizeUri,
             $thumbnailUri,
             $schema->getImagePropertyName(),
-            $schema->getAlternativeTextPropertyName(),
-            $node->getProperty($schema->getAlternativeTextPropertyName()),
-            $schema->getTitleTextPropertyName(),
-            $node->getProperty($schema->getTitleTextPropertyName())
+            $alternativeTextPropertyName,
+            $alternativeTextPropertyName ? $node->getProperty($alternativeTextPropertyName) : null,
+            $titleTextPropertyName,
+            $titleTextPropertyName ? $node->getProperty($titleTextPropertyName) : null
         );
+    }
+
+    /**
+     * NOTE (Neos 9 migration decision): Node::getIndex() is removed; we return the node's position among its
+     * siblings, which preserves the relative ordering but not the legacy sorting index values.
+     */
+    private function resolveNodeOrderIndex(Node $node): int
+    {
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
+        $parentNode = $subgraph->findParentNode($node->aggregateId);
+        if ($parentNode === null) {
+            return 0;
+        }
+
+        $position = 0;
+        foreach ($subgraph->findChildNodes($parentNode->aggregateId, FindChildNodesFilter::create()) as $siblingNode) {
+            if ($siblingNode->aggregateId->equals($node->aggregateId)) {
+                return $position;
+            }
+            $position++;
+        }
+
+        return 0;
     }
 }

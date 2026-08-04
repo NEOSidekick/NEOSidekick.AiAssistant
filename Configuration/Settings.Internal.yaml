@@ -14,6 +14,9 @@ Neos:
     defaultContext:
       'NEOSidekick': 'NEOSidekick\AiAssistant\EelHelper\NEOSidekickHelper'
       'NEOSidekickInternal': 'NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper'
+      # Neos 9 registers Neos.Ui.Workspace only in the UI's configurationDefaultEelContext;
+      # our backend module Fusion needs it in the Fusion default context as well.
+      'Neos.Ui.Workspace': 'Neos\Neos\Ui\Fusion\Helper\WorkspaceHelper'
   Neos:
     fusion:
       autoInclude:
@@ -55,7 +58,9 @@ Neos:
           chatSidebarEnabled: '${NEOSidekickInternal.chatSidebarEnabled()}'
           modifyTextModalPreferCustomPrompt: '${NEOSidekickInternal.modifyTextModalPreferCustomPrompt()}'
           userInterfaceLanguage: '${q(user).property(''preferences.interfaceLanguage'') || Configuration.setting(''Neos.Neos.userInterface.defaultLanguage'')}'
-          contentDimensions: '${Neos.Ui.ContentDimensions.contentDimensionsByName()}'
+          # Neos 9: the core helper requires a ContentRepositoryId not available in this Eel
+          # context; our internal helper resolves the default CR and delegates to it.
+          contentDimensions: '${NEOSidekickInternal.contentDimensionsByName()}'
           syncLanguagePresets: '${NEOSidekickInternal.languageDimensionSyncPresets()}'
     modules:
       ai-assistant:

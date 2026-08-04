@@ -4,8 +4,8 @@ namespace NEOSidekick\AiAssistant\Service;
 
 use Neos\Cache\Exception;
 use Neos\Cache\Frontend\VariableFrontend;
-use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Core\NodeType\NodeType;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\Flow\Annotations as Flow;
 use Neos\Utility\Arrays;
 use NEOSidekick\AiAssistant\Dto\ImageTextPropertyConfigurationDto;
@@ -26,12 +26,6 @@ class NodeTypeService
     private const CACHE_ENTRY_IDENTIFIER = 'nodeTypesWithImageAlternativeTextOrTitleConfiguration';
 
     /**
-     * @Flow\Inject()
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
-
-    /**
      * @var VariableFrontend
      */
     protected $cache;
@@ -41,14 +35,17 @@ class NodeTypeService
      * @var LoggerInterface
      */
     protected $logger;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     public function getNodeTypesWithImageAlternativeTextOrTitleConfiguration(): array
     {
         if ($this->cache->has(self::CACHE_ENTRY_IDENTIFIER)) {
             return $this->cache->get(self::CACHE_ENTRY_IDENTIFIER);
         }
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
 
-        $nodeTypes = $this->nodeTypeManager->getNodeTypes();
+        $nodeTypes = $contentRepository->getNodeTypeManager()->getNodeTypes();
         $matchingNodeTypes = $this->findMatchingNodeTypes($nodeTypes);
 
         $nodeTypeDtos = $this->createNodeTypeDtos($matchingNodeTypes);
@@ -73,7 +70,7 @@ class NodeTypeService
 
             $nodeTypeMatches = $this->processNodeTypeProperties($nodeType);
             if (!empty($nodeTypeMatches)) {
-                $matchingNodeTypes[$nodeType->getName()] = $nodeTypeMatches;
+                $matchingNodeTypes[$nodeType->name->value] = $nodeTypeMatches;
             }
         }
 
@@ -95,7 +92,7 @@ class NodeTypeService
             $imageTextPropertyConfigurationDto = $this->processPropertyConfiguration($nodeType, $propertyName, $propertyConfiguration);
             if ($imageTextPropertyConfigurationDto) {
                 if (isset($imagePropertiesWithinNodeTypeHavingAlternativeOrTitleText[$imageTextPropertyConfigurationDto->getImagePropertyName()][$imageTextPropertyConfigurationDto->getNodeTypeKey()])) {
-                    throw new NodeTypeConfigurationException(sprintf('Error in node type "%s": There is already a "%s" property configured for image property "%s"', $nodeType->getName(), str_replace('PropertyName', '', $imageTextPropertyConfigurationDto->getNodeTypeKey()), $imageTextPropertyConfigurationDto->getImagePropertyName()), 1729598970759);
+                    throw new NodeTypeConfigurationException(sprintf('Error in node type "%s": There is already a "%s" property configured for image property "%s"', $nodeType->name->value, str_replace('PropertyName', '', $imageTextPropertyConfigurationDto->getNodeTypeKey()), $imageTextPropertyConfigurationDto->getImagePropertyName()), 1729598970759);
                 }
 
                 $imagePropertiesWithinNodeTypeHavingAlternativeOrTitleText[$imageTextPropertyConfigurationDto->getImagePropertyName()][$imageTextPropertyConfigurationDto->getNodeTypeKey()] = $imageTextPropertyConfigurationDto->getTextPropertyName();

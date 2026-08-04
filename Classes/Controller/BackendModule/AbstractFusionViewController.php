@@ -32,6 +32,9 @@ abstract class AbstractFusionViewController extends AbstractModuleController
      */
     protected $securityContext;
 
+    #[Flow\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
+
     /**
      * @param FusionView $view
      *
@@ -52,5 +55,7 @@ abstract class AbstractFusionViewController extends AbstractModuleController
         $this->view->assign('user', $user);
         $this->view->assign('interfaceLanguage', $this->userService->getInterfaceLanguage());
         $this->view->assign('csrfToken', $this->securityContext->getCsrfProtectionToken());
+        // Neos 9: Neos.Ui.Workspace.getPersonalWorkspace() in BackendModule.fusion needs a ContentRepositoryId
+        $this->view->assign('contentRepositoryId', $this->contentRepositoryProvider->getContentRepositoryId());
     }
 }

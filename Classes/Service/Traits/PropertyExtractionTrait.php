@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace NEOSidekick\AiAssistant\Service\Traits;
 
-use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 
 /**
  * Trait for extracting configured properties from Neos nodes.
@@ -30,10 +30,10 @@ trait PropertyExtractionTrait
      * Iterates over the configured property names and returns
      * only those with non-null values.
      *
-     * @param NodeInterface $node The node to extract properties from
+     * @param Node $node The node to extract properties from
      * @return array<string, mixed> Extracted properties (key => value)
      */
-    protected function extractSelectedProperties(NodeInterface $node): array
+    protected function extractSelectedProperties(Node $node): array
     {
         $properties = [];
         foreach ($this->getIncludedProperties() as $propertyName) {

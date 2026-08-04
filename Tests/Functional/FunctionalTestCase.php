@@ -3,19 +3,33 @@
 namespace NEOSidekick\AiAssistant\Tests\Functional;
 
 use GuzzleHttp\Psr7\ServerRequest;
-use Neos\ContentRepository\Domain\Factory\NodeFactory;
-use Neos\ContentRepository\Domain\Model\Node;
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Model\NodeTemplate;
-use Neos\ContentRepository\Domain\Model\Workspace;
-use Neos\ContentRepository\Domain\NodeAggregate\NodeName;
-use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
-use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
-use Neos\ContentRepository\Domain\Service\ContextFactory;
-use Neos\Neos\Domain\Service\ContentContextFactory;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
-use Neos\ContentRepository\Domain\Utility\NodePaths;
-use Neos\Flow\Configuration\ConfigurationManager;
+use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\Dimension\ContentDimensionId;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
+use Neos\ContentRepository\Core\Feature\NodeCreation\Command\CreateNodeAggregateWithNode;
+use Neos\ContentRepository\Core\Feature\NodeModification\Command\SetNodeProperties;
+use Neos\ContentRepository\Core\Feature\NodeModification\Dto\PropertyValuesToWrite;
+use Neos\ContentRepository\Core\Feature\NodeVariation\Command\CreateNodeVariant;
+use Neos\ContentRepository\Core\Feature\RootNodeCreation\Command\CreateRootNodeAggregateWithNode;
+use Neos\ContentRepository\Core\Feature\SubtreeTagging\Command\TagSubtree;
+use Neos\ContentRepository\Core\Feature\SubtreeTagging\Dto\SubtreeTag;
+use Neos\ContentRepository\Core\Feature\WorkspaceCreation\Command\CreateRootWorkspace;
+use Neos\ContentRepository\Core\Feature\WorkspaceCreation\Command\CreateWorkspace;
+use Neos\ContentRepository\Core\Feature\WorkspacePublication\Command\PublishWorkspace;
+use Neos\ContentRepository\Core\NodeType\NodeTypeName;
+use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\NodePath;
+use Neos\ContentRepository\Core\Service\ContentRepositoryMaintainerFactory;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeVariantSelectionStrategy;
+use Neos\ContentRepository\Core\SharedModel\Workspace\ContentStreamId;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
+use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Http\ServerRequestAttributes;
 use Neos\Flow\Mvc\ActionRequest;
 use Neos\Flow\Mvc\ActionResponse;
@@ -25,60 +39,117 @@ use Neos\Flow\Mvc\Routing\Dto\RouteParameters;
 use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\ResourceManagement\ResourceManager;
 use Neos\Media\Domain\Model\Image;
+use Neos\Media\Domain\Repository\AssetRepository;
 use Neos\Neos\Domain\Model\Domain;
 use Neos\Neos\Domain\Model\Site;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
-use Neos\Neos\Domain\Service\SiteService;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use NEOSidekick\AiAssistant\Service\NodeService;
+use NEOSidekick\AiAssistant\Service\NodeVisibility;
 
+/**
+ * Neos 9 rewrite of the functional test base: all content is created through content
+ * repository commands (the old NodeData/Context API is gone).
+ *
+ * The tests are distribution-agnostic: instead of defining their own content dimensions
+ * (Neos 9 validates the dimension resolver mapping against the dimension source, and Flow's
+ * config merge cannot cleanly REPLACE a distribution's mapping list), the suite adapts to
+ * whatever the hosting distribution configures:
+ * - primaryLanguage(): the first top-level language dimension value that is NOT the site
+ *   default (so generated test URLs keep their URI segment prefix), fallback: first value
+ * - secondaryLanguage(): another top-level value (dimension-variant tests are skipped when
+ *   the distribution defines fewer than two)
+ * - languageUriSegment(): resolved from the site's dimension resolver configuration
+ * Projects without a language dimension run the dimension-independent tests only.
+ */
 abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 {
     protected static $testablePersistenceEnabled = true;
-    protected array $dimensions = [];
-    protected array $siteHosts = [];
 
-    protected ContextFactory $contextFactory;
-    protected ?NodeDataRepository $nodeDataRepository = null;
-    protected WorkspaceRepository $workspaceRepository;
-    protected ?Node $rootNode = null;
-    protected ?Node $sitesNode = null;
-    protected ?Workspace $liveWorkspace = null;
-    protected ?Workspace $groupWorkspace = null;
-    protected ?NodeTypeManager $nodeTypeManager = null;
+    private ?array $rootLanguageValuesCache = null;
 
     /**
-     * @return void
+     * Hosts to create sites for; the site node name is the first host label (example.com → example).
      */
+    protected array $siteHosts = [];
+
+    protected string $currentUserWorkspace;
+    protected string $currentGroupWorkspace;
+
+    protected ContentRepositoryRegistry $contentRepositoryRegistry;
+    protected ContentRepository $contentRepository;
+    protected ?NodeAggregateId $sitesNodeAggregateId = null;
+
     public function setUp(): void
     {
         parent::setUp();
-        $this->nodeTypeManager = $this->objectManager->get(NodeTypeManager::class);
-        $this->currentUserWorkspace = explode('.', uniqid('user-', true))[0];
-        $this->currentGroupWorkspace = explode('.', uniqid('group-', true))[0];
-        $this->setUpRootNodeAndRepository();
+        $this->contentRepositoryRegistry = $this->objectManager->get(ContentRepositoryRegistry::class);
+        $contentRepositoryId = $this->objectManager->get(\NEOSidekick\AiAssistant\Service\ContentRepositoryProvider::class)->getContentRepositoryId();
 
-        // Purge existing sites/domains and content under /sites to ensure tests are isolated
-        $this->purgeSitesDomainsAndContent();
+        // Flow's testable persistence drops the non-ORM cr_* tables when it (re)compiles the
+        // test schema, so the (idempotent) CR setup must run per test; prune isolates state.
+        $maintainer = $this->contentRepositoryRegistry->buildService($contentRepositoryId, new ContentRepositoryMaintainerFactory());
+        $setupError = $maintainer->setUp();
+        self::assertNull($setupError, 'CR setup failed: ' . ($setupError?->getMessage() ?? ''));
+        $pruneError = $maintainer->prune();
+        self::assertNull($pruneError, 'CR prune failed: ' . ($pruneError?->getMessage() ?? ''));
+
+        $this->contentRepository = $this->contentRepositoryRegistry->get($contentRepositoryId);
+
+        $this->contentRepository->handle(CreateRootWorkspace::create(WorkspaceName::forLive(), ContentStreamId::create()));
+
+        $this->sitesNodeAggregateId = NodeAggregateId::create();
+        $this->contentRepository->handle(CreateRootNodeAggregateWithNode::create(
+            WorkspaceName::forLive(),
+            $this->sitesNodeAggregateId,
+            NodeTypeName::fromString('Neos.Neos:Sites')
+        ));
 
         foreach ($this->siteHosts as $siteHost) {
             $this->createSite(explode('.', $siteHost)[0], $siteHost);
         }
 
-        $this->saveNodesAndTearDownRootNodeAndRepository();
-        $this->setUpRootNodeAndRepository();
+        // Live content must exist BEFORE the user/group workspaces are created: event-sourced
+        // workspaces fork their base's content stream at creation time and would not see any
+        // live content created afterwards (unlike the Neos 8 context views).
+        $this->setUpContentInLive();
+
+        $this->currentGroupWorkspace = explode('.', uniqid('group-', true))[0];
+        $this->currentUserWorkspace = explode('.', uniqid('user-', true))[0];
+        $this->contentRepository->handle(CreateWorkspace::create(
+            WorkspaceName::fromString($this->currentGroupWorkspace),
+            WorkspaceName::forLive(),
+            ContentStreamId::create()
+        ));
+        $this->contentRepository->handle(CreateWorkspace::create(
+            WorkspaceName::fromString($this->currentUserWorkspace),
+            WorkspaceName::fromString($this->currentGroupWorkspace),
+            ContentStreamId::create()
+        ));
+
+        $this->setUpContentInUserWorkspace();
     }
 
     /**
-     * @return void
+     * Template method: create the live base content here (runs before the workspaces fork live).
      */
+    protected function setUpContentInLive(): void
+    {
+    }
+
+    /**
+     * Template method: create user-workspace-only content here (variants etc.).
+     */
+    protected function setUpContentInUserWorkspace(): void
+    {
+    }
+
     public function tearDown(): void
     {
         try {
-            $this->saveNodesAndTearDownRootNodeAndRepository();
-        } finally {
             $this->restoreNodeServiceApiFacadeAfterTest();
+        } finally {
             parent::tearDown();
         }
     }
@@ -96,178 +167,175 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
     }
 
     /**
-     * Values persisted on NodeData for a language preset are the preset identifier as a single
-     * dimension value (see ContextFactory::mergeDimensionValues), not the full YAML fallback chain.
+     * The language dimension id from the plugin's languageDimensionName setting, or null
+     * if the hosting distribution configures no such dimension.
+     */
+    protected function languageDimensionId(): ?ContentDimensionId
+    {
+        $dimensionName = $this->objectManager->get(\Neos\Flow\Configuration\ConfigurationManager::class)->getConfiguration(
+            \Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
+            'NEOSidekick.AiAssistant.languageDimensionName'
+        ) ?: 'language';
+        $dimensionId = new ContentDimensionId($dimensionName);
+
+        return $this->contentRepository->getContentDimensionSource()->getDimension($dimensionId) !== null
+            ? $dimensionId
+            : null;
+    }
+
+    /**
+     * Top-level (specialization depth 0) values of the language dimension, ordered with
+     * non-site-default values first — see class docblock.
      *
-     * CAVEAT: This assumes every preset defines exactly its own identifier as the sole dimension
-     * value — which holds for our current Testing/Settings.yaml presets ("de" → ['de'],
-     * "en" → ['en']). If a preset were configured with a fallback chain (e.g. ['en', 'de']),
-     * the value stored on NodeData would still be the full chain as created by
-     * ContextFactory::mergeDimensionValues, and this helper would return the wrong result.
-     * Revisit if the dimension configuration changes.
+     * @return string[]
      */
-    protected function getStoredLanguageDimensionValuesForPreset(string $presetIdentifier): array
+    private function rootLanguageValues(): array
     {
-        return [$presetIdentifier];
-    }
-
-    /**
-     * Preset "values" from Settings (fallback chain), sorted like NodeData — for assertions on
-     * context paths produced by routing / FrontendNodeRoutePartHandler (findImportantPages).
-     */
-    protected function getRoutingLanguageDimensionValuesForPreset(string $presetKey): array
-    {
-        $configurationManager = $this->objectManager->get(ConfigurationManager::class);
-        $presetConfig = $configurationManager->getConfiguration(
-            ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
-            'Neos.ContentRepository.contentDimensions.language.presets.' . $presetKey
-        );
-        $values = is_array($presetConfig) ? ($presetConfig['values'] ?? []) : [];
-        sort($values);
-
-        return $values;
-    }
-
-    protected function setUpRootNodeAndRepository(): void
-    {
-        $this->contextFactory = $this->objectManager->get(ContextFactory::class);
-
-        $this->workspaceRepository = $this->objectManager->get(WorkspaceRepository::class);
-        if ($this->liveWorkspace === null) {
-            $this->liveWorkspace = new Workspace('live');
-            $this->workspaceRepository->add($this->liveWorkspace);
-            $this->groupWorkspace = new Workspace($this->currentGroupWorkspace, $this->liveWorkspace);
-            $this->workspaceRepository->add($this->groupWorkspace);
-            $this->workspaceRepository->add(new Workspace($this->currentUserWorkspace, $this->groupWorkspace));
-            $this->persistenceManager->persistAll();
+        if ($this->rootLanguageValuesCache !== null) {
+            return $this->rootLanguageValuesCache;
         }
-
-        $liveContext = $this->contextFactory->create(['workspaceName' => 'live']);
-        $personalContext = $this->contextFactory->create(['workspaceName' => $this->currentUserWorkspace]);
-
-        // Make sure the Workspace was created.
-        $this->liveWorkspace = $personalContext->getWorkspace()->getBaseWorkspace()->getBaseWorkspace();
-        $this->nodeDataRepository = $this->objectManager->get(NodeDataRepository::class);
-        $this->rootNode = $liveContext->getNode('/');
-        $this->sitesNode = $liveContext->getNode('/sites');
-        if ($this->sitesNode === null) {
-            $this->sitesNode = $this->rootNode->createNode(NodePaths::getNodeNameFromPath(SiteService::SITES_ROOT_PATH));
+        $dimensionId = $this->languageDimensionId();
+        if ($dimensionId === null) {
+            return $this->rootLanguageValuesCache = [];
         }
-
-        $this->persistenceManager->persistAll();
-    }
-
-    protected function saveNodesAndTearDownRootNodeAndRepository()
-    {
-        if ($this->nodeDataRepository !== null) {
-            $this->nodeDataRepository->flushNodeRegistry();
-        }
-        /** @var NodeFactory $nodeFactory */
-        $nodeFactory = $this->objectManager->get(NodeFactory::class);
-        $nodeFactory->reset();
-        $this->contextFactory->reset();
-        // Routing (NodeFindingService) uses Neos ContentContextFactory; tests used to reset only the base CR
-        // ContextFactory singleton, leaving stale contextInstances and breaking findImportantPages / URI resolve.
-        $this->objectManager->get(ContentContextFactory::class)->reset();
-
-        $this->persistenceManager->persistAll();
-        $this->persistenceManager->clearState();
-        $this->nodeDataRepository = null;
-        $this->rootNode = null;
-        $this->sitesNode = null;
-    }
-
-    /**
-     * Remove all sites/domains and content under /sites to avoid cross-test interference.
-     */
-    protected function purgeSitesDomainsAndContent(): void
-    {
-        // Remove all domains and sites from repositories
-        /** @var SiteRepository $siteRepository */
-        $siteRepository = $this->objectManager->get(SiteRepository::class);
-        /** @var DomainRepository $domainRepository */
-        $domainRepository = $this->objectManager->get(DomainRepository::class);
-
-        foreach ($domainRepository->findAll() as $domain) {
-            $domainRepository->remove($domain);
-        }
-        foreach ($siteRepository->findAll() as $site) {
-            $siteRepository->remove($site);
-        }
-        $this->persistenceManager->persistAll();
-
-        // Remove all nodes under /sites in the live context
-        $liveContext = $this->contextFactory->create(['workspaceName' => 'live']);
-        $sitesNode = $liveContext->getNode('/sites');
-        if ($sitesNode !== null) {
-            foreach ($sitesNode->getChildNodes() as $child) {
-                $child->remove();
+        $dimension = $this->contentRepository->getContentDimensionSource()->getDimension($dimensionId);
+        $rootValues = [];
+        foreach ($dimension->values as $value) {
+            if ($value->specializationDepth->value === 0) {
+                $rootValues[] = $value->value;
             }
         }
-        $this->persistenceManager->persistAll();
+        $siteDefault = $this->siteConfigurationPath('contentDimensions.defaultDimensionSpacePoint.' . $dimensionId->value);
+        usort($rootValues, static fn(string $a, string $b) => ($a === $siteDefault) <=> ($b === $siteDefault));
+
+        return $this->rootLanguageValuesCache = $rootValues;
     }
 
     /**
-     * @param Node $parentNode
-     * @param string        $title
-     * @param array         $imageFixtureFilenames
-     *
-     * @return NodeInterface
-     * @throws \Neos\ContentRepository\Exception\NodeConfigurationException
-     * @throws \Neos\ContentRepository\Exception\NodeException
+     * The language test content is created in. A non-default value is preferred so that
+     * generated URLs carry the language uri segment (like the Neos 8 suite's "de").
      */
-    protected function createPageWithImageNodes(NodeInterface $parentNode, string $nodeName, string $title, array $imageFixtureFilenames): NodeInterface
+    protected function primaryLanguage(): ?string
     {
-        /** @var Node $documentNode */
-        $documentNode = $parentNode->createNodeFromTemplate($this->createDocumentNodeTemplate($title), $nodeName);
-        $documentNode->setProperty('uriPathSegment', $nodeName);
-        $mainContentCollection = $documentNode->findNamedChildNode(NodeName::fromString('main'));
-        foreach ($imageFixtureFilenames as $imageFixtureFilename) {
-            $mainContentCollection->createNodeFromTemplate($this->createImageNodeTemplate($imageFixtureFilename), 'image-' . explode('.', $imageFixtureFilename)[0]);
+        return $this->rootLanguageValues()[0] ?? null;
+    }
+
+    /**
+     * The language used for variants. Skips the calling test when the hosting distribution
+     * configures fewer than two top-level language values.
+     */
+    protected function secondaryLanguage(): string
+    {
+        $values = $this->rootLanguageValues();
+        if (count($values) < 2) {
+            $this->markTestSkipped('This test needs a language dimension with at least two top-level values.');
         }
-        return $documentNode;
+
+        return $values[1];
     }
 
-    protected function createDocumentNodeTemplate(string $title): NodeTemplate
+    /**
+     * The uri path segment for a language value, resolved from the site's dimension
+     * resolver configuration (fallback: the value itself, like AutoUriPathResolver).
+     */
+    protected function languageUriSegment(?string $language = null): string
     {
-        $nodeTemplate = new NodeTemplate();
-        $nodeTemplate->setNodeType($this->nodeTypeManager->getNodeType('NEOSidekick.AiAssistant.Testing:Page'));
-        $nodeTemplate->setProperty('title', $title);
-        return $nodeTemplate;
+        $language = $language ?? $this->primaryLanguage() ?? '';
+        $dimensionId = $this->languageDimensionId();
+        $segments = $this->siteConfigurationPath('contentDimensions.resolver.options.segments') ?? [];
+        foreach ($segments as $segment) {
+            if ($dimensionId !== null && ($segment['dimensionIdentifier'] ?? null) === $dimensionId->value) {
+                return $segment['dimensionValueMapping'][$language] ?? $language;
+            }
+        }
+
+        return $language;
     }
 
-    protected function createImageNodeTemplate(string $imageFixtureFilename): NodeTemplate
+    private function siteConfigurationPath(string $path): mixed
     {
-        $nodeTemplate = new NodeTemplate();
-        $nodeTemplate->setNodeType($this->nodeTypeManager->getNodeType('NEOSidekick.AiAssistant.Testing:Image'));
-        $nodeTemplate->setProperty('image', $this->importImage($imageFixtureFilename));
-        return $nodeTemplate;
+        return $this->objectManager->get(\Neos\Flow\Configuration\ConfigurationManager::class)->getConfiguration(
+            \Neos\Flow\Configuration\ConfigurationManager::CONFIGURATION_TYPE_SETTINGS,
+            'Neos.Neos.sites.*.' . $path
+        );
     }
 
-    private function importImage(string $fixtureFilename): Image
+    /**
+     * @param string|null $language a language dimension value; null = primaryLanguage()
+     *                              (empty DimensionSpacePoint on dimension-less projects)
+     */
+    protected function dimensionSpacePoint(?string $language = null): DimensionSpacePoint
     {
-        $resource = $this->objectManager->get(ResourceManager::class)->importResource(__DIR__ . '/../Fixtures/' . $fixtureFilename);
-        return new Image($resource);
+        $language = $language ?? $this->primaryLanguage();
+
+        return $language === null
+            ? DimensionSpacePoint::createWithoutDimensions()
+            : DimensionSpacePoint::fromArray([$this->languageDimensionId()->value => $language]);
     }
 
-    protected function createControllerContextForDomain(string $domain): ControllerContext
+    /**
+     * Backend-like subgraph (disabled nodes visible) — content creation and assertions on
+     * raw structure should not silently miss disabled nodes.
+     */
+    protected function subgraph(string $workspace = 'live', ?string $language = null): ContentSubgraphInterface
     {
-        $mockHttpRequest = new ServerRequest('GET', 'https://' . $domain);
-        $parameters = $mockHttpRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
-        $mockHttpRequest = $mockHttpRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $parameters->withParameter('requestUriHost', $domain));
-        $actionRequest = ActionRequest::fromHttpRequest($mockHttpRequest);
-        $actionResponse = new ActionResponse();
-        $uriBuilder = $this->objectManager->get(UriBuilder::class);
-        $uriBuilder->setRequest($actionRequest);
-        return new ControllerContext($actionRequest, $actionResponse, new Arguments(), $uriBuilder);
+        return $this->contentRepository
+            ->getContentGraph(WorkspaceName::fromString($workspace))
+            ->getSubgraph($this->dimensionSpacePoint($language), NodeVisibility::excludeRemoved());
+    }
+
+    /**
+     * Resolves an old-style path like "/sites/example/some-page" and returns the node.
+     */
+    protected function getNodeByPath(string $path, string $workspace = 'live', ?string $language = null): ?Node
+    {
+        $relativePath = ltrim($path, '/');
+        if ($relativePath === 'sites' || $relativePath === '') {
+            return $this->subgraph($workspace, $language)->findNodeById($this->sitesNodeAggregateId);
+        }
+        $relativePath = preg_replace('#^sites/#', '', $relativePath);
+
+        return $this->subgraph($workspace, $language)->findNodeByPath(
+            NodePath::fromString($relativePath),
+            $this->sitesNodeAggregateId
+        );
+    }
+
+    /**
+     * NodeAddress JSON of the node at the given old-style path — the result array key format
+     * of NodeService::find()/findImportantPages() (replaces the old context path assertions).
+     */
+    protected function addressForPath(string $path, string $workspace = 'live', ?string $language = null): string
+    {
+        $node = $this->getNodeByPath($path, $workspace, $language);
+        $this->assertNotNull($node, sprintf('Node at path "%s" (%s, %s) not found', $path, $workspace, $language));
+
+        // Result keys carry the *requested* workspace, even for nodes inherited from base workspaces
+        return NodeAddress::create(
+            $this->contentRepository->id,
+            WorkspaceName::fromString($workspace),
+            $this->dimensionSpacePoint($language),
+            $node->aggregateId
+        )->toJson();
     }
 
     protected function createSite(string $nodeName, string $domain): Site
     {
+        $siteNodeAggregateId = NodeAggregateId::create();
+        $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
+            WorkspaceName::forLive(),
+            $siteNodeAggregateId,
+            NodeTypeName::fromString('NEOSidekick.AiAssistant.Testing:HomePage'),
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint()),
+            $this->sitesNodeAggregateId,
+            initialPropertyValues: PropertyValuesToWrite::fromArray([
+                'title' => $nodeName,
+                'uriPathSegment' => $nodeName,
+            ])
+        )->withNodeName(NodeName::fromString($nodeName)));
+
         $siteRepository = $this->objectManager->get(SiteRepository::class);
         $domainRepository = $this->objectManager->get(DomainRepository::class);
-
-        $this->sitesNode->createNode($nodeName, $this->nodeTypeManager->getNodeType('NEOSidekick.AiAssistant.Testing:HomePage'));
 
         $site = new Site($nodeName);
         $site->setSiteResourcesPackageKey('NEOSidekick.AiAssistant');
@@ -282,11 +350,148 @@ abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 
         $site->getDomains()->add($domainModel);
         $site->setPrimaryDomain($domainModel);
-
         $siteRepository->update($site);
 
         $this->persistenceManager->persistAll();
 
         return $site;
+    }
+
+    /**
+     * Creates a Testing:Page document (tethered "main" collection included) with the given
+     * image content nodes, in the live workspace, origin language "de".
+     */
+    protected function createPageWithImageNodes(Node $parentNode, string $nodeName, string $title, array $imageFixtureFilenames, ?string $language = null): Node
+    {
+        $documentNodeAggregateId = NodeAggregateId::create();
+        $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
+            WorkspaceName::forLive(),
+            $documentNodeAggregateId,
+            NodeTypeName::fromString('NEOSidekick.AiAssistant.Testing:Page'),
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint($language)),
+            $parentNode->aggregateId,
+            initialPropertyValues: PropertyValuesToWrite::fromArray([
+                'title' => $title,
+                'uriPathSegment' => $nodeName,
+            ])
+        )->withNodeName(NodeName::fromString($nodeName)));
+
+        $subgraph = $this->subgraph('live', $language);
+        $mainContentCollection = $subgraph->findNodeByPath(NodeName::fromString('main'), $documentNodeAggregateId);
+        $this->assertNotNull($mainContentCollection, 'Tethered "main" child was not created');
+
+        foreach ($imageFixtureFilenames as $imageFixtureFilename) {
+            $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
+                WorkspaceName::forLive(),
+                NodeAggregateId::create(),
+                NodeTypeName::fromString('NEOSidekick.AiAssistant.Testing:Image'),
+                OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint($language)),
+                $mainContentCollection->aggregateId,
+                initialPropertyValues: PropertyValuesToWrite::fromArray([
+                    'image' => $this->importImage($imageFixtureFilename),
+                ])
+            )->withNodeName(NodeName::fromString('image-' . explode('.', $imageFixtureFilename)[0])));
+        }
+
+        return $subgraph->findNodeById($documentNodeAggregateId);
+    }
+
+    protected function setNodeProperties(Node $node, array $properties, string $workspace = 'live'): void
+    {
+        $this->contentRepository->handle(SetNodeProperties::create(
+            WorkspaceName::fromString($workspace),
+            $node->aggregateId,
+            $node->originDimensionSpacePoint,
+            PropertyValuesToWrite::fromArray($properties)
+        ));
+    }
+
+    /**
+     * Creates a language variant of the node (replaces the old createVariantForContext()).
+     */
+    protected function createLanguageVariant(Node $node, string $targetLanguage, string $workspace = 'live'): void
+    {
+        $this->contentRepository->handle(CreateNodeVariant::create(
+            WorkspaceName::fromString($workspace),
+            $node->aggregateId,
+            $node->originDimensionSpacePoint,
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint($targetLanguage))
+        ));
+    }
+
+    /**
+     * Replaces the old setHidden(true) — disables the node (subtree tag) in the given workspace.
+     */
+    protected function disableNode(Node $node, string $workspace): void
+    {
+        $this->contentRepository->handle(TagSubtree::create(
+            WorkspaceName::fromString($workspace),
+            $node->aggregateId,
+            $node->originDimensionSpacePoint->toDimensionSpacePoint(),
+            NodeVariantSelectionStrategy::STRATEGY_ALL_SPECIALIZATIONS,
+            SubtreeTag::disabled()
+        ));
+    }
+
+    /**
+     * Replaces the old Node::remove() — removes the node aggregate variant in the given workspace.
+     */
+    protected function removeNode(Node $node, string $workspace = 'live'): void
+    {
+        $this->contentRepository->handle(\Neos\ContentRepository\Core\Feature\NodeRemoval\Command\RemoveNodeAggregate::create(
+            WorkspaceName::fromString($workspace),
+            $node->aggregateId,
+            $node->originDimensionSpacePoint->toDimensionSpacePoint(),
+            NodeVariantSelectionStrategy::STRATEGY_ALL_SPECIALIZATIONS
+        ));
+    }
+
+    /**
+     * Publishes the user workspace through its base chain up to live
+     * (the new CR only publishes one level at a time).
+     */
+    protected function publishUserWorkspaceToLive(): void
+    {
+        $this->contentRepository->handle(PublishWorkspace::create(WorkspaceName::fromString($this->currentUserWorkspace)));
+        $this->contentRepository->handle(PublishWorkspace::create(WorkspaceName::fromString($this->currentGroupWorkspace)));
+    }
+
+    private function importImage(string $fixtureFilename): Image
+    {
+        $resource = $this->objectManager->get(ResourceManager::class)->importResource(__DIR__ . '/../Fixtures/' . $fixtureFilename);
+        $image = new Image($resource);
+        // the CR property serializer stores the asset identifier, so the image must be persisted
+        $this->objectManager->get(AssetRepository::class)->add($image);
+        $this->persistenceManager->persistAll();
+
+        return $image;
+    }
+
+    protected function createControllerContextForDomain(string $domain): ControllerContext
+    {
+        $mockHttpRequest = new ServerRequest('GET', 'https://' . $domain);
+        $parameters = $mockHttpRequest->getAttribute(ServerRequestAttributes::ROUTING_PARAMETERS) ?? RouteParameters::createEmpty();
+        $parameters = $parameters->withParameter('requestUriHost', $domain);
+        // Neos 9: NodeUriBuilder requires the SiteDetectionResult the SiteDetectionMiddleware
+        // would add on a real request (site node name = first host label, see createSite()).
+        $parameters = \Neos\Neos\FrontendRouting\SiteDetection\SiteDetectionResult::create(
+            \Neos\Neos\Domain\Model\SiteNodeName::fromString(explode('.', $domain)[0]),
+            $this->contentRepository->id
+        )->storeInRouteParameters($parameters);
+        $mockHttpRequest = $mockHttpRequest->withAttribute(ServerRequestAttributes::ROUTING_PARAMETERS, $parameters);
+        $actionRequest = ActionRequest::fromHttpRequest($mockHttpRequest);
+        $actionResponse = new ActionResponse();
+        $uriBuilder = $this->objectManager->get(UriBuilder::class);
+        $uriBuilder->setRequest($actionRequest);
+        return new ControllerContext($actionRequest, $actionResponse, new Arguments(), $uriBuilder);
+    }
+
+    /**
+     * The uriPathSuffix now lives in the site configuration (Neos 9), not in Flow routes
+     * settings; the plugin's Testing settings default it to ".html" for the suffix tests.
+     */
+    protected function getUriPathSuffix(): string
+    {
+        return $this->siteConfigurationPath('uriPathSuffix') ?? '';
     }
 }

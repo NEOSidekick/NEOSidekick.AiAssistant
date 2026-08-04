@@ -7,8 +7,6 @@ namespace NEOSidekick\AiAssistant\Controller;
  */
 
 use JsonException;
-use Neos\ContentRepository\Exception\NodeException;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Exception;
 use Neos\Flow\Mvc\Controller\ActionController;
@@ -190,8 +188,6 @@ class BackendServiceController extends ActionController
      * @throws JsonException
      * @throws MissingActionNameException
      * @throws NoSiteException
-     * @throws NodeException
-     * @throws NodeTypeNotFoundException
      * @throws \Neos\Flow\Property\Exception
      * @throws \Neos\Flow\Security\Exception
      * @throws \Neos\Neos\Exception
@@ -284,8 +280,6 @@ class BackendServiceController extends ActionController
      * @throws JsonException
      * @throws MissingActionNameException
      * @throws NoSiteException
-     * @throws NodeException
-     * @throws NodeTypeNotFoundException
      * @throws \Neos\Flow\Property\Exception
      * @throws \Neos\Flow\Security\Exception
      * @throws \Neos\Neos\Exception

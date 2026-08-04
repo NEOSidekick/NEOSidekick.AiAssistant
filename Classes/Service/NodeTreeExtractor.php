@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace NEOSidekick\AiAssistant\Service;
 
-use Neos\ContentRepository\Domain\Model\NodeInterface;
-use Neos\ContentRepository\Domain\Model\NodeType;
-use Neos\ContentRepository\Domain\Service\NodeTypeManager;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\NodeType\NodeType;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Asset;
-use Neos\Neos\Controller\CreateContentContextTrait;
 
 /**
  * Service to extract raw node tree data from Neos.
@@ -25,8 +29,6 @@ use Neos\Neos\Controller\CreateContentContextTrait;
  */
 class NodeTreeExtractor
 {
-    use CreateContentContextTrait;
-
     /**
      * The NodeType name for ContentCollection which indicates the node itself is a collection.
      */
@@ -37,16 +39,15 @@ class NodeTreeExtractor
      */
     private const DEFAULT_MAX_DEPTH = 50;
 
-    /**
-     * @Flow\Inject
-     * @var NodeTypeManager
-     */
-    protected $nodeTypeManager;
+    #[Flow\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
      * Extract the node tree starting from a given node.
      *
-     * @param string $nodeId The node identifier (UUID) to start from
+     * @param string $nodeId The node aggregate identifier to start from
      * @param string $workspace The workspace name
      * @param array $dimensions The dimension values (e.g., ['language' => ['de']])
      * @param int|null $maxDepth Maximum depth for tree extraction (null uses default, prevents stack overflow)
@@ -55,8 +56,12 @@ class NodeTreeExtractor
      */
     public function extract(string $nodeId, string $workspace, array $dimensions, ?int $maxDepth = null): array
     {
-        $context = $this->createContentContext($workspace, $dimensions);
-        $node = $context->getNodeByIdentifier($nodeId);
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
+        $subgraph = $contentRepository->getContentSubgraph(
+            WorkspaceName::fromString($workspace),
+            DimensionSpacePoint::fromArray($this->dimensionCoordinatesFromDimensionsArray($dimensions))
+        );
+        $node = $subgraph->findNodeById(NodeAggregateId::fromString($nodeId));
 
         if ($node === null) {
             throw new \InvalidArgumentException(
@@ -76,18 +81,44 @@ class NodeTreeExtractor
     }
 
     /**
+     * Convert a dimensions array in the legacy context format
+     * (['language' => ['de', 'en']] with fallback chains) into
+     * DimensionSpacePoint coordinates (one value per dimension, the first of
+     * each fallback chain); plain scalar values are accepted as-is.
+     *
+     * @param array<string, mixed> $dimensions
+     * @return array<string, string>
+     */
+    private function dimensionCoordinatesFromDimensionsArray(array $dimensions): array
+    {
+        $coordinates = [];
+        foreach ($dimensions as $dimensionName => $dimensionValues) {
+            if (is_array($dimensionValues)) {
+                $firstValue = reset($dimensionValues);
+                if (is_string($firstValue)) {
+                    $coordinates[$dimensionName] = $firstValue;
+                }
+            } elseif (is_string($dimensionValues)) {
+                $coordinates[$dimensionName] = $dimensionValues;
+            }
+        }
+
+        return $coordinates;
+    }
+
+    /**
      * Extract data for a single node including its children.
      *
-     * @param NodeInterface $node The node to extract
+     * @param Node $node The node to extract
      * @param int $currentDepth Current recursion depth
      * @param int $maxDepth Maximum allowed depth
      * @return array{id: string, nodeType: string, properties: array, children: array}
      */
-    private function extractNode(NodeInterface $node, int $currentDepth, int $maxDepth): array
+    private function extractNode(Node $node, int $currentDepth, int $maxDepth): array
     {
         return [
-            'id' => $node->getIdentifier(),
-            'nodeType' => $node->getNodeType()->getName(),
+            'id' => $node->aggregateId->value,
+            'nodeType' => $node->nodeTypeName->value,
             'properties' => $this->extractProperties($node),
             'children' => $this->extractChildren($node, $currentDepth, $maxDepth),
         ];
@@ -101,9 +132,9 @@ class NodeTreeExtractor
      *
      * @return array<string, mixed>
      */
-    private function extractProperties(NodeInterface $node): array
+    private function extractProperties(Node $node): array
     {
-        $properties = $node->getProperties();
+        $properties = $node->properties;
         $result = [];
 
         foreach ($properties as $propertyName => $propertyValue) {
@@ -183,19 +214,24 @@ class NodeTreeExtractor
      * - '_self' slot if the node IS a ContentCollection
      * - Named slots for each configured childNode
      *
-     * @param NodeInterface $node The node to extract children from
+     * @param Node $node The node to extract children from
      * @param int $currentDepth Current recursion depth
      * @param int $maxDepth Maximum allowed depth
      * @return array<string, array{allowedTypes: array<string>, nodes: array}>
      */
-    private function extractChildren(NodeInterface $node, int $currentDepth, int $maxDepth): array
+    private function extractChildren(Node $node, int $currentDepth, int $maxDepth): array
     {
         // Prevent stack overflow on deeply nested trees
         if ($currentDepth >= $maxDepth) {
             return [];
         }
+        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
 
-        $nodeType = $node->getNodeType();
+        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName);
+        if ($nodeType === null) {
+            return [];
+        }
+        $subgraph = $this->contentRepositoryRegistry->subgraphForNode($node);
         $children = [];
 
         // Check if node IS a ContentCollection (gets _self slot)
@@ -205,7 +241,7 @@ class NodeTreeExtractor
             );
 
             // Get all direct child nodes (the content inside this collection)
-            $childNodes = $node->getChildNodes();
+            $childNodes = $subgraph->findChildNodes($node->aggregateId, FindChildNodesFilter::create());
             $serializedChildren = [];
             foreach ($childNodes as $childNode) {
                 // Skip auto-created child nodes (those are handled via named slots)
@@ -225,7 +261,7 @@ class NodeTreeExtractor
         // These are typically ContentCollection nodes with their own UUIDs
         $childNodesConfig = $nodeType->getConfiguration('childNodes') ?? [];
         foreach ($childNodesConfig as $childNodeName => $childNodeConfig) {
-            $childNode = $node->getNode($childNodeName);
+            $childNode = $subgraph->findNodeByPath(NodeName::fromString((string)$childNodeName), $node->aggregateId);
             if ($childNode === null) {
                 continue;
             }
@@ -233,7 +269,7 @@ class NodeTreeExtractor
             $allowedTypes = $this->resolveChildNodeAllowedTypes($childNodeConfig);
 
             // Get the content inside this named slot
-            $slotChildren = $childNode->getChildNodes();
+            $slotChildren = $subgraph->findChildNodes($childNode->aggregateId, FindChildNodesFilter::create());
             $serializedSlotChildren = [];
             foreach ($slotChildren as $slotChild) {
                 $serializedSlotChildren[] = $this->extractNode($slotChild, $currentDepth + 1, $maxDepth);
@@ -242,8 +278,8 @@ class NodeTreeExtractor
             // Include the ContentCollection node's id and nodeType
             // so it can be represented as a proper node in JSX
             $children[$childNodeName] = [
-                'id' => $childNode->getIdentifier(),
-                'nodeType' => $childNode->getNodeType()->getName(),
+                'id' => $childNode->aggregateId->value,
+                'nodeType' => $childNode->nodeTypeName->value,
                 'allowedTypes' => $allowedTypes,
                 'nodes' => $serializedSlotChildren,
             ];
@@ -258,10 +294,10 @@ class NodeTreeExtractor
      * Auto-created childNodes are configured in the NodeType's childNodes
      * config and should be handled as named slots, not as _self content.
      */
-    private function isAutoCreatedChildNode(NodeInterface $childNode, NodeType $parentNodeType): bool
+    private function isAutoCreatedChildNode(Node $childNode, NodeType $parentNodeType): bool
     {
         $childNodesConfig = $parentNodeType->getConfiguration('childNodes') ?? [];
-        return isset($childNodesConfig[$childNode->getName()]);
+        return $childNode->name !== null && isset($childNodesConfig[$childNode->name->value]);
     }
 
     /**

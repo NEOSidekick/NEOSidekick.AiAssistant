@@ -1,27 +1,36 @@
+# Functional test configuration (Neos 9).
+#
+# The functional tests define NO content dimensions of their own: Neos 9 validates the
+# dimension resolver mapping against the dimension source, and Flow's configuration merge
+# cannot cleanly REPLACE a mapping list a distribution ships (leaf nulls produce invalid
+# mapping entries, layer-internal nulls are merged away before overruling package config).
+# Instead the test base adapts to the hosting distribution's language dimension at runtime
+# (see Tests/Functional/FunctionalTestCase: primaryLanguage()/secondaryLanguage()); tests
+# that need two languages are skipped when the distribution configures fewer.
+#
+# Only leaf-level, conflict-free overrides here:
 Neos:
-  ContentRepository:
-    contentDimensions:
-      language:
-        default: de
-        defaultPreset: de
-        presets:
-          # Unset Neos Testing / site-package presets we do not need (Flow merge: ~ replaces whole preset)
-          all: ~
-          en_US: ~
-          # en_UK is a SPECIALIZATION of en (fallback chain) for the dimension-fallback tests
-          en_UK:
-            label: English (UK)
-            values:
-              - en_UK
-              - en
-            uriSegment: uk
-          fr: ~
-          nl: ~
-          dk: ~
-          da: ~
-          lv: ~
-          en:
-            label: English
-            values:
-              - en
-            uriSegment: en
+  Neos:
+    sites:
+      '*':
+        # the suffix-handling tests (…/page.html, trailing slash, bare) need a suffix
+        uriPathSuffix: '.html'
+
+  Flow:
+    object:
+      includeClasses:
+        # Flowpack.NodeTemplates (dependency) ships behat-based test cases referencing
+        # neos/behat, which is usually not installed; exclude them from reflection.
+        'Flowpack.NodeTemplates': ['Flowpack\\NodeTemplates\\(?!Tests\\Functional).*']
+
+  # Flow's testable persistence drops non-ORM tables (neos_asset_usage, soft-removal
+  # conflicts) when compiling the test schema; these catch-up hooks would fail during CR
+  # setup/publish. Both are irrelevant for the functional tests. null = disabled, officially
+  # supported by ContentRepositoryRegistry::buildCatchUpHookFactory.
+  ContentRepositoryRegistry:
+    presets:
+      default:
+        contentGraphProjection:
+          catchUpHooks:
+            'Neos.Neos:AssetUsage': ~
+            'Neos.Neos:ImpendingHardRemovalConflictDetection': ~

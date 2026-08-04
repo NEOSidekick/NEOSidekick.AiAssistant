@@ -91,17 +91,25 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
      */
     protected $languageDimensionName;
 
-    /**
-     * @Flow\InjectConfiguration(package="Neos.ContentRepository", path="contentDimensions")
-     * @var array
-     */
-    protected $contentDimensions;
+    #[\Neos\Flow\Annotations\Inject]
+    protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
      * @Flow\InjectConfiguration(package="Neos.Flow", path="session.cookie.samesite")
      * @var string|null
      */
     protected $sessionCookieSameSite;
+
+    /**
+     * Neos 9 replacement for the `Neos.Ui.ContentDimensions.contentDimensionsByName()` call in our
+     * frontendConfiguration: the core helper now requires a ContentRepositoryId argument, which is
+     * not available in that Eel context, so we resolve the CR ourselves and delegate.
+     */
+    public function contentDimensionsByName(): array
+    {
+        $contentRepositoryId = $this->contentRepositoryProvider->getContentRepositoryId();
+        return (new \Neos\Neos\Ui\Fusion\Helper\ContentDimensionsHelper())->contentDimensionsByName($contentRepositoryId);
+    }
 
     public function isEnabled(): bool
     {
@@ -221,11 +229,12 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 
     public function languageDimensionValues(): array
     {
-        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+        $languageDimension = $this->getLanguageDimension();
+        if ($languageDimension === null) {
             return [];
         }
 
-        return array_keys($this->contentDimensions[$this->languageDimensionName]['presets']);
+        return array_keys($languageDimension->values->values);
     }
 
     /**
@@ -237,15 +246,14 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
      */
     public function languageDimensionSyncPresets(): array
     {
-        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+        $languageDimension = $this->getLanguageDimension();
+        if ($languageDimension === null) {
             return [];
         }
-        $presets = $this->contentDimensions[$this->languageDimensionName]['presets'] ?? [];
         $result = [];
-        foreach ($presets as $presetIdentifier => $presetConfiguration) {
-            $options = $presetConfiguration['options'] ?? [];
-            if (($options['translationStrategy'] ?? null) === 'sync') {
-                $result[] = $presetIdentifier;
+        foreach ($languageDimension->values->values as $valueIdentifier => $dimensionValue) {
+            if ($dimensionValue->getConfigurationValue('options.translationStrategy') === 'sync') {
+                $result[] = $valueIdentifier;
             }
         }
         return $result;
@@ -259,18 +267,39 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
      */
     public function languageDimensionValuesEnabledForEditing(): array
     {
-        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+        $languageDimension = $this->getLanguageDimension();
+        if ($languageDimension === null) {
             return [];
         }
-        $presets = $this->contentDimensions[$this->languageDimensionName]['presets'] ?? [];
         $result = [];
-        foreach ($presets as $presetIdentifier => $presetConfiguration) {
-            $options = $presetConfiguration['options'] ?? [];
-            if (($options['translationStrategy'] ?? null) !== 'sync') {
-                $result[] = $presetIdentifier;
+        foreach ($languageDimension->values->values as $valueIdentifier => $dimensionValue) {
+            if ($dimensionValue->getConfigurationValue('options.translationStrategy') !== 'sync') {
+                $result[] = $valueIdentifier;
             }
         }
         return $result;
+    }
+
+    /**
+     * The `Neos.ContentRepository.contentDimensions` configuration is gone in Neos 9;
+     * dimension values (formerly "presets") now come from the content repository's
+     * dimension source.
+     *
+     * NOTE (Neos 9 migration decision): Neos 8 preset identifiers could differ from dimension
+     * values and carry `options` config; in Neos 9 the dimension VALUES are the identifiers
+     * and per-value configuration is read from the value's `configuration` array
+     * (Neos.ContentRepositoryRegistry.contentRepositories.default.contentDimensions.<dim>.values.<value>).
+     */
+    private function getLanguageDimension(): ?\Neos\ContentRepository\Core\Dimension\ContentDimension
+    {
+        if (!isset($this->languageDimensionName) || $this->languageDimensionName === '') {
+            return null;
+        }
+        $contentRepository = $this->contentRepositoryProvider->getContentRepository();
+
+        return $contentRepository->getContentDimensionSource()->getDimension(
+            new \Neos\ContentRepository\Core\Dimension\ContentDimensionId($this->languageDimensionName)
+        );
     }
 
     /**

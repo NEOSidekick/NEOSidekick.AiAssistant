@@ -2,17 +2,16 @@
 
 namespace NEOSidekick\AiAssistant\Factory;
 
-use Neos\ContentRepository\Domain\Model\Node;
-use Neos\ContentRepository\Exception\NodeException;
-use Neos\ContentRepository\Exception\NodeTypeNotFoundException;
+use Neos\ContentRepository\Core\Dimension\ContentDimensionId;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
+use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Http\Exception;
+use NEOSidekick\AiAssistant\Service\NodeVisibility;
 use Neos\Flow\Mvc\Controller\ControllerContext;
-use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
-use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
-use Neos\Neos\Controller\CreateContentContextTrait;
-use Neos\Neos\Service\LinkingService;
-use Neos\Utility\Arrays;
+use Neos\Flow\Mvc\Exception\NoMatchingRouteException;
+use Neos\Neos\FrontendRouting\NodeUriBuilderFactory;
+use Neos\Neos\FrontendRouting\Options;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
 
 /**
@@ -20,13 +19,11 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
  */
 class FindDocumentNodeDataFactory
 {
-    use CreateContentContextTrait;
-
     /**
      * @Flow\Inject
-     * @var LinkingService
+     * @var NodeUriBuilderFactory
      */
-    protected $nodeLinkingService;
+    protected $nodeUriBuilderFactory;
 
     /**
      * @Flow\InjectConfiguration(path="languageDimensionName")
@@ -34,35 +31,52 @@ class FindDocumentNodeDataFactory
      */
     protected string $languageDimensionName;
 
+    #[\Neos\Flow\Annotations\Inject]
+    protected \Neos\ContentRepositoryRegistry\ContentRepositoryRegistry $contentRepositoryRegistry;
+
     /**
-     * @throws NodeException
-     * @throws \Neos\Flow\Security\Exception
-     * @throws NodeTypeNotFoundException
-     * @throws \Neos\Flow\Property\Exception
-     * @throws Exception
-     * @throws \Neos\Neos\Exception
-     * @throws MissingActionNameException
-     * @throws IllegalObjectTypeException
+     * @throws NoMatchingRouteException
      */
     public function createFromNode(Node $node, ControllerContext $controllerContext): FindDocumentNodeData
     {
-        $publicUri = $previewUri = $this->nodeLinkingService->createNodeUri($controllerContext, $node, null, 'html', true);
-        if ($node->getContext()->getWorkspace()->getBaseWorkspace()) {
-            $liveContext = $this->createContentContext('live', $node->getDimensions());
-            $nodeInLiveContext = $liveContext->getNodeByIdentifier((string) $node->getNodeAggregateIdentifier());
-            if ($nodeInLiveContext) {
-                $publicUri = $this->nodeLinkingService->createNodeUri($controllerContext, $nodeInLiveContext, null, 'html', true);
+        $nodeAddress = NodeAddress::fromNode($node);
+        $nodeUriBuilder = $this->nodeUriBuilderFactory->forActionRequest($controllerContext->getRequest());
+        // For non-live workspaces uriFor() falls back to an absolute preview uri automatically
+        $publicUri = $previewUri = (string)$nodeUriBuilder->uriFor($nodeAddress, Options::createForceAbsolute());
+
+        $contentRepository = $this->contentRepositoryRegistry->get($node->contentRepositoryId);
+        $workspace = $contentRepository->findWorkspaceByName($node->workspaceName);
+        if ($workspace !== null && !$workspace->isRootWorkspace()) {
+            $nodeInLiveWorkspace = $contentRepository->getContentGraph(WorkspaceName::forLive())
+                ->getSubgraph($node->dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved())
+                ->findNodeById($node->aggregateId);
+            if ($nodeInLiveWorkspace !== null) {
+                try {
+                    $publicUri = (string)$nodeUriBuilder->uriFor(NodeAddress::fromNode($nodeInLiveWorkspace), Options::createForceAbsolute());
+                } catch (NoMatchingRouteException) {
+                    // The node exists in live but no public route can be built (e.g. invalid shortcut target);
+                    // keep the preview uri as public uri, like the old LinkingService-based fallback behavior.
+                }
             }
         }
+
+        // The language shown/edited is the dimension the node is SERVED in (subgraph dimension):
+        // for fallback pages (/uk serving en_US content) this is en_UK, like the old CR context
+        // dimensions — the origin would mislabel every fallback row with its source language.
+        $language = $node->dimensionSpacePoint->getCoordinate(new ContentDimensionId($this->languageDimensionName)) ?: 'de';
+
         return new FindDocumentNodeData(
-            sprintf('%s-%s', $node->getNodeData()->getIdentifier(), $node->getNodeData()->getDimensionsHash()),
-            $node->getContextPath(),
-            $node->getNodeType()->getName(),
+            // Keeps the old "<identifier>-<dimensionsHash>" shape with the Neos 9 equivalents
+            sprintf('%s-%s', $node->aggregateId->value, $node->originDimensionSpacePoint->hash),
+            // Decision: the "nodeContextPath" DTO field now carries the NodeAddress JSON. The JS side treats it
+            // as an opaque id and round-trips it back to the backend (NodeService::updatePropertiesOnNodes,
+            // NodeWithImageService), where it is parsed via NodeAddress::fromJsonString().
+            $nodeAddress->toJson(),
+            $node->nodeTypeName->value,
             $publicUri,
             $previewUri,
-            (array)$node->getProperties(),
-            // todo inspect [0] syntax... maybe we also need a mapping? replace default value and/or discuss setup with and without language dimensions
-            Arrays::getValueByPath($node->getNodeData()->getDimensionValues(), $this->languageDimensionName . '.0') ?: 'de'
+            iterator_to_array($node->properties),
+            $language
         );
     }
 }

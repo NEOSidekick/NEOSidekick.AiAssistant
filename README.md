@@ -13,6 +13,43 @@ composer require neosidekick/ai-assistant
 
 We use semantic versioning, so every breaking change will increase the major version number.
 
+### Neos compatibility
+
+| Plugin version | Neos    |
+|----------------|---------|
+| 2.x            | 8.3     |
+| 3.x            | 8.3/8.4 |
+| 4.x            | 9.0/9.1 |
+
+No configuration beyond this README is needed on Neos 9 — the plugin adapts to your
+content dimensions and site configuration automatically. Two Neos-9-specific notes:
+
+- **Content repository**: the plugin operates on a single content repository, `default`
+  by default. If your document nodes live in a different one, set:
+
+  ```yaml
+  NEOSidekick:
+    AiAssistant:
+      contentRepositoryId: 'default'
+  ```
+
+- **Upgrading a Neos 8.3 site**: per-dimension-value options like Sitegeist.LostInTranslation's
+  `translationStrategy` must move with your dimension configuration into the content
+  repository registry, e.g.:
+
+  ```yaml
+  Neos:
+    ContentRepositoryRegistry:
+      contentRepositories:
+        default:
+          contentDimensions:
+            language:
+              values:
+                en:
+                  options:
+                    translationStrategy: 'sync'
+  ```
+
 ## Configuration
 
 ### API Key

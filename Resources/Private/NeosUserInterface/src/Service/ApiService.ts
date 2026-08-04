@@ -40,13 +40,24 @@ export class ApiService {
             throw new AiAssistantError('This feature is not available in the free version.', '1688157373215')
         }
 
-        const response = await fetch(this.apiDomain + path, Object.assign({}, options, {
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${this.apiKey}`,
-                "Accept": "application/json",
-            },
-        }));
+        let response;
+        try {
+            response = await fetch(this.apiDomain + path, Object.assign({}, options, {
+                // a stalled connection (e.g. through a tunnel) used to leave generate buttons
+                // in an endless loading state — fail visibly instead
+                signal: AbortSignal.timeout(120000),
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${this.apiKey}`,
+                    "Accept": "application/json",
+                },
+            }));
+        } catch (e) {
+            if (e instanceof DOMException && (e.name === 'TimeoutError' || e.name === 'AbortError')) {
+                throw new AiAssistantError('The NEOSidekick API did not respond in time.', '1752040000003');
+            }
+            throw e;
+        }
 
         const jsonData = await response.json();
 

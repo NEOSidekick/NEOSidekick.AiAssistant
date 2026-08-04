@@ -2,7 +2,6 @@
 
 namespace NEOSidekick\AiAssistant\Service;
 
-use Doctrine\ORM\Internal\Hydration\IterableResult;
 use InvalidArgumentException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\Exception;
@@ -72,7 +71,8 @@ class AssetService
         $resultCount = 0;
         $iteratedItems = 0;
 
-        foreach ($this->assetRepository->iterate($assetsIterator) as $currentAsset) {
+        // AssetRepository::iterate() was removed in Flow/Neos 9; Doctrine's toIterable() yields the entities directly
+        foreach ($assetsIterator as $currentAsset) {
             $iteratedItems++;
             if ($iteratedItems <= $filters->getFirstResult()) {
                 continue;
@@ -121,7 +121,10 @@ class AssetService
         }
     }
 
-    protected function findInRepositoryMatchingFilterIterator(FindAssetsFilterDto $filters): IterableResult
+    /**
+     * @return iterable<Image>
+     */
+    protected function findInRepositoryMatchingFilterIterator(FindAssetsFilterDto $filters): iterable
     {
         /** @var Query $query */
         $query = $this->persistenceManager->createQueryForType(Image::class);
@@ -132,7 +135,7 @@ class AssetService
         }
         $query->setOrderings(['lastModified' => 'ASC']);
 
-        return $query->getQueryBuilder()->getQuery()->iterate();
+        return $query->getQueryBuilder()->getQuery()->toIterable();
     }
 
     /**

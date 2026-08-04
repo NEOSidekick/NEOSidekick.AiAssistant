@@ -29,12 +29,21 @@ export class ContentService {
     }
 
     getGuestFrameContentDocument = async (): Promise<Document | null> => {
+        // Bounded wait: an unreachable or never-finishing guest frame used to spin these
+        // polling loops forever, leaving generate buttons in an endless loading state.
+        const deadline = Date.now() + 15000;
         let guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
         while (!guestFrame) {
+            if (Date.now() > deadline) {
+                throw new AiAssistantError('The content frame did not become available.', '1752040000001')
+            }
             await new Promise(resolve => setTimeout(resolve, 100));
             guestFrame = document.getElementsByName('neos-content-main')[0] as HTMLIFrameElement;
         }
         while (!guestFrame.contentDocument || guestFrame.contentDocument.readyState === 'loading' || !guestFrame?.contentDocument?.title) {
+            if (Date.now() > deadline) {
+                throw new AiAssistantError('The page content did not finish loading.', '1752040000002')
+            }
             await new Promise(resolve => setTimeout(resolve, 100));
         }
         this.guestFrameContentDocument = guestFrame?.contentDocument;
@@ -172,7 +181,8 @@ export class ContentService {
         const {loadImageMetadata} = backend.get().endpoints;
         let imageUri, previewUri
         try {
-            const image = await loadImageMetadata(propertyValue?.__identity)
+            const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 30000));
+            const image: any = await Promise.race([loadImageMetadata(propertyValue?.__identity), timeout]);
             imageUri = image?.originalImageResourceUri
             previewUri = image?.previewImageResourceUri
         } catch (e) {

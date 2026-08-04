@@ -60,24 +60,3 @@ Once you have done that, you can run the functional tests by executing the follo
 FLOW_CONTEXT=Testing bin/phpunit --colors --stop-on-failure -c DistributionPackages/NEOSidekick.AiAssistant/Tests/FunctionalTests.xml --testsuite "NEOSidekick.AiAssistant" --verbose
 ```
 
-## End-to-End Testing (Neos 9)
-
-Besides the suite in `Tests/E2E` written for the internal NEOSidekickTestWebsite
-(see `Tests/E2E/README.md`), the `neos9.*.spec.ts` specs run against ANY Neos 9 site with
-this plugin installed and its default configuration — the Neos.Demo distribution works
-out of the box. See the docblock of each spec for its exact requirements; in short:
-
-- valid NEOSidekick API key, backend user with English interface language
-- `neos9.bulkAltTextModule.spec.ts` additionally needs a publicly reachable base URL
-  (e.g. `ddev share`) and at least one image asset without a title
-
-**Run these only against disposable/testing instances**: they authorize the NEOSidekick
-agent on the instance and write generated descriptions into asset titles.
-
-```shell
-cd DistributionPackages/NEOSidekick.AiAssistant/Tests/E2E
-npm install && npx playwright install chromium
-export PLAYWRIGHT_BASE_URL=https://your-instance.example
-export NEOS_BACKEND_USERNAME=admin NEOS_BACKEND_PASSWORD=password
-npx playwright test tests/auth.setup.spec.ts tests/neos9.editorsAndChat.spec.ts tests/neos9.bulkAltTextModule.spec.ts --workers=1
-```

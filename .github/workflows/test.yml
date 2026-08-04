@@ -3,11 +3,10 @@ name: build
 on:
   push:
     branches:
-      - 'main'
-      - 'feature/neos9-compatibility'
+      - '4.x'
   pull_request:
     branches:
-      - 'main'
+      - '4.x'
 
 jobs:
   test:

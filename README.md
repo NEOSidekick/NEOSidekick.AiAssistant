@@ -18,7 +18,8 @@ We use semantic versioning, so every breaking change will increase the major ver
 | Plugin version | Neos    |
 |----------------|---------|
 | 2.x            | 8.3     |
-| 3.x            | 9.0/9.1 |
+| 3.x            | 8.3/8.4 |
+| 4.x            | 9.0/9.1 |
 
 No configuration beyond this README is needed on Neos 9 — the plugin adapts to your
 content dimensions and site configuration automatically. Two Neos-9-specific notes:

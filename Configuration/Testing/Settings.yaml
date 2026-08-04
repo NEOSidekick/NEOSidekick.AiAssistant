@@ -8,7 +8,13 @@ Neos:
           # Unset Neos Testing / site-package presets we do not need (Flow merge: ~ replaces whole preset)
           all: ~
           en_US: ~
-          en_UK: ~
+          # en_UK is a SPECIALIZATION of en (fallback chain) for the dimension-fallback tests
+          en_UK:
+            label: English (UK)
+            values:
+              - en_UK
+              - en
+            uriSegment: uk
           fr: ~
           nl: ~
           dk: ~

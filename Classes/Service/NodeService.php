@@ -127,6 +127,17 @@ class NodeService extends AbstractNodeService
             if ($node === null) {
                 continue;
             }
+            // Fallback URLs (e.g. /uk serving en content) are re-addressed to their ORIGIN
+            // dimension: fallback pages are not editable rows - offering them would materialize
+            // a variant on save (implicit copy-on-write), detaching the page from its fallback
+            // chain. The underlying page stays in the list (deduped by its origin context path),
+            // so editing it improves every URL it shines through to.
+            if (DimensionFallbackDetector::isDimensionFallback($node)) {
+                $node = $this->tryToResolveNodeInItsOwnDimension($node, $findDocumentNodesFilter->getWorkspace());
+                if ($node === null) {
+                    continue;
+                }
+            }
             if (!self::nodeMatchesPropertyFilter($node->getNodeData(), $findDocumentNodesFilter)) {
                 continue;
             }
@@ -240,6 +251,7 @@ class NodeService extends AbstractNodeService
                 $contextPathSegments['dimensions']
             );
             $node = $context->getNode($contextPathSegments['nodePath']);
+            $this->assertNodeIsNotADimensionFallback($node, $updateItem->getNodeContextPath());
             foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
                 $node->setProperty($propertyName, $propertyValue);
             }
@@ -251,6 +263,7 @@ class NodeService extends AbstractNodeService
 
                 $imageNodeContextPathSegments = NodePaths::explodeContextPath($imageNodeContextPath);
                 $imageNode = $context->getNode($imageNodeContextPathSegments['nodePath']);
+                $this->assertNodeIsNotADimensionFallback($imageNode, $imageNodeContextPath);
                 foreach ($imageNodeProperties as $propertyName => $propertyValue) {
                     $imageNode->setProperty($propertyName, $propertyValue);
                 }
@@ -323,6 +336,45 @@ class NodeService extends AbstractNodeService
         $candidateHost = strtolower($parsed['host']);
         $currentHost = strtolower($controllerContext->getRequest()->getHttpRequest()->getUri()->getHost());
         return $candidateHost === $currentHost;
+    }
+
+    /**
+     * Resolves the same node aggregate in the dimension its NodeData was created for. The
+     * language dimension is aligned with the matching routing preset (chain), so re-addressed
+     * rows share the context path of rows resolved directly from the origin's own URL.
+     */
+    private function tryToResolveNodeInItsOwnDimension(Node $node, string $workspaceName): ?Node
+    {
+        $dimensions = $node->getNodeData()->getDimensionValues();
+        if (isset($this->languageDimensionName, $dimensions[$this->languageDimensionName][0], $this->contentDimensions[$this->languageDimensionName]['presets'])) {
+            $primaryValue = $dimensions[$this->languageDimensionName][0];
+            foreach ($this->contentDimensions[$this->languageDimensionName]['presets'] as $preset) {
+                if (($preset['values'][0] ?? null) === $primaryValue) {
+                    $dimensions[$this->languageDimensionName] = $preset['values'];
+                    break;
+                }
+            }
+        }
+        $context = $this->createContentContext($workspaceName, $dimensions);
+
+        return $context->getNodeByIdentifier($node->getIdentifier());
+    }
+
+    /**
+     * Writing to a fallback node would materialize a variant (the old CR's implicit
+     * copy-on-write on setProperty), permanently detaching the page from its fallback chain.
+     * Variant creation must remain an explicit editor decision in the Neos UI.
+     * find()/findImportantPages() only emit origin rows, so this guards against stale or
+     * handcrafted context paths.
+     */
+    private function assertNodeIsNotADimensionFallback(?Node $node, string $contextPath): void
+    {
+        if ($node !== null && DimensionFallbackDetector::isDimensionFallback($node)) {
+            throw new InvalidArgumentException(sprintf(
+                'Node "%s" is a dimension fallback and cannot be edited here. Create the variant in the Neos UI first.',
+                $contextPath
+            ), 1752060000001);
+        }
     }
 
     protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, Node $node): bool

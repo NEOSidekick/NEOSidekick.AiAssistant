@@ -424,6 +424,18 @@ class NodePatchService
                 );
             }
 
+            // Writing to a fallback node would materialize a variant (implicit copy-on-write),
+            // permanently detaching the page from its fallback chain. Variant creation must
+            // remain an explicit editor decision in the Neos UI.
+            if (DimensionFallbackDetector::isDimensionFallback($node)) {
+                throw new PatchFailedException(
+                    sprintf('Node "%s" is a dimension fallback in the requested dimensions and cannot be edited. Create the variant in the Neos UI first.', $patch->getNodeId()),
+                    $index,
+                    'updateNode',
+                    $patch->getNodeId()
+                );
+            }
+
             // Normalize and update properties
             // This converts asset objects (with 'identifier' key) to plain identifier strings
             $normalizedProperties = $this->propertyNormalizer->normalizeProperties($patch->getProperties(), $node->getNodeType());

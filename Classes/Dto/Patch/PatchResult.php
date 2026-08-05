@@ -76,7 +76,7 @@ final class PatchResult implements JsonSerializable
      * @param bool $rollbackPerformed
      * @return self
      */
-    public static function failure(bool $dryRun, PatchError $error, bool $rollbackPerformed = true): self
+    public static function failure(bool $dryRun, PatchError $error, bool $rollbackPerformed = false): self
     {
         return new self(false, $dryRun, [], $error, $rollbackPerformed);
     }

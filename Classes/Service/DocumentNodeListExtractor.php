@@ -100,9 +100,10 @@ class DocumentNodeListExtractor
         // counts document levels — non-document wrappers neither consume the depth budget nor
         // inflate the reported depth. Nodes at the depth boundary still need their child documents
         // for childDocumentCount, so the query goes one level deeper than requested.
+        // PHP_INT_MAX is effectively unlimited (and "+ 1" would overflow to float)
         $subtree = $subgraph->findSubtree($siteNode->aggregateId, FindSubtreeFilter::create(
             nodeTypes: self::DOCUMENT_TYPE,
-            maximumLevels: $depth >= 0 ? $depth + 1 : null
+            maximumLevels: ($depth >= 0 && $depth < PHP_INT_MAX) ? $depth + 1 : null
         ));
 
         $documents = [];

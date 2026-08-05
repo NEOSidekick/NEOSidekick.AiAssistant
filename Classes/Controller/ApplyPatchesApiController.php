@@ -10,10 +10,12 @@ use Neos\Flow\Mvc\Controller\ActionController;
 use NEOSidekick\AiAssistant\Service\NodePatchService;
 
 /**
- * API controller to apply atomic patches to nodes.
+ * API controller to apply patches to nodes.
  *
- * Processes LLM-generated node operations (create, update, move, delete)
- * with validation, transaction-based rollback, and dry-run support.
+ * Processes LLM-generated node operations (create, update, move, delete):
+ * all patches are validated up front, dry-run stops after validation, and
+ * execution is sequential and NOT transactional (the event-sourced content
+ * repository has no rollback — see README_Internal_API.md).
  *
  * Authentication is done via JWT Bearer token (Flow security provider).
  *

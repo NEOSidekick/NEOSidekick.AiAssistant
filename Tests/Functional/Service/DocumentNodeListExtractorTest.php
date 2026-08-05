@@ -85,6 +85,17 @@ class DocumentNodeListExtractorTest extends FunctionalTestCase
     /**
      * @test
      */
+    public function maximumIntegerDepthIsEffectivelyUnlimited(): void
+    {
+        $documents = $this->extractDocumentsByName(PHP_INT_MAX);
+
+        $this->assertArrayHasKey('Page A1', $documents);
+        $this->assertSame(2, $documents['Page A1']['depth']);
+    }
+
+    /**
+     * @test
+     */
     public function disabledDocumentsAreListedWithTheirOwnHiddenState(): void
     {
         $documents = $this->extractDocumentsByName();

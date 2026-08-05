@@ -174,12 +174,24 @@ class SearchNodesExtractor
 
         if (
             $pathStartingPoint !== null
-            && !str_starts_with((string)$this->tryRetrieveNodePath($subgraph, $node), $this->normalizePathStartingPoint($pathStartingPoint))
+            && !$this->pathIsWithinStartingPoint((string)$this->tryRetrieveNodePath($subgraph, $node), $pathStartingPoint)
         ) {
             return null;
         }
 
         return $node;
+    }
+
+    /**
+     * Segment-aware prefix check: "/x/foo" restricts to the foo SUBTREE — a plain
+     * str_starts_with() would also accept siblings like "/x/foo-other".
+     * Public because {@see SearchNodesApiController} applies the same restriction.
+     */
+    public function pathIsWithinStartingPoint(string $path, string $pathStartingPoint): bool
+    {
+        $prefix = rtrim($this->normalizePathStartingPoint($pathStartingPoint), '/');
+
+        return $path === $prefix || str_starts_with($path, $prefix . '/');
     }
 
     /**
@@ -236,7 +248,8 @@ class SearchNodesExtractor
      */
     public function normalizePathStartingPoint(string $path): string
     {
-        if (str_starts_with($path, '/sites')) {
+        // Only "/sites" itself or "/sites/..." are legacy paths — not e.g. "/sitesfoo"
+        if ($path === '/sites' || str_starts_with($path, '/sites/')) {
             $relativePath = ltrim(substr($path, strlen('/sites')), '/');
             return '/<' . self::SITES_ROOT_TYPE . '>' . ($relativePath !== '' ? '/' . $relativePath : '');
         }

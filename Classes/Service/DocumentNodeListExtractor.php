@@ -8,9 +8,10 @@ use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\NodeType\NodeTypeName;
 use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
-use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\CountChildNodesFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindSubtreeFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Subtree;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
@@ -83,8 +84,10 @@ class DocumentNodeListExtractor
         }
 
         $dimensionSpacePoint = $this->resolveDimensionSpacePoint($contentRepository, $dimensions);
+        // Backend-like reading (Neos 8 parity with invisibleContentShown): disabled documents must
+        // stay in the result so the isHidden field carries a signal; only removed nodes are excluded.
         $subgraph = $contentRepository->getContentGraph($workspaceObject->workspaceName)
-            ->getSubgraph($dimensionSpacePoint, NodeVisibility::excludeDisabledAndRemoved());
+            ->getSubgraph($dimensionSpacePoint, NodeVisibility::excludeRemoved());
 
         $siteNode = $this->resolveSiteNode($contentRepository, $subgraph, $siteNodeName);
 
@@ -92,8 +95,21 @@ class DocumentNodeListExtractor
             throw new \InvalidArgumentException('No site found', 1735660100);
         }
 
+        // One recursive CTE query over the document tree instead of one findChildNodes() query per
+        // node. Neos 8 parity: documents are discovered through document chains only, and `depth`
+        // counts document levels — non-document wrappers neither consume the depth budget nor
+        // inflate the reported depth. Nodes at the depth boundary still need their child documents
+        // for childDocumentCount, so the query goes one level deeper than requested.
+        $subtree = $subgraph->findSubtree($siteNode->aggregateId, FindSubtreeFilter::create(
+            nodeTypes: self::DOCUMENT_TYPE,
+            maximumLevels: $depth >= 0 ? $depth + 1 : null
+        ));
+
         $documents = [];
-        $this->traverseDocuments($contentRepository, $subgraph, $siteNode, $nodeTypeFilter, $depth, 0, $documents);
+        if ($subtree !== null) {
+            $sitePath = $this->tryRetrieveNodePath($subgraph, $subtree->node);
+            $this->collectDocuments($contentRepository, $subtree, $nodeTypeFilter, $depth, $sitePath, $documents);
+        }
 
         return [
             'generatedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
@@ -135,52 +151,55 @@ class DocumentNodeListExtractor
     }
 
     /**
-     * Recursively traverse document nodes.
+     * Collect matching documents from the pre-fetched document subtree.
+     *
+     * Paths are built incrementally from the subtree structure (parent path + node name) instead
+     * of one retrieveNodePath() query per document; a nameless ancestor makes the whole branch's
+     * paths unresolvable, matching retrieveNodePath()'s behavior.
      */
-    private function traverseDocuments(
+    private function collectDocuments(
         ContentRepository $contentRepository,
-        ContentSubgraphInterface $subgraph,
-        Node $node,
+        Subtree $subtree,
         string $nodeTypeFilter,
         int $maxDepth,
-        int $currentDepth,
+        ?string $path,
         array &$documents
     ): void {
-        // Check depth limit
-        if ($maxDepth >= 0 && $currentDepth > $maxDepth) {
+        // The subtree was queried one level deeper than requested (for childDocumentCount)
+        if ($maxDepth >= 0 && $subtree->level > $maxDepth) {
             return;
         }
 
-        // Add current node if it matches the filter
+        $node = $subtree->node;
         if ($contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)?->isOfType($nodeTypeFilter) === true) {
-            $documents[] = $this->extractDocumentData($subgraph, $node, $currentDepth);
+            $documents[] = $this->extractDocumentData($node, $subtree->level, $path, count($subtree->children));
         }
 
-        // Traverse all child nodes (documents may sit below arbitrary node types)
-        foreach ($subgraph->findChildNodes($node->aggregateId, FindChildNodesFilter::create()) as $childNode) {
-            $this->traverseDocuments($contentRepository, $subgraph, $childNode, $nodeTypeFilter, $maxDepth, $currentDepth + 1, $documents);
+        foreach ($subtree->children as $childSubtree) {
+            $childName = $childSubtree->node->name?->value;
+            $childPath = ($path !== null && $childName !== null) ? $path . '/' . $childName : null;
+            $this->collectDocuments($contentRepository, $childSubtree, $nodeTypeFilter, $maxDepth, $childPath, $documents);
         }
     }
 
     /**
      * Extract data from a single document node.
      */
-    private function extractDocumentData(ContentSubgraphInterface $subgraph, Node $node, int $depth): array
+    private function extractDocumentData(Node $node, int $depth, ?string $path, int $childDocumentCount): array
     {
-        $childDocumentCount = $subgraph->countChildNodes($node->aggregateId, CountChildNodesFilter::create(nodeTypes: self::DOCUMENT_TYPE));
-
         return [
             'identifier' => $node->aggregateId->value,
             'nodeType' => $node->nodeTypeName->value,
             // NOTE (Neos 9 migration decision): node paths now use the absolute path format
             // "/<Neos.Neos:Sites>/site/..." instead of the legacy "/sites/site/..." format.
-            'path' => $this->tryRetrieveNodePath($subgraph, $node) ?? '',
+            'path' => $path ?? '',
             'depth' => $depth,
             'title' => $node->getProperty('title') ?? $node->name?->value,
             'uriPath' => $node->getProperty('uriPathSegment') ?? '',
             'properties' => $this->extractSelectedProperties($node),
             'childDocumentCount' => $childDocumentCount,
-            'isHidden' => $node->tags->contain(NeosSubtreeTag::disabled()),
+            // Neos 8 parity: the node's OWN hidden state, not one inherited from an ancestor
+            'isHidden' => $node->tags->withoutInherited()->contain(NeosSubtreeTag::disabled()),
             // "hidden in index" is a regular node property in Neos 9 (see Neos.Neos:Mixin.Document)
             'isHiddenInMenu' => (bool)$node->getProperty('hiddenInMenu'),
         ];

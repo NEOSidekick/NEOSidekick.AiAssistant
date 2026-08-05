@@ -219,10 +219,7 @@ class NodeService extends AbstractNodeService
             if (!self::nodeMatchesPropertyFilter($node, $findDocumentNodesFilter)) {
                 continue;
             }
-            if (
-                !empty($findDocumentNodesFilter->getLanguageDimensionFilter())
-                && !$this->nodeMatchesLanguageDimensionFilter($findDocumentNodesFilter, $node)
-            ) {
+            if (!$this->nodeMatchesLanguageDimensionFilter($findDocumentNodesFilter, $node)) {
                 continue;
             }
 
@@ -365,6 +362,11 @@ class NodeService extends AbstractNodeService
 
     protected function nodeMatchesLanguageDimensionFilter(FindDocumentNodesFilter $findDocumentNodesFilter, Node $node): bool
     {
+        // An empty filter means "all languages" — without this guard the in_array() below would
+        // reject every node, silently emptying important-pages on installs that pass no filter.
+        if (empty($findDocumentNodesFilter->getLanguageDimensionFilter())) {
+            return true;
+        }
         if (!isset($this->languageDimensionName)) {
             return true;
         }

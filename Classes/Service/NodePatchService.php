@@ -354,16 +354,10 @@ class NodePatchService
                 $contentRepository->handle($referencesCommand);
             }
 
-            if ($hidden === true) {
-                $contentRepository->handle(DisableNodeAggregate::create(
-                    $subgraph->getWorkspaceName(),
-                    $newNodeAggregateId,
-                    $subgraph->getDimensionSpacePoint(),
-                    NodeVariantSelectionStrategy::STRATEGY_ALL_SPECIALIZATIONS
-                ));
-            }
-
-            // The projection is updated synchronously, so the new node is queryable right away
+            // The projection is updated synchronously, so the new node is queryable right away.
+            // This lookup must happen BEFORE a potential DisableNodeAggregate: the subgraph
+            // excludes disabled nodes, so disabling first would make the find fail on a node
+            // that was in fact created — mid-batch, with no rollback.
             $newNode = $subgraph->findNodeById($newNodeAggregateId);
             if ($newNode === null) {
                 throw new PatchFailedException(
@@ -376,6 +370,15 @@ class NodePatchService
 
             // Collect information about all created nodes (main node + auto-created children)
             $createdNodes = $this->collectCreatedNodes($newNode, 0);
+
+            if ($hidden === true) {
+                $contentRepository->handle(DisableNodeAggregate::create(
+                    $subgraph->getWorkspaceName(),
+                    $newNodeAggregateId,
+                    $subgraph->getDimensionSpacePoint(),
+                    NodeVariantSelectionStrategy::STRATEGY_ALL_SPECIALIZATIONS
+                ));
+            }
 
             return [
                 'index' => $index,

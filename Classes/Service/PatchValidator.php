@@ -221,12 +221,13 @@ class PatchValidator
             }
         }
         $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
-        $nodeTypeManager = $contentRepository->getNodeTypeManager();
-        $newParentNodeType = $nodeTypeManager->getNodeType($newParentNode->nodeTypeName);
-        $nodeType = $nodeTypeManager->getNodeType($node->nodeTypeName);
+        // Unknown node types must fail here like in the create/update validations — a silent
+        // skip would defer the failure to CR execution time, mid-batch and without rollback.
+        $newParentNodeType = $this->getNodeType($newParentNode->nodeTypeName->value, $patchIndex, 'moveNode', $contentRepository);
+        $nodeType = $this->getNodeType($node->nodeTypeName->value, $patchIndex, 'moveNode', $contentRepository);
 
         // Validate node type constraints in the new location
-        if ($newParentNodeType !== null && $nodeType !== null && !$newParentNodeType->allowsChildNodeType($nodeType)) {
+        if (!$newParentNodeType->allowsChildNodeType($nodeType)) {
             throw new PatchFailedException(
                 sprintf(
                     'NodeType "%s" is not allowed as child of "%s"',

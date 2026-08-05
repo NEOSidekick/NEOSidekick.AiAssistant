@@ -100,10 +100,13 @@ class SearchNodesApiController extends ActionController
                 );
 
                 if ($pathStartingPoint !== '') {
+                    // Document paths use the Neos 9 absolute format ("/<Neos.Neos:Sites>/..."), so a
+                    // legacy "/sites/..." prefix must be normalized or it would match nothing.
+                    $normalizedPathStartingPoint = $this->extractor->normalizePathStartingPoint($pathStartingPoint);
                     $documents = array_values(array_filter(
                         $result['documents'],
                         static fn(array $document): bool => isset($document['path'])
-                            && str_starts_with((string)$document['path'], $pathStartingPoint)
+                            && str_starts_with((string)$document['path'], $normalizedPathStartingPoint)
                     ));
                     $result['documents'] = $documents;
                     $result['documentCount'] = count($documents);

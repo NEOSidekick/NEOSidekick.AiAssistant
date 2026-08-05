@@ -11,6 +11,7 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\AbsoluteNodePath;
 use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindClosestNodeFilter;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindDescendantNodesFilter;
+use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\NodeType\NodeTypeCriteria;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
@@ -166,7 +167,7 @@ class SearchNodesExtractor
 
         if (
             $nodeTypeFilter !== null
-            && $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName)?->isOfType($nodeTypeFilter) !== true
+            && !$this->nodeMatchesNodeTypeFilter($contentRepository, $node, $nodeTypeFilter)
         ) {
             return null;
         }
@@ -179,6 +180,34 @@ class SearchNodesExtractor
         }
 
         return $node;
+    }
+
+    /**
+     * Evaluates the node type filter string with the same semantics as findDescendantNodes()
+     * ({@see NodeTypeCriteria}): deny rules win, an empty allow-list allows everything —
+     * a plain isOfType() call would misread multi-type filters like "A,B,!C".
+     */
+    private function nodeMatchesNodeTypeFilter(ContentRepository $contentRepository, Node $node, string $nodeTypeFilter): bool
+    {
+        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName);
+        if ($nodeType === null) {
+            return false;
+        }
+        $criteria = NodeTypeCriteria::fromFilterString($nodeTypeFilter);
+        foreach ($criteria->explicitlyDisallowedNodeTypeNames as $disallowedNodeTypeName) {
+            if ($nodeType->isOfType($disallowedNodeTypeName)) {
+                return false;
+            }
+        }
+        if ($criteria->explicitlyAllowedNodeTypeNames->isEmpty()) {
+            return true;
+        }
+        foreach ($criteria->explicitlyAllowedNodeTypeNames as $allowedNodeTypeName) {
+            if ($nodeType->isOfType($allowedNodeTypeName)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
@@ -203,8 +232,9 @@ class SearchNodesExtractor
 
     /**
      * Converts a legacy "/sites/..." path into the Neos 9 absolute path format; other values pass through.
+     * Public because {@see SearchNodesApiController} applies the same normalization to its path filter.
      */
-    private function normalizePathStartingPoint(string $path): string
+    public function normalizePathStartingPoint(string $path): string
     {
         if (str_starts_with($path, '/sites')) {
             $relativePath = ltrim(substr($path, strlen('/sites')), '/');

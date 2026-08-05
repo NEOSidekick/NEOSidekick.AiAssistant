@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace NEOSidekick\AiAssistant\Service;
 
+use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\NodeType\NodeType;
 use Neos\ContentRepository\Core\Projection\ContentGraph\Filter\FindChildNodesFilter;
@@ -59,7 +60,7 @@ class NodeTreeExtractor
         $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $subgraph = $contentRepository->getContentSubgraph(
             WorkspaceName::fromString($workspace),
-            DimensionSpacePoint::fromArray($this->dimensionCoordinatesFromDimensionsArray($dimensions))
+            $this->resolveDimensionSpacePoint($contentRepository, $dimensions)
         );
         $node = $subgraph->findNodeById(NodeAggregateId::fromString($nodeId));
 
@@ -104,6 +105,21 @@ class NodeTreeExtractor
         }
 
         return $coordinates;
+    }
+
+    /**
+     * The controller defaults to no dimensions; on a dimensioned content repository an empty
+     * dimension space point matches nothing, so fall back to the most general dimension space
+     * point — same pattern as {@see DocumentNodeListExtractor} and {@see SearchNodesExtractor}.
+     */
+    private function resolveDimensionSpacePoint(ContentRepository $contentRepository, array $dimensions): DimensionSpacePoint
+    {
+        $coordinates = $this->dimensionCoordinatesFromDimensionsArray($dimensions);
+        if ($coordinates !== []) {
+            return DimensionSpacePoint::fromArray($coordinates);
+        }
+        $rootGeneralizations = $contentRepository->getVariationGraph()->getRootGeneralizations();
+        return $rootGeneralizations !== [] ? reset($rootGeneralizations) : DimensionSpacePoint::createWithoutDimensions();
     }
 
     /**

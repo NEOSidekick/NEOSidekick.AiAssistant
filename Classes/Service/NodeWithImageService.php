@@ -96,7 +96,9 @@ class NodeWithImageService extends AbstractNodeService
 
             // NOTE (Neos 9 migration decision): the old NodeData query also matched content variants without the language
             // dimension; we now filter by the document's dimension space point (a document address is dimension-specific).
-            if (!empty($languageDimensionFilter)) {
+            // Without a configured languageDimensionName there is nothing to filter on (and
+            // `new ContentDimensionId(null)` would be a TypeError) — same guard as in NodeService.
+            if (!empty($languageDimensionFilter) && !empty($this->languageDimensionName)) {
                 $languageCoordinate = $documentNodeAddress->dimensionSpacePoint->getCoordinate(new ContentDimensionId($this->languageDimensionName));
                 if ($languageCoordinate !== null && !in_array($languageCoordinate, $languageDimensionFilter, true)) {
                     continue;

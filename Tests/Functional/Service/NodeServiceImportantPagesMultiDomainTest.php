@@ -26,6 +26,10 @@ class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
      */
     public function itFiltersImportantPagesByCurrentDomain(): void
     {
+        if ($this->primaryLanguage() === null) {
+            $this->markTestSkipped('This test needs a language dimension: the mocked host expectation assumes language-segmented entry URLs.');
+        }
+
         $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
             ->disableOriginalConstructor()
             ->getMock();

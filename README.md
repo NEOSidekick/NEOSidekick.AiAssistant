@@ -5,7 +5,7 @@ Based on the latest findings in artificial intelligence.
 
 ## Installation
 
-`NEOSidekick.AiAssistant` is available via Packagist. Add `"neosidekick/ai-assistant" : "^2.5"` to the require section of the composer.json or run:
+`NEOSidekick.AiAssistant` is available via Packagist. Add the version matching your Neos version (see the compatibility table below) to the require section of the composer.json — e.g. `"neosidekick/ai-assistant": "^4.0"` for Neos 9 — or run:
 
 ```bash
 composer require neosidekick/ai-assistant

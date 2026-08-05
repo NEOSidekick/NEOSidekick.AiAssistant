@@ -118,7 +118,7 @@ Because the JWT resolves to a real `Neos.Neos:Backend` account, write operations
 | `/neosidekick/api/search-nodes` | GET | Search across all node properties (grep-like) |
 | `/neosidekick/api/search-media-assets` | GET | Search media assets by title, filename, or caption |
 | `/neosidekick/api/upload-media-asset` | POST | Upload media asset from remote URL |
-| `/neosidekick/api/apply-patches` | POST | Apply atomic patches (create, update, move, delete nodes) |
+| `/neosidekick/api/apply-patches` | POST | Apply patches (create, update, move, delete nodes; validated up front, not transactional) |
 | `/neosidekick/aiassistant/service/{action}` | GET/POST | Backend service for UI integration |
 
 ---
@@ -811,7 +811,7 @@ curl -X POST "https://example.com/neosidekick/api/upload-media-asset" \
 
 ## 7. Apply Patches API
 
-Apply atomic patches to the content repository. Supports creating, updating, moving, and deleting nodes with transaction-based rollback and dry-run support.
+Apply patches to the content repository. Supports creating, updating, moving, and deleting nodes with upfront validation and dry-run support. All patches are validated before anything is executed; execution itself is **not transactional** (the event-sourced content repository has no rollback) — see [Validation & Failure Semantics](#validation--failure-semantics).
 
 ### Endpoint
 
@@ -859,7 +859,7 @@ POST /neosidekick/api/apply-patches
 |-------|------|----------|---------|-------------|
 | `workspace` | string | No | `live` | Workspace name |
 | `dimensions` | object | No | `{}` | Content dimensions |
-| `dryRun` | bool | No | `false` | Validate without persisting changes |
+| `dryRun` | bool | No | `false` | Validate all patches and stop before executing anything |
 | `patches` | array | **Yes** | - | Array of patch operations |
 
 ### Patch Operations
@@ -999,7 +999,9 @@ Total: 1 operations applied
 
 ### Failure Response (422)
 
-When a patch fails, all changes are rolled back:
+`rollbackPerformed` is always `false`: the event-sourced content repository cannot wrap commands in
+a database transaction. Validation failures happen before anything is executed; if a patch fails
+*during* execution despite passing validation, the patches before it stay applied:
 
 ```json
 {
@@ -1011,13 +1013,16 @@ When a patch fails, all changes are rolled back:
     "operation": "updateNode",
     "nodeId": "uuid-123"
   },
-  "rollbackPerformed": true
+  "rollbackPerformed": false
 }
 ```
 
 ### Dry-Run Mode
 
-When `dryRun: true`, all patches are validated and executed within a transaction, but the transaction is rolled back regardless of success. This allows you to validate patches without making changes:
+When `dryRun: true`, all patches are validated and nothing is executed. The results contain only
+`{index, operation, nodeId}` per patch — in particular no `createdNodes` details, since nothing is
+created. (The Neos 8 implementation executed dry-runs inside a rolled-back database transaction and
+could therefore return full results; the event-sourced content repository has no rollback.)
 
 ```bash
 curl -X POST "https://example.com/neosidekick/api/apply-patches" \
@@ -1030,11 +1035,14 @@ curl -X POST "https://example.com/neosidekick/api/apply-patches" \
   }'
 ```
 
-### Transaction Semantics
+### Validation & Failure Semantics
 
-- All patches are executed within a single database transaction
-- If any patch fails, all previous changes are rolled back
-- Patches are validated before execution using `Flowpack.NodeTemplates` PropertiesProcessor
+- All patches are validated up front (node existence, node types, node type constraints, and
+  properties via the `Flowpack.NodeTemplates` PropertiesProcessor) — a validation failure means
+  nothing has been executed
+- Execution is sequential and **not** transactional; a mid-batch execution failure leaves the
+  preceding patches applied (`rollbackPerformed: false`)
+- Use `dryRun: true` first when a batch must not be applied partially
 - NodeTemplates configured in `options.template` are automatically applied after `createNode`
 
 ### Workspace Limitations
@@ -1200,7 +1208,7 @@ Data extraction services that provide raw data to the controllers:
 - `Classes/Service/SearchNodesExtractor.php` - Searches nodes by property values
 - `Classes/Service/MediaAssetSearchService.php` - Searches media assets by title, filename, caption
 - `Classes/Service/MediaAssetUploadService.php` - Uploads media assets into library from remote URLs
-- `Classes/Service/NodePatchService.php` - Applies atomic patches with transaction support
+- `Classes/Service/NodePatchService.php` - Applies patches (upfront validation, sequential non-transactional execution)
 - `Classes/Service/PatchValidator.php` - Validates patches using NodeTemplates PropertiesProcessor
 
 ### Configuration

@@ -82,7 +82,24 @@ jobs:
           cd "${{ env.NEOS_FOLDER }}"
           bin/phpstan analyse ${{ env.DIST_FOLDER }}/Classes
 
+      - name: Run unit tests
+        run: |
+          cd "${{ env.NEOS_FOLDER }}"
+          bin/phpunit --colors --stop-on-failure --bootstrap ${{ env.DIST_FOLDER }}/Tests/UnitTestBootstrap.php -c ${{ env.DIST_FOLDER }}/Tests/UnitTests.xml --testsuite "NEOSidekick.AiAssistant Unit" --verbose
+
       - name: Run functional tests
         run: |
           cd "${{ env.NEOS_FOLDER }}"
           bin/phpunit --colors --stop-on-failure -c ${{ env.DIST_FOLDER }}/Tests/FunctionalTests.xml --testsuite "NEOSidekick.AiAssistant" --verbose
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Run JavaScript tests
+        run: |
+          cd "${{ env.NEOS_FOLDER }}${{ env.DIST_FOLDER }}/Resources/Private/NeosUserInterface"
+          corepack enable
+          yarn install --frozen-lockfile
+          yarn test

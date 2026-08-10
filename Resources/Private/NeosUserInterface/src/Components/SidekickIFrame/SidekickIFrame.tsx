@@ -40,13 +40,19 @@ export default class SidekickIFrame extends PureComponent<SidekickIFrameProps> {
         iframeSrc.searchParams.append('contentLanguage', activeContentDimensions.language ? activeContentDimensions.language[0] : configuration['defaultLanguage']);
         iframeSrc.searchParams.append('interfaceLanguage', interfaceLanguage);
         iframeSrc.searchParams.append('userId', configuration.userId);
-        if (configuration.sessionId) {
-            iframeSrc.searchParams.append('sessionId', configuration.sessionId);
-        }
         iframeSrc.searchParams.append('sessionsIsSameSite', configuration.sessionsIsSameSite ? 'true' : 'false');
         iframeSrc.searchParams.append('plattform', 'neos');
         iframeSrc.searchParams.append('domain', configuration.domain);
         iframeSrc.searchParams.append('siteName', configuration.siteName)
+        // The Neos backend page's real browser origin. `domain` above is the *site's* public base
+        // URI, which may differ from where the backend is served; the assistant needs the actual
+        // parent origin to target postMessage back at this window.
+        iframeSrc.searchParams.append('parentOrigin', window.location.origin);
+        // Purely for server-side rollout segmentation. Omitted when the version is unresolvable
+        // (dev checkouts), which the receiving side tolerates.
+        if (configuration?.pluginVersion) {
+            iframeSrc.searchParams.append('pluginVersion', configuration.pluginVersion);
+        }
         if (configuration?.referrer) {
             iframeSrc.searchParams.append('referral', configuration?.referrer);
         }

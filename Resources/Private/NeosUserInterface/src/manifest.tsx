@@ -1,6 +1,8 @@
 import manifest, {SynchronousMetaRegistry, SynchronousRegistry} from "@neos-project/neos-ui-extensibility";
+import {fetchWithErrorHandling} from "@neos-project/neos-ui-backend-connector";
 
 import {SidekickFrontendConfiguration} from "./interfaces";
+import {createSilentAuthorizationService, createSilentAuthorizeHandler} from './Service/silentAuthorization';
 import {createApiService} from './Service/ApiService';
 import {createContentService} from './Service/ContentService';
 import {createContentCanvasService} from "./Service/ContentCanvasService";
@@ -25,40 +27,10 @@ interface IframeIncomingMessage {
     };
 }
 
-const SILENT_AUTHORIZE_EVENT = 'neosidekick-silent-authorize';
-
-// Guards against a duplicate trigger (e.g. React StrictMode double-invoking the iframe effect in
-// dev) firing a second do-authorize against an already-consumed state. The parent page is not
-// reloaded by the silent flow, so this resets once the in-flight request settles.
-let silentAuthorizationInProgress = false;
-
-/**
- * Performs a silent re-authorization: the iframe (which has detected prior consent but a stale
- * session) asks the Neos backend to mint a fresh JWT from the live backend session. This is a
- * same-origin, CSRF-protected POST carrying the live session cookie; on success Neos forwards the
- * token to Laravel's callback keyed by `state`.
- */
-const performSilentAuthorization = async (state: string, csrfToken: string): Promise<boolean> => {
-    try {
-        const response = await fetch('/neosidekick/agent/do-authorize.json', {
-            method: 'POST',
-            credentials: 'include',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Accept': 'application/json',
-            },
-            body: new URLSearchParams({
-                __csrfToken: csrfToken,
-                state,
-            }).toString(),
-        });
-
-        return response.ok;
-    } catch (error) {
-        console.error('NEOSidekick silent authorization failed', error);
-        return false;
-    }
-};
+// Coalesces duplicate triggers for the same state (e.g. React StrictMode double-invoking the iframe
+// effect in dev, or the iframe re-asking) onto one in-flight do-authorize, while still answering
+// every trigger.
+const silentAuthorizationService = createSilentAuthorizationService({fetcher: fetchWithErrorHandling});
 
 manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry<any>, {store, frontendConfiguration}) => {
     const configuration = frontendConfiguration['NEOSidekick.AiAssistant'] as SidekickFrontendConfiguration;
@@ -92,6 +64,15 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
     const contentTreeService = new ContentTreeService(store, nodeTypesRegistry);
     neosidekickRegistry.set('contentTreeService', contentTreeService);
 
+    // A duplicate trigger must never be dropped silently: the service shares the in-flight attempt
+    // for a given state, so no second do-authorize is fired against an already-consumed state, but
+    // every trigger is answered once that attempt settles. Without an answer the iframe's poller
+    // would wait out its full budget.
+    const handleSilentAuthorize = createSilentAuthorizeHandler({
+        authorize: (state: string) => silentAuthorizationService.authorize(state),
+        notifyResult: iFrameApiService.notifySilentAuthorizationResult,
+    });
+
     iFrameApiService.listenToMessages((message: IframeIncomingMessage) => {
         const eventName = message.data?.eventName;
 
@@ -101,23 +82,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
             return;
         }
 
-        if (eventName === SILENT_AUTHORIZE_EVENT) {
-            const state = message.data?.data?.state;
-            if (typeof state !== 'string' || state === '') {
-                iFrameApiService.notifySilentAuthorizationResult(false);
-                return;
-            }
-
-            if (silentAuthorizationInProgress) {
-                return; // a re-auth is already running; don't fire a duplicate do-authorize
-            }
-            silentAuthorizationInProgress = true;
-
-            performSilentAuthorization(state, configuration.csrfToken).then((succeeded) => {
-                silentAuthorizationInProgress = false;
-                iFrameApiService.notifySilentAuthorizationResult(succeeded);
-            });
-        }
+        handleSilentAuthorize(message);
     });
 
     const sagasRegistry = globalRegistry.get('sagas');

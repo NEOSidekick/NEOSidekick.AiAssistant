@@ -7,12 +7,11 @@ use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\BaseUriProvider;
 use Neos\Flow\Http\Exception as HttpException;
+use Neos\Flow\Package\Exception as PackageException;
 use Neos\Flow\Package\PackageManager;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
-use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Flow\Security\Cryptography\HashService;
-use Neos\Flow\Session\SessionManagerInterface;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Service\UserService;
@@ -69,18 +68,6 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 
     /**
      * @Flow\Inject
-     * @var SessionManagerInterface
-     */
-    protected $sessionManager;
-
-    /**
-     * @Flow\Inject
-     * @var SecurityContext
-     */
-    protected $securityContext;
-
-    /**
-     * @Flow\Inject
      * @var BaseUriProvider
      */
     protected $baseUriProvider;
@@ -113,12 +100,6 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
         return sha1($this->persistenceManager->getIdentifierByObject($this->userService->getBackendUser()));
     }
 
-    public function sessionId(): string
-    {
-        $session = $this->sessionManager->getCurrentSession();
-        return $session->isStarted() ? $session->getId() : '';
-    }
-
     public function sessionsIsSameSite(): bool
     {
         return strtolower($this->sessionCookieSameSite ?? '') === 'strict';
@@ -130,12 +111,25 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     }
 
     /**
-     * The backend session's CSRF protection token, exposed to the Neos UI plugin so it can
-     * make CSRF-protected same-origin POSTs (e.g. silent re-authorization to do-authorize).
+     * The installed version of this package, forwarded to the assistant as an iframe parameter so
+     * plugin rollout can be segmented server-side.
+     *
+     * Source and path installs DO resolve: Composer records them in composer.lock, so a checkout
+     * tracking a branch reports its branch alias (e.g. `dev-main`). The empty string — on which the
+     * parameter is omitted rather than sent blank — happens only when the package is not registered
+     * with Composer at all.
      */
-    public function csrfToken(): string
+    public function pluginVersion(): string
     {
-        return $this->securityContext->getCsrfProtectionToken();
+        if (!$this->packageManager->isPackageAvailable('NEOSidekick.AiAssistant')) {
+            return '';
+        }
+
+        try {
+            return (string)$this->packageManager->getPackage('NEOSidekick.AiAssistant')->getInstalledVersion();
+        } catch (PackageException $exception) {
+            return '';
+        }
     }
 
     public function apiKey(): string

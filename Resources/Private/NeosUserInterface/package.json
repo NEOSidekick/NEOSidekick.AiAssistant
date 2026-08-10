@@ -4,7 +4,8 @@
   "description": "",
   "scripts": {
     "build": "node build.js",
-    "watch": "node build.js --watch"
+    "watch": "node build.js --watch",
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +31,8 @@
   },
   "devDependencies": {
     "immer": "^9.0.0",
-    "lodash.mapvalues": "^4.6.0"
+    "lodash.mapvalues": "^4.6.0",
+    "vitest": "^4.1.10"
   },
   "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
 }

@@ -12,8 +12,8 @@ use Neos\Flow\Mvc\Routing\Exception\MissingActionNameException;
 use Neos\Flow\Persistence\Exception\IllegalObjectTypeException;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\Neos\Service\LinkingService;
-use Neos\Utility\Arrays;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
+use NEOSidekick\AiAssistant\Service\LanguageDimensionPresetMatcher;
 
 /**
  * @Flow\Scope("singleton")
@@ -33,6 +33,18 @@ class FindDocumentNodeDataFactory
      * @var string
      */
     protected string $languageDimensionName;
+
+    /**
+     * @Flow\InjectConfiguration(package="Neos.ContentRepository", path="contentDimensions")
+     * @var array
+     */
+    protected $contentDimensions;
+
+    /**
+     * @Flow\InjectConfiguration(path="defaultLanguage")
+     * @var string
+     */
+    protected $defaultLanguage;
 
     /**
      * @throws NodeException
@@ -61,8 +73,41 @@ class FindDocumentNodeDataFactory
             $publicUri,
             $previewUri,
             (array)$node->getProperties(),
-            // todo inspect [0] syntax... maybe we also need a mapping? replace default value and/or discuss setup with and without language dimensions
-            Arrays::getValueByPath($node->getNodeData()->getDimensionValues(), $this->languageDimensionName . '.0') ?: 'de'
+            // todo language keys of the Sidekick API are not necessarily dimension values - a mapping is still missing
+            $this->resolveLanguage($node)
         );
+    }
+
+    /**
+     * The language to generate content in for the given node.
+     *
+     * NodeData persists dimension values SORTED, so the first stored value of a variant that keeps
+     * its full fallback chain is not its language — a Slovenian variant of the preset
+     * "sl: [sl, de]" stores ["de", "sl"]. The variant is therefore matched to its configured preset
+     * first, and that preset's PRIMARY configured value is used.
+     *
+     * On installations with a language dimension, nodes without values for it never reach this
+     * factory (see {@see \NEOSidekick\AiAssistant\Service\NodeService::dimensionValuesMatchLanguageDimensionFilter}),
+     * so the "defaultLanguage" fallback serves installations that use no content dimensions.
+     */
+    protected function resolveLanguage(Node $node): string
+    {
+        $dimensionValues = $node->getNodeData()->getDimensionValues();
+        $storedValues = array_values($dimensionValues[$this->languageDimensionName] ?? []);
+        $presetsConfiguration = $this->contentDimensions[$this->languageDimensionName]['presets'] ?? [];
+
+        $presetIdentifier = LanguageDimensionPresetMatcher::resolvePresetIdentifier($storedValues, $presetsConfiguration);
+        if ($presetIdentifier !== null) {
+            $primaryPresetValue = $presetsConfiguration[$presetIdentifier]['values'][0] ?? null;
+            if (is_string($primaryPresetValue) && $primaryPresetValue !== '') {
+                return $primaryPresetValue;
+            }
+        }
+
+        if (isset($storedValues[0]) && is_string($storedValues[0]) && $storedValues[0] !== '') {
+            return $storedValues[0];
+        }
+
+        return (string)$this->defaultLanguage;
     }
 }

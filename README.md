@@ -29,8 +29,8 @@ NEOSidekick:
 ### Content Language
 
 If you're using content dimensions in your Neos setup, we will retrieve the content language 
-from the currently active content dimension. However, if you are not using this feature of Neos, 
-you need to define the default content language in the configuration, like this:
+from the language dimension preset the page belongs to. However, if you are not using this feature 
+of Neos, you need to define the default content language in the configuration, like this:
 
 ```yaml
 NEOSidekick:
@@ -38,7 +38,16 @@ NEOSidekick:
     defaultLanguage: 'en'
 ```
 
-English (`en`) is configured out of the box. Supported languages are:
+`defaultLanguage` is used for every node that carries no language dimension value, i.e. on
+installations without content dimensions. English (`en`) is configured out of the box.
+
+> **Before you upgrade:** the generation language of a node without any language dimension value
+> used to be hardcoded to German (`de`), ignoring `defaultLanguage`. It now follows
+> `defaultLanguage`, which ships as `en`. If you do not use content dimensions, set
+> `defaultLanguage` to your content's language *before* upgrading — otherwise generation silently
+> switches to English.
+
+Supported languages are:
 
 * English `en`
 * English (US) `en_US`

@@ -1,6 +1,9 @@
 NEOSidekick:
   AiAssistant:
     apikey: ''
+    # The language content is generated in when a node carries no language dimension value,
+    # i.e. on installations that do not use content dimensions. Nodes of an installation WITH
+    # a language dimension take their language from the dimension preset they belong to.
     defaultLanguage: 'en'
     chatSidebarEnabled: true
     # The language dimension is usually called "language" in most Neos projects

@@ -29,6 +29,16 @@ use Neos\Flow\Annotations as Flow;
 final class LanguageDimensionPresetMatcher
 {
     /**
+     * Whether the given variant belongs to any of the selected presets.
+     *
+     * The identifiers here come from the FILTER, not from the configuration, so - unlike
+     * {@see resolvePresetIdentifier}, which walks the configured presets and must skip entries a
+     * distribution unset with "presetName: ~" - an unconfigured identifier is deliberately still
+     * treated as a literal dimension value (see {@see chainPrefixesOfPreset}). That keeps this in
+     * step with the SQL pre-filter built by {@see collectDimensionValuesOfPresets}, which resolves
+     * such identifiers the same way; rejecting them only here would make the query select rows
+     * that this method then silently drops.
+     *
      * @param array<string> $nodeDimensionValues values of the language dimension stored on the node variant
      * @param array<string> $selectedPresetIdentifiers preset identifiers selected in the filter
      * @param array<string, array{values?: array<string>}> $presetsConfiguration "presets" part of the dimension configuration
@@ -38,17 +48,60 @@ final class LanguageDimensionPresetMatcher
         array $selectedPresetIdentifiers,
         array $presetsConfiguration
     ): bool {
+        foreach ($selectedPresetIdentifiers as $presetIdentifier) {
+            if (self::matchesPreset($nodeDimensionValues, (string)$presetIdentifier, $presetsConfiguration)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The identifier of the preset the given variant belongs to, or NULL if its values match no
+     * configured preset. Used to derive the language to generate content in: the values stored on
+     * NodeData are sorted, so their first entry is not necessarily the variant's own language —
+     * the preset's configured primary value is.
+     *
+     * @param array<string> $nodeDimensionValues values of the language dimension stored on the node variant
+     * @param array<string, array{values?: array<string>}> $presetsConfiguration "presets" part of the dimension configuration
+     */
+    public static function resolvePresetIdentifier(
+        array $nodeDimensionValues,
+        array $presetsConfiguration
+    ): ?string {
+        foreach ($presetsConfiguration as $presetIdentifier => $presetConfiguration) {
+            // Presets can be unset in a distribution's Settings.yaml ("presetName: ~"), which
+            // leaves the key behind with a NULL value - those must not match anything.
+            if (!is_array($presetConfiguration)) {
+                continue;
+            }
+            if (self::matchesPreset($nodeDimensionValues, (string)$presetIdentifier, $presetsConfiguration)) {
+                return (string)$presetIdentifier;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string> $nodeDimensionValues
+     * @param array<string, array{values?: array<string>}> $presetsConfiguration
+     */
+    private static function matchesPreset(
+        array $nodeDimensionValues,
+        string $presetIdentifier,
+        array $presetsConfiguration
+    ): bool {
         $nodeDimensionValues = array_values($nodeDimensionValues);
         sort($nodeDimensionValues);
         if ($nodeDimensionValues === []) {
             return false;
         }
 
-        foreach ($selectedPresetIdentifiers as $presetIdentifier) {
-            foreach (self::chainPrefixesOfPreset($presetIdentifier, $presetsConfiguration) as $chainPrefix) {
-                if ($chainPrefix === $nodeDimensionValues) {
-                    return true;
-                }
+        foreach (self::chainPrefixesOfPreset($presetIdentifier, $presetsConfiguration) as $chainPrefix) {
+            if ($chainPrefix === $nodeDimensionValues) {
+                return true;
             }
         }
 

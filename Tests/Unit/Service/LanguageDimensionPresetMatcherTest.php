@@ -165,4 +165,49 @@ class LanguageDimensionPresetMatcherTest extends TestCase
             LanguageDimensionPresetMatcher::matchesAnyPreset(['de'], [], self::PRESETS)
         );
     }
+
+    /**
+     * @test
+     */
+    public function resolvePresetIdentifierFindsThePresetOfASingleValueVariant(): void
+    {
+        self::assertSame('de', LanguageDimensionPresetMatcher::resolvePresetIdentifier(['de'], self::PRESETS));
+    }
+
+    /**
+     * @test
+     */
+    public function resolvePresetIdentifierFindsThePresetOfAFullChainVariant(): void
+    {
+        // NodeData persists ["sl", "de"] sorted as ["de", "sl"] - the preset is still "sl".
+        self::assertSame('sl', LanguageDimensionPresetMatcher::resolvePresetIdentifier(['de', 'sl'], self::PRESETS));
+    }
+
+    /**
+     * @test
+     */
+    public function resolvePresetIdentifierReturnsNullForUnknownValues(): void
+    {
+        self::assertNull(LanguageDimensionPresetMatcher::resolvePresetIdentifier(['fr'], self::PRESETS));
+    }
+
+    /**
+     * @test
+     */
+    public function resolvePresetIdentifierReturnsNullForNoValues(): void
+    {
+        self::assertNull(LanguageDimensionPresetMatcher::resolvePresetIdentifier([], self::PRESETS));
+    }
+
+    /**
+     * @test
+     */
+    public function resolvePresetIdentifierIgnoresPresetsUnsetInTheConfiguration(): void
+    {
+        // Distributions unset shipped presets with "presetName: ~", which leaves the key behind
+        // with a NULL value. Such a key must not be resolved as a preset identifier.
+        $presetsWithUnsetEntry = self::PRESETS + ['fr' => null];
+
+        self::assertNull(LanguageDimensionPresetMatcher::resolvePresetIdentifier(['fr'], $presetsWithUnsetEntry));
+    }
 }

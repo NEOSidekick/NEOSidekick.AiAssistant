@@ -122,9 +122,19 @@ class NodeWithImageService extends AbstractNodeService
         $contentNodesQueryBuilder->andWhere($pathConstraints);
 
         if (!empty($filter->getLanguageDimensionFilter())) {
+            // Mirror the document query in NodeService::find(): preset identifiers are not
+            // necessarily dimension values, so the constraint has to use the presets' configured
+            // values. Unlike there, no exact preset match is needed afterwards - a content node is
+            // only kept when its closest document aggregate is part of the already exactly
+            // filtered document list below, which neutralizes the over-matching of this constraint.
             $this->addDimensionJoinConstraintsToQueryBuilder(
                 $contentNodesQueryBuilder,
-                [$this->languageDimensionName => $filter->getLanguageDimensionFilter()]
+                [
+                    $this->languageDimensionName => LanguageDimensionPresetMatcher::collectDimensionValuesOfPresets(
+                        $filter->getLanguageDimensionFilter(),
+                        $this->contentDimensions[$this->languageDimensionName]['presets'] ?? []
+                    )
+                ]
             );
         }
 

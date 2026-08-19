@@ -25,6 +25,7 @@ use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use PDO;
 use Psr\Http\Client\ClientExceptionInterface;
+use Psr\Log\LoggerInterface;
 
 class NodeService extends AbstractNodeService
 {
@@ -72,6 +73,21 @@ class NodeService extends AbstractNodeService
      */
     protected $nodeFindingService;
 
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $systemLogger;
+
+    /**
+     * Number of node variants skipped in the current request because they have no values for
+     * the configured language dimension. Reset at the start of every public entry point so
+     * that a single warning is logged per request instead of one per node.
+     *
+     * @var int
+     */
+    protected $variantsWithoutLanguageDimensionValuesCount = 0;
+
     public function __construct(
         WorkspaceRepository $workspaceRepository,
         FindDocumentNodeDataFactory $findDocumentNodeDataFactory,
@@ -103,6 +119,7 @@ class NodeService extends AbstractNodeService
      */
     public function findImportantPages(FindDocumentNodesFilter $findDocumentNodesFilter, ControllerContext $controllerContext, string $interfaceLanguage = 'en'): array
     {
+        $this->variantsWithoutLanguageDimensionValuesCount = 0;
         $currentRequestUri = $controllerContext->getRequest()->getHttpRequest()->getUri();
         $hosts = [];
         if (isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
@@ -149,6 +166,8 @@ class NodeService extends AbstractNodeService
             }
             $result[$node->getContextPath()] = $this->findDocumentNodeDataFactory->createFromNode($node, $controllerContext);
         }
+
+        $this->logVariantsWithoutLanguageDimensionValues();
 
         // The result should be sorted by the length of the node path, so that the most specific nodes are first.
         ksort($result);
@@ -229,9 +248,11 @@ class NodeService extends AbstractNodeService
         // The SQL dimension constraint above matches any variant whose fallback chain CONTAINS
         // one of the selected dimension values (e.g. a Slovenian variant with fallback to German
         // also matches a "de" filter), so the exact preset match has to happen here in PHP.
+        $this->variantsWithoutLanguageDimensionValuesCount = 0;
         $itemsMatchingLanguageFilter = array_filter($itemsReducedByWorkspaceChain, function (NodeData $nodeData) use ($findDocumentNodesFilter) {
             return $this->dimensionValuesMatchLanguageDimensionFilter($findDocumentNodesFilter, $nodeData->getDimensionValues());
         });
+        $this->logVariantsWithoutLanguageDimensionValues();
         $itemsWithMatchingPropertyFilter = array_filter($itemsMatchingLanguageFilter, static function (NodeData $nodeData) use ($findDocumentNodesFilter) {
             return self::nodeMatchesPropertyFilter($nodeData, $findDocumentNodesFilter);
         });
@@ -404,7 +425,8 @@ class NodeService extends AbstractNodeService
      * is not matched by a Slovenian filter merely because Slovenian falls back to German
      * — and vice versa.
      *
-     * An empty filter means "no language restriction" and matches every variant.
+     * An empty filter means "no language restriction" and matches every variant — except
+     * variants that carry no value for the configured language dimension at all, see below.
      *
      * @param FindDocumentNodesFilter $findDocumentNodesFilter
      * @param array<string, array<string>> $dimensionValues all dimension values of the node variant
@@ -414,15 +436,42 @@ class NodeService extends AbstractNodeService
         if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
             return true;
         }
+        // On an installation WITH a configured language dimension, every node is expected to
+        // carry values for it — Neos requires "./flow node:migrate 20150716212459" after adding
+        // a dimension. A variant without them cannot be assigned to a language, so it is excluded
+        // regardless of the filter: generating content for it would have to guess the language.
+        if (empty($dimensionValues[$this->languageDimensionName])) {
+            $this->variantsWithoutLanguageDimensionValuesCount++;
+            return false;
+        }
         $selectedPresetIdentifiers = $findDocumentNodesFilter->getLanguageDimensionFilter();
         if (empty($selectedPresetIdentifiers)) {
             return true;
         }
 
         return LanguageDimensionPresetMatcher::matchesAnyPreset(
-            $dimensionValues[$this->languageDimensionName] ?? [],
+            $dimensionValues[$this->languageDimensionName],
             $selectedPresetIdentifiers,
             $this->contentDimensions[$this->languageDimensionName]['presets'] ?? []
         );
+    }
+
+    /**
+     * Emits a single warning per request when node variants were skipped for missing language
+     * dimension values, so that the cause of "my pages are not listed" is visible in the log
+     * without flooding it with one entry per node.
+     */
+    protected function logVariantsWithoutLanguageDimensionValues(): void
+    {
+        if ($this->variantsWithoutLanguageDimensionValuesCount === 0) {
+            return;
+        }
+
+        $this->systemLogger->warning(sprintf(
+            'NEOSidekick: skipped %d node variant(s) without any value for the content dimension "%s". Such nodes cannot be assigned to a language and are therefore excluded from the batch modules. Run "./flow node:migrate 20150716212459" to add the default dimension values to them.',
+            $this->variantsWithoutLanguageDimensionValuesCount,
+            $this->languageDimensionName
+        ));
+        $this->variantsWithoutLanguageDimensionValuesCount = 0;
     }
 }

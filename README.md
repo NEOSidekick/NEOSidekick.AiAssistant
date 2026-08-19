@@ -61,6 +61,19 @@ English (`en`) is configured out of the box. Supported languages are:
 * Spanish (Mexico) `es_MX`
 * Spanish (Argentina) `es_AR`
 
+#### Nodes without language dimension values
+
+On an installation that *has* a language dimension configured, every node is expected to carry
+values for that dimension — Neos requires `./flow node:migrate 20150716212459` to be run after a
+dimension has been added or removed. Nodes that still have no value for the language dimension
+cannot be assigned to a language, so the batch modules skip them, whether or not a language
+filter is active. One warning per request is written to the system log stating how many nodes
+were skipped. Run the node migration to fix them:
+
+```bash
+./flow node:migrate 20150716212459
+```
+
 ### Permissions
 
 By default, every editor can use the assistant.

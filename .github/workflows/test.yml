@@ -59,13 +59,18 @@ jobs:
           composer config repositories.aiassistant '{ "type": "path", "url": "./${{ env.DIST_FOLDER }}", "options": { "symlink": false } }'
           composer require neosidekick/ai-assistant "@dev" --no-install
 
-      - name: Cache Composer packages
+      # Composer's download cache only. It used to also list "~/neos/Packages", which never
+      # existed - the installed tree lives at "$GITHUB_WORKSPACE/neos/Packages" - so that entry
+      # was silently ignored. It is not worth correcting: the tree is ~370 MB, so restoring and
+      # saving it costs far more than the ~3s "composer install" it would replace, and this
+      # package is installed from a path repository with "symlink": false (i.e. COPIED into
+      # Packages/), so a partially matching cache could put a stale copy of the code under test
+      # in place. A stale download cache, by contrast, only ever costs a re-download.
+      - name: Cache Composer downloads
         id: composer-cache
         uses: actions/cache@v5
         with:
-          path: |
-            ~/.cache/composer
-            ~/${{ env.NEOS_FOLDER }}Packages
+          path: ~/.cache/composer
           key: php-${{ matrix.php-versions }}-neos-${{ matrix.neos-versions }}-${{ matrix.dependencies }}-${{ hashFiles('**/composer.json') }}
           restore-keys: php-${{ matrix.php-versions }}-neos-${{ matrix.neos-versions }}-${{ matrix.dependencies }}
 

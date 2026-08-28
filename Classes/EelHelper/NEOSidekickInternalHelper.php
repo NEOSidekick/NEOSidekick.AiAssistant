@@ -139,6 +139,29 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 
     public function domain(): string
     {
+        $trustedDomain = $this->resolveTrustedDomain();
+        if ($trustedDomain !== null) {
+            return $trustedDomain;
+        }
+
+        // No active HTTP request (e.g. CLI) and no configured baseUri:
+        // fall back to the previous globals-based behaviour as a last resort.
+        $uriFromGlobals = ServerRequest::getUriFromGlobals();
+        $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
+        return "$schemeFromGlobals://" . $uriFromGlobals->getHost();
+    }
+
+    /**
+     * The site domain as derived from a Neos domain record or from Flow's configured /
+     * trusted-proxy corrected base URI - null when neither exists.
+     *
+     * Null is the case in which {@see domain()} falls back to a superglobals guess
+     * (typically "http://localhost" on the CLI). That guess is fine as a display value
+     * but must never be persisted anywhere as an identity: the signing key push refuses
+     * to send it as the key's registry label.
+     */
+    public function resolveTrustedDomain(): ?string
+    {
         $currentDomain = $this->domainRepository->findOneByActiveRequest();
         if ($currentDomain) {
             $scheme = $currentDomain->getScheme() ?: $this->schemeFromActiveRequest();
@@ -155,11 +178,7 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
         try {
             return rtrim((string)$this->baseUriProvider->getConfiguredBaseUriOrFallbackToCurrentRequest(), '/');
         } catch (HttpException $exception) {
-            // No active HTTP request (e.g. CLI) and no configured baseUri:
-            // fall back to the previous globals-based behaviour as a last resort.
-            $uriFromGlobals = ServerRequest::getUriFromGlobals();
-            $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
-            return "$schemeFromGlobals://" . $uriFromGlobals->getHost();
+            return null;
         }
     }
 

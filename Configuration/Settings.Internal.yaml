@@ -126,8 +126,9 @@ Neos:
               'NEOSidekick.AiAssistant:BackendControllers':
                 pattern: ControllerObjectName
                 patternOptions:
-                  # Include Agent controller for backend session access; exclude API controllers (JWT auth)
-                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\(Backend.*|AgentController)'
+                  # Include Agent controller and the embed-token issuance API for backend session
+                  # access; exclude the other API controllers (JWT auth)
+                  controllerObjectNamePattern: 'NEOSidekick\AiAssistant\Controller\(Backend.*|AgentController|AgentEmbedTokenApiController)'
           'NEOSidekick.AiAssistant:JwtApi':
             provider: 'NEOSidekick\AiAssistant\Security\Authentication\Provider\JwtProvider'
             token: 'NEOSidekick\AiAssistant\Security\Authentication\Token\JwtToken'

@@ -130,3 +130,29 @@ div[class*="_unappliedChangesOverlay"] {
   display: none;
 }
 
+
+/**
+ * Placeholder rendered in place of the iframe while the initial embed token is still
+ * being fetched. Uses the same container classes, so the sidebar open/hidden rules above
+ * govern its visibility too.
+ */
+.neosidekick__frame--loading {
+  box-sizing: border-box;
+  padding: 16px;
+}
+
+.neosidekick__frame-skeleton {
+  height: 100%;
+  border-radius: 2px;
+  background: #3f3f3f;
+  animation: neosidekick-frame-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes neosidekick-frame-skeleton-pulse {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}

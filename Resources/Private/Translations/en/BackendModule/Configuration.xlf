@@ -8,6 +8,96 @@
             <trans-unit id="description" xml:space="preserve">
                 <source>Here you can define the company and target group briefing which Sidekick should take into account.</source>
             </trans-unit>
+            <trans-unit id="signingKey.headline" xml:space="preserve">
+                <source>Signing key of this installation</source>
+            </trans-unit>
+            <trans-unit id="signingKey.instruction" xml:space="preserve">
+                <source>This installation identifies itself to NEOSidekick with a key pair. The key is registered automatically; nothing needs confirming. Regenerate it if this installation was cloned or its private key may have been exposed. The previous key stops being accepted immediately. Editors and connected tools keep working — open sessions renew themselves in the background.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.fingerprint" xml:space="preserve">
+                <source>Fingerprint</source>
+            </trans-unit>
+            <trans-unit id="signingKey.status" xml:space="preserve">
+                <source>Status</source>
+            </trans-unit>
+            <trans-unit id="signingKey.status.none" xml:space="preserve">
+                <source>Not transmitted to NEOSidekick yet; this happens the next time an editor authorizes.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.status.pending" xml:space="preserve">
+                <source>Transmitted, not registered by NEOSidekick yet; retried the next time an editor authorizes.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.status.confirmed" xml:space="preserve">
+                <source>Registered</source>
+            </trans-unit>
+            <trans-unit id="signingKey.status.revoked" xml:space="preserve">
+                <source>No longer accepted by NEOSidekick. Regenerate the key to re-register this installation; connected tools will have to be reconnected.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.status.reenrolled" xml:space="preserve">
+                <source>Registered as a new installation. Connected tools had to be reconnected with the new address.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.status.unusable" xml:space="preserve">
+                <source>The stored key is unusable: its two halves do not form one keypair, or one of them cannot be read. A regeneration cannot chain to it - restore the signing-key row from a backup to keep every connected tool.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.lastPush" xml:space="preserve">
+                <source>Last transmitted</source>
+            </trans-unit>
+            <trans-unit id="signingKey.missing" xml:space="preserve">
+                <source>No signing key exists yet. It is created automatically when an editor first connects the assistant, or manually with ./flow agentkey:generate.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.title" xml:space="preserve">
+                <source>Regeneration incomplete.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.body" xml:space="preserve">
+                <source>A new key was created but NEOSidekick did not confirm it ({0}). NEOSidekick may already have registered the new key; until this finishes, authorizations on this installation can fail. Press Regenerate key again to finish — the same new key is transmitted, no third key is created.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.noReason" xml:space="preserve">
+                <source>no confirmation was received</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.chainDomainMismatchHint" xml:space="preserve">
+                <source>This installation's key is registered for another domain. If this installation is a copy of another one — a staging site created from a production dump, for example — tick the re-enrolment box above and press Regenerate key: the copy gets its own key and the original keeps working. If this same installation moved to another domain, press «Re-register under the new domain» instead: it keeps its identity and its connected tools.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.relabelPending" xml:space="preserve">
+                <source>This regeneration also re-registers the installation under its current domain.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.button" xml:space="preserve">
+                <source>Regenerate key</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.confirm" xml:space="preserve">
+                <source>Regenerate the signing key? The new key replaces the current one immediately. If the re-enrolment box is ticked — or NEOSidekick no longer accepts the current key — this installation is registered as a new one and every connected tool must be reconnected.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.reenrol.label" xml:space="preserve">
+                <source>Enrol this installation as a new one, with its own key. Use this only if this installation is a copy of another one. The original keeps working; every tool connected to this installation must be reconnected.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.unusableAbort" xml:space="preserve">
+                <source>The signing key was not regenerated: the stored key is unusable, so nothing can vouch for a successor. Restore the signing-key row from a backup to keep this installation's identity, or tick the re-enrolment checkbox to enrol this installation as a new one.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.success" xml:space="preserve">
+                <source>The signing key was regenerated. This installation now identifies itself with the new key.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.unconfirmed" xml:space="preserve">
+                <source>The signing key was regenerated, but NEOSidekick reports it as {0}. Regenerate the key again to re-register this installation; connected tools will have to be reconnected.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateFailed.title" xml:space="preserve">
+                <source>The key was not regenerated.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateFailed.body" xml:space="preserve">
+                <source>NEOSidekick did not accept the new key: «{0}». Nothing has changed — this installation keeps using its current key and everyone stays connected. Try again in a few minutes.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.domainConflict.notice" xml:space="preserve">
+                <source>NEOSidekick has this installation's key registered for {0}, but this site answers as {1}. Which of these is true? This installation is a copy of another one (for example a staging site created from a production dump): tick the re-enrolment box and press Regenerate key. This copy gets its own key; the original keeps working; tools connected to this copy must be reconnected. This same installation moved to a new domain: press «Re-register under the new domain». It keeps its identity and its connected tools — but if it is in fact a copy, the original's key is revoked and the original stops working.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.button" xml:space="preserve">
+                <source>Re-register under the new domain</source>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.confirm" xml:space="preserve">
+                <source>Re-register this installation under the domain it answers as? Only do this if this same installation moved here. If this installation is a copy, the original's key is revoked the moment you confirm: its editors lose the assistant and its connected tools stop working until an administrator regenerates the key there. Connected tools of this installation keep working.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.success" xml:space="preserve">
+                <source>This installation is now registered under its current domain. Connected tools keep working.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.bothFlags" xml:space="preserve">
+                <source>The signing key was not regenerated: enrolling this installation as a new one and re-registering it under its current domain are two different answers to the same situation. Choose one of them and try again.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

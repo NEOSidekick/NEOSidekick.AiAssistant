@@ -21,10 +21,23 @@ use Neos\Flow\Security\Exception\InvalidAuthenticationStatusException;
 class JwtToken extends AbstractToken implements SessionlessTokenInterface
 {
     /**
+     * Rejection reason recorded by the JwtProvider when a token positively failed
+     * because it expired (new-generation tokens carry `exp`). The JwtEntryPoint reads
+     * this to name expired tokens explicitly in its 401 marker.
+     */
+    public const REJECTION_REASON_EXPIRED = 'expired';
+
+    /**
      * @var array
      * @Flow\Transient
      */
     protected $credentials = ['bearer' => ''];
+
+    /**
+     * @var string
+     * @Flow\Transient
+     */
+    protected $rejectionReason = '';
 
     /**
      * @param ActionRequest $actionRequest
@@ -54,6 +67,20 @@ class JwtToken extends AbstractToken implements SessionlessTokenInterface
     public function getBearer(): string
     {
         return $this->credentials['bearer'] ?? '';
+    }
+
+    /**
+     * One of the REJECTION_REASON_* constants, or an empty string when no positively
+     * identified rejection reason was recorded.
+     */
+    public function getRejectionReason(): string
+    {
+        return $this->rejectionReason;
+    }
+
+    public function setRejectionReason(string $rejectionReason): void
+    {
+        $this->rejectionReason = $rejectionReason;
     }
 
     public function __toString(): string

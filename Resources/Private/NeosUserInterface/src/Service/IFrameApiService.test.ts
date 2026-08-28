@@ -57,4 +57,71 @@ describe('IFrameApiService', () => {
             ASSISTANT_ORIGIN
         );
     });
+
+    /**
+     * listenToMessages is the SOLE authenticity gate of the embed-token postMessage
+     * channel (and every other inbound message): only a message whose source is the
+     * assistant iframe's contentWindow AND whose origin is the configured assistant
+     * origin may reach a handler. Any hole here hands the embed-token issuance to an
+     * arbitrary frame.
+     */
+    describe('listenToMessages', () => {
+        const assistantContentWindow = {name: 'assistant-content-window'};
+
+        const setUpListener = (frame: object | null = {contentWindow: assistantContentWindow}) => {
+            const messageListeners: Array<(event: object) => void> = [];
+            vi.stubGlobal('window', {
+                addEventListener: (type: string, listener: (event: object) => void) => {
+                    if (type === 'message') {
+                        messageListeners.push(listener);
+                    }
+                },
+            });
+            vi.stubGlobal('document', {
+                getElementById: (id: string) => (id === 'neosidekickAssistant' ? frame : null),
+            });
+
+            const handler = vi.fn();
+            createIFrameApiService(ASSISTANT_ORIGIN).listenToMessages(handler);
+
+            return {
+                handler,
+                dispatch: (event: object) => messageListeners.forEach((listener) => listener(event)),
+            };
+        };
+
+        it('delivers a message from the assistant iframe window at the configured origin', () => {
+            const {handler, dispatch} = setUpListener();
+            const event = {source: assistantContentWindow, origin: ASSISTANT_ORIGIN, data: {type: 'x'}};
+
+            dispatch(event);
+
+            expect(handler).toHaveBeenCalledTimes(1);
+            expect(handler).toHaveBeenCalledWith(event);
+        });
+
+        it('ignores a message from a different origin even when the source is the assistant frame', () => {
+            const {handler, dispatch} = setUpListener();
+
+            dispatch({source: assistantContentWindow, origin: 'https://evil.example.test', data: {type: 'x'}});
+
+            expect(handler).not.toHaveBeenCalled();
+        });
+
+        it('ignores a message whose source is not the assistant iframe contentWindow', () => {
+            const {handler, dispatch} = setUpListener();
+
+            dispatch({source: {name: 'some-other-window'}, origin: ASSISTANT_ORIGIN, data: {type: 'x'}});
+
+            expect(handler).not.toHaveBeenCalled();
+        });
+
+        it('ignores every message while the assistant frame is not in the document', () => {
+            const {handler, dispatch} = setUpListener(null);
+
+            dispatch({source: assistantContentWindow, origin: ASSISTANT_ORIGIN, data: {type: 'x'}});
+
+            expect(handler).not.toHaveBeenCalled();
+        });
+    });
 });

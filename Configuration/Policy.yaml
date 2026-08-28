@@ -6,9 +6,23 @@ privilegeTargets:
     'NEOSidekick.AiAssistant:PublicPreviewRender':
       label: 'Public preview rendering, protected by a signed HMAC token instead of authentication'
       matcher: 'method(NEOSidekick\AiAssistant\Controller\PreviewRenderController->indexAction())'
+    'NEOSidekick.AiAssistant:PublicAgentRefreshToken':
+      label: 'Public agent refresh endpoint, authenticated by the opaque refresh token itself instead of a Flow authentication provider'
+      matcher: 'method(NEOSidekick\AiAssistant\Controller\AgentRefreshTokenApiController->refreshAction())'
+    'NEOSidekick.AiAssistant:PublicAgentRevokeRefreshToken':
+      label: 'Public agent revoke endpoint, authenticated by the opaque refresh token itself instead of a Flow authentication provider'
+      matcher: 'method(NEOSidekick\AiAssistant\Controller\AgentRevokeRefreshTokenApiController->revokeAction())'
+    # Flow's pointcut grammar has no parentheses and evaluates left to right, so the
+    # ConfigurationController term leads: "within(ConfigurationController) && !method(regenerate)"
+    # is resolved before the remaining ORs. The "within && !method" shape (instead of a bare
+    # method(indexAction)) keeps every action added to that controller later matched by a
+    # privilege - an unmatched action would get neither a privilege nor a CSRF check.
     'NEOSidekick.AiAssistant:CanUse':
       label: 'NEOSidekick.AiAssistant:Main:privilege.canUse'
-      matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController) || within(NEOSidekick\AiAssistant\Controller\AgentController) || within(NEOSidekick\AiAssistant\Controller\NodeTypeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\NodeTreeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\DocumentNodeListApiController) || within(NEOSidekick\AiAssistant\Controller\SearchNodesApiController) || within(NEOSidekick\AiAssistant\Controller\SearchMediaAssetsApiController) || within(NEOSidekick\AiAssistant\Controller\UploadMediaAssetApiController) || within(NEOSidekick\AiAssistant\Controller\ApplyPatchesApiController) || within(NEOSidekick\AiAssistant\Controller\WhoAmIApiController) || within(NEOSidekick\AiAssistant\Controller\GetPreviewApiController)'
+      matcher: 'within(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController) && !method(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController->regenerateSigningKeyAction()) || within(NEOSidekick\AiAssistant\Controller\BackendServiceController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\OverviewController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\ImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\FocusKeywordController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoTitleAndMetaDescriptionController) || within(NEOSidekick\AiAssistant\Controller\BackendModule\SeoImageAlternativeTextController) || within(NEOSidekick\AiAssistant\Controller\AgentController) || within(NEOSidekick\AiAssistant\Controller\AgentEmbedTokenApiController) || within(NEOSidekick\AiAssistant\Controller\NodeTypeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\NodeTreeSchemaApiController) || within(NEOSidekick\AiAssistant\Controller\DocumentNodeListApiController) || within(NEOSidekick\AiAssistant\Controller\SearchNodesApiController) || within(NEOSidekick\AiAssistant\Controller\SearchMediaAssetsApiController) || within(NEOSidekick\AiAssistant\Controller\UploadMediaAssetApiController) || within(NEOSidekick\AiAssistant\Controller\ApplyPatchesApiController) || within(NEOSidekick\AiAssistant\Controller\WhoAmIApiController) || within(NEOSidekick\AiAssistant\Controller\GetPreviewApiController)'
+    'NEOSidekick.AiAssistant:ManageSigningKey':
+      label: 'Regenerate the signing key that identifies this installation to NEOSidekick'
+      matcher: 'method(NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController->regenerateSigningKeyAction())'
 
 roles:
   'Neos.Flow:Everybody':
@@ -17,7 +31,15 @@ roles:
         permission: GRANT
       - privilegeTarget: NEOSidekick.AiAssistant:PublicPreviewRender
         permission: GRANT
+      - privilegeTarget: NEOSidekick.AiAssistant:PublicAgentRefreshToken
+        permission: GRANT
+      - privilegeTarget: NEOSidekick.AiAssistant:PublicAgentRevokeRefreshToken
+        permission: GRANT
   'Neos.Neos:AbstractEditor':
     privileges:
       - privilegeTarget: NEOSidekick.AiAssistant:CanUse
+        permission: GRANT
+  'Neos.Neos:Administrator':
+    privileges:
+      - privilegeTarget: NEOSidekick.AiAssistant:ManageSigningKey
         permission: GRANT

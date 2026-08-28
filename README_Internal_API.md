@@ -63,9 +63,9 @@ curl -X POST "https://your-site.com/neosidekick/api/apply-patches" \
 
 ## Authentication
 
-All API endpoints (except Backend Service) are protected by a Flow authentication
-provider (`NEOSidekick.AiAssistant:JwtApi`) and require a **session-bound JSON Web
-Token** as a Bearer token:
+Most API endpoints (see [Endpoints Overview](#endpoints-overview) for the exceptions)
+are protected by a Flow authentication provider (`NEOSidekick.AiAssistant:JwtApi`) and
+require a **JSON Web Token** as a Bearer token:
 
 ```http
 Authorization: Bearer {jwt}
@@ -80,10 +80,16 @@ Authorization: Bearer {jwt}
 ### How the token is issued
 
 The JWT is minted by `AgentTokenService` from an **authenticated Neos backend
-session** and signed with Flow's `HashService` encryption key (HS256). Its claims
-include `sub` (the backend account identifier), `user_id`, `account_id` and
-`session_id`. The token carries no expiry of its own — instead it becomes invalid as
-soon as the underlying Neos backend session expires.
+session** and signed with **RS256** using this installation's own signing key; the
+header carries a `kid` naming that key. Its claims include `sub` (the backend account
+identifier), `user_id`, `account_id` and a real `exp` — the token is valid for one hour
+(`AgentTokenService::ACCESS_TOKEN_LIFETIME = 3600`) and is renewed through the refresh
+endpoint before it runs out.
+
+Tokens minted by older releases carry **no** `kid` and are HS256-signed with Flow's
+`HashService` encryption key; only those are bound to the Neos backend session they were
+minted from. A `kid`-carrying token is never verified with HS256, and an unknown `kid` is
+rejected outright.
 
 An external client never mints the token itself. It is obtained through the agent
 authorization flow: an editor consents in the Neos backend
@@ -102,7 +108,8 @@ Because the JWT resolves to a real `Neos.Neos:Backend` account, write operations
 ```json
 {
   "error": "Unauthorized",
-  "message": "Valid JWT Bearer token required"
+  "message": "Valid JWT Bearer token required",
+  "errorCode": "NEOS_JWT_REJECTED"
 }
 ```
 
@@ -119,7 +126,19 @@ Because the JWT resolves to a real `Neos.Neos:Backend` account, write operations
 | `/neosidekick/api/search-media-assets` | GET | Search media assets by title, filename, or caption |
 | `/neosidekick/api/upload-media-asset` | POST | Upload media asset from remote URL |
 | `/neosidekick/api/apply-patches` | POST | Apply atomic patches (create, update, move, delete nodes) |
+| `/neosidekick/api/whoami` | GET | Return the identity the Bearer token resolves to |
+| `/neosidekick/api/getpreview` | GET | Return a signed, short-lived preview URL for a document node |
+| `/neosidekick/api/agentic/refresh-token` | POST | Exchange an opaque refresh token for a fresh JWT (**anonymous**) |
+| `/neosidekick/api/agentic/revoke-refresh-token` | POST | End a refresh-token family (**anonymous**) |
+| `/neosidekick/api/agentic/embed-token` | POST | Mint an embed token for the chat iframe (**Neos backend session**) |
 | `/neosidekick/aiassistant/service/{action}` | GET/POST | Backend service for UI integration |
+
+Not every endpoint sits behind `NEOSidekick.AiAssistant:JwtApi`. The two `agentic/*`
+refresh endpoints are granted to `Neos.Flow:Everybody` in `Policy.yaml` — the opaque
+refresh token itself is the credential — and `agentic/embed-token` is reachable only
+from an authenticated Neos backend session (`Neos.Neos:Backend` request pattern plus
+the `NEOSidekick.AiAssistant:CanUse` privilege target). All remaining rows above,
+except Backend Service, require the JWT Bearer token.
 
 ---
 
@@ -1052,15 +1071,6 @@ curl -X POST "https://example.com/neosidekick/api/apply-patches" \
 }
 ```
 
-**401 Unauthorized** - Authentication failed:
-
-```json
-{
-  "error": "Unauthorized",
-  "message": "Invalid API key"
-}
-```
-
 **422 Unprocessable Entity** - Patch validation or execution failed (see failure response above)
 
 ---
@@ -1144,7 +1154,7 @@ These API endpoints follow a split architecture pattern:
 └──────────────────────────────────┘
               │
               │ HTTP GET/POST
-              │ Authorization: Bearer {session-bound JWT}
+              │ Authorization: Bearer {agent JWT}
               ▼
 ┌──────────────────────────────────┐
 │      Neos CMS                    │
@@ -1166,12 +1176,12 @@ This architecture ensures:
 
 ## Security Considerations
 
-1. **Authentication**: Access is gated by a session-bound JWT (see [Authentication](#authentication)), not a static API key. The token is only as long-lived as the backend session it was minted from.
+1. **Authentication**: Access is gated by an RS256 agent JWT (see [Authentication](#authentication)), not a static API key. The token expires one hour after it was minted and is renewed through the refresh endpoint; only legacy `kid`-less HS256 tokens are bound to the backend session they were minted from.
 2. **HTTPS**: Always use HTTPS in production
 3. **Workspace Access**: Writes act as the backend account encoded in the JWT and land in that user's personal workspace; reads may span workspaces - consider access control
 4. **Hidden Content**: Hidden nodes may be included - handle appropriately
 5. **Rate Limiting**: Consider implementing rate limiting for large sites
-6. **Security Framework**: Authentication is enforced by Flow's security framework via the `NEOSidekick.AiAssistant:JwtApi` provider (`JwtProvider` + `JwtToken` + `JwtEntryPoint`, configured in `Settings.Internal.yaml`), which validates the JWT signature, the referenced session and the backend account. The controllers are matched by request pattern; they are **not** granted anonymous/public access.
+6. **Security Framework**: Authentication is enforced by Flow's security framework via the `NEOSidekick.AiAssistant:JwtApi` provider (`JwtProvider` + `JwtToken` + `JwtEntryPoint`, configured in `Settings.Internal.yaml`), which validates the JWT signature and the backend account (and, for legacy `kid`-less tokens, the referenced session). The controllers listed in that provider's request pattern are **not** granted anonymous/public access.
 
 ---
 
@@ -1209,4 +1219,4 @@ Data extraction services that provide raw data to the controllers:
 - `Configuration/Policy.yaml` - Privilege targets for the API controllers (`NEOSidekick.AiAssistant:CanUse`)
 - `Configuration/Settings.Internal.yaml` - JWT authentication provider (`NEOSidekick.AiAssistant:JwtApi`) and request-pattern configuration
 - `Classes/Security/Authentication/**` - JWT token, provider and entry point
-- `Classes/Service/AgentTokenService.php` - Mints and verifies the session-bound JWT
+- `Classes/Service/AgentTokenService.php` - Mints and verifies the agent JWT

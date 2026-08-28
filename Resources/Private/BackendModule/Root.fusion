@@ -115,8 +115,93 @@ NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = 
 NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusion:Component {
     apiDomain = ${apiDomain}
     siteDomain = ${siteDomain}
+    signingKey = ${signingKey}
+    embedToken = ${embedToken}
+    isAdministrator = ${isAdministrator}
+    regenerateActionUri = ${regenerateActionUri}
+    csrfToken = ${csrfToken}
+    regenerateFailure = ${regenerateFailure}
+    regenerateRejectionReason = ${regenerateRejectionReason}
     renderer = afx`
         <div @if={props.apiDomain != 'https://api.neosidekick.com'} style="font-size: 1.5em; font-weight: bold; background: orange; padding: 1rem; margin-bottom: 1rem;">You are using a non-production API: {props.apiDomain}</div>
-        <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey + '&stay-in-settings=true' + (props.siteDomain ? '&domain=' + props.siteDomain : '')}></iframe>
+        <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey + '&stay-in-settings=true' + (props.siteDomain ? '&domain=' + props.siteDomain : '') + (props.embedToken ? '&embedToken=' + String.rawUrlEncode(props.embedToken) : '')}></iframe>
+        <NEOSidekick.AiAssistant:BackendModule.SigningKeyPanel @if={props.isAdministrator} signingKey={props.signingKey} regenerateActionUri={props.regenerateActionUri} csrfToken={props.csrfToken} regenerateFailure={props.regenerateFailure} regenerateRejectionReason={props.regenerateRejectionReason} />
+    `
+}
+
+##
+# The administrator's view of this installation's agent signing key: fingerprint, the status
+# NEOSidekick last reported, and the "Regenerate key" action. Rendered for administrators
+# only (see ConfigurationController::indexAction()); the action itself is guarded by the
+# NEOSidekick.AiAssistant:ManageSigningKey privilege.
+#
+# One banner per event: while a pending pair exists only the "regeneration incomplete" banner
+# renders (carrying the last answer's reason), otherwise a failed attempt renders the failure
+# box. The pending banner is driven by the pending pair on disk, so a crash between
+# NEOSidekick's confirmation and the local promotion still prompts a second press. Both render
+# even when the live key is missing or unreadable.
+#
+# Two forms, both POSTing to the same action (Policy.yaml grants ManageSigningKey on that one
+# method): "Regenerate key", with the re-enrolment checkbox for a copy of another installation,
+# and "Re-register under the new domain" for a site that moved. The second one only appears
+# where the domains actually disagree - the stored label differs from the domain this site
+# answers as, or NEOSidekick just refused a chained rotation with `chain_domain_mismatch` - and
+# never on an unusable key, which cannot chain the relabel in the first place. Each form carries
+# its own static `data-confirm`, so no JavaScript decides which warning is shown.
+#
+prototype(NEOSidekick.AiAssistant:BackendModule.SigningKeyPanel) < prototype(Neos.Fusion:Component) {
+    signingKey = null
+    regenerateActionUri = ''
+    csrfToken = ''
+    regenerateFailure = null
+    regenerateRejectionReason = null
+
+    renderer = afx`
+        <div style="margin-top: 2rem; padding: 1rem; background: #3f3f3f;" data-signing-key-panel="true">
+            <h2 style="margin-top: 0;">{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.headline')}</h2>
+            <p @if={props.signingKey.exists}>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.instruction')}</p>
+            <div @if={props.regenerateFailure && !props.signingKey.regenerateIncomplete} style="margin: 0 0 1rem 0; padding: 0.75rem 1rem; border: 1px solid #ff460d; background: #2a2a2a;" data-signing-key-regenerate-failed="true">
+                <strong>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateFailed.title')}</strong>
+                {' '}
+                {I18n.translate('signingKey.regenerateFailed.body', null, [String.htmlSpecialChars(props.regenerateFailure)], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant')}
+            </div>
+            <div @if={props.signingKey.regenerateIncomplete} style="margin: 0 0 1rem 0; padding: 0.75rem 1rem; border: 1px solid #ff8700; background: #2a2a2a;" data-signing-key-regenerate-incomplete="true">
+                <strong>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.title')}</strong>
+                {' '}
+                {I18n.translate('signingKey.regenerateIncomplete.body', null, [props.regenerateFailure ? String.htmlSpecialChars(props.regenerateFailure) : I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.noReason')], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant')}
+                {props.regenerateRejectionReason == 'chain_domain_mismatch' && !props.signingKey.domainConflict ? ' ' : ''}
+                {props.regenerateRejectionReason == 'chain_domain_mismatch' && !props.signingKey.domainConflict ? I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.chainDomainMismatchHint') : ''}
+                {props.signingKey.relabelPending ? ' ' : ''}
+                {props.signingKey.relabelPending ? I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.relabelPending') : ''}
+            </div>
+            <dl @if={props.signingKey.exists}>
+                <dt @if={props.signingKey.fingerprint}><strong>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.fingerprint')}</strong></dt>
+                <dd @if={props.signingKey.fingerprint} style="font-family: monospace; word-break: break-all; margin: 0 0 1rem 0;">{String.htmlSpecialChars(props.signingKey.fingerprint)}</dd>
+                <dt><strong>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.status')}</strong></dt>
+                <dd style="margin: 0 0 1rem 0;">
+                    {I18n.translate('signingKey.status.' + props.signingKey.status, String.htmlSpecialChars(props.signingKey.status), [], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant')}
+                </dd>
+                <dt @if={props.signingKey.pushedAt}><strong>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.lastPush')}</strong></dt>
+                <dd @if={props.signingKey.pushedAt} style="font-family: monospace; margin: 0 0 1rem 0;">{String.htmlSpecialChars(props.signingKey.pushedAt)}</dd>
+            </dl>
+            <p @if={!props.signingKey.exists}>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.missing')}</p>
+            <div @if={props.signingKey.domainConflict} style="margin: 0 0 1rem 0; padding: 0.75rem 1rem; border: 1px solid #ff8700; background: #2a2a2a;" data-signing-key-domain-conflict="true">
+                {I18n.translate('signingKey.domainConflict.notice', null, [String.htmlSpecialChars(props.signingKey.registeredDomain), String.htmlSpecialChars(props.signingKey.currentDomain)], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant')}
+            </div>
+            <form method="POST" action={props.regenerateActionUri} onsubmit="return confirm(this.dataset.confirm)" data-confirm={I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerate.confirm')} style="margin: 0;">
+                <input type="hidden" name="__csrfToken" value={props.csrfToken} />
+                <label @if={props.signingKey.status == 'unusable' || props.regenerateRejectionReason == 'chain_domain_mismatch' || props.signingKey.domainConflict} style="display: block; margin: 0 0 0.75rem 0;">
+                    <input type="checkbox" name="moduleArguments[reenrol]" value="1" />
+                    {' '}
+                    {I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.reenrol.label')}
+                </label>
+                <button type="submit" class="neos-button neos-button-danger">{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerate.button')}</button>
+            </form>
+            <form @if={(props.signingKey.domainConflict || props.regenerateRejectionReason == 'chain_domain_mismatch') && props.signingKey.status != 'unusable'} method="POST" action={props.regenerateActionUri} onsubmit="return confirm(this.dataset.confirm)" data-confirm={I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.relabel.confirm')} style="margin: 1rem 0 0 0;" data-signing-key-relabel-form="true">
+                <input type="hidden" name="__csrfToken" value={props.csrfToken} />
+                <input type="hidden" name="moduleArguments[relabel]" value="1" />
+                <button type="submit" class="neos-button neos-button-danger">{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.relabel.button')}</button>
+            </form>
+        </div>
     `
 }

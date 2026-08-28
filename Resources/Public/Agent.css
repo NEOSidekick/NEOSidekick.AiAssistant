@@ -27,3 +27,18 @@ body {
 .auth-button:hover {
     background: #007099;
 }
+
+.auth-decline {
+    text-align: center;
+    margin: 20px 0 0;
+}
+
+.auth-decline a {
+    color: #6c757d;
+    font-size: 14px;
+    text-decoration: underline;
+}
+
+.auth-decline a:hover {
+    color: #495057;
+}

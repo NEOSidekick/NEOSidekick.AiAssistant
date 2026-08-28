@@ -3,6 +3,7 @@ import {fetchWithErrorHandling} from "@neos-project/neos-ui-backend-connector";
 
 import {SidekickFrontendConfiguration} from "./interfaces";
 import {createSilentAuthorizationService, createSilentAuthorizeHandler} from './Service/silentAuthorization';
+import {createEmbedTokenRequestHandler, fetchEmbedToken} from './Service/embedToken';
 import {createApiService} from './Service/ApiService';
 import {createContentService} from './Service/ContentService';
 import {createContentCanvasService} from "./Service/ContentCanvasService";
@@ -19,8 +20,12 @@ import {createPreloadContentTreeSaga} from './Sagas/PreloadContentTree';
 import "./manifest.chatSidebar.css";
 
 interface IframeIncomingMessage {
+    origin: string;
+    source: {postMessage: (message: object, targetOrigin: string) => void} | null;
     data?: {
         eventName?: unknown;
+        type?: unknown;
+        requestId?: unknown;
         data?: {
             state?: unknown;
         };
@@ -73,7 +78,21 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
         notifyResult: iFrameApiService.notifySilentAuthorizationResult,
     });
 
+    // On-demand embed-token issuance for the assistant's re-bootstrap. Registered once at
+    // plugin boot inside the single listenToMessages listener (idempotent across iframe
+    // re-renders), which already verifies event.source === the assistant iframe's
+    // contentWindow AND event.origin === assistantFrameOrigin before dispatching here;
+    // the handler replies via event.source.postMessage with event.origin as the explicit
+    // target origin.
+    const handleEmbedTokenRequest = createEmbedTokenRequestHandler({
+        fetchToken: () => fetchEmbedToken(),
+    });
+
     iFrameApiService.listenToMessages((message: IframeIncomingMessage) => {
+        if (handleEmbedTokenRequest(message)) {
+            return;
+        }
+
         const eventName = message.data?.eventName;
 
         if (eventName === 'get-content-tree') {

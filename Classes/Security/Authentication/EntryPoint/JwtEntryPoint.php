@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace NEOSidekick\AiAssistant\Security\Authentication\EntryPoint;
 
 use GuzzleHttp\Psr7\Utils;
+use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Security\Authentication\EntryPoint\AbstractEntryPoint;
+use Neos\Flow\Security\Context;
+use NEOSidekick\AiAssistant\Security\Authentication\Token\JwtToken;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 
@@ -28,6 +31,26 @@ class JwtEntryPoint extends AbstractEntryPoint
     public const ERROR_CODE_HEADER = 'X-NEOSidekick-Error-Code';
 
     /**
+     * Additional marker naming an expired token explicitly: emitted as the `errorReason`
+     * body field and the {@see ERROR_REASON_HEADER} header, *alongside* the unchanged
+     * ERROR_CODE marker, when the rejected token positively failed because its `exp`
+     * passed (new-generation tokens only - legacy tokens carry no `exp`). Same exact/
+     * case-sensitive matching convention as ERROR_CODE.
+     */
+    public const ERROR_REASON_EXPIRED = 'NEOS_JWT_EXPIRED';
+
+    /**
+     * Response header carrying {@see ERROR_REASON_EXPIRED}.
+     */
+    public const ERROR_REASON_HEADER = 'X-NEOSidekick-Error-Reason';
+
+    /**
+     * @Flow\Inject
+     * @var Context
+     */
+    protected $securityContext;
+
+    /**
      * Starts the authentication: return 401 JSON response
      *
      * @param ServerRequestInterface $request The current request
@@ -38,15 +61,48 @@ class JwtEntryPoint extends AbstractEntryPoint
     {
         // The legacy `error`/`message` fields stay byte-identical: older callers still match on
         // them, and they are only retired together with the plugin support policy date.
-        $body = json_encode([
+        $bodyFields = [
             'error' => 'Unauthorized',
             'message' => 'Valid JWT Bearer token required',
             'errorCode' => self::ERROR_CODE,
-        ], JSON_THROW_ON_ERROR);
+        ];
 
-        return $response->withStatus(401)
+        $tokenIsExpired = $this->rejectedTokenIsExpired();
+        if ($tokenIsExpired) {
+            $bodyFields['errorReason'] = self::ERROR_REASON_EXPIRED;
+        }
+
+        $body = json_encode($bodyFields, JSON_THROW_ON_ERROR);
+
+        $response = $response->withStatus(401)
             ->withHeader('Content-Type', 'application/json')
-            ->withHeader(self::ERROR_CODE_HEADER, self::ERROR_CODE)
-            ->withBody(Utils::streamFor($body));
+            ->withHeader(self::ERROR_CODE_HEADER, self::ERROR_CODE);
+
+        if ($tokenIsExpired) {
+            $response = $response->withHeader(self::ERROR_REASON_HEADER, self::ERROR_REASON_EXPIRED);
+        }
+
+        return $response->withBody(Utils::streamFor($body));
+    }
+
+    /**
+     * Whether the JwtProvider recorded an expired-token rejection on a JwtToken of the
+     * current request. Read-only: the security context is only consulted when it is
+     * already initialized (it always is when the entry point runs after a failed
+     * authentication; the guard keeps this side-effect-free everywhere else).
+     */
+    private function rejectedTokenIsExpired(): bool
+    {
+        if (!$this->securityContext instanceof Context || !$this->securityContext->isInitialized()) {
+            return false;
+        }
+
+        foreach ($this->securityContext->getAuthenticationTokensOfType(JwtToken::class) as $token) {
+            if ($token->getRejectionReason() === JwtToken::REJECTION_REASON_EXPIRED) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

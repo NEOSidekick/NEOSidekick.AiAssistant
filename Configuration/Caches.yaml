@@ -1,3 +1,11 @@
 'NEOSidekick_AiAssistant_NodeTypeServiceCache':
   frontend: Neos\Cache\Frontend\VariableFrontend
   backend: Neos\Cache\Backend\SimpleFileBackend
+
+# Rejection budget of the two public agent endpoints (refresh, revoke). Default backend
+# on purpose: the counters are per-node, short-lived and cheap to lose - an entry that
+# disappears costs at most one window of budget, never a false 429. Entries expire after
+# 60 seconds, but the file backend only reclaims them on garbage collection, which the
+# throttle triggers by lottery on every ~1000th counted rejection.
+'NEOSidekick_AiAssistant_RefreshThrottle':
+  frontend: Neos\Cache\Frontend\VariableFrontend

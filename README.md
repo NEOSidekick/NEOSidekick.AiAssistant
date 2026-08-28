@@ -90,6 +90,41 @@ roles:
 Of course, you can also define the privilege for any
 other role that you are using for example `Neos.Neos:Administrator`.
 
+### Signing key of this installation
+
+This installation identifies itself to NEOSidekick with an RSA key pair. It lives in one
+row of the table `neosidekick_aiassistant_domain_model_agentsigningkeyrecord`, created
+by `./flow doctrine:migrate`, shared by every application node and unaffected by
+deployments. The key pair is generated and registered automatically the first time an
+editor authorizes the assistant, so there is normally nothing to do. **A database dump
+contains the private key**: treat dumps as secret and regenerate the key after handing
+one out.
+
+**Regenerate key** (Neos backend → *NEOSidekick* module → *Configuration*; administrators
+only, privilege target `NEOSidekick.AiAssistant:ManageSigningKey`) replaces the key as
+soon as NEOSidekick confirms the new one. The previous key stops being accepted, while
+editors and connected tools keep working because open sessions renew themselves. Use it
+after a possible key exposure, after handing out a dump, or after restoring a database
+backup that predates an earlier regeneration.
+
+| The panel reports… | What happened | What to do |
+|---|---|---|
+| Regeneration incomplete | NEOSidekick did not confirm the new key; the current key stays in use | Press **Regenerate key** again. The same pending key is re-sent, no third key is created. |
+| `chain_domain_mismatch`, with a registered domain that differs from this site's | This is a copy of another installation's database (a staging copy of production, for example) | Tick **Enrol this installation as a new one, with its own key**, then **Regenerate key**. The copy gets its own identity; the original keeps working; only tools connected to the copy must be reconnected. |
+| `chain_domain_mismatch`, and this *same* installation moved to another domain (including `www` vs. bare host) | NEOSidekick still knows the installation under the old domain | Press **Re-register under the new domain**. Identity and connected tools are kept. **Never on a copy**: it revokes the original's key, which is what the confirmation dialog warns about. |
+| Key pair unusable | The stored halves do not belong together, or one is not a readable PEM (hand edit, partial restore) | Restore the signing-key row from a backup to keep this installation's identity, or tick the re-enrolment checkbox and regenerate to start as a new installation (every connected tool must be reconnected). A regeneration never re-enrols on its own. |
+
+After a row delete or a restore that predates the current key, editors whose session is
+bound to the old key see the chat frame retry until an administrator regenerates the key
+or someone authorizes the assistant once.
+
+On the shell: `./flow agentkey:show` prints the key and its registration state,
+`./flow agentkey:push` re-sends it, `./flow agentkey:generate --force` regenerates
+(`--relabel` is the "Re-register under the new domain" equivalent, same warning). The
+shell-only fallback for re-enrolment is `DELETE FROM
+neosidekick_aiassistant_domain_model_agentsigningkeyrecord;` followed by
+`./flow agentkey:generate`.
+
 ### Reverse proxy / headless setups (Zebra, Next.js)
 
 If you run Neos headless behind a frontend proxy — for example a

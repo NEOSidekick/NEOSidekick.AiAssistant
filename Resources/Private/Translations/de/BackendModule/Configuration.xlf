@@ -10,6 +10,126 @@
                 <source>Here you can define the company and target group briefing which Sidekick should take into account.</source>
                 <target xml:lang="de" state="translated">Hier kannst du Informationen über dein Unternehmen und deine Zielgruppe eingeben, die Sidekick dann berücksichtigt.</target>
             </trans-unit>
+            <trans-unit id="signingKey.headline" xml:space="preserve">
+                <source>Signing key of this installation</source>
+                <target xml:lang="de" state="translated">Signaturschlüssel dieser Installation</target>
+            </trans-unit>
+            <trans-unit id="signingKey.instruction" xml:space="preserve">
+                <source>This installation identifies itself to NEOSidekick with a key pair. The key is registered automatically; nothing needs confirming. Regenerate it if this installation was cloned or its private key may have been exposed. The previous key stops being accepted immediately. Editors and connected tools keep working — open sessions renew themselves in the background.</source>
+                <target xml:lang="de" state="translated">Diese Installation weist sich gegenüber NEOSidekick mit einem Schlüsselpaar aus. Der Schlüssel wird automatisch registriert; eine Bestätigung ist nicht nötig. Erneuere ihn, wenn diese Installation geklont wurde oder ihr privater Schlüssel offengelegt worden sein könnte. Der bisherige Schlüssel wird sofort nicht mehr akzeptiert. Redakteure und verbundene Tools arbeiten weiter – offene Sitzungen erneuern sich im Hintergrund selbst.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.fingerprint" xml:space="preserve">
+                <source>Fingerprint</source>
+                <target xml:lang="de" state="translated">Fingerabdruck</target>
+            </trans-unit>
+            <trans-unit id="signingKey.status" xml:space="preserve">
+                <source>Status</source>
+                <target xml:lang="de" state="translated">Status</target>
+            </trans-unit>
+            <trans-unit id="signingKey.status.none" xml:space="preserve">
+                <source>Not transmitted to NEOSidekick yet; this happens the next time an editor authorizes.</source>
+                <target xml:lang="de" state="translated">Noch nicht an NEOSidekick übertragen; das geschieht, sobald das nächste Mal ein Redakteur den Assistenten autorisiert.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.status.pending" xml:space="preserve">
+                <source>Transmitted, not registered by NEOSidekick yet; retried the next time an editor authorizes.</source>
+                <target xml:lang="de" state="translated">Übertragen, von NEOSidekick noch nicht registriert; wird erneut versucht, sobald das nächste Mal ein Redakteur den Assistenten autorisiert.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.status.confirmed" xml:space="preserve">
+                <source>Registered</source>
+                <target xml:lang="de" state="translated">Registriert</target>
+            </trans-unit>
+            <trans-unit id="signingKey.status.revoked" xml:space="preserve">
+                <source>No longer accepted by NEOSidekick. Regenerate the key to re-register this installation; connected tools will have to be reconnected.</source>
+                <target xml:lang="de" state="translated">Wird von NEOSidekick nicht mehr akzeptiert. Erneuere den Schlüssel, um diese Installation erneut zu registrieren; verbundene Tools müssen danach neu verbunden werden.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.status.reenrolled" xml:space="preserve">
+                <source>Registered as a new installation. Connected tools had to be reconnected with the new address.</source>
+                <target xml:lang="de" state="translated">Als neue Installation registriert. Verbundene Tools mussten mit der neuen Adresse neu verbunden werden.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.status.unusable" xml:space="preserve">
+                <source>The stored key is unusable: its two halves do not form one keypair, or one of them cannot be read. A regeneration cannot chain to it - restore the signing-key row from a backup to keep every connected tool.</source>
+                <target xml:lang="de" state="translated">Der gespeicherte Schlüssel ist unbrauchbar: seine beiden Hälften bilden kein Schlüsselpaar, oder eine davon ist nicht lesbar. Eine Erneuerung kann nicht daran anschließen - stelle die Signaturschlüssel-Zeile aus einem Backup wieder her, um alle verbundenen Tools zu behalten.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.lastPush" xml:space="preserve">
+                <source>Last transmitted</source>
+                <target xml:lang="de" state="translated">Zuletzt übertragen</target>
+            </trans-unit>
+            <trans-unit id="signingKey.missing" xml:space="preserve">
+                <source>No signing key exists yet. It is created automatically when an editor first connects the assistant, or manually with ./flow agentkey:generate.</source>
+                <target xml:lang="de" state="translated">Es existiert noch kein Signaturschlüssel. Er wird automatisch erzeugt, sobald ein Redakteur den Assistenten erstmals verbindet, oder manuell mit ./flow agentkey:generate.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.title" xml:space="preserve">
+                <source>Regeneration incomplete.</source>
+                <target xml:lang="de" state="translated">Erneuerung unvollständig.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.body" xml:space="preserve">
+                <source>A new key was created but NEOSidekick did not confirm it ({0}). NEOSidekick may already have registered the new key; until this finishes, authorizations on this installation can fail. Press Regenerate key again to finish — the same new key is transmitted, no third key is created.</source>
+                <target xml:lang="de" state="translated">Ein neuer Schlüssel wurde erzeugt, aber NEOSidekick hat ihn nicht bestätigt ({0}). Möglicherweise hat NEOSidekick den neuen Schlüssel bereits registriert; bis der Vorgang abgeschlossen ist, können Autorisierungen auf dieser Installation fehlschlagen. Klicke erneut auf „Schlüssel erneuern“, um den Vorgang abzuschließen – derselbe neue Schlüssel wird übertragen, es wird kein dritter Schlüssel erzeugt.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.noReason" xml:space="preserve">
+                <source>no confirmation was received</source>
+                <target xml:lang="de" state="translated">es kam keine Bestätigung an</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.chainDomainMismatchHint" xml:space="preserve">
+                <source>This installation's key is registered for another domain. If this installation is a copy of another one — a staging site created from a production dump, for example — tick the re-enrolment box above and press Regenerate key: the copy gets its own key and the original keeps working. If this same installation moved to another domain, press «Re-register under the new domain» instead: it keeps its identity and its connected tools.</source>
+                <target xml:lang="de" state="translated">Der Schlüssel dieser Installation ist für eine andere Domain registriert. Wenn diese Installation eine Kopie einer anderen ist – zum Beispiel eine Staging-Seite aus einem Produktions-Dump –, setze oben das Häkchen zur Neuregistrierung und drücke «Schlüssel erneuern»: Die Kopie bekommt einen eigenen Schlüssel, das Original arbeitet weiter. Wenn dieselbe Installation auf eine andere Domain umgezogen ist, drücke stattdessen «Unter der neuen Domain neu registrieren»: Sie behält ihre Identität und ihre verbundenen Tools.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateIncomplete.relabelPending" xml:space="preserve">
+                <source>This regeneration also re-registers the installation under its current domain.</source>
+                <target xml:lang="de" state="translated">Diese Erneuerung registriert die Installation außerdem unter ihrer aktuellen Domain neu.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.button" xml:space="preserve">
+                <source>Regenerate key</source>
+                <target xml:lang="de" state="translated">Schlüssel erneuern</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.confirm" xml:space="preserve">
+                <source>Regenerate the signing key? The new key replaces the current one immediately. If the re-enrolment box is ticked — or NEOSidekick no longer accepts the current key — this installation is registered as a new one and every connected tool must be reconnected.</source>
+                <target xml:lang="de" state="translated">Signaturschlüssel wirklich erneuern? Der neue Schlüssel ersetzt den aktuellen sofort. Wenn das Häkchen zur Neuregistrierung gesetzt ist – oder NEOSidekick den aktuellen Schlüssel nicht mehr akzeptiert – wird diese Installation als neue registriert, und alle verbundenen Tools müssen neu verbunden werden.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.reenrol.label" xml:space="preserve">
+                <source>Enrol this installation as a new one, with its own key. Use this only if this installation is a copy of another one. The original keeps working; every tool connected to this installation must be reconnected.</source>
+                <target xml:lang="de" state="translated">Diese Installation als neue Installation mit einem eigenen Schlüssel registrieren. Nutze das nur, wenn diese Installation eine Kopie einer anderen ist. Das Original arbeitet weiter; alle mit dieser Installation verbundenen Tools müssen neu verbunden werden.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.unusableAbort" xml:space="preserve">
+                <source>The signing key was not regenerated: the stored key is unusable, so nothing can vouch for a successor. Restore the signing-key row from a backup to keep this installation's identity, or tick the re-enrolment checkbox to enrol this installation as a new one.</source>
+                <target xml:lang="de" state="translated">Der Signaturschlüssel wurde nicht erneuert: der gespeicherte Schlüssel ist unbrauchbar, deshalb kann nichts für einen Nachfolger bürgen. Stelle die Signaturschlüssel-Zeile aus einem Backup wieder her, um die Identität dieser Installation zu behalten, oder setze das Häkchen zur Neuregistrierung, um diese Installation als neue zu registrieren.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.success" xml:space="preserve">
+                <source>The signing key was regenerated. This installation now identifies itself with the new key.</source>
+                <target xml:lang="de" state="translated">Der Signaturschlüssel wurde erneuert. Diese Installation weist sich jetzt mit dem neuen Schlüssel aus.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.unconfirmed" xml:space="preserve">
+                <source>The signing key was regenerated, but NEOSidekick reports it as {0}. Regenerate the key again to re-register this installation; connected tools will have to be reconnected.</source>
+                <target xml:lang="de" state="translated">Der Signaturschlüssel wurde erneuert, aber NEOSidekick meldet ihn als {0}. Erneuere den Schlüssel noch einmal, um diese Installation neu zu registrieren; verbundene Werkzeuge müssen danach neu verbunden werden.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateFailed.title" xml:space="preserve">
+                <source>The key was not regenerated.</source>
+                <target xml:lang="de" state="translated">Der Schlüssel wurde nicht erneuert.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerateFailed.body" xml:space="preserve">
+                <source>NEOSidekick did not accept the new key: «{0}». Nothing has changed — this installation keeps using its current key and everyone stays connected. Try again in a few minutes.</source>
+                <target xml:lang="de" state="translated">NEOSidekick hat den neuen Schlüssel nicht akzeptiert: «{0}». Nichts hat sich geändert – diese Installation verwendet weiterhin ihren aktuellen Schlüssel, und alle bleiben verbunden. Versuche es in ein paar Minuten erneut.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.domainConflict.notice" xml:space="preserve">
+                <source>NEOSidekick has this installation's key registered for {0}, but this site answers as {1}. Which of these is true? This installation is a copy of another one (for example a staging site created from a production dump): tick the re-enrolment box and press Regenerate key. This copy gets its own key; the original keeps working; tools connected to this copy must be reconnected. This same installation moved to a new domain: press «Re-register under the new domain». It keeps its identity and its connected tools — but if it is in fact a copy, the original's key is revoked and the original stops working.</source>
+                <target xml:lang="de" state="translated">NEOSidekick hat den Schlüssel dieser Installation für {0} registriert, diese Seite antwortet aber als {1}. Was davon trifft zu? Diese Installation ist eine Kopie einer anderen (zum Beispiel eine Staging-Seite aus einem Produktions-Dump): Setze das Häkchen zur Neuregistrierung und drücke «Schlüssel erneuern». Diese Kopie bekommt einen eigenen Schlüssel; das Original arbeitet weiter; mit dieser Kopie verbundene Tools müssen neu verbunden werden. Dieselbe Installation ist auf eine neue Domain umgezogen: Drücke «Unter der neuen Domain neu registrieren». Sie behält ihre Identität und ihre verbundenen Tools – wenn sie in Wahrheit aber eine Kopie ist, wird der Schlüssel des Originals widerrufen und das Original funktioniert nicht mehr.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.button" xml:space="preserve">
+                <source>Re-register under the new domain</source>
+                <target xml:lang="de" state="translated">Unter der neuen Domain neu registrieren</target>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.confirm" xml:space="preserve">
+                <source>Re-register this installation under the domain it answers as? Only do this if this same installation moved here. If this installation is a copy, the original's key is revoked the moment you confirm: its editors lose the assistant and its connected tools stop working until an administrator regenerates the key there. Connected tools of this installation keep working.</source>
+                <target xml:lang="de" state="translated">Diese Installation unter der Domain neu registrieren, unter der sie antwortet? Mache das nur, wenn dieselbe Installation hierher umgezogen ist. Wenn diese Installation eine Kopie ist, wird der Schlüssel des Originals in dem Moment widerrufen, in dem du bestätigst: Dessen Redakteure verlieren den Assistenten, und dessen verbundene Tools funktionieren nicht mehr, bis dort ein Administrator den Schlüssel erneuert. Die verbundenen Tools dieser Installation arbeiten weiter.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.success" xml:space="preserve">
+                <source>This installation is now registered under its current domain. Connected tools keep working.</source>
+                <target xml:lang="de" state="translated">Diese Installation ist jetzt unter ihrer aktuellen Domain registriert. Verbundene Tools arbeiten weiter.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.bothFlags" xml:space="preserve">
+                <source>The signing key was not regenerated: enrolling this installation as a new one and re-registering it under its current domain are two different answers to the same situation. Choose one of them and try again.</source>
+                <target xml:lang="de" state="translated">Der Signaturschlüssel wurde nicht erneuert: Diese Installation als neue zu registrieren und sie unter ihrer aktuellen Domain neu zu registrieren sind zwei verschiedene Antworten auf dieselbe Situation. Wähle eine davon und versuche es erneut.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

@@ -190,7 +190,7 @@ prototype(NEOSidekick.AiAssistant:BackendModule.SigningKeyPanel) < prototype(Neo
             </div>
             <form method="POST" action={props.regenerateActionUri} onsubmit="return confirm(this.dataset.confirm)" data-confirm={I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerate.confirm')} style="margin: 0;">
                 <input type="hidden" name="__csrfToken" value={props.csrfToken} />
-                <label @if={props.signingKey.status == 'unusable' || props.regenerateRejectionReason == 'chain_domain_mismatch' || props.signingKey.domainConflict} style="display: block; margin: 0 0 0.75rem 0;">
+                <label @if={props.signingKey.status == 'unusable' || props.signingKey.status == 'revoked' || props.regenerateRejectionReason == 'chain_domain_mismatch' || props.signingKey.domainConflict} style="display: block; margin: 0 0 0.75rem 0;">
                     <input type="checkbox" name="moduleArguments[reenrol]" value="1" />
                     {' '}
                     {I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.reenrol.label')}

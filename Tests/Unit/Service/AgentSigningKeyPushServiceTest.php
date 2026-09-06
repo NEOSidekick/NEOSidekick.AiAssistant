@@ -909,7 +909,8 @@ class AgentSigningKeyPushServiceTest extends TestCase
 
     /**
      * The announcement outlives the routine pushes that follow it - they confirm the same
-     * lineage - and ends only when the backend reports another lineage or the target changed.
+     * lineage. A routine push the same target answers with yet another root is itself a
+     * re-enrolment (the backend enrolled the key anew) and is announced afresh, dated by that push.
      *
      * @test
      */
@@ -933,8 +934,9 @@ class AgentSigningKeyPushServiceTest extends TestCase
 
         $this->agePushStateBySeconds(90000);
         self::assertNotNull($service->pushIfNecessary());
-        self::assertSame('confirmed', $service->getPushStatus()['status'], 'another lineage: the announcement is dropped');
-        self::assertArrayNotHasKey('reenrolled', $this->recordedPushState());
+        self::assertSame('reenrolled', $service->getPushStatus()['status'], 'another lineage at the same target: the probe itself enrolled the key anew');
+        self::assertSame('root-kid-3', $this->recordedPushState()['install_root_kid']);
+        self::assertSame($this->recordedPushState()['pushed_at'], $this->recordedPushState()['reenrolled_at'], 'dated by the push that changed the root');
     }
 
     /** @test */
@@ -1269,6 +1271,263 @@ class AgentSigningKeyPushServiceTest extends TestCase
     }
 
     /**
+     * @return array<string, array{0: string}>
+     */
+    public static function settledStatusProvider(): array
+    {
+        return [
+            'confirmed' => ['confirmed'],
+            'revoked' => ['revoked'],
+        ];
+    }
+
+    /**
+     * The assistant's "Try again" forces a push past the settled-and-fresh short-circuit, but a
+     * click storm must not become a push storm: a success younger than a minute is not repeated.
+     *
+     * @test
+     * @dataProvider settledStatusProvider
+     */
+    public function aForcedPushIsSkippedWithinAMinuteOfASuccessfulPushAndRunsAfterIt(string $status): void
+    {
+        $response = $status === 'revoked' ? $this->revokedResponse() : $this->confirmedResponse();
+        $service = $this->createServiceWithFixtureKeyPair([$response, $response]);
+        self::assertNotNull($service->pushIfNecessary());
+        self::assertSame($status, $service->getPushStatus()['status']);
+
+        self::assertNull($service->pushIfNecessary(force: true), 'a fresh success throttles the forced push');
+        self::assertCount(1, $this->requestHistory);
+
+        $this->agePushStateBySeconds(61);
+        self::assertNull($service->pushIfNecessary(), 'unforced, a confirmation younger than a day still stops the push');
+        self::assertNotNull($service->pushIfNecessary(force: true), 'forced, a success older than a minute is re-pushed');
+        self::assertCount(2, $this->requestHistory);
+        /** @phpstan-ignore-next-line the test double records the timeouts */
+        self::assertSame([2, 2], $service->requestedTimeouts, 'a forced push stays on the authorization budget');
+        self::assertNull($service->pushIfNecessary(force: true), 'the successful forced push refreshed the timestamp');
+        self::assertCount(2, $this->requestHistory);
+    }
+
+    /**
+     * A push refused because the backend cannot verify the chain (it never learned, or has
+     * revoked, the live key) is recovered by announcing the live key unchained once and chaining
+     * the pending key to it again - three round trips, and the re-enrolment the announcement may
+     * have caused survives the pending key's own record.
+     *
+     * @test
+     */
+    public function anUnverifiableChainIsRecoveredByAnnouncingTheLiveKeyAndChainingOnceMore(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            $this->confirmedResponse('root-kid-1'),
+            $this->unverifiableChainResponse(),
+            $this->confirmedResponse('root-kid-2'),
+            $this->confirmedResponse('root-kid-2', 'new-kid'),
+        ]);
+        $service->push();
+
+        $result = $service->rotateKeyPair();
+
+        self::assertTrue($result->successful, (string)$result->errorMessage);
+        self::assertCount(4, $this->requestHistory);
+        $refused = json_decode((string)$this->requestHistory[1]['request']->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $announcement = json_decode((string)$this->requestHistory[2]['request']->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame(self::FIXTURE_KID, $announcement['kid'], 'the LIVE key is announced, never the successor');
+        self::assertSame(trim($this->fixturePublicKeyPem()), $announcement['public_key_pem']);
+        self::assertNull($announcement['chain_kid']);
+        self::assertNull($announcement['chain_signature']);
+        self::assertSame($refused, $this->lastRequestBody(), 'the pending key is re-sent exactly as refused, chained to the live key');
+        self::assertSame(self::FIXTURE_KID, $this->lastRequestBody()['chain_kid']);
+        /** @phpstan-ignore-next-line the test double records the timeouts */
+        self::assertSame([2, 15, 15, 15], $service->requestedTimeouts, 'the announcement runs on the pending push\'s timeout');
+
+        $keyPairService = $this->createKeyPairService();
+        self::assertFalse($keyPairService->hasPendingKeyPair(), 'the pending pair is promoted');
+        self::assertSame($this->lastRequestBody()['kid'], $keyPairService->getKeyId());
+        self::assertSame('root-kid-2', $this->recordedPushState()['install_root_kid']);
+        self::assertSame('reenrolled', $service->getPushStatus()['status'], 'the root change the announcement caused is kept by the second record');
+        self::assertTrue($service->isKeyConfirmed());
+    }
+
+    /**
+     * The announcement of a revoked lineage records `revoked` - the module offers re-enrolment on
+     * it - but the rotation itself is reported as what it was: refused.
+     *
+     * @test
+     */
+    public function anUnverifiableChainStopsAfterTheLiveKeyIsReportedRevoked(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            $this->confirmedResponse('root-kid-1'),
+            $this->unverifiableChainResponse(),
+            $this->revokedResponse('root-kid-1'),
+        ]);
+        $service->push();
+
+        $result = $service->rotateKeyPair();
+
+        self::assertFalse($result->successful, 'the original refusal is reported, not the announcement\'s answer');
+        self::assertSame('chain_unverifiable', $result->rejectionReason);
+        self::assertCount(3, $this->requestHistory, 'no chained re-send to a revoked lineage');
+        $keyPairService = $this->createKeyPairService();
+        self::assertTrue($keyPairService->hasPendingKeyPair(), 'the pending pair waits');
+        self::assertSame(self::FIXTURE_KID, $keyPairService->getKeyId(), 'the live pair is untouched');
+        self::assertSame('revoked', $this->recordedPushState()['status']);
+        self::assertSame('revoked', $service->getPushStatus()['status'], 'persistent, so the module offers re-enrolment');
+        self::assertFalse($service->isKeyConfirmed());
+    }
+
+    /** @test */
+    public function theRecoveryFromAnUnverifiableChainRunsAtMostOncePerPush(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            $this->confirmedResponse('root-kid-1'),
+            $this->unverifiableChainResponse(),
+            $this->confirmedResponse('root-kid-1'),
+            $this->unverifiableChainResponse(),
+            $this->confirmedResponse('root-kid-1'),
+        ]);
+        $service->push();
+
+        $result = $service->rotateKeyPair();
+
+        self::assertFalse($result->successful);
+        self::assertSame('chain_unverifiable', $result->rejectionReason);
+        self::assertCount(4, $this->requestHistory, 'refused, announced, refused again: stop');
+        self::assertTrue($this->createKeyPairService()->hasPendingKeyPair());
+        self::assertSame('confirmed', $service->getPushStatus()['status'], 'the announcement of an unchanged root is not a re-enrolment');
+    }
+
+    /**
+     * @return array<string, array{0: mixed, 1: string|null}>
+     */
+    public static function refusalWithoutRecoveryProvider(): array
+    {
+        return [
+            'chain_domain_mismatch, the clone guard, is a hard stop' => [
+                new Response(422, ['Content-Type' => 'application/json'], '{"error":"Signing key rejected.","reason":"chain_domain_mismatch"}'),
+                'chain_domain_mismatch',
+            ],
+            'a transport failure carries no reason' => [
+                new ConnectException('Connection timed out', new Request('POST', 'https://api.neosidekick.test')),
+                null,
+            ],
+            'a refusal without a reason' => [new Response(503, [], 'maintenance'), null],
+        ];
+    }
+
+    /**
+     * @test
+     * @dataProvider refusalWithoutRecoveryProvider
+     */
+    public function onlyAChainUnverifiableRefusalTriggersTheRecovery(mixed $answer, ?string $expectedReason): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            $this->confirmedResponse('root-kid-1'),
+            $answer,
+            $this->confirmedResponse('root-kid-1'),
+        ]);
+        $service->push();
+
+        $result = $service->rotateKeyPair();
+
+        self::assertFalse($result->successful);
+        self::assertSame($expectedReason, $result->rejectionReason);
+        self::assertCount(2, $this->requestHistory, 'no announcement of the live key');
+        self::assertTrue($this->createKeyPairService()->hasPendingKeyPair());
+    }
+
+    /**
+     * Unattended (the editor's authorization, the embed handshake) the recovery is split: the live
+     * key is announced in the same call, but the pending key is not re-sent - it chains on its
+     * next due retry, which the announcement made verifiable. Two 2 s round trips at most.
+     *
+     * @test
+     */
+    public function theUnattendedPathAnnouncesTheLiveKeyAndLeavesThePendingKeyToItsNextRetry(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            $this->confirmedResponse('root-kid-1'),
+            $this->unverifiableChainResponse(),
+            $this->confirmedResponse('root-kid-2'),
+            $this->confirmedResponse('root-kid-2', 'new-kid'),
+        ]);
+        $service->push();
+        $this->createKeyPairService()->preparePendingKeyPair();
+
+        $result = $service->pushIfNecessary();
+
+        self::assertNotNull($result);
+        self::assertFalse($result->successful, 'the refusal is reported, not the announcement');
+        self::assertSame('chain_unverifiable', $result->rejectionReason);
+        self::assertCount(3, $this->requestHistory, 'refused, announced: no re-send in the same call');
+        $announcement = json_decode((string)$this->lastRequest()->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertSame(self::FIXTURE_KID, $announcement['kid'], 'the LIVE key is announced');
+        self::assertNull($announcement['chain_kid']);
+        /** @phpstan-ignore-next-line the test double records the timeouts */
+        self::assertSame([2, 2, 2], $service->requestedTimeouts, 'everything stays on the authorization budget');
+        self::assertTrue($this->createKeyPairService()->hasPendingKeyPair(), 'the pending pair waits');
+        self::assertSame('reenrolled', $service->getPushStatus()['status'], 'the announcement recorded the root change');
+
+        self::assertNull($service->pushIfNecessary(), 'the pending pair backs off for a minute');
+        self::assertCount(3, $this->requestHistory);
+
+        $this->agePendingPairBySeconds(120);
+        $retry = $service->pushIfNecessary();
+
+        self::assertNotNull($retry);
+        self::assertTrue($retry->successful, (string)$retry->errorMessage);
+        self::assertCount(4, $this->requestHistory);
+        self::assertSame(self::FIXTURE_KID, $this->lastRequestBody()['chain_kid'], 'the retry chains to the now-known live key');
+        $keyPairService = $this->createKeyPairService();
+        self::assertFalse($keyPairService->hasPendingKeyPair(), 'the pending pair is promoted');
+        self::assertSame($this->lastRequestBody()['kid'], $keyPairService->getKeyId());
+        self::assertSame('confirmed', $service->getPushStatus()['status'], 'a chained retry with an unchanged root records no re-enrolment: the announcement\'s notice does not survive it');
+        self::assertTrue($service->isKeyConfirmed());
+    }
+
+    /**
+     * The live path flags a re-enrolment too: a routine push the same target answers with another
+     * root means the backend enrolled the key anew (its row was lost), which the operator must see.
+     *
+     * @test
+     */
+    public function aLivePushAnsweredWithAnotherRootAtTheSameTargetIsRecordedAsReenrolled(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            $this->confirmedResponse('root-kid-1'),
+            $this->confirmedResponse('root-kid-2'),
+        ]);
+        $service->push();
+        self::assertSame('confirmed', $service->getPushStatus()['status']);
+        $this->agePushStateBySeconds(90000);
+
+        self::assertNotNull($service->pushIfNecessary());
+
+        self::assertSame('reenrolled', $service->getPushStatus()['status']);
+        self::assertTrue($this->recordedPushState()['reenrolled']);
+        self::assertSame('root-kid-2', $this->recordedPushState()['install_root_kid']);
+        self::assertSame($this->recordedPushState()['pushed_at'], $this->recordedPushState()['reenrolled_at']);
+    }
+
+    /** @test */
+    public function aLivePushAfterATargetSwitchIsNotRecordedAsReenrolled(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            $this->confirmedResponse('root-kid-1'),
+            $this->confirmedResponse('root-kid-2'),
+        ]);
+        $service->push();
+
+        $this->setProtectedProperty($service, 'externalApiDomain', 'https://other.neosidekick.test');
+        self::assertNotNull($service->pushIfNecessary());
+
+        self::assertSame('confirmed', $service->getPushStatus()['status'], 'the previous root belongs to another target: unknown, not changed');
+        self::assertArrayNotHasKey('reenrolled', $this->recordedPushState());
+        self::assertSame('root-kid-2', $this->recordedPushState()['install_root_kid']);
+    }
+
+    /**
      * The row's push columns in the map shape these assertions grew up with. The service itself
      * reads the typed getters; `reenrolled` is present only for an explicit true (NULL is the
      * column's "never written" state), and a missing `install_root_kid` is absent, not null.
@@ -1343,6 +1602,32 @@ class AgentSigningKeyPushServiceTest extends TestCase
             'status' => 'pending',
             'kid' => self::FIXTURE_KID,
             'fingerprint' => self::FIXTURE_FINGERPRINT,
+        ], JSON_THROW_ON_ERROR));
+    }
+
+    private function revokedResponse(?string $installRootKid = null): Response
+    {
+        $body = [
+            'status' => 'revoked',
+            'kid' => self::FIXTURE_KID,
+            'fingerprint' => self::FIXTURE_FINGERPRINT,
+        ];
+        if ($installRootKid !== null) {
+            $body['install_root_kid'] = $installRootKid;
+        }
+
+        return new Response(200, ['Content-Type' => 'application/json'], json_encode($body, JSON_THROW_ON_ERROR));
+    }
+
+    /**
+     * The backend's refusal of a chain it cannot verify, with the prose old plugins show verbatim.
+     */
+    private function unverifiableChainResponse(): Response
+    {
+        return new Response(422, ['Content-Type' => 'application/json'], json_encode([
+            'error' => 'Signing key rejected.',
+            'reason' => 'chain_unverifiable',
+            'message' => 'NEOSidekick could not verify that the new key belongs to this installation\'s current key.',
         ], JSON_THROW_ON_ERROR));
     }
 

@@ -14,7 +14,9 @@ use Neos\Neos\Domain\Model\User;
 use Neos\Party\Domain\Model\PersonName;
 use Neos\Party\Domain\Repository\PartyRepository;
 use Neos\Party\Domain\Service\PartyService;
+use NEOSidekick\AiAssistant\Dto\AgentSigningKeyPushResult;
 use NEOSidekick\AiAssistant\Service\AgentKeyPairService;
+use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
 use NEOSidekick\AiAssistant\Service\AgentTokenService;
 use NEOSidekick\AiAssistant\Tests\Functional\SigningKeyRecordSeeding;
 use Psr\Http\Message\ResponseInterface;
@@ -35,6 +37,8 @@ class AgentEmbedTokenApiControllerTest extends FunctionalTestCase
 
     protected AccountRepository $accountRepository;
 
+    private ?AgentSigningKeyPushService $originalPushService = null;
+
     public function setUp(): void
     {
         parent::setUp();
@@ -44,6 +48,10 @@ class AgentEmbedTokenApiControllerTest extends FunctionalTestCase
 
     public function tearDown(): void
     {
+        if ($this->originalPushService !== null) {
+            $this->objectManager->setInstance(AgentSigningKeyPushService::class, $this->originalPushService);
+            $this->originalPushService = null;
+        }
         $this->clearSigningKeyRecord();
         parent::tearDown();
     }
@@ -177,12 +185,112 @@ class AgentEmbedTokenApiControllerTest extends FunctionalTestCase
         self::assertStringNotContainsString('embed_token', (string)$response->getBody());
     }
 
-    protected function requestEmbedToken(string $queryString = ''): ResponseInterface
+    /**
+     * The handshake is a push path, but only when the request carries a JSON body: the plugin's
+     * plain first-load fetch never pushes, while the assistant's gate handshake always posts
+     * {"forcePush": <bool>} - false on its automatic attempt, true on "Try again". The action is
+     * CSRF-exempt, so the body is honoured only under a content type a cross-site simple request
+     * cannot carry, and only as a JSON object.
+     *
+     * @return array<string, array{0: array<string, string>, 1: string|null, 2: bool|null, 3?: string}>
+     */
+    public static function pushTriggerProvider(): array
+    {
+        $json = ['Content-Type' => 'application/json'];
+
+        return [
+            'no body: no push' => [[], null, null],
+            'unforced handshake' => [$json, '{"forcePush": false}', false],
+            'forced handshake' => [$json, '{"forcePush": true}', true],
+            'forced handshake with a charset parameter' => [['Content-Type' => 'application/json; charset=utf-8'], '{"forcePush": true}', true],
+            'a JSON object with a truthy non-boolean is unforced' => [$json, '{"forcePush": "true"}', false],
+            'a JSON object without the flag is unforced' => [$json, '{"other": 1}', false],
+            'text/plain: no push' => [['Content-Type' => 'text/plain'], '{"forcePush": true}', null],
+            'form-encoded: no push' => [['Content-Type' => 'application/x-www-form-urlencoded'], 'forcePush=true', null],
+            'invalid JSON: no push' => [$json, 'not json', null],
+            'a JSON list: no push' => [$json, '[true]', null],
+            'a JSON scalar: no push' => [$json, 'true', null],
+            'query string only: no push' => [[], null, null, '?forcePush=1'],
+        ];
+    }
+
+    /**
+     * @param array<string, string> $headers
+     * @param bool|null $expectedForceArgument Null when pushIfNecessary() must not be called
+     * @test
+     * @dataProvider pushTriggerProvider
+     */
+    public function theSigningKeyIsPushedOnlyForAJsonBodyAndTheTokenIsMintedEitherWay(array $headers, ?string $body, ?bool $expectedForceArgument, string $queryString = ''): void
+    {
+        [$account] = $this->createEditorAccountWithUser();
+        $this->authenticateAccount($account);
+        $pushService = $this->stubPushService();
+
+        $response = $this->requestEmbedToken($queryString, $headers, $body);
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertArrayHasKey('embed_token', json_decode((string)$response->getBody(), true, 8, JSON_THROW_ON_ERROR));
+        self::assertSame($expectedForceArgument === null ? [] : [$expectedForceArgument], $pushService->forceArguments);
+    }
+
+    /**
+     * @test
+     */
+    public function aFailingPushNeverBlocksTheMint(): void
+    {
+        [$account] = $this->createEditorAccountWithUser();
+        $this->authenticateAccount($account);
+        $pushService = $this->stubPushService();
+        $pushService->failure = new \RuntimeException('NEOSidekick is unreachable', 1757000099);
+
+        $response = $this->requestEmbedToken('', ['Content-Type' => 'application/json'], '{"forcePush": true}');
+
+        self::assertSame(200, $response->getStatusCode());
+        self::assertArrayHasKey('embed_token', json_decode((string)$response->getBody(), true, 8, JSON_THROW_ON_ERROR));
+        self::assertSame([true], $pushService->forceArguments, 'the push was attempted');
+    }
+
+    /**
+     * Replaces the push service the controller is built with by a recorder that never pushes -
+     * the controller's contract is that it calls it, with the right flag, and survives it.
+     */
+    private function stubPushService(): AgentSigningKeyPushService
+    {
+        $stub = new class () extends AgentSigningKeyPushService {
+            /**
+             * @var array<int, bool>
+             */
+            public array $forceArguments = [];
+
+            public ?\Throwable $failure = null;
+
+            public function pushIfNecessary(bool $force = false): ?AgentSigningKeyPushResult
+            {
+                $this->forceArguments[] = $force;
+                if ($this->failure !== null) {
+                    throw $this->failure;
+                }
+
+                return null;
+            }
+        };
+
+        $this->originalPushService ??= $this->objectManager->get(AgentSigningKeyPushService::class);
+        $this->objectManager->setInstance(AgentSigningKeyPushService::class, $stub);
+
+        return $stub;
+    }
+
+    /**
+     * @param array<string, string> $headers
+     */
+    protected function requestEmbedToken(string $queryString = '', array $headers = [], ?string $body = null): ResponseInterface
     {
         $request = new ServerRequest(
             'POST',
             'http://localhost/neosidekick/api/agentic/embed-token' . $queryString,
-            ['Accept' => 'application/json']
+            array_merge(['Accept' => 'application/json'], $headers),
+            $body
         );
 
         return $this->browser->sendRequest($request);

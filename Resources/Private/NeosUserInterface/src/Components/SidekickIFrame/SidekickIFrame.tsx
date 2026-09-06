@@ -50,11 +50,13 @@ export default class SidekickIFrame extends PureComponent<SidekickIFrameProps, S
     componentDidMount() {
         // Fetch a fresh embed token before the first iframe load, so the initial bootstrap
         // can release the authBindingToken in one round trip. fetchEmbedToken never rejects
-        // and is timeout-bounded, so the frame is delayed at most ~3s and NEVER blocked on
-        // a failure: settling with null just builds the src without the param, and the
-        // assistant then obtains a token on demand through the postMessage channel. The
-        // token frozen into the src is single-use by design - the SPA re-reads this src on
-        // language switches, so it must never be treated as fresh after the first load.
+        // and is timeout-bounded (6 s), so the frame is delayed at most that long and NEVER
+        // blocked on a failure: settling with null just builds the src without the param,
+        // and the assistant then obtains a token on demand through the postMessage channel.
+        // This bodyless first-load fetch never pushes the signing key; only the handshake
+        // replies do. The token frozen into the src is single-use by design - the SPA
+        // re-reads this src on language switches, so it must never be treated as fresh
+        // after the first load.
         fetchEmbedToken().then((embedToken) => {
             if (!this.unmounted) {
                 this.setState({embedToken, embedTokenSettled: true});

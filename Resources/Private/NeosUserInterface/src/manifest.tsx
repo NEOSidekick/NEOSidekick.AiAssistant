@@ -85,7 +85,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
     // the handler replies via event.source.postMessage with event.origin as the explicit
     // target origin.
     const handleEmbedTokenRequest = createEmbedTokenRequestHandler({
-        fetchToken: () => fetchEmbedToken(),
+        fetchToken: (options) => fetchEmbedToken(options),
     });
 
     iFrameApiService.listenToMessages((message: IframeIncomingMessage) => {

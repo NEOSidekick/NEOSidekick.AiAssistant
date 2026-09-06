@@ -46,6 +46,19 @@ class AgentSigningKeyPushService
     private const PENDING_RETRY_SECONDS = 60;
 
     /**
+     * A forced push (the assistant's "Try again") skips the confirmed-and-fresh short-circuit, but
+     * not while the last successful push is younger than this: a click storm must not become a
+     * push storm. A failed push records nothing and is bounded by the handshake's own pacing.
+     */
+    private const FORCED_PUSH_MIN_INTERVAL_SECONDS = 60;
+
+    /**
+     * The backend's refusal of a chained push whose chain it cannot verify: the key the pending
+     * key is chained to is unknown or revoked there. {@see pushPendingKeyPair} recovers from it.
+     */
+    private const REJECTION_REASON_CHAIN_UNVERIFIABLE = 'chain_unverifiable';
+
+    /**
      * The backend caps `plugin_version` at 32 characters and fails the whole push above it.
      */
     private const MAX_PLUGIN_VERSION_LENGTH = 32;
@@ -125,8 +138,17 @@ class AgentSigningKeyPushService
      *
      * Generation happens only after the target check, so an installation without an API domain
      * never mints an inert identity.
+     *
+     * @param bool $force Push a confirmed or revoked key even while its record is fresh - the
+     *                    assistant's "Try again" after NEOSidekick rejected a token - unless the
+     *                    last successful push is younger than {@see FORCED_PUSH_MIN_INTERVAL_SECONDS}.
+     *                    A hint, not an instruction: the payload is built from local state alone,
+     *                    and a pending pair is retried on its own schedule regardless.
+     *
+     * Unattended, so a pending pair whose chain the backend refuses is not re-sent in the same
+     * call ({@see pushPendingKeyPair}); it chains on its next due retry.
      */
-    public function pushIfNecessary(): ?AgentSigningKeyPushResult
+    public function pushIfNecessary(bool $force = false): ?AgentSigningKeyPushResult
     {
         try {
             $target = $this->getTarget();
@@ -148,9 +170,11 @@ class AgentSigningKeyPushService
                 $this->agentKeyPairService->markPendingKeyPairRetried();
             } else {
                 $recordedStatus = $this->getRecordedStatusOfCurrentKey();
+                $settled = $recordedStatus === self::STATUS_CONFIRMED || $recordedStatus === self::STATUS_REVOKED;
                 if (
-                    ($recordedStatus === self::STATUS_CONFIRMED || $recordedStatus === self::STATUS_REVOKED)
+                    $settled
                     && !$this->recordedPushIsStale()
+                    && (!$force || time() - (int)$this->recordedPush()?->getPushedAt()?->getTimestamp() < self::FORCED_PUSH_MIN_INTERVAL_SECONDS)
                 ) {
                     return null;
                 }
@@ -161,7 +185,7 @@ class AgentSigningKeyPushService
             return null;
         }
 
-        return $this->pushCurrentKey(null, null, null, self::DEFAULT_TIMEOUT_SECONDS);
+        return $this->pushCurrentKey(null, null, null, self::DEFAULT_TIMEOUT_SECONDS, false);
     }
 
     /**
@@ -233,7 +257,7 @@ class AgentSigningKeyPushService
             $this->agentKeyPairService->preparePendingKeyPair($relabel, $allowReenrolment || $relabel);
             $this->agentKeyPairService->markPendingKeyPairRetried();
 
-            return $this->pushPendingKeyPair($domainOverride, self::ROTATION_TIMEOUT_SECONDS, $allowReenrolment);
+            return $this->pushPendingKeyPair($domainOverride, self::ROTATION_TIMEOUT_SECONDS, $allowReenrolment, true);
         } catch (Throwable $throwable) {
             $this->logPushFailure('could not regenerate the keypair: ' . $throwable->getMessage());
 
@@ -243,7 +267,8 @@ class AgentSigningKeyPushService
 
     /**
      * The operator's explicit push (`agentkey:push`). While a pending pair exists the given chain
-     * material is ignored: the pending key is transmitted, freshly chained to the live key.
+     * material is ignored: the pending key is transmitted, freshly chained to the live key, and
+     * re-sent once should the backend first have to learn the live key ({@see pushPendingKeyPair}).
      *
      * @param string|null $chainKid The kid of the previous (currently-confirmed) key
      * @param string|null $chainSignature See {@see signRotationChain}
@@ -251,14 +276,15 @@ class AgentSigningKeyPushService
      */
     public function push(?string $chainKid = null, ?string $chainSignature = null, ?string $domainOverride = null): AgentSigningKeyPushResult
     {
-        return $this->pushCurrentKey($chainKid, $chainSignature, $domainOverride, self::ROTATION_TIMEOUT_SECONDS);
+        return $this->pushCurrentKey($chainKid, $chainSignature, $domainOverride, self::ROTATION_TIMEOUT_SECONDS, true);
     }
 
     /**
      * @param int $pendingTimeoutSeconds The timeout for a pending key's re-push; the live key is
      *                                   always pushed on the authorization budget
+     * @param bool $resendPendingAfterRecovery See {@see pushPendingKeyPair}
      */
-    private function pushCurrentKey(?string $chainKid, ?string $chainSignature, ?string $domainOverride, int $pendingTimeoutSeconds): AgentSigningKeyPushResult
+    private function pushCurrentKey(?string $chainKid, ?string $chainSignature, ?string $domainOverride, int $pendingTimeoutSeconds, bool $resendPendingAfterRecovery): AgentSigningKeyPushResult
     {
         try {
             if (!$this->agentKeyPairService->hasKeyPair()) {
@@ -266,7 +292,7 @@ class AgentSigningKeyPushService
             }
 
             if ($this->agentKeyPairService->hasPendingKeyPair()) {
-                return $this->pushPendingKeyPair($domainOverride, $pendingTimeoutSeconds, false);
+                return $this->pushPendingKeyPair($domainOverride, $pendingTimeoutSeconds, false, $resendPendingAfterRecovery);
             }
 
             return $this->pushLiveKeyPair($chainKid, $chainSignature, $domainOverride, self::DEFAULT_TIMEOUT_SECONDS);
@@ -280,13 +306,20 @@ class AgentSigningKeyPushService
     /**
      * Transmits the live key and records the answer.
      *
+     * A backend that does not know the key enrols it as a new installation. When a push at the
+     * same target had echoed another lineage root before, that is a re-enrolment and is flagged
+     * exactly like a rotation's ({@see STATUS_REENROLLED}); otherwise the previous flag is carried
+     * forward. After a target switch the previous root is unknown and nothing is flagged.
+     *
      * @throws Throwable Anything the caller's catch-all turns into a failure result
      */
     private function pushLiveKeyPair(?string $chainKid, ?string $chainSignature, ?string $domainOverride, int $timeoutSeconds): AgentSigningKeyPushResult
     {
+        $previousInstallRootKid = $this->getRecordedInstallRootKid();
         $result = $this->transmit($this->agentKeyPairService->getPublicKeyPem(), $chainKid, $chainSignature, $domainOverride, false, $timeoutSeconds);
         if ($result->successful) {
-            $this->recordPush($this->agentKeyPairService->getKeyId(), (string)$this->getTarget(), (string)$result->status, $result->installRootKid, null, $result->registeredDomain);
+            $reenrolled = $this->installRootKidChanged($previousInstallRootKid, $result->installRootKid) ? true : null;
+            $this->recordPush($this->agentKeyPairService->getKeyId(), (string)$this->getTarget(), (string)$result->status, $result->installRootKid, $reenrolled, $result->registeredDomain);
         }
 
         return $result;
@@ -299,14 +332,33 @@ class AgentSigningKeyPushService
      * The commit names the key the backend confirmed and its failure is deliberately not caught:
      * a pending pair replaced by a concurrent regeneration must never be reported as confirmed.
      *
+     * A chained push the backend refuses as `chain_unverifiable` (it never learned, or has
+     * revoked, the live key) is recovered from by announcing the live key unchained once -
+     * byte-for-byte what {@see pushIfNecessary} sends while no pending pair exists. A backend
+     * that knows the key answers with its stored status and changes nothing; one that does not
+     * enrols it, which {@see pushLiveKeyPair} flags as a re-enrolment when the same target had
+     * echoed another root. The announcement records its own answer, so a revoked lineage ends
+     * with a persistent `revoked` in the module, where re-enrolment is offered as the way out.
+     * Then, at most once per push:
+     *  - on an operator path ($resendPendingAfterRecovery) with the live key confirmed, the
+     *    pending key is chained to it once more and, when accepted, promoted and recorded
+     *    against the root captured BEFORE the announcement, so the flag written there survives;
+     *  - otherwise the ORIGINAL refusal is returned and the pending pair stays: unattended, it
+     *    chains on its next due retry, which now verifies.
+     * `chain_domain_mismatch` is the clone guard and stays a hard stop; a transport failure
+     * carries no reason and triggers nothing.
+     *
      * @param bool $allowReenrolment Announce the pending key unchained - whether or not the live
      *                               pair could vouch for it - which enrols this installation anew.
      *                               The chain is computed either way, so a storage failure while
      *                               chaining still aborts before any transmit. Only an
      *                               administrator who asked for it may set this.
+     * @param bool $resendPendingAfterRecovery Re-send the pending key in the same call once the
+     *                                         live key was announced (rotation, `agentkey:push`);
+     *                                         never on the unattended path
      * @throws Throwable Anything the caller's catch-all turns into a failure result
      */
-    private function pushPendingKeyPair(?string $domainOverride, int $timeoutSeconds, bool $allowReenrolment): AgentSigningKeyPushResult
+    private function pushPendingKeyPair(?string $domainOverride, int $timeoutSeconds, bool $allowReenrolment, bool $resendPendingAfterRecovery): AgentSigningKeyPushResult
     {
         if (!$this->agentKeyPairService->hasPendingKeyPair()) {
             return $this->pushLiveKeyPair(null, null, $domainOverride, $timeoutSeconds);
@@ -340,6 +392,18 @@ class AgentSigningKeyPushService
 
         $previousInstallRootKid = $this->getRecordedInstallRootKid();
         $result = $this->transmit($pendingPublicKeyPem, $chainKid, $chainSignature, $domainOverride, $relabel, $timeoutSeconds);
+        if ($chainKid !== null && !$result->successful && $result->rejectionReason === self::REJECTION_REASON_CHAIN_UNVERIFIABLE) {
+            $this->logPushFailure(
+                'was refused as chain_unverifiable: announcing the live key unchained'
+                . ($resendPendingAfterRecovery ? ' before chaining the pending key to it once more' : '; the pending key chains on its next retry'),
+                $chainKid
+            );
+            $liveResult = $this->pushLiveKeyPair(null, null, $domainOverride, $timeoutSeconds);
+            if (!$resendPendingAfterRecovery || !$liveResult->isConfirmed()) {
+                return $result;
+            }
+            $result = $this->transmit($pendingPublicKeyPem, $chainKid, $chainSignature, $domainOverride, $relabel, $timeoutSeconds);
+        }
         if (!$result->successful) {
             return $result;
         }
@@ -348,12 +412,22 @@ class AgentSigningKeyPushService
             return $result;
         }
 
-        $reenrolled = $previousInstallRootKid !== null
-            && $result->installRootKid !== null
-            && $previousInstallRootKid !== $result->installRootKid;
+        $reenrolled = $this->installRootKidChanged($previousInstallRootKid, $result->installRootKid);
         $this->recordPush($pendingKeyId, $target, (string)$result->status, $result->installRootKid, $reenrolled, $result->registeredDomain);
 
         return $result;
+    }
+
+    /**
+     * A lineage change is only ever detected between two roots the same target echoed: an
+     * unknown previous root (first push, target switch, a record predating the field) never
+     * reads as changed.
+     */
+    private function installRootKidChanged(?string $previousInstallRootKid, ?string $echoedInstallRootKid): bool
+    {
+        return $previousInstallRootKid !== null
+            && $echoedInstallRootKid !== null
+            && $previousInstallRootKid !== $echoedInstallRootKid;
     }
 
     /**
@@ -490,7 +564,8 @@ class AgentSigningKeyPushService
     /**
      * A missing timestamp counts as stale: never re-pushing is the failure mode this guards
      * against. The push is the only writer of the version the backend knows, so a recorded version
-     * other than the current one is stale regardless of age.
+     * other than the current one is stale regardless of age. A false answer therefore guarantees a
+     * recorded timestamp, which {@see pushIfNecessary} reads for its forced-push throttle.
      */
     protected function recordedPushIsStale(): bool
     {

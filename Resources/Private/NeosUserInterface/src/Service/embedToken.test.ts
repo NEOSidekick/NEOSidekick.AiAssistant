@@ -35,6 +35,41 @@ describe('fetchEmbedToken', () => {
         expect(init.method).toBe('POST');
     });
 
+    it('sends neither a body nor a content type without a forcePush option (the first-load fetch never pushes)', async () => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({embed_token: 'embed-jwt'}),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await fetchEmbedToken();
+        await fetchEmbedToken({});
+
+        for (const [, init] of fetchMock.mock.calls) {
+            expect('body' in init).toBe(false);
+            expect(init.headers).toEqual({'Accept': 'application/json'});
+        }
+    });
+
+    it.each([false, true])('posts {"forcePush": %s} as JSON when given the boolean', async (forcePush) => {
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            json: () => Promise.resolve({embed_token: 'embed-jwt'}),
+        });
+        vi.stubGlobal('fetch', fetchMock);
+
+        await expect(fetchEmbedToken({forcePush})).resolves.toBe('embed-jwt');
+
+        const [uri, init] = fetchMock.mock.calls[0];
+        expect(uri).toBe(EMBED_TOKEN_URI);
+        expect(init.method).toBe('POST');
+        expect(init.credentials).toBe('include');
+        // The content type is the gate on the CSRF-exempt endpoint: a cross-site
+        // simple request cannot set it, so it cannot make the backend push.
+        expect(init.headers).toEqual({'Accept': 'application/json', 'Content-Type': 'application/json'});
+        expect(JSON.parse(init.body)).toEqual({forcePush});
+    });
+
     it('resolves null on a non-2xx response', async () => {
         vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ok: false, status: 401}));
 
@@ -68,8 +103,8 @@ describe('fetchEmbedToken', () => {
         );
         vi.stubGlobal('fetch', fetchMock);
 
-        const pending = fetchEmbedToken(3000);
-        await vi.advanceTimersByTimeAsync(3000);
+        const pending = fetchEmbedToken({}, 6000);
+        await vi.advanceTimersByTimeAsync(6000);
 
         await expect(pending).resolves.toBeNull();
     });
@@ -94,13 +129,15 @@ describe('createEmbedTokenRequestHandler', () => {
     });
 
     it('replies to the requesting window at its verified origin with the fetched token', async () => {
-        const handler = createEmbedTokenRequestHandler({fetchToken: vi.fn().mockResolvedValue('embed-jwt')});
+        const fetchToken = vi.fn().mockResolvedValue('embed-jwt');
+        const handler = createEmbedTokenRequestHandler({fetchToken});
         const message = requestMessage();
 
         expect(handler(message)).toBe(true);
         await Promise.resolve();
         await Promise.resolve();
 
+        expect(fetchToken).toHaveBeenCalledWith({forcePush: false});
         expect(message.source.postMessage).toHaveBeenCalledTimes(1);
         expect(message.source.postMessage).toHaveBeenCalledWith(
             {
@@ -129,6 +166,17 @@ describe('createEmbedTokenRequestHandler', () => {
             },
             ASSISTANT_ORIGIN
         );
+    });
+
+    it('always posts a body: forced when the request carries forcePush true, unforced otherwise', async () => {
+        const fetchToken = vi.fn().mockResolvedValue('embed-jwt');
+        const handler = createEmbedTokenRequestHandler({fetchToken});
+
+        handler(requestMessage({data: {type: EMBED_TOKEN_REQUEST_MESSAGE_TYPE, requestId: 'request-1', forcePush: true}}));
+        handler(requestMessage({data: {type: EMBED_TOKEN_REQUEST_MESSAGE_TYPE, requestId: 'request-2', forcePush: 'true'}}));
+        handler(requestMessage({data: {type: EMBED_TOKEN_REQUEST_MESSAGE_TYPE, requestId: 'request-3', forcePush: 1}}));
+
+        expect(fetchToken.mock.calls).toEqual([[{forcePush: true}], [{forcePush: false}], [{forcePush: false}]]);
     });
 
     it('drops a request without a usable requestId (handled, but never answered)', async () => {

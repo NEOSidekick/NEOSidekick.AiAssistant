@@ -323,7 +323,7 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
     public function theStatusTextsAreRendered(): void
     {
         $none = $this->renderConfigurationModule(['exists' => true, 'fingerprint' => 'AA:BB', 'status' => 'none', 'pushedAt' => '']);
-        self::assertStringContainsString('Not transmitted to NEOSidekick yet; this happens the next time an editor authorizes.', $none);
+        self::assertStringContainsString('Not transmitted to NEOSidekick yet; this happens the next time the assistant is opened.', $none);
 
         $pending = $this->renderConfigurationModule(['exists' => true, 'fingerprint' => 'AA:BB', 'status' => 'pending', 'pushedAt' => '']);
         self::assertStringContainsString('Transmitted, not registered by NEOSidekick yet; retried the next time an editor authorizes.', $pending);
@@ -345,9 +345,9 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
 
     /**
      * Re-enrolment orphans every connected tool, so the checkbox that asks for it exists only
-     * where it is the remaining way out - an unusable key, a chained rotation NEOSidekick just
-     * refused as coming from another host, or a key registered for a domain other than the one
-     * this site answers as - and never next to a healthy key.
+     * where it is the remaining way out - an unusable key, a revoked lineage, a chained rotation
+     * NEOSidekick just refused as coming from another host, or a key registered for a domain
+     * other than the one this site answers as - and never next to a healthy key.
      *
      * The relabel form is the other half of those last two states: it is the moved-site answer
      * where the checkbox is the copy answer, and it never renders on an unusable key, which
@@ -364,6 +364,12 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
         self::assertStringContainsString('Enrol this installation as a new one', $unusable);
         self::assertStringContainsString('every tool connected to this installation must be reconnected', $unusable);
         self::assertStringNotContainsString('moduleArguments[relabel]', $unusable, 'an unusable key cannot chain a relabel');
+
+        $revoked = $this->renderConfigurationModule(['exists' => true, 'fingerprint' => 'AA:BB', 'status' => 'revoked', 'pushedAt' => '']);
+        self::assertStringContainsString('name="moduleArguments[reenrol]"', $revoked, 'a revoked lineage can only be left by enrolling anew');
+        self::assertStringContainsString('Tick re-enrol below and regenerate to start a new installation; connected tools will have to be reconnected.', $revoked);
+        self::assertStringNotContainsString('Regenerate the key to re-register', $revoked, 'a bare regeneration of a revoked lineage is refused, so the copy no longer suggests it');
+        self::assertStringNotContainsString('moduleArguments[relabel]', $revoked);
 
         $refusedAsAnotherHost = $this->renderConfigurationModule(
             ['exists' => true, 'fingerprint' => 'AA:BB', 'status' => 'confirmed', 'pushedAt' => '', 'regenerateIncomplete' => true],
@@ -400,7 +406,9 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
 
         foreach (['none', 'pending', 'confirmed', 'revoked', 'reenrolled'] as $status) {
             $output = $this->renderConfigurationModule(['exists' => true, 'fingerprint' => 'AA:BB', 'status' => $status, 'pushedAt' => '']);
-            self::assertStringNotContainsString('moduleArguments[reenrol]', $output, 'no re-enrolment checkbox next to a ' . $status . ' key');
+            if ($status !== 'revoked') {
+                self::assertStringNotContainsString('moduleArguments[reenrol]', $output, 'no re-enrolment checkbox next to a ' . $status . ' key');
+            }
             self::assertStringNotContainsString('moduleArguments[relabel]', $output, 'no relabel form next to a ' . $status . ' key');
         }
 

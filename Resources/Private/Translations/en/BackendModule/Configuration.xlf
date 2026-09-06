@@ -21,7 +21,7 @@
                 <source>Status</source>
             </trans-unit>
             <trans-unit id="signingKey.status.none" xml:space="preserve">
-                <source>Not transmitted to NEOSidekick yet; this happens the next time an editor authorizes.</source>
+                <source>Not transmitted to NEOSidekick yet; this happens the next time the assistant is opened.</source>
             </trans-unit>
             <trans-unit id="signingKey.status.pending" xml:space="preserve">
                 <source>Transmitted, not registered by NEOSidekick yet; retried the next time an editor authorizes.</source>
@@ -30,7 +30,7 @@
                 <source>Registered</source>
             </trans-unit>
             <trans-unit id="signingKey.status.revoked" xml:space="preserve">
-                <source>No longer accepted by NEOSidekick. Regenerate the key to re-register this installation; connected tools will have to be reconnected.</source>
+                <source>No longer accepted by NEOSidekick. Tick re-enrol below and regenerate to start a new installation; connected tools will have to be reconnected.</source>
             </trans-unit>
             <trans-unit id="signingKey.status.reenrolled" xml:space="preserve">
                 <source>Registered as a new installation. Connected tools had to be reconnected with the new address.</source>

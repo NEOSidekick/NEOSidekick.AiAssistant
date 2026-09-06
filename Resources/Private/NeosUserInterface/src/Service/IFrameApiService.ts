@@ -109,12 +109,16 @@ export class IFrameApiService {
         });
     }
 
-    respondWithContentTree = (contentTree: unknown): void => {
+    /**
+     * @param siteNodeName Node name of the site the editor currently works on, empty when unknown.
+     */
+    respondWithContentTree = (contentTree: unknown, siteNodeName: string): void => {
         this.sendMessage({
             version: '1.0',
             eventName: 'content-tree-response',
             data: {
                 contentTree,
+                siteNodeName,
             },
         });
     }

@@ -21,8 +21,9 @@ use Psr\Http\Message\UriInterface;
  *
  * The label is Flow's configured `http.baseUri`, else the trusted-proxy corrected base URI of the
  * active request - never a Neos Domain record, whose suffix matching would label a staging clone
- * or a sibling site with another host's name. The set is the active Domain records of online
- * sites, the base URI and the request base, one origin per host.
+ * or a sibling site with another host's name. The set is the active Domain records of all
+ * sites - an offline site's host is owned by this installation just as much - the base URI and
+ * the request base, one origin per host.
  *
  * @Flow\Scope("singleton")
  */
@@ -99,7 +100,7 @@ class AgentInstallHostCollector
 
     /**
      * The origins this installation answers on, lowercased, one per host, at most
-     * {@see MAX_HOSTS}: the active Domain records of online sites (a record without a scheme
+     * {@see MAX_HOSTS}: the active Domain records of all sites, online or not (a record without a scheme
      * takes the request's, a record with a port keeps it), the base URI origin and the request
      * base origin. Among two candidates for one host the Domain record wins over the base URI,
      * the base URI over the request base, and https over http among equals.
@@ -133,7 +134,7 @@ class AgentInstallHostCollector
         }
 
         $requestScheme = $this->schemeForDomainRecords($requestOrigin, $baseUriOrigin);
-        foreach ($this->activeDomainRecordsOfOnlineSites() as $domain) {
+        foreach ($this->activeDomainRecords() as $domain) {
             $origin = self::originOfDomainRecord($domain, $requestScheme);
             if ($origin !== null) {
                 $candidates[] = [$origin, self::RANK_DOMAIN_RECORD];
@@ -187,7 +188,7 @@ class AgentInstallHostCollector
     /**
      * @return array<int, Domain>
      */
-    private function activeDomainRecordsOfOnlineSites(): array
+    private function activeDomainRecords(): array
     {
         $records = [];
         foreach ($this->domainRepository->findAll()->toArray() as $domain) {
@@ -195,7 +196,7 @@ class AgentInstallHostCollector
                 continue;
             }
             $site = $domain->getSite();
-            if ($site === null || !$site->isOnline()) {
+            if ($site === null) {
                 continue;
             }
             $records[] = $domain;

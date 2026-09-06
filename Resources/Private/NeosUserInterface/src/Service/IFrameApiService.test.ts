@@ -59,6 +59,46 @@ describe('IFrameApiService', () => {
     });
 
     /**
+     * The SPA derives the default site of document listings from this field, so the response
+     * must always carry it - an empty string when the store holds no site node.
+     */
+    describe('respondWithContentTree', () => {
+        const sendAndCaptureMessage = (contentTree: unknown, siteNodeName: string) => {
+            const postMessage = vi.fn();
+            vi.stubGlobal('document', {getElementById: () => loadedFrame(postMessage)});
+            vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+            createIFrameApiService(ASSISTANT_ORIGIN).respondWithContentTree(contentTree, siteNodeName);
+
+            return postMessage.mock.calls[0];
+        };
+
+        it('sends the content tree together with the site node name', () => {
+            const contentTree = {generatedAt: '2026-09-06T00:00:00.000Z', rootNode: {id: 'abc'}};
+
+            expect(sendAndCaptureMessage(contentTree, 'academy')).toEqual([
+                {
+                    version: '1.0',
+                    eventName: 'content-tree-response',
+                    data: {contentTree, siteNodeName: 'academy'},
+                },
+                ASSISTANT_ORIGIN,
+            ]);
+        });
+
+        it('still sends the site node name key when it is unknown', () => {
+            expect(sendAndCaptureMessage(null, '')).toEqual([
+                {
+                    version: '1.0',
+                    eventName: 'content-tree-response',
+                    data: {contentTree: null, siteNodeName: ''},
+                },
+                ASSISTANT_ORIGIN,
+            ]);
+        });
+    });
+
+    /**
      * listenToMessages is the SOLE authenticity gate of the embed-token postMessage
      * channel (and every other inbound message): only a message whose source is the
      * assistant iframe's contentWindow AND whose origin is the configured assistant

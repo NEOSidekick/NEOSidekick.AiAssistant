@@ -52,7 +52,7 @@ class DocumentNodeListApiController extends ActionController
      *
      * @param string $workspace The workspace name (default: 'live')
      * @param string $dimensions JSON-encoded dimensions array
-     * @param string $site Site node name (optional, defaults to first site)
+     * @param string $site Site node name (optional, defaults to the site of the request host)
      * @param string $nodeTypeFilter Filter by NodeType (default: all documents)
      * @param int $depth Maximum traversal depth (-1 = unlimited)
      * @return string JSON response
@@ -80,7 +80,8 @@ class DocumentNodeListApiController extends ActionController
                 dimensions: $dimensionsArray,
                 siteNodeName: $site !== '' ? $site : null,
                 nodeTypeFilter: $nodeTypeFilter,
-                depth: $depth
+                depth: $depth,
+                requestHost: $this->request->getHttpRequest()->getUri()->getHost()
             );
 
             return json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);

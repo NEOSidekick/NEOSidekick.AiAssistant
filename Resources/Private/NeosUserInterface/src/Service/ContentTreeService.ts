@@ -2,7 +2,7 @@
 import { Store } from 'react-redux';
 import { Node } from '@neos-project/neos-ts-interfaces';
 import backend from '@neos-project/neos-ui-backend-connector';
-import { actions } from '@neos-project/neos-ui-redux-store';
+import { actions, selectors } from '@neos-project/neos-ui-redux-store';
 
 export interface ExtractedNode {
     id: string | null;
@@ -50,6 +50,16 @@ export class ContentTreeService {
             generatedAt: new Date().toISOString(),
             rootNode
         };
+    }
+
+    /**
+     * Node name of the site the editor currently works on: `/sites/<name>@…` → `<name>`, empty
+     * when the store has no site node.
+     */
+    getSiteNodeName(): string {
+        const path = selectors.CR.Nodes.siteNodeContextPathSelector(this.store.getState());
+
+        return String(path ?? '').split('@')[0].split('/')[2] ?? '';
     }
 
     async getFullDocumentContentTree(): Promise<{

@@ -90,6 +90,18 @@ roles:
 Of course, you can also define the privilege for any
 other role that you are using for example `Neos.Neos:Administrator`.
 
+### Multi-site installations
+
+The page list the assistant works with belongs to one Neos site. When the assistant names a
+site, that site is used; otherwise the site whose active Domain record matches the host the
+request came in on (the same suffix matching the frontend routing uses, and regardless of
+whether the site is online); if no record matches, Neos's default site is used (the one
+configured as `Neos.Neos.defaultSiteNodeName`, else the first online site). Only when Neos
+has no default site either does the first site under `/sites` step in, and that fallback is
+logged. Every answer lists the site node names of the installation, so
+the assistant can ask for another site by name; naming a site that does not exist is refused
+with a `400` listing the available names.
+
 ### Signing key of this installation
 
 This installation identifies itself to NEOSidekick with an RSA key pair. It lives in one
@@ -102,7 +114,8 @@ one out.
 
 The panel names the address NEOSidekick calls this installation at (Flow's `http.baseUri`,
 else the host the assistant was opened on), the hosts NEOSidekick accepts for it (every
-active Domain record of an online site, plus that address), whether the host you are on is
+active Domain record of the installation - a site that is offline still owns its host, so an
+editor can prepare it - plus that address), whether the host you are on is
 one of them, and what NEOSidekick did with the host set the panel just sent. A multi-site
 therefore needs a Domain record per site host; opening the panel on any registered host
 re-sends the set.

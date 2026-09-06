@@ -18,10 +18,11 @@ use ReflectionProperty;
 
 /**
  * The host set is NEOSidekick's egress allowlist for editor tokens, so what goes into it - and
- * which of two candidates for one host wins - is pinned here: active Domain records of online
- * sites with their own scheme and port, the base URI, the request base; lowercased; one origin
- * per host with the Domain record over the base URI over the request base and https over http
- * among equals; capped. The label is the base URI, else the request base, never a Domain record.
+ * which of two candidates for one host wins - is pinned here: active Domain records of all sites,
+ * online or not, with their own scheme and port, the base URI, the request base; lowercased; one
+ * origin per host with the Domain record over the base URI over the request base and https over
+ * http among equals; capped. A record without a site is skipped. The label is the base URI, else
+ * the request base, never a Domain record.
  */
 class AgentInstallHostCollectorTest extends TestCase
 {
@@ -54,7 +55,7 @@ class AgentInstallHostCollectorTest extends TestCase
     }
 
     /** @test */
-    public function theSetHoldsActiveDomainRecordsOfOnlineSitesWithTheirSchemeAndPortTheBaseUriAndTheRequestBase(): void
+    public function theSetHoldsActiveDomainRecordsOfEverySiteWithTheirSchemeAndPortTheBaseUriAndTheRequestBase(): void
     {
         $collector = $this->createCollector('https://front.example', 'http://cms.example/neos', [
             $this->domainRecord('codeq.at', 'https', 443),
@@ -67,9 +68,9 @@ class AgentInstallHostCollectorTest extends TestCase
         $hosts = $collector->collectHosts('https://front.example');
 
         self::assertSame(
-            ['https://front.example', 'http://cms.example', 'http://academy-new.codeq.at:8080', 'https://codeq.at:443'],
+            ['https://front.example', 'http://cms.example', 'http://academy-new.codeq.at:8080', 'https://codeq.at:443', 'https://offline.example'],
             $hosts,
-            'the label\'s and the request\'s host lead, the Domain records follow sorted; an explicit :443 is kept as the record carries it'
+            'the label\'s and the request\'s host lead, the Domain records follow sorted; an offline site\'s host belongs to the installation too, while an inactive record and one without a site do not; an explicit :443 is kept as the record carries it'
         );
     }
 

@@ -153,12 +153,13 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 
     /**
      * The site domain as derived from a Neos domain record or from Flow's configured /
-     * trusted-proxy corrected base URI - null when neither exists.
+     * trusted-proxy corrected base URI - null when neither exists. This is the embed's
+     * `domain`, the public site host; the signing-key push labels the installation with its
+     * base or request origin instead (AgentInstallHostCollector), never with a Domain record.
      *
      * Null is the case in which {@see domain()} falls back to a superglobals guess
      * (typically "http://localhost" on the CLI). That guess is fine as a display value
-     * but must never be persisted anywhere as an identity: the signing key push refuses
-     * to send it as the key's registry label.
+     * but must never be persisted anywhere as an identity.
      */
     public function resolveTrustedDomain(): ?string
     {

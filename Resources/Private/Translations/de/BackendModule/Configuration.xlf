@@ -110,9 +110,49 @@
                 <source>NEOSidekick did not accept the new key: «{0}». Nothing has changed — this installation keeps using its current key and everyone stays connected. Try again in a few minutes.</source>
                 <target xml:lang="de" state="translated">NEOSidekick hat den neuen Schlüssel nicht akzeptiert: «{0}». Nichts hat sich geändert – diese Installation verwendet weiterhin ihren aktuellen Schlüssel, und alle bleiben verbunden. Versuche es in ein paar Minuten erneut.</target>
             </trans-unit>
-            <trans-unit id="signingKey.domainConflict.notice" xml:space="preserve">
-                <source>NEOSidekick has this installation's key registered for {0}, but this site answers as {1}. Which of these is true? This installation is a copy of another one (for example a staging site created from a production dump): tick the re-enrolment box and press Regenerate key. This copy gets its own key; the original keeps working; tools connected to this copy must be reconnected. This same installation moved to a new domain: press «Re-register under the new domain». It keeps its identity and its connected tools — but if it is in fact a copy, the original's key is revoked and the original stops working.</source>
-                <target xml:lang="de" state="translated">NEOSidekick hat den Schlüssel dieser Installation für {0} registriert, diese Seite antwortet aber als {1}. Was davon trifft zu? Diese Installation ist eine Kopie einer anderen (zum Beispiel eine Staging-Seite aus einem Produktions-Dump): Setze das Häkchen zur Neuregistrierung und drücke «Schlüssel erneuern». Diese Kopie bekommt einen eigenen Schlüssel; das Original arbeitet weiter; mit dieser Kopie verbundene Tools müssen neu verbunden werden. Dieselbe Installation ist auf eine neue Domain umgezogen: Drücke «Unter der neuen Domain neu registrieren». Sie behält ihre Identität und ihre verbundenen Tools – wenn sie in Wahrheit aber eine Kopie ist, wird der Schlüssel des Originals widerrufen und das Original funktioniert nicht mehr.</target>
+            <trans-unit id="signingKey.hosts.sentence" xml:space="preserve">
+                <source>NEOSidekick calls this installation at {0}; registered hosts: {1}; this host: {2}; last push result: {3}.</source>
+                <target xml:lang="de" state="translated">NEOSidekick erreicht diese Installation unter {0}; registrierte Hosts: {1}; dieser Host: {2}; Ergebnis der letzten Übertragung: {3}.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.unknown" xml:space="preserve">
+                <source>unknown</source>
+                <target xml:lang="de" state="translated">unbekannt</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.none" xml:space="preserve">
+                <source>none</source>
+                <target xml:lang="de" state="translated">keine</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.thisHost.registered" xml:space="preserve">
+                <source>registered</source>
+                <target xml:lang="de" state="translated">registriert</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.thisHost.notRegistered" xml:space="preserve">
+                <source>not registered</source>
+                <target xml:lang="de" state="translated">nicht registriert</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.result.accepted" xml:space="preserve">
+                <source>accepted</source>
+                <target xml:lang="de" state="translated">akzeptiert</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.result.invalid_signature" xml:space="preserve">
+                <source>rejected — the signature over the host list could not be verified (invalid_signature)</source>
+                <target xml:lang="de" state="translated">abgelehnt – die Signatur über die Host-Liste konnte nicht geprüft werden (invalid_signature)</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.result.expired" xml:space="preserve">
+                <source>rejected — the signed host list was too old; check this server's clock (expired)</source>
+                <target xml:lang="de" state="translated">abgelehnt – die signierte Host-Liste war zu alt; prüfe die Uhr dieses Servers (expired)</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.result.base_host_unknown" xml:space="preserve">
+                <source>rejected — the address pushed from here is not a host NEOSidekick accepts for this installation yet; open this module once on a registered host (base_host_unknown)</source>
+                <target xml:lang="de" state="translated">abgelehnt – die von hier übertragene Adresse ist noch kein Host, den NEOSidekick für diese Installation akzeptiert; öffne dieses Modul einmal auf einem registrierten Host (base_host_unknown)</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.result.empty" xml:space="preserve">
+                <source>rejected — the host list was empty (empty)</source>
+                <target xml:lang="de" state="translated">abgelehnt – die Host-Liste war leer (empty)</target>
+            </trans-unit>
+            <trans-unit id="signingKey.hosts.notRegistered.remedy" xml:space="preserve">
+                <source>The assistant is refused on {0} until NEOSidekick accepts it for this installation. If this host belongs to this installation, add a Domain record for it in the Neos Sites module, then open this module once on a registered host. If this installation is a copy of another one (a staging site created from a production dump, for example), tick the re-enrolment box and press Regenerate key instead: the copy gets its own key and the original keeps working. If this same installation moved here, press «Re-register under the new domain»: it keeps its identity and its connected tools — but if it is in fact a copy, the original's key is revoked and the original stops working.</source>
+                <target xml:lang="de" state="translated">Auf {0} wird der Assistent abgelehnt, bis NEOSidekick den Host für diese Installation akzeptiert. Gehört dieser Host zu dieser Installation, lege im Neos-Modul „Sites“ einen Domain-Eintrag dafür an und öffne dieses Modul danach einmal auf einem registrierten Host. Ist diese Installation eine Kopie einer anderen (zum Beispiel eine Staging-Seite aus einem Produktions-Dump), setze stattdessen das Häkchen zur Neuregistrierung und drücke «Schlüssel erneuern»: Die Kopie bekommt einen eigenen Schlüssel, das Original arbeitet weiter. Ist dieselbe Installation hierher umgezogen, drücke «Unter der neuen Domain neu registrieren»: Sie behält ihre Identität und ihre verbundenen Tools – wenn sie in Wahrheit aber eine Kopie ist, wird der Schlüssel des Originals widerrufen und das Original funktioniert nicht mehr.</target>
             </trans-unit>
             <trans-unit id="signingKey.relabel.button" xml:space="preserve">
                 <source>Re-register under the new domain</source>

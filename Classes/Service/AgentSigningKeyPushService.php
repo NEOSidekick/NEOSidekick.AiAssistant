@@ -105,6 +105,12 @@ class AgentSigningKeyPushService
 
     /**
      * @Flow\Inject
+     * @var AgentInstallHostCollector
+     */
+    protected $agentInstallHostCollector;
+
+    /**
+     * @Flow\Inject
      * @var LoggerInterface
      */
     protected $logger;
@@ -316,7 +322,15 @@ class AgentSigningKeyPushService
     private function pushLiveKeyPair(?string $chainKid, ?string $chainSignature, ?string $domainOverride, int $timeoutSeconds): AgentSigningKeyPushResult
     {
         $previousInstallRootKid = $this->getRecordedInstallRootKid();
-        $result = $this->transmit($this->agentKeyPairService->getPublicKeyPem(), $chainKid, $chainSignature, $domainOverride, false, $timeoutSeconds);
+        $result = $this->transmit(
+            $this->agentKeyPairService->getPublicKeyPem(),
+            $this->agentKeyPairService->getPrivateKeyPem(),
+            $chainKid,
+            $chainSignature,
+            $domainOverride,
+            false,
+            $timeoutSeconds
+        );
         if ($result->successful) {
             $reenrolled = $this->installRootKidChanged($previousInstallRootKid, $result->installRootKid) ? true : null;
             $this->recordPush($this->agentKeyPairService->getKeyId(), (string)$this->getTarget(), (string)$result->status, $result->installRootKid, $reenrolled, $result->registeredDomain);
@@ -366,6 +380,7 @@ class AgentSigningKeyPushService
 
         $target = (string)$this->getTarget();
         $pendingPublicKeyPem = $this->agentKeyPairService->getPendingPublicKeyPem();
+        $pendingPrivateKeyPem = $this->agentKeyPairService->getPendingPrivateKeyPem();
         $pendingKeyId = AgentKeyPairService::deriveKeyId($pendingPublicKeyPem);
         $relabel = $this->agentKeyPairService->isPendingRelabel();
         $chainKid = null;
@@ -391,7 +406,7 @@ class AgentSigningKeyPushService
         }
 
         $previousInstallRootKid = $this->getRecordedInstallRootKid();
-        $result = $this->transmit($pendingPublicKeyPem, $chainKid, $chainSignature, $domainOverride, $relabel, $timeoutSeconds);
+        $result = $this->transmit($pendingPublicKeyPem, $pendingPrivateKeyPem, $chainKid, $chainSignature, $domainOverride, $relabel, $timeoutSeconds);
         if ($chainKid !== null && !$result->successful && $result->rejectionReason === self::REJECTION_REASON_CHAIN_UNVERIFIABLE) {
             $this->logPushFailure(
                 'was refused as chain_unverifiable: announcing the live key unchained'
@@ -402,7 +417,7 @@ class AgentSigningKeyPushService
             if (!$resendPendingAfterRecovery || !$liveResult->isConfirmed()) {
                 return $result;
             }
-            $result = $this->transmit($pendingPublicKeyPem, $chainKid, $chainSignature, $domainOverride, $relabel, $timeoutSeconds);
+            $result = $this->transmit($pendingPublicKeyPem, $pendingPrivateKeyPem, $chainKid, $chainSignature, $domainOverride, $relabel, $timeoutSeconds);
         }
         if (!$result->successful) {
             return $result;
@@ -434,9 +449,11 @@ class AgentSigningKeyPushService
      * The wire exchange only: builds the payload, sends it and reads the answer. Recording the
      * state is the caller's business because a pending key must be promoted first.
      *
+     * @param string $privateKeyPem The private half of the PUSHED key, which signs the host set
+     *                              ({@see buildHostAttestation}); on a rotation the pending pair's
      * @throws Throwable On transport failure; the caller's catch-all reports it
      */
-    private function transmit(string $publicKeyPem, ?string $chainKid, ?string $chainSignature, ?string $domainOverride, bool $relabel, int $timeoutSeconds): AgentSigningKeyPushResult
+    private function transmit(string $publicKeyPem, string $privateKeyPem, ?string $chainKid, ?string $chainSignature, ?string $domainOverride, bool $relabel, int $timeoutSeconds): AgentSigningKeyPushResult
     {
         $target = $this->getTarget();
         if ($target === null) {
@@ -445,13 +462,13 @@ class AgentSigningKeyPushService
 
         $domain = $this->resolveDomain($domainOverride);
         if ($domain === null) {
-            $this->logPushFailure('was refused: this site\'s domain could not be determined');
+            $this->logPushFailure('was refused: this installation\'s address could not be determined');
 
             return AgentSigningKeyPushResult::failure(
-                'The signing key was not pushed because this installation\'s domain could not be determined. '
+                'The signing key was not pushed because this installation\'s address could not be determined. '
                 . 'The pushed domain becomes the key\'s label in NEOSidekick and is used to decide where token renewals may be sent, '
                 . 'so a guessed value (e.g. "http://localhost") must never be registered. '
-                . 'Configure Neos.Flow.http.baseUri (or set up a Neos domain record for the site), or pass the domain explicitly with '
+                . 'Configure Neos.Flow.http.baseUri, or pass the domain explicitly with '
                 . '<b>./flow agentkey:push --domain https://www.example.com</b>.'
             );
         }
@@ -459,7 +476,7 @@ class AgentSigningKeyPushService
         $publicKeyPem = trim($publicKeyPem);
         $keyId = AgentKeyPairService::deriveKeyId($publicKeyPem);
 
-        $payload = [
+        $payload = array_merge([
             'public_key_pem' => $publicKeyPem,
             'kid' => $keyId,
             'domain' => $domain,
@@ -467,7 +484,7 @@ class AgentSigningKeyPushService
             'chain_kid' => $chainKid,
             'chain_signature' => $chainSignature,
             'relabel' => $relabel,
-        ];
+        ], $this->buildHostAttestation($keyId, $domain, $privateKeyPem));
 
         $headers = ['Content-Type' => 'application/json'];
         if ($this->apiKey !== '') {
@@ -512,8 +529,47 @@ class AgentSigningKeyPushService
             isset($decodedBody['kid']) ? (string)$decodedBody['kid'] : $keyId,
             isset($decodedBody['fingerprint']) ? (string)$decodedBody['fingerprint'] : null,
             isset($decodedBody['install_root_kid']) ? (string)$decodedBody['install_root_kid'] : null,
-            isset($decodedBody['domain']) && is_string($decodedBody['domain']) && $decodedBody['domain'] !== '' ? $decodedBody['domain'] : null
+            isset($decodedBody['domain']) && is_string($decodedBody['domain']) && $decodedBody['domain'] !== '' ? $decodedBody['domain'] : null,
+            isset($decodedBody['hosts']) && is_array($decodedBody['hosts']) ? array_values(array_filter($decodedBody['hosts'], 'is_string')) : null,
+            isset($decodedBody['hosts_result']) && is_string($decodedBody['hosts_result']) && $decodedBody['hosts_result'] !== '' ? $decodedBody['hosts_result'] : null
         );
+    }
+
+    /**
+     * The host set this installation vouches for, signed by the pushed key ({@see signWithPrivateKey}):
+     * `hosts`, `hosts_signed_at` and `hosts_signature`. Empty - the fields are omitted and the
+     * push is byte-identical to an older plugin's - when there is no host to send or the set
+     * cannot be signed: the key push must never fail on its host list, and an omitted list keeps
+     * the backend's stored set as it is.
+     *
+     * @return array{hosts?: array<int, string>, hosts_signed_at?: int, hosts_signature?: string}
+     */
+    private function buildHostAttestation(string $keyId, string $domain, string $privateKeyPem): array
+    {
+        try {
+            $hosts = $this->agentInstallHostCollector->collectHosts($domain);
+        } catch (Throwable $throwable) {
+            $this->logPushFailure('sends no host set: the hosts could not be collected: ' . $throwable->getMessage(), $keyId);
+
+            return [];
+        }
+        if ($hosts === []) {
+            return [];
+        }
+
+        $signedAt = time();
+        $signature = self::signWithPrivateKey(self::canonicalHostString($keyId, $signedAt, $domain, $hosts), $privateKeyPem);
+        if ($signature === null) {
+            $this->logPushFailure('sends no host set: it could not be signed with the pushed key', $keyId);
+
+            return [];
+        }
+
+        return [
+            'hosts' => $hosts,
+            'hosts_signed_at' => $signedAt,
+            'hosts_signature' => $signature,
+        ];
     }
 
     /**
@@ -525,13 +581,45 @@ class AgentSigningKeyPushService
      */
     public static function signRotationChain(string $newPublicKeyPem, string $previousPrivateKeyPem): ?string
     {
-        $previousPrivateKey = openssl_pkey_get_private($previousPrivateKeyPem);
-        if ($previousPrivateKey === false) {
+        return self::signWithPrivateKey(trim($newPublicKeyPem), $previousPrivateKeyPem);
+    }
+
+    /**
+     * The string both sides sign and verify for the host set, version `neosidekick-hosts-v1`:
+     * the marker, the kid, the signing time, the pushed domain and one line per host, each
+     * "\n"-terminated, the hosts sorted bytewise. Every value enters trimmed, the only form that
+     * survives the backend's request trimming; the hosts themselves are signed exactly as sent.
+     *
+     * @param array<int, string> $hosts The origins exactly as transmitted
+     */
+    public static function canonicalHostString(string $keyId, int $signedAt, string $domain, array $hosts): string
+    {
+        $lines = array_map(static fn (string $host): string => trim($host), $hosts);
+        sort($lines, SORT_STRING);
+
+        $canonical = "neosidekick-hosts-v1\n" . trim($keyId) . "\n" . $signedAt . "\n" . trim($domain) . "\n";
+        foreach ($lines as $line) {
+            $canonical .= $line . "\n";
+        }
+
+        return $canonical;
+    }
+
+    /**
+     * RS256 over the subject - the canonical host string ({@see canonicalHostString}) or the
+     * rotation chain subject - base64 encoded.
+     *
+     * @return string|null The base64 signature, or null when the key is unusable
+     */
+    public static function signWithPrivateKey(string $subject, string $privateKeyPem): ?string
+    {
+        $privateKey = openssl_pkey_get_private($privateKeyPem);
+        if ($privateKey === false) {
             return null;
         }
 
         $signature = '';
-        if (!openssl_sign(trim($newPublicKeyPem), $signature, $previousPrivateKey, OPENSSL_ALGO_SHA256)) {
+        if (!openssl_sign($subject, $signature, $privateKey, OPENSSL_ALGO_SHA256)) {
             return null;
         }
 
@@ -539,18 +627,10 @@ class AgentSigningKeyPushService
     }
 
     /**
-     * The domain this installation would push, for readers outside the push itself (the module
-     * panel compares it with the domain the backend has the lineage registered under). Null when
-     * it cannot be determined - the same answer that refuses a push.
-     */
-    public function getPushDomain(): ?string
-    {
-        return $this->resolveDomain(null);
-    }
-
-    /**
-     * The pushed domain becomes the backend's renewal allowlist entry, so an undeterminable domain
-     * returns null (refusing the push) rather than a guess.
+     * The pushed domain is the address NEOSidekick registers this installation under and calls
+     * it at: Flow's configured base URI, else the request base ({@see AgentInstallHostCollector}),
+     * never a Neos Domain record. An undeterminable address returns null (refusing the push)
+     * rather than a guess.
      */
     protected function resolveDomain(?string $domainOverride): ?string
     {
@@ -558,7 +638,7 @@ class AgentSigningKeyPushService
             return rtrim(trim($domainOverride), '/');
         }
 
-        return $this->neosidekickInternalHelper->resolveTrustedDomain();
+        return $this->agentInstallHostCollector->resolveInstallOrigin();
     }
 
     /**
@@ -591,11 +671,11 @@ class AgentSigningKeyPushService
      * confirmed key whose rotation re-enrolled the installation reads as {@see STATUS_REENROLLED}.
      * Never throws - anything unreadable is reported as `none`.
      *
-     * @return array{status: string, pushedAt: string, registeredDomain: string|null}
+     * @return array{status: string, pushedAt: string}
      */
     public function getPushStatus(): array
     {
-        $none = ['status' => 'none', 'pushedAt' => '', 'registeredDomain' => null];
+        $none = ['status' => 'none', 'pushedAt' => ''];
         try {
             $record = $this->recordedPush();
             if (
@@ -615,7 +695,6 @@ class AgentSigningKeyPushService
             return [
                 'status' => $status,
                 'pushedAt' => $record->getPushedAt()?->format(DATE_ATOM) ?? '',
-                'registeredDomain' => $record->getPushRegisteredDomain(),
             ];
         } catch (Throwable $throwable) {
             return $none;

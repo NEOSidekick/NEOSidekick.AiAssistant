@@ -17,6 +17,9 @@ use Neos\Flow\Annotations as Flow;
  */
 final class AgentSigningKeyPushResult
 {
+    /**
+     * @param array<int, string>|null $hosts
+     */
     private function __construct(
         public readonly bool $successful,
         public readonly ?string $status,
@@ -25,7 +28,9 @@ final class AgentSigningKeyPushResult
         public readonly ?string $errorMessage,
         public readonly ?string $rejectionReason,
         public readonly ?string $installRootKid,
-        public readonly ?string $registeredDomain = null
+        public readonly ?string $registeredDomain = null,
+        public readonly ?array $hosts = null,
+        public readonly ?string $hostsResult = null
     ) {
     }
 
@@ -37,10 +42,16 @@ final class AgentSigningKeyPushResult
      * @param string|null $registeredDomain The domain label the backend has this lineage registered
      *                                      under; null when the backend did not echo one. A null is
      *                                      recorded as null - it is never carried forward.
+     * @param array<int, string>|null $hosts The host set the backend has stored for this lineage
+     *                                       (origins); null when the backend did not echo one - an
+     *                                       older backend - which the panel renders as unknown.
+     * @param string|null $hostsResult What the backend did with the pushed host set: `accepted`
+     *                                 or a rejection reason (`invalid_signature`, `expired`,
+     *                                 `base_host_unknown`, `empty`); null when not echoed.
      */
-    public static function success(string $status, string $keyId, ?string $fingerprint, ?string $installRootKid = null, ?string $registeredDomain = null): self
+    public static function success(string $status, string $keyId, ?string $fingerprint, ?string $installRootKid = null, ?string $registeredDomain = null, ?array $hosts = null, ?string $hostsResult = null): self
     {
-        return new self(true, $status, $keyId, $fingerprint, null, null, $installRootKid, $registeredDomain);
+        return new self(true, $status, $keyId, $fingerprint, null, null, $installRootKid, $registeredDomain, $hosts, $hostsResult);
     }
 
     /**

@@ -16,6 +16,7 @@ use GuzzleHttp\Psr7\Response;
 use NEOSidekick\AiAssistant\Domain\Model\AgentSigningKeyRecord;
 use NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper;
 use NEOSidekick\AiAssistant\Exception\AgentSigningKeyStorageException;
+use NEOSidekick\AiAssistant\Service\AgentInstallHostCollector;
 use NEOSidekick\AiAssistant\Service\AgentKeyPairService;
 use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
 use NEOSidekick\AiAssistant\Tests\Unit\Fixtures\InMemoryAgentSigningKeyRecordRepository;
@@ -24,9 +25,10 @@ use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 
 /**
- * The key push is a cross-repo contract - kid, domain label and the chain signature over the
- * TRIMMED PEM - pinned here together with the two properties the calling flows depend on: the
- * push happens once per key and target, and it never throws.
+ * The key push is a cross-repo contract - kid, the domain label (the base or request origin,
+ * never a Domain record), the chain signature over the TRIMMED PEM and the host set signed by
+ * the pushed key over the shared canonical string - pinned here together with the two properties
+ * the calling flows depend on: the push happens once per key and target, and it never throws.
  *
  * Key and push state are one database row; this suite stays a unit test by driving that row
  * through {@see InMemoryAgentSigningKeyRecordRepository}, which models the two compare-and-swap
@@ -37,6 +39,11 @@ class AgentSigningKeyPushServiceTest extends TestCase
     private const FIXTURE_KID = '6a6e0a3b6e0bc7a0127a00700b3edc6a952b722c60584ce959d54e82d683c334';
 
     private const FIXTURE_FINGERPRINT = '6A:6E:0A:3B:6E:0B:C7:A0:12:7A:00:70:0B:3E:DC:6A:95:2B:72:2C:60:58:4C:E9:59:D5:4E:82:D6:83:C3:34';
+
+    /**
+     * What the collector answers unless a test says otherwise: the label's host and a second site.
+     */
+    private const DEFAULT_HOSTS = ['https://www.example.com', 'https://example2.com'];
 
     private InMemoryAgentSigningKeyRecordRepository $repository;
 
@@ -330,7 +337,7 @@ class AgentSigningKeyPushServiceTest extends TestCase
      */
     public function pushIsRefusedWhenTheSiteDomainCanOnlyBeGuessed(): void
     {
-        $service = $this->createServiceWithFixtureKeyPair([$this->pendingResponse()], trustedDomain: null);
+        $service = $this->createServiceWithFixtureKeyPair([$this->pendingResponse()], installOrigin: null);
 
         $result = $service->push();
 
@@ -343,7 +350,7 @@ class AgentSigningKeyPushServiceTest extends TestCase
     /** @test */
     public function pushIfNecessaryAlsoRefusesToRegisterAGuessedDomain(): void
     {
-        $service = $this->createServiceWithFixtureKeyPair([$this->pendingResponse()], trustedDomain: null);
+        $service = $this->createServiceWithFixtureKeyPair([$this->pendingResponse()], installOrigin: null);
 
         $result = $service->pushIfNecessary();
 
@@ -355,7 +362,7 @@ class AgentSigningKeyPushServiceTest extends TestCase
     /** @test */
     public function anExplicitDomainOverrideIsUsedInsteadOfTheResolvedOneAndIsNormalised(): void
     {
-        $service = $this->createServiceWithFixtureKeyPair([$this->pendingResponse()], trustedDomain: null);
+        $service = $this->createServiceWithFixtureKeyPair([$this->pendingResponse()], installOrigin: null);
 
         $result = $service->push(null, null, 'https://www.example.com/');
 
@@ -452,7 +459,7 @@ class AgentSigningKeyPushServiceTest extends TestCase
     {
         $service = $this->createServiceWithFixtureKeyPair([$this->pendingResponse()]);
 
-        self::assertSame(['status' => 'none', 'pushedAt' => '', 'registeredDomain' => null], $service->getPushStatus());
+        self::assertSame(['status' => 'none', 'pushedAt' => ''], $service->getPushStatus());
 
         $service->push();
 
@@ -467,7 +474,7 @@ class AgentSigningKeyPushServiceTest extends TestCase
     /** @test */
     public function getPushStatusReportsNoneWithoutAKeypair(): void
     {
-        self::assertSame(['status' => 'none', 'pushedAt' => '', 'registeredDomain' => null], $this->createService([])->getPushStatus());
+        self::assertSame(['status' => 'none', 'pushedAt' => ''], $this->createService([])->getPushStatus());
     }
 
     /** @test */
@@ -1233,18 +1240,16 @@ class AgentSigningKeyPushServiceTest extends TestCase
 
         self::assertSame('https://www.production.example', $result->registeredDomain);
         self::assertSame('https://www.production.example', $this->requireRecord()->getPushRegisteredDomain());
-        self::assertSame('https://www.production.example', $service->getPushStatus()['registeredDomain']);
 
         $secondResult = $service->push();
 
         self::assertNull($secondResult->registeredDomain);
         self::assertNull($this->requireRecord()->getPushRegisteredDomain(), 'the old label is not carried forward');
-        self::assertNull($service->getPushStatus()['registeredDomain']);
     }
 
     /**
      * The rotation path records it as well: a successful re-enrolment or relabel overwrites the
-     * column with the lineage's current label, which is what makes the panel notice clear itself.
+     * column with the lineage's current label.
      *
      * @test
      */
@@ -1257,17 +1262,200 @@ class AgentSigningKeyPushServiceTest extends TestCase
         $service->rotateKeyPair(null, false, true);
 
         self::assertSame('https://www.staging.example', $this->requireRecord()->getPushRegisteredDomain());
-        self::assertSame('https://www.staging.example', $service->getPushStatus()['registeredDomain']);
+    }
+
+    /**
+     * The push labels the installation with the address the collector resolved - the base URI,
+     * else the request base - and carries the host set it collected, signed by the live key
+     * over the canonical string, dated now.
+     *
+     * @test
+     */
+    public function pushCarriesTheHostSetSignedByThePushedKeyOverTheCanonicalString(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair(
+            [$this->confirmedResponse()],
+            installOrigin: 'https://cms.example:8443',
+            hosts: ['https://cms.example:8443', 'http://academy.example:8080', 'https://front.example']
+        );
+
+        $service->push();
+
+        $body = $this->lastRequestBody();
+        self::assertSame('https://cms.example:8443', $body['domain']);
+        self::assertSame(['https://cms.example:8443', 'http://academy.example:8080', 'https://front.example'], $body['hosts'], 'exactly as collected');
+        self::assertIsInt($body['hosts_signed_at']);
+        self::assertEqualsWithDelta(time(), $body['hosts_signed_at'], 5);
+        $signature = base64_decode((string)$body['hosts_signature'], true);
+        self::assertNotFalse($signature);
+        $canonical = AgentSigningKeyPushService::canonicalHostString(self::FIXTURE_KID, $body['hosts_signed_at'], 'https://cms.example:8443', $body['hosts']);
+        self::assertSame(1, openssl_verify($canonical, $signature, $this->fixturePublicKeyPem(), OPENSSL_ALGO_SHA256), 'signed by the pushed (live) key');
+        self::assertSame(
+            "neosidekick-hosts-v1\n" . self::FIXTURE_KID . "\n" . $body['hosts_signed_at'] . "\nhttps://cms.example:8443\nhttp://academy.example:8080\nhttps://cms.example:8443\nhttps://front.example\n",
+            $canonical
+        );
+    }
+
+    /**
+     * The shared test vector of the Laravel suite, byte for byte: whoever changes either side
+     * breaks this assertion first.
+     *
+     * @test
+     */
+    public function theCanonicalHostStringMatchesTheSharedTestVector(): void
+    {
+        $canonical = AgentSigningKeyPushService::canonicalHostString(
+            '0123456789abcdef0123456789abcdef',
+            1757145600,
+            'https://codeq.at',
+            ['https://www.codeq.at:443', 'https://codeq.at', 'http://academy-new.codeq.at:8080']
+        );
+
+        self::assertSame(
+            "neosidekick-hosts-v1\n0123456789abcdef0123456789abcdef\n1757145600\nhttps://codeq.at\nhttp://academy-new.codeq.at:8080\nhttps://codeq.at\nhttps://www.codeq.at:443\n",
+            $canonical
+        );
+        self::assertSame(
+            $canonical,
+            AgentSigningKeyPushService::canonicalHostString(" 0123456789abcdef0123456789abcdef ", 1757145600, " https://codeq.at ", [' https://www.codeq.at:443', 'https://codeq.at ', 'http://academy-new.codeq.at:8080']),
+            'every value is signed trimmed'
+        );
     }
 
     /** @test */
-    public function getPushDomainReportsTheDomainThisInstallationWouldPush(): void
+    public function theHostSignatureVerifiesWithThePublicKeyAndOnlyOverTheExactBytes(): void
     {
-        self::assertSame('https://www.example.com', $this->createServiceWithFixtureKeyPair([])->getPushDomain());
-        self::assertNull(
-            $this->createServiceWithFixtureKeyPair([], trustedDomain: null)->getPushDomain(),
-            'a domain that could only be guessed is no domain'
-        );
+        $canonical = AgentSigningKeyPushService::canonicalHostString('0123456789abcdef0123456789abcdef', 1757145600, 'https://codeq.at', ['https://codeq.at']);
+
+        $signature = AgentSigningKeyPushService::signWithPrivateKey($canonical, $this->fixturePrivateKeyPem());
+
+        self::assertNotNull($signature);
+        $decoded = base64_decode($signature, true);
+        self::assertNotFalse($decoded);
+        self::assertSame(1, openssl_verify($canonical, $decoded, $this->fixturePublicKeyPem(), OPENSSL_ALGO_SHA256));
+        self::assertSame(0, openssl_verify(rtrim($canonical, "\n"), $decoded, $this->fixturePublicKeyPem(), OPENSSL_ALGO_SHA256), 'the terminating newline is part of the signed bytes');
+        self::assertSame(0, openssl_verify($canonical, $decoded, $this->rotatedPublicKeyPem(), OPENSSL_ALGO_SHA256), 'another key does not verify it');
+        self::assertNull(AgentSigningKeyPushService::signWithPrivateKey($canonical, 'not a private key'));
+    }
+
+    /**
+     * On a rotation the PENDING pair is the pushed key, so it - not the live pair that chains
+     * it - signs the host set.
+     *
+     * @test
+     */
+    public function aRotationSignsTheHostSetWithThePendingKey(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([$this->confirmedResponse('root-kid-1', 'new-kid')]);
+
+        $service->rotateKeyPair();
+
+        $body = $this->lastRequestBody();
+        self::assertSame(self::DEFAULT_HOSTS, $body['hosts']);
+        $canonical = AgentSigningKeyPushService::canonicalHostString($body['kid'], $body['hosts_signed_at'], $body['domain'], $body['hosts']);
+        $signature = base64_decode((string)$body['hosts_signature'], true);
+        self::assertNotFalse($signature);
+        self::assertSame(1, openssl_verify($canonical, $signature, $body['public_key_pem'], OPENSSL_ALGO_SHA256), 'verifies with the pushed (pending) public key');
+        self::assertSame(0, openssl_verify($canonical, $signature, $this->fixturePublicKeyPem(), OPENSSL_ALGO_SHA256), 'not with the chain key');
+    }
+
+    /**
+     * Without a host to send the three fields are omitted, not sent empty: an empty signed set
+     * is refused by the backend, an omitted one keeps its stored set. The rest of the payload is
+     * byte-identical to an older plugin's.
+     *
+     * @test
+     */
+    public function withoutAnyHostThePushOmitsTheHostFieldsAndStillSucceeds(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([$this->confirmedResponse()], hosts: []);
+
+        $result = $service->push();
+
+        self::assertTrue($result->successful);
+        $body = $this->lastRequestBody();
+        self::assertArrayNotHasKey('hosts', $body);
+        self::assertArrayNotHasKey('hosts_signed_at', $body);
+        self::assertArrayNotHasKey('hosts_signature', $body);
+        self::assertSame(['public_key_pem', 'kid', 'domain', 'plugin_version', 'chain_kid', 'chain_signature', 'relabel'], array_keys($body));
+    }
+
+    /** @test */
+    public function aHostCollectionThatFailsIsLoggedAndTheKeyIsStillPushedWithoutHosts(): void
+    {
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('warning')->with(self::stringContains('the hosts could not be collected'));
+        $service = $this->createServiceWithFixtureKeyPair([$this->confirmedResponse()], logger: $logger);
+        $collector = $this->createMock(AgentInstallHostCollector::class);
+        $collector->method('resolveInstallOrigin')->willReturn('https://www.example.com');
+        $collector->method('collectHosts')->willThrowException(new \RuntimeException('database gone'));
+        $this->setProtectedProperty($service, 'agentInstallHostCollector', $collector);
+
+        $result = $service->push();
+
+        self::assertTrue($result->successful);
+        self::assertArrayNotHasKey('hosts', $this->lastRequestBody());
+    }
+
+    /**
+     * The panel renders the stored set and the verdict from the answer it just received; an
+     * older backend echoes neither, which must read as unknown rather than as an empty set.
+     *
+     * @test
+     */
+    public function theEchoedHostSetAndResultAreCarriedInTheResultAndAMissingEchoIsNull(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            $this->confirmedResponse('root-kid-1', self::FIXTURE_KID, 'https://www.example.com', ['https://www.example.com', 'https://example2.com'], 'accepted'),
+            $this->confirmedResponse('root-kid-1', self::FIXTURE_KID, 'https://www.example.com', ['https://www.example.com'], 'base_host_unknown'),
+            $this->confirmedResponse('root-kid-1'),
+        ]);
+
+        $accepted = $service->push();
+        self::assertSame(['https://www.example.com', 'https://example2.com'], $accepted->hosts);
+        self::assertSame('accepted', $accepted->hostsResult);
+
+        $rejected = $service->push();
+        self::assertSame(['https://www.example.com'], $rejected->hosts, 'the STORED set, not the pushed one');
+        self::assertSame('base_host_unknown', $rejected->hostsResult);
+        self::assertTrue($rejected->successful, 'a rejected host set is not a rejected key');
+        self::assertTrue($service->isKeyConfirmed());
+
+        $older = $service->push();
+        self::assertNull($older->hosts);
+        self::assertNull($older->hostsResult);
+    }
+
+    /**
+     * The unattended re-push (the daily probe of a confirmed key) labels the installation the
+     * new way as well: the collector's origin, never a Domain record - and carries the host set
+     * collected at that moment, so a Domain record added since travels without anyone pressing
+     * anything.
+     *
+     * @test
+     */
+    public function theUnattendedRePushCarriesTheInstallOriginAsLabelAndTheCurrentHostSet(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([$this->confirmedResponse(), $this->confirmedResponse()], installOrigin: 'https://academy-new.codeq.at');
+        self::assertNotNull($service->pushIfNecessary());
+        self::assertSame('https://academy-new.codeq.at', $this->lastRequestBody()['domain']);
+        $this->agePushStateBySeconds(90000);
+        $this->setProtectedProperty($service, 'agentInstallHostCollector', $this->createHostCollector('https://academy-new.codeq.at', ['https://academy-new.codeq.at', 'https://codeq.at', 'https://new-language.codeq.at']));
+
+        self::assertNotNull($service->pushIfNecessary(), 'the daily probe');
+
+        $body = $this->lastRequestBody();
+        self::assertSame('https://academy-new.codeq.at', $body['domain']);
+        self::assertSame(['https://academy-new.codeq.at', 'https://codeq.at', 'https://new-language.codeq.at'], $body['hosts']);
+        self::assertNull($body['chain_kid']);
+        $signature = base64_decode((string)$body['hosts_signature'], true);
+        self::assertNotFalse($signature);
+        self::assertSame(1, openssl_verify(
+            AgentSigningKeyPushService::canonicalHostString(self::FIXTURE_KID, $body['hosts_signed_at'], $body['domain'], $body['hosts']),
+            $signature,
+            $this->fixturePublicKeyPem(),
+            OPENSSL_ALGO_SHA256
+        ));
     }
 
     /**
@@ -1631,7 +1819,10 @@ class AgentSigningKeyPushServiceTest extends TestCase
         ], JSON_THROW_ON_ERROR));
     }
 
-    private function confirmedResponse(?string $installRootKid = null, string $kid = self::FIXTURE_KID, ?string $registeredDomain = null): Response
+    /**
+     * @param array<int, string>|null $hosts The stored host set a new backend echoes; null for an older one
+     */
+    private function confirmedResponse(?string $installRootKid = null, string $kid = self::FIXTURE_KID, ?string $registeredDomain = null, ?array $hosts = null, ?string $hostsResult = null): Response
     {
         $body = [
             'status' => 'confirmed',
@@ -1643,6 +1834,12 @@ class AgentSigningKeyPushServiceTest extends TestCase
         }
         if ($registeredDomain !== null) {
             $body['domain'] = $registeredDomain;
+        }
+        if ($hosts !== null) {
+            $body['hosts'] = $hosts;
+        }
+        if ($hostsResult !== null) {
+            $body['hosts_result'] = $hostsResult;
         }
 
         return new Response(200, ['Content-Type' => 'application/json'], json_encode($body, JSON_THROW_ON_ERROR));
@@ -1656,11 +1853,12 @@ class AgentSigningKeyPushServiceTest extends TestCase
         string $pluginVersion = '1.2.3',
         string $externalApiDomain = 'https://api.neosidekick.test',
         ?LoggerInterface $logger = null,
-        ?string $trustedDomain = 'https://www.example.com'
+        ?string $installOrigin = 'https://www.example.com',
+        ?array $hosts = null
     ): AgentSigningKeyPushService {
         $this->repository->seed(new AgentSigningKeyRecord($this->fixturePrivateKeyPem(), $this->fixturePublicKeyPem()));
 
-        return $this->createService($queuedResponses, $pluginVersion, $externalApiDomain, $logger, $trustedDomain);
+        return $this->createService($queuedResponses, $pluginVersion, $externalApiDomain, $logger, $installOrigin, $hosts);
     }
 
     /**
@@ -1671,12 +1869,13 @@ class AgentSigningKeyPushServiceTest extends TestCase
         string $pluginVersion = '1.2.3',
         string $externalApiDomain = 'https://api.neosidekick.test',
         ?LoggerInterface $logger = null,
-        ?string $trustedDomain = 'https://www.example.com'
+        ?string $installOrigin = 'https://www.example.com',
+        ?array $hosts = null
     ): AgentSigningKeyPushService {
         $handlerStack = HandlerStack::create(new MockHandler($queuedResponses));
         $handlerStack->push(Middleware::history($this->requestHistory));
 
-        $helper = $this->createInternalHelper($pluginVersion, $trustedDomain);
+        $helper = $this->createInternalHelper($pluginVersion);
 
         $service = new class () extends AgentSigningKeyPushService {
             public ?Client $pushClient = null;
@@ -1698,6 +1897,7 @@ class AgentSigningKeyPushServiceTest extends TestCase
         $this->setProtectedProperty($service, 'agentKeyPairService', $this->createKeyPairService());
         $this->setProtectedProperty($service, 'agentSigningKeyRecordRepository', $this->repository);
         $this->setProtectedProperty($service, 'neosidekickInternalHelper', $helper);
+        $this->setProtectedProperty($service, 'agentInstallHostCollector', $this->createHostCollector($installOrigin, $hosts ?? self::DEFAULT_HOSTS));
         $this->setProtectedProperty($service, 'logger', $logger ?? $this->createMock(LoggerInterface::class));
         $this->setProtectedProperty($service, 'apiKey', 'test-api-key');
         $this->setProtectedProperty($service, 'externalApiDomain', $externalApiDomain);
@@ -1705,14 +1905,27 @@ class AgentSigningKeyPushServiceTest extends TestCase
         return $service;
     }
 
-    private function createInternalHelper(string $pluginVersion, ?string $trustedDomain = 'https://www.example.com'): NEOSidekickInternalHelper
+    private function createInternalHelper(string $pluginVersion): NEOSidekickInternalHelper
     {
         $helper = $this->createMock(NEOSidekickInternalHelper::class);
-        $helper->method('domain')->willReturn($trustedDomain ?? 'http://localhost');
-        $helper->method('resolveTrustedDomain')->willReturn($trustedDomain);
         $helper->method('pluginVersion')->willReturn($pluginVersion);
 
         return $helper;
+    }
+
+    /**
+     * The address and the host set this installation would push; the collector's own rules are
+     * covered by {@see AgentInstallHostCollectorTest}.
+     *
+     * @param array<int, string> $hosts
+     */
+    private function createHostCollector(?string $installOrigin, array $hosts): AgentInstallHostCollector
+    {
+        $collector = $this->createMock(AgentInstallHostCollector::class);
+        $collector->method('resolveInstallOrigin')->willReturn($installOrigin);
+        $collector->method('collectHosts')->willReturn($hosts);
+
+        return $collector;
     }
 
     /**

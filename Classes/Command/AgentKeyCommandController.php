@@ -70,8 +70,8 @@ class AgentKeyCommandController extends CommandController
      *
      * @param bool $force Replace an existing keypair
      * @param string|null $domain The domain to register the key under, e.g. https://www.example.com.
-     *                            Required when neither a Neos domain record nor Neos.Flow.http.baseUri
-     *                            is configured - the domain must never be guessed.
+     *                            Required unless Neos.Flow.http.baseUri is configured: on the shell
+     *                            there is no request to take it from, and it must never be guessed.
      * @param bool $relabel Re-register the installation under the pushed domain (requires --force)
      */
     public function generateCommand(bool $force = false, ?string $domain = null, bool $relabel = false): void
@@ -135,17 +135,19 @@ class AgentKeyCommandController extends CommandController
     /**
      * Push the public agent signing key to NEOSidekick
      *
-     * Sends the public key, its key id and this site's domain to NEOSidekick over the
-     * same authenticated channel as the authorization callback, and prints the status
+     * Sends the public key, its key id, this installation's address and its signed host set
+     * (the active Neos domain records and the base URI) to NEOSidekick over the same
+     * authenticated channel as the authorization callback, and prints the status
      * NEOSidekick recorded for it. The authorization flow pushes the key automatically
      * the first time an editor authorizes; this command is for provisioning it before
      * that happens. While a regeneration is unconfirmed, the pending key is transmitted
      * with the regeneration's longer timeout.
      *
      * @param string|null $domain The domain to register the key under, e.g. https://www.example.com.
-     *                            Required when neither a Neos domain record nor Neos.Flow.http.baseUri
-     *                            is configured - the domain becomes the key's label in NEOSidekick and
-     *                            decides where token renewals may be sent, so it must never be guessed.
+     *                            Required unless Neos.Flow.http.baseUri is configured: on the shell
+     *                            there is no request to take it from, and the domain becomes the key's
+     *                            label in NEOSidekick, which decides where token renewals may be sent,
+     *                            so it must never be guessed.
      */
     public function pushCommand(?string $domain = null): void
     {

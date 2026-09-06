@@ -13,6 +13,7 @@ use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Fusion\View\FusionView;
 use Neos\Neos\Controller\Module\AbstractModuleController;
 use Neos\Neos\Service\UserService;
+use NEOSidekick\AiAssistant\Dto\AgentSigningKeyPushResult;
 use NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper;
 use NEOSidekick\AiAssistant\Exception\AgentTokenException;
 use NEOSidekick\AiAssistant\Service\AgentKeyPairService;
@@ -20,6 +21,7 @@ use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
 use NEOSidekick\AiAssistant\Service\AgentTokenService;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use Throwable;
 
 /**
  * @noinspection PhpUnused
@@ -122,12 +124,13 @@ class ConfigurationController extends AbstractModuleController
 
     public function indexAction(): void
     {
+        $isAdministrator = $this->securityContext->hasRole('Neos.Neos:Administrator');
         $this->view->assign('apiKey', $this->apiKey);
         $this->view->assign('apiDomain', $this->apiDomain);
         $this->view->assign('siteDomain', $this->getSiteDomain());
-        $this->view->assign('signingKey', $this->getSigningKeyDetails());
+        $this->view->assign('signingKey', $this->getSigningKeyDetails($isAdministrator ? $this->forceSigningKeyPush() : null));
         $this->view->assign('embedToken', $this->getEmbedToken());
-        $this->view->assign('isAdministrator', $this->securityContext->hasRole('Neos.Neos:Administrator'));
+        $this->view->assign('isAdministrator', $isAdministrator);
         $this->view->assign('regenerateActionUri', $this->uriBuilder->reset()->uriFor('regenerateSigningKey'));
         $this->view->assign('csrfToken', $this->securityContext->getCsrfProtectionToken());
         $regenerationFailure = $this->consumeRegenerationFailure();
@@ -350,6 +353,34 @@ class ConfigurationController extends AbstractModuleController
     }
 
     /**
+     * Opening the panel transmits the key - and with it this installation's host set - so a
+     * Domain record added since the last push, or a set NEOSidekick rejected, is re-sent by the
+     * act of looking at the panel. The push keeps its own throttle (a success younger than a
+     * minute is not repeated) and its transport budget; whatever it answers is rendered from
+     * that answer alone, and no answer renders as unknown.
+     *
+     * Only an existing key is transmitted: the render must never mint one (the unattended push
+     * would, on a keyless installation), that stays with the authorization flow and the CLI.
+     */
+    protected function forceSigningKeyPush(): ?AgentSigningKeyPushResult
+    {
+        try {
+            if (!$this->agentKeyPairService->hasKeyPair()) {
+                return null;
+            }
+
+            return $this->agentSigningKeyPushService->pushIfNecessary(true);
+        } catch (Throwable $throwable) {
+            $this->logger->warning(
+                'NEOSidekick settings module could not push the signing key: ' . $throwable->getMessage(),
+                LogEnvironment::fromMethodName(__METHOD__)
+            );
+
+            return null;
+        }
+    }
+
+    /**
      * Read-only view of the agent signing keypair for the administrator's panel: the
      * fingerprint identifying this installation's key, the status NEOSidekick last reported
      * for it, and whether a regeneration is still waiting for NEOSidekick's confirmation
@@ -357,38 +388,33 @@ class ConfigurationController extends AbstractModuleController
      *
      * Deliberately never generates a keypair: RSA generation belongs in the CLI, the regenerate
      * action or the authorization flow, not in a backend module render. Every question to the
-     * keypair service and the domain lookup sit inside the try, so a missing, unusable or
-     * unreadable keypair - and a domain that cannot be resolved - is reported as a state instead
-     * of a 500 that would hide the panel.
+     * keypair service sits inside the try, so a missing, unusable or unreadable keypair is
+     * reported as a state instead of a 500 that would hide the panel.
      *
-     * `registeredDomain` is the label NEOSidekick has this installation's lineage registered
-     * under (echoed on every push), `currentDomain` the domain this installation would push now.
-     * They differ on a copy made from another installation's database dump and on a site that
-     * moved, which is exactly when a chained regeneration is refused - so `domainConflict` is
-     * what the panel offers the re-enrolment checkbox and the relabel form on.
+     * The host status comes from the push made on this render ({@see forceSigningKeyPush}) and
+     * from nothing recorded: `installAddress` is the label NEOSidekick calls this installation
+     * at, `registeredHosts` the host set it stored, `thisHostRegistered` whether the host this
+     * module was opened on is in that set, and `hostsResult` what NEOSidekick did with the
+     * pushed set. `hostStatusKnown` is false when the push was skipped or failed, or when an
+     * older NEOSidekick echoed no host set; the panel then says "unknown" and offers neither the
+     * copy nor the moved-site answer.
      *
-     * @return array{exists: bool, fingerprint: string, status: string, pushedAt: string, regenerateIncomplete: bool, relabelPending: bool, registeredDomain: string|null, currentDomain: string|null, domainConflict: bool}
+     * @param AgentSigningKeyPushResult|null $forcedPushResult The answer of the push made on this render, null when it was skipped
+     * @return array{exists: bool, fingerprint: string, status: string, pushedAt: string, regenerateIncomplete: bool, relabelPending: bool, hostStatusKnown: bool, installAddress: string|null, registeredHosts: array<int, string>, thisHost: string|null, thisHostRegistered: bool, hostsResult: string|null}
      */
-    protected function getSigningKeyDetails(): array
+    protected function getSigningKeyDetails(?AgentSigningKeyPushResult $forcedPushResult = null): array
     {
         $pushStatus = $this->agentSigningKeyPushService->getPushStatus();
-        $registeredDomain = $pushStatus['registeredDomain'] ?? null;
-        $details = [
+        $details = array_merge([
             'exists' => false,
             'fingerprint' => '',
             'status' => 'none',
             'pushedAt' => '',
             'regenerateIncomplete' => false,
             'relabelPending' => false,
-            'registeredDomain' => $registeredDomain,
-            'currentDomain' => null,
-            'domainConflict' => false,
-        ];
+        ], $this->hostStatusDetails($forcedPushResult));
 
         try {
-            $currentDomain = $this->agentSigningKeyPushService->getPushDomain();
-            $details['currentDomain'] = $currentDomain;
-            $details['domainConflict'] = $this->domainsConflict($registeredDomain, $currentDomain);
             $details['regenerateIncomplete'] = $this->agentKeyPairService->hasPendingKeyPair();
             $details['relabelPending'] = $this->agentKeyPairService->isPendingRelabel();
             if (!$this->agentKeyPairService->hasKeyPair()) {
@@ -410,18 +436,58 @@ class ConfigurationController extends AbstractModuleController
     }
 
     /**
-     * Whether the two domains name different hosts, which is what makes NEOSidekick refuse a
-     * chained rotation. Unknown on either side is not a conflict.
+     * The host half of the panel, from the answer of the push made on this render. "This host"
+     * is the host the module was opened on - the request's, not the configured base URI's, so a
+     * headless installation's editors see the answer for the host they are on - and it is
+     * registered when NEOSidekick's stored set names it, compared the way NEOSidekick compares
+     * hosts ({@see hostOf}).
+     *
+     * @return array{hostStatusKnown: bool, installAddress: string|null, registeredHosts: array<int, string>, thisHost: string|null, thisHostRegistered: bool, hostsResult: string|null}
      */
-    protected function domainsConflict(?string $registeredDomain, ?string $currentDomain): bool
+    protected function hostStatusDetails(?AgentSigningKeyPushResult $forcedPushResult): array
     {
-        $registeredHost = $this->hostOf($registeredDomain);
-        $currentHost = $this->hostOf($currentDomain);
-        if ($registeredHost === null || $currentHost === null) {
-            return false;
+        $thisHost = $this->currentRequestHost();
+        $thisHost = $thisHost === null ? null : strtolower($thisHost);
+        $known = $forcedPushResult !== null && $forcedPushResult->successful && $forcedPushResult->hosts !== null;
+        if (!$known) {
+            return [
+                'hostStatusKnown' => false,
+                'installAddress' => null,
+                'registeredHosts' => [],
+                'thisHost' => $thisHost,
+                'thisHostRegistered' => false,
+                'hostsResult' => null,
+            ];
         }
 
-        return $registeredHost !== $currentHost;
+        $registeredHosts = array_values(array_filter(
+            array_map(static fn (string $origin): string => trim($origin), (array)$forcedPushResult->hosts),
+            static fn (string $origin): bool => $origin !== ''
+        ));
+        $registeredHostNames = array_filter(array_map(fn (string $origin): ?string => $this->hostOf($origin), $registeredHosts));
+
+        return [
+            'hostStatusKnown' => true,
+            'installAddress' => $forcedPushResult->registeredDomain,
+            'registeredHosts' => $registeredHosts,
+            'thisHost' => $thisHost,
+            'thisHostRegistered' => $thisHost !== null && in_array($thisHost, $registeredHostNames, true),
+            'hostsResult' => $forcedPushResult->hostsResult,
+        ];
+    }
+
+    /**
+     * The host this module request came in on; null outside an HTTP request.
+     */
+    protected function currentRequestHost(): ?string
+    {
+        try {
+            $host = $this->request->getHttpRequest()->getUri()->getHost();
+        } catch (Throwable $throwable) {
+            return null;
+        }
+
+        return $host === '' ? null : $host;
     }
 
     /**

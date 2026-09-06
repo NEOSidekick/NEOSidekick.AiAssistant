@@ -45,9 +45,12 @@ class ConfigurationControllerSigningKeyTest extends TestCase
         'pushedAt' => '',
         'regenerateIncomplete' => false,
         'relabelPending' => false,
-        'registeredDomain' => null,
-        'currentDomain' => null,
-        'domainConflict' => false,
+        'hostStatusKnown' => false,
+        'installAddress' => null,
+        'registeredHosts' => [],
+        'thisHost' => null,
+        'thisHostRegistered' => false,
+        'hostsResult' => null,
     ];
 
     /**
@@ -72,11 +75,14 @@ class ConfigurationControllerSigningKeyTest extends TestCase
                 'pushedAt' => '2026-08-17T10:00:00+00:00',
                 'regenerateIncomplete' => false,
                 'relabelPending' => false,
-                'registeredDomain' => null,
-                'currentDomain' => null,
-                'domainConflict' => false,
+                'hostStatusKnown' => false,
+                'installAddress' => null,
+                'registeredHosts' => [],
+                'thisHost' => null,
+                'thisHostRegistered' => false,
+                'hostsResult' => null,
             ],
-            $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => '2026-08-17T10:00:00+00:00', 'registeredDomain' => null])
+            $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => '2026-08-17T10:00:00+00:00'])
         );
     }
 
@@ -93,11 +99,11 @@ class ConfigurationControllerSigningKeyTest extends TestCase
         $keyPairService->method('isLiveKeyPairUsable')->willReturn(true);
         $keyPairService->method('getFingerprint')->willReturn('6A:6E:0A:3B');
 
-        $details = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'revoked', 'pushedAt' => '2026-08-17T10:00:00+00:00', 'registeredDomain' => null]);
+        $details = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'revoked', 'pushedAt' => '2026-08-17T10:00:00+00:00']);
 
         self::assertSame('revoked', $details['status']);
 
-        $reenrolled = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'reenrolled', 'pushedAt' => '2026-08-17T10:00:00+00:00', 'registeredDomain' => null]);
+        $reenrolled = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'reenrolled', 'pushedAt' => '2026-08-17T10:00:00+00:00']);
 
         self::assertSame('reenrolled', $reenrolled['status']);
     }
@@ -148,7 +154,7 @@ class ConfigurationControllerSigningKeyTest extends TestCase
         $keyPairService->method('hasPendingKeyPair')->willReturn(true);
         $keyPairService->expects(self::never())->method('getFingerprint');
 
-        $details = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => '2026-08-17T10:00:00+00:00', 'registeredDomain' => null]);
+        $details = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => '2026-08-17T10:00:00+00:00']);
 
         self::assertTrue($details['exists']);
         self::assertSame('unusable', $details['status']);
@@ -376,7 +382,7 @@ class ConfigurationControllerSigningKeyTest extends TestCase
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
         $pushService->expects(self::once())->method('rotateKeyPair')->with(null, false, true)
             ->willReturn(AgentSigningKeyPushResult::success('confirmed', 'new-kid', 'AA:BB', 'root-kid-2'));
-        $pushService->method('getPushStatus')->willReturn(['status' => 'reenrolled', 'pushedAt' => '2026-09-04T10:00:00+00:00', 'registeredDomain' => null]);
+        $pushService->method('getPushStatus')->willReturn(['status' => 'reenrolled', 'pushedAt' => '2026-09-04T10:00:00+00:00']);
         $keyPairService = $this->createMock(AgentKeyPairService::class);
         $keyPairService->method('hasKeyPair')->willReturn(true);
         $keyPairService->method('isLiveKeyPairUsable')->willReturn(false);
@@ -402,7 +408,7 @@ class ConfigurationControllerSigningKeyTest extends TestCase
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
         $pushService->expects(self::once())->method('rotateKeyPair')->with(null, false, true)
             ->willReturn(AgentSigningKeyPushResult::success('confirmed', 'new-kid', 'AA:BB', 'root-kid-1'));
-        $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '2026-09-04T10:00:00+00:00', 'registeredDomain' => null]);
+        $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '2026-09-04T10:00:00+00:00']);
         $keyPairService = $this->createMock(AgentKeyPairService::class);
         $keyPairService->method('hasKeyPair')->willReturn(true);
         $keyPairService->method('isLiveKeyPairUsable')->willReturn(true);
@@ -429,7 +435,7 @@ class ConfigurationControllerSigningKeyTest extends TestCase
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
         $pushService->expects(self::once())->method('rotateKeyPair')->with(null, true, false)
             ->willReturn(AgentSigningKeyPushResult::success('confirmed', 'new-kid', 'AA:BB', 'root-kid-1'));
-        $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '2026-09-04T10:00:00+00:00', 'registeredDomain' => 'https://www.example.com']);
+        $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '2026-09-04T10:00:00+00:00']);
         $keyPairService = $this->createMock(AgentKeyPairService::class);
         $keyPairService->method('hasKeyPair')->willReturn(true);
         $keyPairService->method('isLiveKeyPairUsable')->willReturn(true);
@@ -457,7 +463,7 @@ class ConfigurationControllerSigningKeyTest extends TestCase
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
         $pushService->expects(self::once())->method('rotateKeyPair')->with(null, true, false)
             ->willReturn(AgentSigningKeyPushResult::success('confirmed', 'new-kid', 'AA:BB', 'root-kid-2'));
-        $pushService->method('getPushStatus')->willReturn(['status' => 'reenrolled', 'pushedAt' => '', 'registeredDomain' => 'https://staging.example.com']);
+        $pushService->method('getPushStatus')->willReturn(['status' => 'reenrolled', 'pushedAt' => '']);
         $keyPairService = $this->createMock(AgentKeyPairService::class);
         $keyPairService->method('hasKeyPair')->willReturn(true);
         $keyPairService->method('isLiveKeyPairUsable')->willReturn(true);
@@ -557,41 +563,130 @@ class ConfigurationControllerSigningKeyTest extends TestCase
     }
 
     /**
-     * The panel must offer the copy and moved-site controls exactly when NEOSidekick would refuse
-     * a chained rotation, so the comparison mirrors the backend's own host derivation: scheme,
-     * port and case are noise, `www` is another host, and an unknown side is not a conflict.
+     * The panel offers the copy and moved-site controls exactly when NEOSidekick refuses this
+     * host, so "this host is registered" mirrors the backend's own host derivation: scheme, port
+     * and case are noise, `www` is another host, and without an answer nothing is known.
      *
      * @test
      */
-    public function theDomainConflictComparesHostsTheWayTheBackendDoes(): void
+    public function thisHostsRegistrationComparesHostsTheWayTheBackendDoes(): void
     {
         $keyPairService = $this->createMock(AgentKeyPairService::class);
         $keyPairService->method('hasKeyPair')->willReturn(true);
         $keyPairService->method('isLiveKeyPairUsable')->willReturn(true);
         $keyPairService->method('getFingerprint')->willReturn('AA:BB');
+        $answer = AgentSigningKeyPushResult::success('confirmed', 'kid', 'AA:BB', 'root-kid', 'https://www.example.com', ['https://www.example.com', 'http://academy.example:8080', ' https://Spaced.example '], 'accepted');
 
-        $sameHost = [
-            ['https://www.example.com', 'https://www.example.com'],
-            ['http://www.example.com', 'https://www.example.com'],
-            ['https://www.example.com:8443', 'https://www.example.com'],
-            ['https://WWW.Example.COM', 'https://www.example.com'],
-            ['https://www.example.com/neos', 'https://www.example.com'],
-            ['www.example.com', 'https://www.example.com'],
-        ];
-        foreach ($sameHost as [$registeredDomain, $currentDomain]) {
-            $details = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => '', 'registeredDomain' => $registeredDomain], $currentDomain);
-            self::assertFalse($details['domainConflict'], $registeredDomain . ' is the same host as ' . $currentDomain);
-            self::assertSame($registeredDomain, $details['registeredDomain']);
-            self::assertSame($currentDomain, $details['currentDomain']);
+        foreach (['www.example.com', 'WWW.Example.COM', 'academy.example', 'spaced.example'] as $requestHost) {
+            $details = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => ''], $answer, $requestHost);
+            self::assertTrue($details['hostStatusKnown']);
+            self::assertTrue($details['thisHostRegistered'], $requestHost . ' is in the stored set');
+            self::assertSame(strtolower($requestHost), $details['thisHost']);
+            self::assertSame('https://www.example.com', $details['installAddress']);
+            self::assertSame(['https://www.example.com', 'http://academy.example:8080', 'https://Spaced.example'], $details['registeredHosts'], 'the echoed set, trimmed');
+            self::assertSame('accepted', $details['hostsResult']);
         }
 
-        $otherHost = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => '', 'registeredDomain' => 'https://www.example.com'], 'https://example.com');
-        self::assertTrue($otherHost['domainConflict'], 'www is a moved site, not the same host');
+        $otherHost = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => ''], $answer, 'example.com');
+        self::assertTrue($otherHost['hostStatusKnown']);
+        self::assertFalse($otherHost['thisHostRegistered'], 'www is another host');
+        self::assertSame('example.com', $otherHost['thisHost']);
 
-        foreach ([[null, 'https://www.example.com'], ['https://www.example.com', null], [null, null], ['', 'https://www.example.com'], ['   ', 'https://www.example.com']] as [$registeredDomain, $currentDomain]) {
-            $details = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => '', 'registeredDomain' => $registeredDomain], $currentDomain);
-            self::assertFalse($details['domainConflict'], 'an unknown side is not a conflict');
+        $noRequest = $this->invokeGetSigningKeyDetails($keyPairService, ['status' => 'confirmed', 'pushedAt' => ''], $answer, null);
+        self::assertTrue($noRequest['hostStatusKnown']);
+        self::assertFalse($noRequest['thisHostRegistered']);
+        self::assertNull($noRequest['thisHost']);
+    }
+
+    /**
+     * No answer, a failed push, or an older backend that echoes no host set: every host detail is
+     * unknown, so the panel says so and offers neither the copy nor the moved-site answer.
+     *
+     * @test
+     */
+    public function withoutAnEchoedHostSetTheHostStatusIsUnknown(): void
+    {
+        $keyPairService = $this->createMock(AgentKeyPairService::class);
+        $keyPairService->method('hasKeyPair')->willReturn(true);
+        $keyPairService->method('isLiveKeyPairUsable')->willReturn(true);
+        $keyPairService->method('getFingerprint')->willReturn('AA:BB');
+        $pushStatus = ['status' => 'confirmed', 'pushedAt' => ''];
+
+        foreach ([
+            'skipped' => null,
+            'failed' => AgentSigningKeyPushResult::failure('Connection timed out'),
+            'older backend' => AgentSigningKeyPushResult::success('confirmed', 'kid', 'AA:BB', 'root-kid', 'https://www.example.com'),
+        ] as $case => $answer) {
+            $details = $this->invokeGetSigningKeyDetails($keyPairService, $pushStatus, $answer, 'www.example.com');
+            self::assertFalse($details['hostStatusKnown'], $case);
+            self::assertNull($details['installAddress'], $case . ': the recorded label is not an answer');
+            self::assertSame([], $details['registeredHosts'], $case);
+            self::assertFalse($details['thisHostRegistered'], $case);
+            self::assertNull($details['hostsResult'], $case);
+            self::assertSame('www.example.com', $details['thisHost'], $case);
         }
+
+        $rejectedSet = AgentSigningKeyPushResult::success('confirmed', 'kid', 'AA:BB', 'root-kid', 'https://www.example.com', ['https://www.example.com'], 'base_host_unknown');
+        $details = $this->invokeGetSigningKeyDetails($keyPairService, $pushStatus, $rejectedSet, 'staging.example.com');
+        self::assertTrue($details['hostStatusKnown'], 'a rejected set is still an answer');
+        self::assertFalse($details['thisHostRegistered']);
+        self::assertSame('base_host_unknown', $details['hostsResult']);
+    }
+
+    /**
+     * Opening the panel re-transmits the key with the current host set - forced past the daily
+     * cache, throttled by the push itself - and only for the administrator who sees the panel:
+     * an editor's visit to the module pushes nothing. A keyless installation pushes nothing
+     * either, because the unattended push would mint the key the render must never create.
+     *
+     * @test
+     */
+    public function indexActionForcesAPushForAdministratorsWithAKeyOnly(): void
+    {
+        $answer = AgentSigningKeyPushResult::success('confirmed', 'kid', 'AA:BB', 'root-kid', 'https://www.example.com', ['https://www.example.com'], 'accepted');
+        $keyPairService = $this->createMock(AgentKeyPairService::class);
+        $keyPairService->method('hasKeyPair')->willReturn(true);
+        $keyPairService->method('isLiveKeyPairUsable')->willReturn(true);
+        $keyPairService->method('getFingerprint')->willReturn('AA:BB');
+
+        $pushService = $this->createMock(AgentSigningKeyPushService::class);
+        $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '']);
+        $pushService->expects(self::once())->method('pushIfNecessary')->with(true)->willReturn($answer);
+        $assigned = $this->renderIndex(true, new FlashMessageContainer(), $keyPairService, $pushService, 'www.example.com');
+        self::assertTrue($assigned['signingKey']['hostStatusKnown']);
+        self::assertTrue($assigned['signingKey']['thisHostRegistered']);
+        self::assertSame('https://www.example.com', $assigned['signingKey']['installAddress']);
+
+        $editorPushService = $this->createMock(AgentSigningKeyPushService::class);
+        $editorPushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '']);
+        $editorPushService->expects(self::never())->method('pushIfNecessary');
+        $assigned = $this->renderIndex(false, new FlashMessageContainer(), $keyPairService, $editorPushService, 'www.example.com');
+        self::assertFalse($assigned['signingKey']['hostStatusKnown']);
+
+        $keyless = $this->createMock(AgentKeyPairService::class);
+        $keyless->method('hasKeyPair')->willReturn(false);
+        $keylessPushService = $this->createMock(AgentSigningKeyPushService::class);
+        $keylessPushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '']);
+        $keylessPushService->expects(self::never())->method('pushIfNecessary');
+        $assigned = $this->renderIndex(true, new FlashMessageContainer(), $keyless, $keylessPushService, 'www.example.com');
+        self::assertSame(array_merge(self::EMPTY_DETAILS, ['thisHost' => 'www.example.com']), $assigned['signingKey']);
+    }
+
+    /** @test */
+    public function aForcedPushThatThrowsIsLoggedAndRendersTheHostStatusAsUnknown(): void
+    {
+        $keyPairService = $this->createMock(AgentKeyPairService::class);
+        $keyPairService->method('hasKeyPair')->willReturn(true);
+        $keyPairService->method('isLiveKeyPairUsable')->willReturn(true);
+        $keyPairService->method('getFingerprint')->willReturn('AA:BB');
+        $pushService = $this->createMock(AgentSigningKeyPushService::class);
+        $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '']);
+        $pushService->method('pushIfNecessary')->willThrowException(new RuntimeException('unexpected'));
+
+        $assigned = $this->renderIndex(true, new FlashMessageContainer(), $keyPairService, $pushService, 'www.example.com');
+
+        self::assertFalse($assigned['signingKey']['hostStatusKnown']);
+        self::assertTrue($assigned['signingKey']['exists'], 'the rest of the panel is intact');
     }
 
     /**
@@ -613,15 +708,17 @@ class ConfigurationControllerSigningKeyTest extends TestCase
     /**
      * @return array<string, mixed> The variables indexAction assigned to the view
      */
-    private function renderIndex(bool $isAdministrator, FlashMessageContainer $flashMessageContainer, ?AgentKeyPairService $keyPairService = null): array
+    private function renderIndex(bool $isAdministrator, FlashMessageContainer $flashMessageContainer, ?AgentKeyPairService $keyPairService = null, ?AgentSigningKeyPushService $pushService = null, ?string $requestHost = null): array
     {
         if ($keyPairService === null) {
             $keyPairService = $this->createMock(AgentKeyPairService::class);
             $keyPairService->method('hasKeyPair')->willReturn(false);
         }
-        $pushService = $this->createMock(AgentSigningKeyPushService::class);
-        $pushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '', 'registeredDomain' => null]);
-        $controller = $this->createController($pushService, $keyPairService, $isAdministrator, $flashMessageContainer);
+        if ($pushService === null) {
+            $pushService = $this->createMock(AgentSigningKeyPushService::class);
+            $pushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '']);
+        }
+        $controller = $this->createController($pushService, $keyPairService, $isAdministrator, $flashMessageContainer, requestHost: $requestHost);
 
         $assigned = [];
         $view = $this->createMock(FusionView::class);
@@ -642,9 +739,12 @@ class ConfigurationControllerSigningKeyTest extends TestCase
         AgentKeyPairService $keyPairService,
         bool $isAdministrator = true,
         ?FlashMessageContainer $flashMessageContainer = null,
-        ?string $translation = 'Der Signaturschlüssel wurde erneuert.'
+        ?string $translation = 'Der Signaturschlüssel wurde erneuert.',
+        ?string $requestHost = null
     ): ConfigurationController {
         $controller = new class () extends ConfigurationController {
+            public ?string $requestHost = null;
+
             /**
              * @var array<int, string>
              */
@@ -664,7 +764,13 @@ class ConfigurationControllerSigningKeyTest extends TestCase
             {
                 $this->flashMessages[] = [$messageBody, $messageTitle, $severity, $messageCode];
             }
+
+            protected function currentRequestHost(): ?string
+            {
+                return $this->requestHost;
+            }
         };
+        $controller->requestHost = $requestHost;
 
         $securityContext = $this->createMock(SecurityContext::class);
         $securityContext->method('hasRole')->willReturnCallback(fn (string $roleIdentifier): bool => $roleIdentifier === 'Neos.Neos:Administrator' && $isAdministrator);
@@ -719,23 +825,22 @@ class ConfigurationControllerSigningKeyTest extends TestCase
     }
 
     /**
-     * @param array{status: string, pushedAt: string, registeredDomain?: string|null} $pushStatus
-     * @return array{exists: bool, fingerprint: string, status: string, pushedAt: string, regenerateIncomplete: bool, relabelPending: bool, registeredDomain: string|null, currentDomain: string|null, domainConflict: bool}
+     * @param array{status: string, pushedAt: string} $pushStatus
+     * @param AgentSigningKeyPushResult|null $forcedPushResult What the push made on the render answered
+     * @param string|null $requestHost The host the module was opened on
+     * @return array{exists: bool, fingerprint: string, status: string, pushedAt: string, regenerateIncomplete: bool, relabelPending: bool, hostStatusKnown: bool, installAddress: string|null, registeredHosts: array<int, string>, thisHost: string|null, thisHostRegistered: bool, hostsResult: string|null}
      */
-    private function invokeGetSigningKeyDetails(AgentKeyPairService $keyPairService, array $pushStatus = ['status' => 'none', 'pushedAt' => '', 'registeredDomain' => null], ?string $pushDomain = null): array
+    private function invokeGetSigningKeyDetails(AgentKeyPairService $keyPairService, array $pushStatus = ['status' => 'none', 'pushedAt' => ''], ?AgentSigningKeyPushResult $forcedPushResult = null, ?string $requestHost = null): array
     {
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
         $pushService->method('getPushStatus')->willReturn($pushStatus);
-        $pushService->method('getPushDomain')->willReturn($pushDomain);
 
-        $controller = new ConfigurationController();
-        $this->setProtectedProperty($controller, 'agentKeyPairService', $keyPairService);
-        $this->setProtectedProperty($controller, 'agentSigningKeyPushService', $pushService);
+        $controller = $this->createController($pushService, $keyPairService, requestHost: $requestHost);
 
         $method = new ReflectionMethod(ConfigurationController::class, 'getSigningKeyDetails');
         $method->setAccessible(true);
 
-        return $method->invoke($controller);
+        return $method->invoke($controller, $forcedPushResult);
     }
 
     /**

@@ -641,6 +641,40 @@ class AgentKeyPairServiceTest extends TestCase
         $service->getPendingPublicKeyPem();
     }
 
+    /**
+     * The pending pair signs its own host set on the rotation push, so its private half is
+     * served next to its public one - and only while all three pending columns are set.
+     *
+     * @test
+     */
+    public function thePendingPrivateKeyIsServedWithThePendingPairAndBelongsToItsPublicKey(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair();
+        $service->preparePendingKeyPair();
+
+        $pendingPrivateKeyPem = $service->getPendingPrivateKeyPem();
+
+        self::assertStringContainsString('PRIVATE KEY', $pendingPrivateKeyPem);
+        self::assertNotSame($this->fixturePrivateKeyPem(), $pendingPrivateKeyPem, 'the live private key is not the pending one');
+        $details = openssl_pkey_get_details(openssl_pkey_get_private($pendingPrivateKeyPem));
+        self::assertIsArray($details);
+        self::assertSame(
+            AgentKeyPairService::deriveKeyId($service->getPendingPublicKeyPem()),
+            AgentKeyPairService::deriveKeyId((string)$details['key']),
+            'the served private key is the one of the pending public key'
+        );
+    }
+
+    /** @test */
+    public function thePendingPrivateKeyIsAnErrorWithoutAPendingPair(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair();
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionCode(1757100001);
+        $service->getPendingPrivateKeyPem();
+    }
+
     private function createService(?AgentSigningKeyRecordRepository $repository = null): AgentKeyPairService
     {
         $entityManager = $this->createMock(EntityManagerInterface::class);

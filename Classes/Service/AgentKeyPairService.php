@@ -392,6 +392,26 @@ class AgentKeyPairService
     }
 
     /**
+     * For signing inside this plugin only: the pending pair vouches for its own host set on the
+     * rotation push, before it is the live pair. The private key must never leave the host.
+     *
+     * @throws RuntimeException When no pending pair exists or its private key is unusable
+     * @throws AgentSigningKeyStorageException When the row could not be loaded
+     */
+    public function getPendingPrivateKeyPem(): string
+    {
+        $privateKeyPem = $this->hasPendingKeyPair() ? $this->loadRecord()?->getPendingPrivateKeyPem() : null;
+        if ($privateKeyPem === null || trim($privateKeyPem) === '' || openssl_pkey_get_private($privateKeyPem) === false) {
+            throw new RuntimeException(
+                'The pending agent signing private key is missing, empty or not a parseable PEM private key.',
+                1757100001
+            );
+        }
+
+        return $privateKeyPem;
+    }
+
+    /**
      * Promotes the pending pair to the live pair, but only while the pending key still is the
      * one the caller names as confirmed. True means this call promoted it, false that the
      * confirmed key already was the live pair, and an exception that a later regeneration

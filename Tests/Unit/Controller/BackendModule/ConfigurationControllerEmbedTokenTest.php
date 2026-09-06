@@ -57,7 +57,7 @@ class ConfigurationControllerEmbedTokenTest extends TestCase
         self::assertSame('https://api.neosidekick.com', $assignments['apiDomain']);
         self::assertSame(rawurlencode('https://neos.example.com'), $assignments['siteDomain']);
         self::assertSame(
-            ['exists' => false, 'fingerprint' => '', 'status' => 'none', 'pushedAt' => '', 'regenerateIncomplete' => false, 'relabelPending' => false, 'registeredDomain' => null, 'currentDomain' => null, 'domainConflict' => false],
+            ['exists' => false, 'fingerprint' => '', 'status' => 'none', 'pushedAt' => '', 'regenerateIncomplete' => false, 'relabelPending' => false, 'hostStatusKnown' => false, 'installAddress' => null, 'registeredHosts' => [], 'thisHost' => null, 'thisHostRegistered' => false, 'hostsResult' => null],
             $assignments['signingKey']
         );
     }
@@ -119,7 +119,7 @@ class ConfigurationControllerEmbedTokenTest extends TestCase
             $keyPairService->method('hasKeyPair')->willReturn(false);
         }
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
-        $pushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '', 'registeredDomain' => null]);
+        $pushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '']);
         $internalHelper = $this->createMock(NEOSidekickInternalHelper::class);
         $internalHelper->method('domain')->willReturn('https://neos.example.com');
 

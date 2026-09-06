@@ -33,6 +33,7 @@ use Neos\Party\Domain\Service\PartyService;
 use NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController;
 use NEOSidekick\AiAssistant\Domain\Repository\AgentSigningKeyRecordRepository;
 use NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper;
+use NEOSidekick\AiAssistant\Service\AgentInstallHostCollector;
 use NEOSidekick\AiAssistant\Service\AgentKeyPairService;
 use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
 use NEOSidekick\AiAssistant\Tests\Functional\SigningKeyRecordSeeding;
@@ -346,8 +347,8 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
     /**
      * Re-enrolment orphans every connected tool, so the checkbox that asks for it exists only
      * where it is the remaining way out - an unusable key, a revoked lineage, a chained rotation
-     * NEOSidekick just refused as coming from another host, or a key registered for a domain
-     * other than the one this site answers as - and never next to a healthy key.
+     * NEOSidekick just refused as coming from another host, or a host NEOSidekick does not accept
+     * for this installation - and never next to a healthy key on a registered host.
      *
      * The relabel form is the other half of those last two states: it is the moved-site answer
      * where the checkbox is the copy answer, and it never renders on an unusable key, which
@@ -385,9 +386,12 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
             'fingerprint' => 'AA:BB',
             'status' => 'confirmed',
             'pushedAt' => '',
-            'registeredDomain' => 'https://www.example.com',
-            'currentDomain' => 'https://staging.example.com',
-            'domainConflict' => true,
+            'hostStatusKnown' => true,
+            'installAddress' => 'https://www.example.com',
+            'registeredHosts' => ['https://www.example.com'],
+            'thisHost' => 'staging.example.com',
+            'thisHostRegistered' => false,
+            'hostsResult' => 'base_host_unknown',
         ]);
         self::assertStringContainsString('name="moduleArguments[reenrol]"', $conflicting);
         self::assertStringContainsString('name="moduleArguments[relabel]"', $conflicting);
@@ -397,9 +401,12 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
             'fingerprint' => '',
             'status' => 'unusable',
             'pushedAt' => '',
-            'registeredDomain' => 'https://www.example.com',
-            'currentDomain' => 'https://staging.example.com',
-            'domainConflict' => true,
+            'hostStatusKnown' => true,
+            'installAddress' => 'https://www.example.com',
+            'registeredHosts' => ['https://www.example.com'],
+            'thisHost' => 'staging.example.com',
+            'thisHostRegistered' => false,
+            'hostsResult' => 'base_host_unknown',
         ]);
         self::assertStringContainsString('name="moduleArguments[reenrol]"', $conflictingButUnusable);
         self::assertStringNotContainsString('moduleArguments[relabel]', $conflictingButUnusable);
@@ -431,9 +438,12 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
             'fingerprint' => 'AA:BB',
             'status' => 'confirmed',
             'pushedAt' => '',
-            'registeredDomain' => 'https://www.example.com',
-            'currentDomain' => 'https://staging.example.com',
-            'domainConflict' => true,
+            'hostStatusKnown' => true,
+            'installAddress' => 'https://www.example.com',
+            'registeredHosts' => ['https://www.example.com'],
+            'thisHost' => 'staging.example.com',
+            'thisHostRegistered' => false,
+            'hostsResult' => 'base_host_unknown',
         ]);
 
         self::assertStringContainsString('data-signing-key-relabel-form', $output);
@@ -447,36 +457,89 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
     }
 
     /**
-     * The proactive half: a copy sees which domain its key is registered for and which one it
-     * answers as, before it presses anything.
+     * The proactive half: the host line names the address NEOSidekick calls this installation
+     * at, the hosts it accepts, this host's standing and the last push result - and on a host it
+     * does not accept, the remedy, before anyone presses anything.
      *
      * @test
      */
-    public function theDomainConflictNoticeNamesBothDomains(): void
+    public function theHostLineNamesTheAddressTheHostsThisHostsStandingAndTheLastPushResult(): void
     {
         $output = $this->renderConfigurationModule([
             'exists' => true,
             'fingerprint' => 'AA:BB',
             'status' => 'confirmed',
             'pushedAt' => '',
-            'registeredDomain' => 'https://www.example.com',
-            'currentDomain' => 'https://staging.example.com',
-            'domainConflict' => true,
+            'hostStatusKnown' => true,
+            'installAddress' => 'https://www.example.com',
+            'registeredHosts' => ['https://www.example.com'],
+            'thisHost' => 'staging.example.com',
+            'thisHostRegistered' => false,
+            'hostsResult' => 'base_host_unknown',
         ]);
 
-        self::assertStringContainsString('data-signing-key-domain-conflict', $output);
-        self::assertStringContainsString('registered for https://www.example.com', $output);
-        self::assertStringContainsString('answers as https://staging.example.com', $output);
+        self::assertStringContainsString('data-signing-key-host-status="not-registered"', $output);
+        self::assertStringContainsString('NEOSidekick calls this installation at https://www.example.com; registered hosts: https://www.example.com; this host: not registered; last push result: rejected', $output);
+        self::assertStringContainsString('(base_host_unknown)', $output);
+        self::assertStringContainsString('The assistant is refused on staging.example.com', $output);
+        self::assertStringContainsString('add a Domain record for it in the Neos Sites module', $output);
+        self::assertStringContainsString('tick the re-enrolment box and press Regenerate key', $output, 'the copy answer');
+        self::assertStringContainsString('Re-register under the new domain', $output, 'the moved-site answer');
+        self::assertStringContainsString('name="moduleArguments[reenrol]"', $output);
+        self::assertStringContainsString('name="moduleArguments[relabel]"', $output);
 
         $agreeing = $this->renderConfigurationModule([
             'exists' => true,
             'fingerprint' => 'AA:BB',
             'status' => 'confirmed',
             'pushedAt' => '',
-            'registeredDomain' => 'https://www.example.com',
-            'currentDomain' => 'https://www.example.com',
+            'hostStatusKnown' => true,
+            'installAddress' => 'https://www.example.com',
+            'registeredHosts' => ['https://www.example.com', 'https://academy.example.com'],
+            'thisHost' => 'academy.example.com',
+            'thisHostRegistered' => true,
+            'hostsResult' => 'accepted',
         ]);
-        self::assertStringNotContainsString('data-signing-key-domain-conflict', $agreeing);
+        self::assertStringContainsString('data-signing-key-host-status="registered"', $agreeing);
+        self::assertStringContainsString('registered hosts: https://www.example.com, https://academy.example.com; this host: registered; last push result: accepted.', $agreeing);
+        self::assertStringNotContainsString('The assistant is refused on', $agreeing, 'no remedy on a registered host');
+        self::assertStringNotContainsString('moduleArguments[relabel]', $agreeing);
+        self::assertStringNotContainsString('moduleArguments[reenrol]', $agreeing);
+
+        $unknown = $this->renderConfigurationModule(['exists' => true, 'fingerprint' => 'AA:BB', 'status' => 'confirmed', 'pushedAt' => '', 'thisHost' => 'staging.example.com']);
+        self::assertStringContainsString('data-signing-key-host-status="unknown"', $unknown);
+        self::assertStringContainsString('NEOSidekick calls this installation at unknown; registered hosts: unknown; this host: unknown; last push result: unknown.', $unknown);
+        self::assertStringNotContainsString('moduleArguments[relabel]', $unknown, 'no answer offers no moved-site button');
+        self::assertStringNotContainsString('moduleArguments[reenrol]', $unknown);
+
+        $emptySet = $this->renderConfigurationModule([
+            'exists' => true,
+            'fingerprint' => 'AA:BB',
+            'status' => 'confirmed',
+            'pushedAt' => '',
+            'hostStatusKnown' => true,
+            'installAddress' => 'https://www.example.com',
+            'registeredHosts' => [],
+            'thisHost' => 'www.example.com',
+            'thisHostRegistered' => false,
+            'hostsResult' => 'expired',
+        ]);
+        self::assertStringContainsString('registered hosts: none;', $emptySet);
+        self::assertStringContainsString("check this server's clock", $emptySet);
+
+        $unknownReason = $this->renderConfigurationModule([
+            'exists' => true,
+            'fingerprint' => 'AA:BB',
+            'status' => 'confirmed',
+            'pushedAt' => '',
+            'hostStatusKnown' => true,
+            'installAddress' => 'https://www.example.com',
+            'registeredHosts' => ['https://www.example.com'],
+            'thisHost' => 'www.example.com',
+            'thisHostRegistered' => true,
+            'hostsResult' => '<new_reason>',
+        ]);
+        self::assertStringContainsString('last push result: &lt;new_reason&gt;.', $unknownReason, 'a reason coined later is shown raw, escaped');
 
         $rejectedOnAKnownConflict = $this->renderConfigurationModule(
             [
@@ -485,20 +548,19 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
                 'status' => 'confirmed',
                 'pushedAt' => '',
                 'regenerateIncomplete' => true,
-                'registeredDomain' => 'https://www.example.com',
-                'currentDomain' => 'https://staging.example.com',
-                'domainConflict' => true,
+                'hostStatusKnown' => true,
+                'installAddress' => 'https://www.example.com',
+                'registeredHosts' => ['https://www.example.com'],
+                'thisHost' => 'staging.example.com',
+                'thisHostRegistered' => false,
+                'hostsResult' => 'base_host_unknown',
             ],
             null,
             regenerateFailure: 'Signing key rejected. (chain_domain_mismatch)',
             regenerateRejectionReason: 'chain_domain_mismatch'
         );
-        self::assertStringContainsString('data-signing-key-domain-conflict', $rejectedOnAKnownConflict);
-        self::assertStringNotContainsString(
-            'registered for another domain',
-            $rejectedOnAKnownConflict,
-            'the notice above already names both domains, so the generic hint is not repeated'
-        );
+        self::assertStringContainsString('data-signing-key-host-status="not-registered"', $rejectedOnAKnownConflict);
+        self::assertStringContainsString('registered for another domain', $rejectedOnAKnownConflict, 'the refusal keeps its own hint');
     }
 
     /** @test */
@@ -572,6 +634,15 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
         self::assertNotFalse($signature);
         self::assertSame(1, openssl_verify($body['public_key_pem'], $signature, (string)file_get_contents(__DIR__ . '/../../Fixtures/agent-test-signing-key.pub.pem'), OPENSSL_ALGO_SHA256));
         self::assertSame('https://www.example.com', $body['domain']);
+        self::assertSame(['https://www.example.com'], $body['hosts']);
+        $hostSignature = base64_decode((string)$body['hosts_signature'], true);
+        self::assertNotFalse($hostSignature);
+        self::assertSame(1, openssl_verify(
+            AgentSigningKeyPushService::canonicalHostString($body['kid'], $body['hosts_signed_at'], $body['domain'], $body['hosts']),
+            $hostSignature,
+            $body['public_key_pem'],
+            OPENSSL_ALGO_SHA256
+        ), 'the host set is signed by the pushed (pending) key');
 
         self::assertSame('root-kid-1', $this->readSigningKeyColumn('pushinstallrootkid'));
         self::assertSame($keyPairService->getKeyId(), $this->readSigningKeyColumn('pushkid'));
@@ -648,10 +719,14 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
         $this->authenticateAccount($this->createBackendAccount('Neos.Neos:Administrator'));
         $this->clearSigningKeyRecord();
 
+        $this->stubNeosidekick([$this->confirmedResponse('root-kid-2', 'first-kid')]);
+
         $output = $this->getModuleIndex();
 
         self::assertSame(0, $this->countSigningKeyRecords(), 'rendering the module must never mint a key');
+        self::assertCount(0, $this->requestHistory, 'and the panel\'s forced push does not run without a key');
         self::assertStringContainsString('agentkey:generate', $output, 'the keyless state is explained instead');
+        self::assertStringNotContainsString('data-signing-key-hosts', $output, 'no host line without a key');
     }
 
     /**
@@ -754,9 +829,12 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
             'pushedAt' => '',
             'regenerateIncomplete' => false,
             'relabelPending' => false,
-            'registeredDomain' => null,
-            'currentDomain' => null,
-            'domainConflict' => false,
+            'hostStatusKnown' => false,
+            'installAddress' => null,
+            'registeredHosts' => [],
+            'thisHost' => null,
+            'thisHostRegistered' => false,
+            'hostsResult' => null,
         ], $signingKey);
 
         $view = new FusionView();
@@ -835,13 +913,16 @@ class ConfigurationModuleSigningKeyTest extends FunctionalTestCase
         $stub->pushClient = new Client(['handler' => $handlerStack]);
 
         $internalHelper = $this->createMock(NEOSidekickInternalHelper::class);
-        $internalHelper->method('resolveTrustedDomain')->willReturn('https://www.example.com');
         $internalHelper->method('pluginVersion')->willReturn('1.2.3');
+        $hostCollector = $this->createMock(AgentInstallHostCollector::class);
+        $hostCollector->method('resolveInstallOrigin')->willReturn('https://www.example.com');
+        $hostCollector->method('collectHosts')->willReturn(['https://www.example.com']);
 
         foreach ([
             'agentKeyPairService' => $this->objectManager->get(AgentKeyPairService::class),
             'agentSigningKeyRecordRepository' => $this->objectManager->get(AgentSigningKeyRecordRepository::class),
             'neosidekickInternalHelper' => $internalHelper,
+            'agentInstallHostCollector' => $hostCollector,
             'logger' => $this->createMock(LoggerInterface::class),
             'apiKey' => 'test-api-key',
             'externalApiDomain' => 'https://api.neosidekick.test',

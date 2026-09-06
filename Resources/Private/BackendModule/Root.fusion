@@ -141,13 +141,20 @@ NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusio
 # NEOSidekick's confirmation and the local promotion still prompts a second press. Both render
 # even when the live key is missing or unreadable.
 #
+# Opening the panel transmits the key with this installation's host set (the controller's forced
+# push); the host line below is rendered from that answer alone: the address NEOSidekick calls
+# this installation at, the hosts it accepts for it, whether this host is one of them, and what
+# it did with the pushed set. Without an answer - the push was skipped or failed, or an older
+# NEOSidekick echoed no hosts - every part reads "unknown" and neither answer below is offered.
+#
 # Two forms, both POSTing to the same action (Policy.yaml grants ManageSigningKey on that one
 # method): "Regenerate key", with the re-enrolment checkbox for a copy of another installation,
-# and "Re-register under the new domain" for a site that moved. The second one only appears
-# where the domains actually disagree - the stored label differs from the domain this site
-# answers as, or NEOSidekick just refused a chained rotation with `chain_domain_mismatch` - and
-# never on an unusable key, which cannot chain the relabel in the first place. Each form carries
-# its own static `data-confirm`, so no JavaScript decides which warning is shown.
+# and "Re-register under the new domain" for a site that moved. Regenerating works from any
+# host; the second form and the checkbox appear only where this host is not one NEOSidekick
+# accepts for this installation, or where NEOSidekick just refused a chained rotation with
+# `chain_domain_mismatch` - and never on an unusable key, which cannot chain the relabel in the
+# first place. Each form carries its own static `data-confirm`, so no JavaScript decides which
+# warning is shown.
 #
 prototype(NEOSidekick.AiAssistant:BackendModule.SigningKeyPanel) < prototype(Neos.Fusion:Component) {
     signingKey = null
@@ -169,8 +176,8 @@ prototype(NEOSidekick.AiAssistant:BackendModule.SigningKeyPanel) < prototype(Neo
                 <strong>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.title')}</strong>
                 {' '}
                 {I18n.translate('signingKey.regenerateIncomplete.body', null, [props.regenerateFailure ? String.htmlSpecialChars(props.regenerateFailure) : I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.noReason')], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant')}
-                {props.regenerateRejectionReason == 'chain_domain_mismatch' && !props.signingKey.domainConflict ? ' ' : ''}
-                {props.regenerateRejectionReason == 'chain_domain_mismatch' && !props.signingKey.domainConflict ? I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.chainDomainMismatchHint') : ''}
+                {props.regenerateRejectionReason == 'chain_domain_mismatch' ? ' ' : ''}
+                {props.regenerateRejectionReason == 'chain_domain_mismatch' ? I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.chainDomainMismatchHint') : ''}
                 {props.signingKey.relabelPending ? ' ' : ''}
                 {props.signingKey.relabelPending ? I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerateIncomplete.relabelPending') : ''}
             </div>
@@ -185,23 +192,50 @@ prototype(NEOSidekick.AiAssistant:BackendModule.SigningKeyPanel) < prototype(Neo
                 <dd @if={props.signingKey.pushedAt} style="font-family: monospace; margin: 0 0 1rem 0;">{String.htmlSpecialChars(props.signingKey.pushedAt)}</dd>
             </dl>
             <p @if={!props.signingKey.exists}>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.missing')}</p>
-            <div @if={props.signingKey.domainConflict} style="margin: 0 0 1rem 0; padding: 0.75rem 1rem; border: 1px solid #ff8700; background: #2a2a2a;" data-signing-key-domain-conflict="true">
-                {I18n.translate('signingKey.domainConflict.notice', null, [String.htmlSpecialChars(props.signingKey.registeredDomain), String.htmlSpecialChars(props.signingKey.currentDomain)], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant')}
-            </div>
+            <NEOSidekick.AiAssistant:BackendModule.SigningKeyHostStatus @if={props.signingKey.exists} signingKey={props.signingKey} />
             <form method="POST" action={props.regenerateActionUri} onsubmit="return confirm(this.dataset.confirm)" data-confirm={I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerate.confirm')} style="margin: 0;">
                 <input type="hidden" name="__csrfToken" value={props.csrfToken} />
-                <label @if={props.signingKey.status == 'unusable' || props.signingKey.status == 'revoked' || props.regenerateRejectionReason == 'chain_domain_mismatch' || props.signingKey.domainConflict} style="display: block; margin: 0 0 0.75rem 0;">
+                <label @if={props.signingKey.status == 'unusable' || props.signingKey.status == 'revoked' || props.regenerateRejectionReason == 'chain_domain_mismatch' || (props.signingKey.hostStatusKnown && !props.signingKey.thisHostRegistered)} style="display: block; margin: 0 0 0.75rem 0;">
                     <input type="checkbox" name="moduleArguments[reenrol]" value="1" />
                     {' '}
                     {I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.reenrol.label')}
                 </label>
                 <button type="submit" class="neos-button neos-button-danger">{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.regenerate.button')}</button>
             </form>
-            <form @if={(props.signingKey.domainConflict || props.regenerateRejectionReason == 'chain_domain_mismatch') && props.signingKey.status != 'unusable'} method="POST" action={props.regenerateActionUri} onsubmit="return confirm(this.dataset.confirm)" data-confirm={I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.relabel.confirm')} style="margin: 1rem 0 0 0;" data-signing-key-relabel-form="true">
+            <form @if={((props.signingKey.hostStatusKnown && !props.signingKey.thisHostRegistered) || props.regenerateRejectionReason == 'chain_domain_mismatch') && props.signingKey.status != 'unusable'} method="POST" action={props.regenerateActionUri} onsubmit="return confirm(this.dataset.confirm)" data-confirm={I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.relabel.confirm')} style="margin: 1rem 0 0 0;" data-signing-key-relabel-form="true">
                 <input type="hidden" name="__csrfToken" value={props.csrfToken} />
                 <input type="hidden" name="moduleArguments[relabel]" value="1" />
                 <button type="submit" class="neos-button neos-button-danger">{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.relabel.button')}</button>
             </form>
         </div>
     `
+}
+
+##
+# The host line of the signing-key panel, one sentence from the forced push's answer (see the
+# panel's comment): the address, the accepted hosts, this host's standing and the last push
+# result. Each part falls back to "unknown" on its own; a rejection reason NEOSidekick coins
+# later is shown raw. Below it, the remedy for a host NEOSidekick does not accept yet.
+#
+prototype(NEOSidekick.AiAssistant:BackendModule.SigningKeyHostStatus) < prototype(Neos.Fusion:Component) {
+    signingKey = null
+
+    renderer = Neos.Fusion:Component {
+        unknown = ${I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.hosts.unknown')}
+        known = ${props.signingKey.hostStatusKnown}
+        installAddress = ${this.known && props.signingKey.installAddress ? String.htmlSpecialChars(props.signingKey.installAddress) : this.unknown}
+        registeredHosts = ${this.known ? (Array.isEmpty(props.signingKey.registeredHosts) ? I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.hosts.none') : String.htmlSpecialChars(Array.join(props.signingKey.registeredHosts, ', '))) : this.unknown}
+        thisHost = ${this.known ? I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:signingKey.hosts.thisHost.' + (props.signingKey.thisHostRegistered ? 'registered' : 'notRegistered')) : this.unknown}
+        hostsResult = ${this.known && props.signingKey.hostsResult ? I18n.translate('signingKey.hosts.result.' + props.signingKey.hostsResult, String.htmlSpecialChars(props.signingKey.hostsResult), [], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant') : this.unknown}
+        thisHostUnregistered = ${this.known && !props.signingKey.thisHostRegistered}
+        thisHostName = ${props.signingKey.thisHost ? String.htmlSpecialChars(props.signingKey.thisHost) : this.unknown}
+
+        renderer = afx`
+            <div style="margin: 0 0 1rem 0; padding: 0.75rem 1rem; border: 1px solid #5a5a5a; background: #2a2a2a;" data-signing-key-hosts="true" data-signing-key-host-status={props.known ? (props.thisHostUnregistered ? 'not-registered' : 'registered') : 'unknown'}>
+                {I18n.translate('signingKey.hosts.sentence', null, [props.installAddress, props.registeredHosts, props.thisHost, props.hostsResult], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant')}
+                {props.thisHostUnregistered ? ' ' : ''}
+                {props.thisHostUnregistered ? I18n.translate('signingKey.hosts.notRegistered.remedy', null, [props.thisHostName], 'BackendModule/Configuration', 'NEOSidekick.AiAssistant') : ''}
+            </div>
+        `
+    }
 }

@@ -97,7 +97,7 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
 
         if (eventName === 'get-content-tree') {
             const contentTree = contentTreeService.getDocumentContentTree();
-            iFrameApiService.respondWithContentTree(contentTree);
+            iFrameApiService.respondWithContentTree(contentTree, contentTreeService.getSiteNodeName());
             return;
         }
 

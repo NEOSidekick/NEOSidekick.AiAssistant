@@ -336,7 +336,7 @@ GET /neosidekick/api/document-nodes
 |-----------|------|----------|---------|-------------|
 | `workspace` | string | No | `live` | Workspace name |
 | `dimensions` | string | No | `{}` | JSON-encoded dimensions |
-| `site` | string | No | (first site) | Site node name |
+| `site` | string | No | (site whose Domain record matches the request host, else Neos's default site) | Site node name; an unknown name, or a value that is not a site node name, answers `400` listing the available ones |
 | `nodeTypeFilter` | string | No | `Neos.Neos:Document` | Filter by NodeType |
 | `depth` | int | No | `-1` | Max traversal depth (-1 = unlimited) |
 
@@ -379,6 +379,10 @@ curl -G "https://example.com/neosidekick/api/document-nodes" \
     "nodeType": "Neos.Neos:Site",
     "identifier": "site-uuid"
   },
+  "availableSites": [
+    {"nodeName": "my-site", "name": "My Site"},
+    {"nodeName": "academy", "name": "Academy"}
+  ],
   "documents": [
     {
       "identifier": "uuid-1",
@@ -423,6 +427,7 @@ curl -G "https://example.com/neosidekick/api/document-nodes" \
 | `workspace` | string | Queried workspace name |
 | `dimensions` | object | Dimension values used |
 | `site` | object | Site information |
+| `availableSites` | array | Every site of the installation as `{nodeName, name}`, in tree order |
 | `documents` | array | List of document nodes |
 | `documentCount` | int | Total documents returned |
 

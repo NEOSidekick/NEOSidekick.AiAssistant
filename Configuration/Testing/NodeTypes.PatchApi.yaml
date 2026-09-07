@@ -1,0 +1,36 @@
+# Node types for the apply-patches functional tests.
+#
+# `RestrictedPage.main` forbids everything except `Text` via grandchild constraints. The
+# PatchValidator asks the parent *type* (ContentCollection allows `*`), so a `createNode` of
+# `ForbiddenContent` into `main` passes validation and fails inside the transaction with a
+# NodeConstraintException. That is the injection the rollback tests rely on.
+#
+# `Container` is a content element that accepts only `Text`; the batch-reference tests create it
+# with `ref` and fill it through `$container`.
+'NEOSidekick.AiAssistant.Testing:RestrictedPage':
+  superTypes:
+    'Neos.Neos:Document': true
+  childNodes:
+    main:
+      type: 'Neos.Neos:ContentCollection'
+      constraints:
+        nodeTypes:
+          '*': false
+          'NEOSidekick.AiAssistant.Testing:Text': true
+          'NEOSidekick.AiAssistant.Testing:Container': true
+'NEOSidekick.AiAssistant.Testing:Text':
+  superTypes:
+    'Neos.Neos:Content': true
+  properties:
+    text:
+      type: string
+'NEOSidekick.AiAssistant.Testing:ForbiddenContent':
+  superTypes:
+    'Neos.Neos:Content': true
+'NEOSidekick.AiAssistant.Testing:Container':
+  superTypes:
+    'Neos.Neos:Content': true
+  constraints:
+    nodeTypes:
+      '*': false
+      'NEOSidekick.AiAssistant.Testing:Text': true

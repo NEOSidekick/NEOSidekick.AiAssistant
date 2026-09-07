@@ -8,10 +8,12 @@ use Doctrine\ORM\EntityManagerInterface;
 use Flowpack\NodeTemplates\Domain\TemplateNodeCreationHandler;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeType;
+use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
 use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\Persistence\PersistenceManagerInterface;
 use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\Image;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
@@ -21,14 +23,15 @@ use NEOSidekick\AiAssistant\Dto\Patch\DeleteNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\MoveNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\PatchError;
 use NEOSidekick\AiAssistant\Dto\Patch\PatchResult;
+use NEOSidekick\AiAssistant\Dto\Patch\RefAnchor;
 use NEOSidekick\AiAssistant\Dto\Patch\UpdateNodePatch;
 use NEOSidekick\AiAssistant\Exception\PatchFailedException;
 
 /**
  * Service for applying patches to the content repository.
  *
- * Handles atomic patch operations with validation, rollback support,
- * and dry-run functionality using database transactions.
+ * Handles atomic patch operations with validation and rollback support
+ * using database transactions.
  */
 class NodePatchService
 {
@@ -37,6 +40,18 @@ class NodePatchService
      * @var EntityManagerInterface
      */
     protected $entityManager;
+
+    /**
+     * @Flow\Inject
+     * @var PersistenceManagerInterface
+     */
+    protected $persistenceManager;
+
+    /**
+     * @Flow\Inject
+     * @var NodeDataRepository
+     */
+    protected $nodeDataRepository;
 
     /**
      * @Flow\Inject
@@ -69,19 +84,26 @@ class NodePatchService
     protected $propertyNormalizer;
 
     /**
+     * Nodes created by the batch currently being executed, keyed by the `ref` their createNode patch declared.
+     * Anchors (`positionRelativeToNodeId`, `nodeId`, `targetNodeId`) of the form `$<ref>` and
+     * `$<ref>/<childName>` are resolved through this map before the context is asked.
+     *
+     * @var array<string, NodeInterface>
+     */
+    private array $refNodes = [];
+
+    /**
      * Apply a batch of patches to the content repository.
      *
      * All patches are executed within a database transaction. If any patch
-     * fails, all changes are rolled back. In dry-run mode, changes are
-     * validated and then rolled back regardless of success.
+     * fails, all changes are rolled back and discarded.
      *
      * @param array<int, array<string, mixed>> $patchesData Raw patch data from API request
      * @param string $workspace The workspace name to apply patches in
      * @param array<string, array<int, string>> $dimensions Content dimensions
-     * @param bool $dryRun If true, validate and rollback without persisting
      * @return PatchResult
      */
-    public function applyPatches(array $patchesData, string $workspace, array $dimensions, bool $dryRun = false): PatchResult
+    public function applyPatches(array $patchesData, string $workspace, array $dimensions): PatchResult
     {
         // Parse patches from raw data
         $patches = [];
@@ -90,7 +112,6 @@ class NodePatchService
                 $patches[] = AbstractPatch::fromArray($patchData);
             } catch (\InvalidArgumentException $e) {
                 return PatchResult::failure(
-                    $dryRun,
                     new PatchError($e->getMessage(), $index, 'unknown'),
                     false
                 );
@@ -101,20 +122,18 @@ class NodePatchService
         $context = $this->createContext($workspace, $dimensions);
 
         // Pre-validate all patches before starting the transaction
-        foreach ($patches as $index => $patch) {
-            try {
-                $this->patchValidator->validatePatch($patch, $index, $context);
-            } catch (PatchFailedException $e) {
-                return PatchResult::failure(
-                    $dryRun,
-                    new PatchError($e->getMessage(), $e->getPatchIndex(), $e->getOperation(), $e->getNodeId()),
-                    false
-                );
-            }
+        try {
+            $this->patchValidator->validatePatches($patches, $context);
+        } catch (PatchFailedException $e) {
+            return PatchResult::failure(
+                new PatchError($e->getMessage(), $e->getPatchIndex(), $e->getOperation(), $e->getNodeId()),
+                false
+            );
         }
 
         // Execute patches within a transaction
         $this->entityManager->beginTransaction();
+        $this->refNodes = [];
         $results = [];
         // Track current patch index for error reporting in case of unexpected exceptions
         $currentIndex = 0;
@@ -126,36 +145,81 @@ class NodePatchService
                 $results[] = $patchResult;
             }
 
-            if ($dryRun) {
-                // Rollback in dry-run mode - validation passed but don't persist
-                $this->entityManager->rollback();
-            } else {
-                // Flush changes to database and commit the transaction
-                // Note: flush() executes SQL for pending changes; commit() finalizes the transaction
-                $this->entityManager->flush();
-                $this->entityManager->commit();
-            }
+            // Flush changes to database and commit the transaction
+            // Note: flush() executes SQL for pending changes; commit() finalizes the transaction
+            $this->entityManager->flush();
+            $this->entityManager->commit();
 
-            return PatchResult::success($dryRun, $results);
+            return PatchResult::success($results);
         } catch (PatchFailedException $e) {
-            // Rollback on failure
-            $this->entityManager->rollback();
+            $this->rollbackAndDiscardPendingChanges();
 
             return PatchResult::failure(
-                $dryRun,
                 new PatchError($e->getMessage(), $e->getPatchIndex(), $e->getOperation(), $e->getNodeId()),
                 true
             );
         } catch (\Exception $e) {
-            // Rollback on any unexpected error
-            $this->entityManager->rollback();
+            $this->rollbackAndDiscardPendingChanges();
 
             return PatchResult::failure(
-                $dryRun,
                 new PatchError($e->getMessage(), $currentIndex, 'unknown'),
                 true
             );
+        } finally {
+            $this->refNodes = [];
         }
+    }
+
+    /**
+     * Resolve an anchor field: `$<ref>` and `$<ref>/<childName>` through the nodes created so far in this
+     * batch (the child via {@see NodeInterface::getNode()}, which sees unflushed nodes), anything else through
+     * the context as a node identifier.
+     */
+    private function resolveAnchor(string $anchor, Context $context): ?NodeInterface
+    {
+        $refAnchor = RefAnchor::fromAnchor($anchor);
+        if ($refAnchor === null) {
+            return $context->getNodeByIdentifier($anchor);
+        }
+
+        $node = $this->refNodes[$refAnchor->getRef()] ?? null;
+        if ($node === null || $refAnchor->getChildName() === null) {
+            return $node;
+        }
+
+        return $node->getNode($refAnchor->getChildName());
+    }
+
+    /**
+     * How a failure message names the anchor: the id for stored nodes, the alias plus the resolved id for refs.
+     */
+    private function describeAnchor(string $anchor, ?NodeInterface $resolvedNode): string
+    {
+        if (!RefAnchor::isAnchor($anchor)) {
+            return sprintf('node "%s"', $anchor);
+        }
+        if ($resolvedNode === null) {
+            return sprintf('"%s"', $anchor);
+        }
+
+        return sprintf('"%s" (node "%s")', $anchor, $resolvedNode->getIdentifier());
+    }
+
+    /**
+     * Roll back the failed transaction and forget everything the batch touched.
+     *
+     * `EntityManager::rollback()` only rolls back the connection. The unit of work would keep the
+     * pending inserts (written by Flow's end-of-request persist) and the entities already flushed
+     * inside the transaction by `before`/`after` moves (their next update fails with an
+     * OptimisticLockException). The node registry is cleared as well, because
+     * `NodeDataRepository::$addedNodes` is only reset on persisted-events and would keep
+     * answering lookups with nodes that no longer exist.
+     */
+    private function rollbackAndDiscardPendingChanges(): void
+    {
+        $this->entityManager->rollback();
+        $this->persistenceManager->clearState();
+        $this->nodeDataRepository->flushNodeRegistry();
     }
 
     /**
@@ -215,8 +279,9 @@ class NodePatchService
      */
     private function executeCreateNode(CreateNodePatch $patch, int $index, Context $context): array
     {
+        $referenceNode = null;
         try {
-            $referenceNode = $context->getNodeByIdentifier($patch->getPositionRelativeToNodeId());
+            $referenceNode = $this->resolveAnchor($patch->getPositionRelativeToNodeId(), $context);
             if ($referenceNode === null) {
                 throw new PatchFailedException(
                     sprintf('Reference node "%s" not found', $patch->getPositionRelativeToNodeId()),
@@ -266,6 +331,10 @@ class NodePatchService
             // Apply NodeTemplates if configured in the NodeType
             $this->templateNodeCreationHandler->handle($newNode, []);
 
+            if ($patch->getRef() !== null) {
+                $this->refNodes[$patch->getRef()] = $newNode;
+            }
+
             // Collect information about all created nodes (main node + auto-created children)
             $createdNodes = $this->collectCreatedNodes($newNode, 0);
 
@@ -279,7 +348,11 @@ class NodePatchService
             throw $e;
         } catch (\Exception $e) {
             throw new PatchFailedException(
-                sprintf('Failed to create node: %s', $e->getMessage()),
+                sprintf(
+                    'Failed to create node relative to %s: %s',
+                    $this->describeAnchor($patch->getPositionRelativeToNodeId(), $referenceNode),
+                    $e->getMessage()
+                ),
                 $index,
                 'createNode',
                 $patch->getPositionRelativeToNodeId(),
@@ -413,8 +486,9 @@ class NodePatchService
      */
     private function executeUpdateNode(UpdateNodePatch $patch, int $index, Context $context): string
     {
+        $node = null;
         try {
-            $node = $context->getNodeByIdentifier($patch->getNodeId());
+            $node = $this->resolveAnchor($patch->getNodeId(), $context);
             if ($node === null) {
                 throw new PatchFailedException(
                     sprintf('Node "%s" not found', $patch->getNodeId()),
@@ -436,7 +510,7 @@ class NodePatchService
             throw $e;
         } catch (\Exception $e) {
             throw new PatchFailedException(
-                sprintf('Failed to update node: %s', $e->getMessage()),
+                sprintf('Failed to update %s: %s', $this->describeAnchor($patch->getNodeId(), $node), $e->getMessage()),
                 $index,
                 'updateNode',
                 $patch->getNodeId(),
@@ -456,8 +530,9 @@ class NodePatchService
      */
     private function executeMoveNode(MoveNodePatch $patch, int $index, Context $context): string
     {
+        $node = null;
         try {
-            $node = $context->getNodeByIdentifier($patch->getNodeId());
+            $node = $this->resolveAnchor($patch->getNodeId(), $context);
             if ($node === null) {
                 throw new PatchFailedException(
                     sprintf('Node "%s" not found', $patch->getNodeId()),
@@ -467,7 +542,7 @@ class NodePatchService
                 );
             }
 
-            $targetNode = $context->getNodeByIdentifier($patch->getTargetNodeId());
+            $targetNode = $this->resolveAnchor($patch->getTargetNodeId(), $context);
             if ($targetNode === null) {
                 throw new PatchFailedException(
                     sprintf('Target node "%s" not found', $patch->getTargetNodeId()),
@@ -495,7 +570,7 @@ class NodePatchService
             throw $e;
         } catch (\Exception $e) {
             throw new PatchFailedException(
-                sprintf('Failed to move node: %s', $e->getMessage()),
+                sprintf('Failed to move %s: %s', $this->describeAnchor($patch->getNodeId(), $node), $e->getMessage()),
                 $index,
                 'moveNode',
                 $patch->getNodeId(),
@@ -515,8 +590,9 @@ class NodePatchService
      */
     private function executeDeleteNode(DeleteNodePatch $patch, int $index, Context $context): string
     {
+        $node = null;
         try {
-            $node = $context->getNodeByIdentifier($patch->getNodeId());
+            $node = $this->resolveAnchor($patch->getNodeId(), $context);
             if ($node === null) {
                 throw new PatchFailedException(
                     sprintf('Node "%s" not found', $patch->getNodeId()),
@@ -534,7 +610,7 @@ class NodePatchService
             throw $e;
         } catch (\Exception $e) {
             throw new PatchFailedException(
-                sprintf('Failed to delete node: %s', $e->getMessage()),
+                sprintf('Failed to delete %s: %s', $this->describeAnchor($patch->getNodeId(), $node), $e->getMessage()),
                 $index,
                 'deleteNode',
                 $patch->getNodeId(),

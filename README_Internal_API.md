@@ -50,9 +50,7 @@ curl -X POST "https://your-site.com/neosidekick/api/apply-patches" \
   -H "Authorization: Bearer your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
-    "workspace": "live",
     "dimensions": {"language": ["de"]},
-    "dryRun": true,
     "patches": [
       {"operation": "updateNode", "nodeId": "your-node-uuid", "properties": {"title": "New Title"}}
     ]
@@ -835,7 +833,7 @@ curl -X POST "https://example.com/neosidekick/api/upload-media-asset" \
 
 ## 7. Apply Patches API
 
-Apply atomic patches to the content repository. Supports creating, updating, moving, and deleting nodes with transaction-based rollback and dry-run support.
+Apply atomic patches to the content repository. Supports creating, updating, moving, and deleting nodes with transaction-based rollback. A batch may create nested structures in one call: a `createNode` patch can declare a batch-local `ref`, and later patches address the created node as `$<ref>` (see [Batch-Local References](#batch-local-references)).
 
 ### Endpoint
 
@@ -847,16 +845,22 @@ POST /neosidekick/api/apply-patches
 
 ```json
 {
-  "workspace": "user-admin",
   "dimensions": {"language": ["de"]},
-  "dryRun": false,
   "patches": [
     {
       "operation": "createNode",
       "positionRelativeToNodeId": "uuid-parent",
       "nodeType": "CodeQ.Site:Content.Text",
       "position": "into",
-      "properties": {"text": "<p>Hello</p>"}
+      "properties": {"text": "<p>Hello</p>"},
+      "ref": "intro"
+    },
+    {
+      "operation": "createNode",
+      "positionRelativeToNodeId": "$intro",
+      "nodeType": "CodeQ.Site:Content.Text",
+      "position": "after",
+      "properties": {"text": "<p>Placed right behind the first text</p>"}
     },
     {
       "operation": "updateNode",
@@ -881,10 +885,12 @@ POST /neosidekick/api/apply-patches
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
-| `workspace` | string | No | `live` | Workspace name |
 | `dimensions` | object | No | `{}` | Content dimensions |
-| `dryRun` | bool | No | `false` | Validate without persisting changes |
-| `patches` | array | **Yes** | - | Array of patch operations |
+| `patches` | array | **Yes** | - | Array of patch operations, executed in order |
+| `workspace` | string | No | - | **Ignored.** The patches are always applied to the personal workspace of the authenticated user (see [Workspace Limitations](#workspace-limitations)); the field is accepted for backwards compatibility and has no effect |
+| `dryRun` | bool | No | - | **Removed in 3.1.0.** A truthy value is refused with HTTP 422 and nothing is written; `false` or absent is ignored (see [Dry-Run Mode](#dry-run-mode)) |
+
+Every field named `positionRelativeToNodeId`, `nodeId` or `targetNodeId` accepts a node UUID **or** a batch-local reference (`$<ref>`, `$<ref>/<childName>`) to a node created by an earlier patch of the same request.
 
 ### Patch Operations
 
@@ -893,17 +899,18 @@ POST /neosidekick/api/apply-patches
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `createNode` |
-| `positionRelativeToNodeId` | string | **Yes** | - | UUID of reference node. For position `into`: this is the parent. For `before`/`after`: this is the sibling |
+| `positionRelativeToNodeId` | string | **Yes** | - | UUID or reference of the anchor node. For position `into`: this is the parent. For `before`/`after`: this is the sibling |
 | `nodeType` | string | **Yes** | - | Full NodeType name |
 | `position` | string | No | `into` | `into`, `before`, or `after` |
 | `properties` | object | No | `{}` | Initial property values |
+| `ref` | string | No | - | Batch-local name for the created node, `^[A-Za-z][A-Za-z0-9_-]{0,63}$`, unique within the request. Later patches address the node as `$<ref>`. Only allowed on `createNode` |
 
 #### updateNode
 
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `updateNode` |
-| `nodeId` | string | **Yes** | - | UUID of node to update |
+| `nodeId` | string | **Yes** | - | UUID or reference of node to update |
 | `properties` | object | **Yes** | - | Properties to set |
 
 #### moveNode
@@ -911,8 +918,8 @@ POST /neosidekick/api/apply-patches
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `moveNode` |
-| `nodeId` | string | **Yes** | - | UUID of node to move |
-| `targetNodeId` | string | **Yes** | - | UUID of target/reference node |
+| `nodeId` | string | **Yes** | - | UUID or reference of node to move |
+| `targetNodeId` | string | **Yes** | - | UUID or reference of target/anchor node |
 | `position` | string | No | `into` | `into`, `before`, or `after` |
 
 #### deleteNode
@@ -920,7 +927,48 @@ POST /neosidekick/api/apply-patches
 | Field | Type | Required | Default | Description |
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `deleteNode` |
-| `nodeId` | string | **Yes** | - | UUID of node to delete |
+| `nodeId` | string | **Yes** | - | UUID or reference of node to delete |
+
+### Batch-Local References
+
+Node ids are minted by the server and only surface in the response, so without references a nested structure (container → items → texts) needs one request per depth level. A `createNode` patch may instead declare `"ref": "<name>"`; any anchor field of a **later** patch (`positionRelativeToNodeId`, `nodeId`, `targetNodeId`) may then hold, instead of a UUID:
+
+| Anchor | Meaning |
+|--------|---------|
+| `$<ref>` | The node created by the patch that declared `ref` |
+| `$<ref>/<childName>` | One auto-created child node (a `childNodes:` key of the created node's NodeType, e.g. `main` of a page), one segment only |
+
+Rules:
+
+- A `ref` must be declared by an **earlier** patch (index order); it must be unique within the request and match `^[A-Za-z][A-Za-z0-9_-]{0,63}$`. `ref` on `updateNode`, `moveNode` or `deleteNode` is refused.
+- Node ids are UUIDs, so the `$` prefix cannot collide with a stored node. Requests without refs behave exactly as before.
+- Refs are request-scoped aliases: they are never persisted, never echoed in success rows and never an authorization input. Nodes created by NodeTemplates are not addressable through a ref; create such children explicitly.
+- Validation is a single pre-pass over the whole request before the transaction opens. A `$<ref>` anchor is validated against the declared NodeType (`allowsChildNodeType`), a `$<ref>/<childName>` anchor against the NodeType's grandchild constraints for that child; an unknown child name is refused with the valid names. Stored UUID anchors keep the parent-type check they always had, so a type that only the auto-created `main` forbids is still refused at execution (rolled back, `rollbackPerformed: true`).
+
+**Sibling order.** Repeated `into` on one anchor appends in patch order. Repeated `before X` keeps patch order. Repeated `after X` **reverses** the order, because each node is inserted directly behind `X`. To place several new nodes after an existing node in order, anchor the first on it and each further one on the previous patch's `$ref` with `after`:
+
+```json
+{
+  "patches": [
+    {"operation": "createNode", "positionRelativeToNodeId": "uuid-existing", "nodeType": "CodeQ.Site:Content.Text", "position": "after", "ref": "t1", "properties": {"text": "<p>1</p>"}},
+    {"operation": "createNode", "positionRelativeToNodeId": "$t1", "nodeType": "CodeQ.Site:Content.Text", "position": "after", "ref": "t2", "properties": {"text": "<p>2</p>"}},
+    {"operation": "createNode", "positionRelativeToNodeId": "$t2", "nodeType": "CodeQ.Site:Content.Text", "position": "after", "properties": {"text": "<p>3</p>"}}
+  ]
+}
+```
+
+A page with content in one request:
+
+```json
+{
+  "patches": [
+    {"operation": "createNode", "positionRelativeToNodeId": "uuid-parent-page", "nodeType": "CodeQ.Site:Document.Page", "position": "into", "ref": "page", "properties": {"title": "New page"}},
+    {"operation": "createNode", "positionRelativeToNodeId": "$page/main", "nodeType": "CodeQ.Site:Content.Accordion", "position": "into", "ref": "acc"},
+    {"operation": "createNode", "positionRelativeToNodeId": "$acc", "nodeType": "CodeQ.Site:Content.Accordion.Section", "position": "into", "ref": "s1", "properties": {"title": "First"}},
+    {"operation": "createNode", "positionRelativeToNodeId": "$s1", "nodeType": "CodeQ.Site:Content.Text", "position": "into", "properties": {"text": "<p>Body</p>"}}
+  ]
+}
+```
 
 ### Example Request
 
@@ -929,9 +977,7 @@ curl -X POST "https://example.com/neosidekick/api/apply-patches" \
   -H "Authorization: Bearer your-api-key" \
   -H "Content-Type: application/json" \
   -d '{
-    "workspace": "user-admin",
     "dimensions": {"language": ["de"]},
-    "dryRun": false,
     "patches": [
       {
         "operation": "updateNode",
@@ -959,7 +1005,6 @@ curl -X POST "https://example.com/neosidekick/api/apply-patches" \
 ```json
 {
   "success": true,
-  "dryRun": false,
   "results": [
     {"index": 0, "operation": "updateNode", "nodeId": "abc-123-def"},
     {
@@ -1028,42 +1073,57 @@ When a patch fails, all changes are rolled back:
 ```json
 {
   "success": false,
-  "dryRun": false,
   "error": {
     "message": "Property 'invalidProp' is not declared in NodeType",
     "patchIndex": 1,
     "operation": "updateNode",
-    "nodeId": "uuid-123"
+    "nodeId": "uuid-123",
+    "ref": null
   },
   "rollbackPerformed": true
 }
 ```
 
+| Field | Type | Description |
+|-------|------|-------------|
+| `error.message` | string | What failed **and what to do**: the allowed child types of the actual parent, the valid auto-created child names, the property rule violated, or the refs declared before the failing patch for an undefined reference. Names the alias and, once resolved, the node id |
+| `error.patchIndex` | int | Index of the failing patch in `patches` |
+| `error.operation` | string | Operation of the failing patch (`unknown` if the patch could not be parsed) |
+| `error.nodeId` | string\|null | The node UUID the failing patch anchored on, if any. **Always a UUID or `null`, never a `$…` alias** |
+| `error.ref` | string\|null | The batch-local reference the failing patch anchored on, exactly as sent (`$acc` or `$acc/main`); `null` when the patch used a UUID or no anchor is involved |
+| `rollbackPerformed` | bool | `true`: the transaction was opened and rolled back. `false`: the request was refused during validation and nothing was attempted. In both cases nothing was written |
+
+A reference failure, refused before the transaction:
+
+```json
+{
+  "success": false,
+  "error": {
+    "message": "Undefined reference \"$acc\" in \"positionRelativeToNodeId\" at patch 3: no earlier createNode patch declares \"ref\": \"acc\". Refs declared before patch 3: \"page\", \"intro\".",
+    "patchIndex": 3,
+    "operation": "createNode",
+    "nodeId": null,
+    "ref": "$acc"
+  },
+  "rollbackPerformed": false
+}
+```
+
 ### Dry-Run Mode
 
-When `dryRun: true`, all patches are validated and executed within a transaction, but the transaction is rolled back regardless of success. This allows you to validate patches without making changes:
-
-```bash
-curl -X POST "https://example.com/neosidekick/api/apply-patches" \
-  -H "Authorization: Bearer your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "workspace": "user-admin",
-    "dryRun": true,
-    "patches": [...]
-  }'
-```
+`dryRun` was removed in 3.1.0: a failed batch writes nothing, so a separate validation run has no purpose. A request with a truthy `dryRun` is refused with HTTP 422 and the failure body (`error.message`: "dry-run is no longer supported; apply the batch, a failure writes nothing", `error.operation`: `batch`, `rollbackPerformed: false`), and nothing is written.
 
 ### Transaction Semantics
 
-- All patches are executed within a single database transaction
-- If any patch fails, all previous changes are rolled back
-- Patches are validated before execution using `Flowpack.NodeTemplates` PropertiesProcessor
+- All patches are executed within a single database transaction, in request order; patches are never reordered
+- If any patch fails, all previous changes are rolled back and discarded; nothing of the batch is written, not even by the end-of-request persist (`rollbackPerformed: true`)
+- All patches are validated before the transaction opens (node existence, batch-local references, child constraints, and properties using the `Flowpack.NodeTemplates` PropertiesProcessor); the first error refuses the whole request (`rollbackPerformed: false`)
 - NodeTemplates configured in `options.template` are automatically applied after `createNode`
+- On installs with `Neos.Neos.eventLog.enabled: true` (off by default), a rolled-back batch may still leave `Node.Updated` rows in the event log, because the event log collects the changed nodes in memory and materialises them at the end of the request; this is accepted — no node data is written
 
 ### Workspace Limitations
 
-**Important:** The JWT Bearer token *does* authenticate as a Neos backend user — the account encoded in its `sub`/`account_id` claims. `apply-patches` therefore writes to **that** user's personal workspace (e.g. `user-admin`); it is not a public/anonymous request. A given token can only write to the workspace of the account it was minted for.
+**Important:** The JWT Bearer token *does* authenticate as a Neos backend user — the account encoded in its `sub`/`account_id` claims. `apply-patches` therefore writes to **that** user's personal workspace (e.g. `user-admin`); it is not a public/anonymous request. A given token can only write to the workspace of the account it was minted for. A `workspace` field in the request body is ignored.
 
 ### Error Response
 
@@ -1216,7 +1276,8 @@ Data extraction services that provide raw data to the controllers:
 - `Classes/Service/MediaAssetSearchService.php` - Searches media assets by title, filename, caption
 - `Classes/Service/MediaAssetUploadService.php` - Uploads media assets into library from remote URLs
 - `Classes/Service/NodePatchService.php` - Applies atomic patches with transaction support
-- `Classes/Service/PatchValidator.php` - Validates patches using NodeTemplates PropertiesProcessor
+- `Classes/Service/PatchValidator.php` - Static pre-pass over a batch: node existence, batch-local references (`ref`, `$<ref>`, `$<ref>/<childName>`), child constraints, properties via the NodeTemplates PropertiesProcessor
+- `Classes/Service/PatchValidation/NodeDescriptor.php` - What the validator knows about a stored or pending anchor (type, parent, constraint semantics)
 
 ### Configuration
 

@@ -11,8 +11,8 @@ use Neos\Flow\Annotations as Flow;
  * Result of applying patches.
  *
  * For createNode operations, results include a 'createdNodes' array with
- * information about all nodes that were created, including auto-created
- * child nodes and nodes from NodeTemplates.
+ * information about all nodes that were created: the requested node plus its
+ * tethered (auto-created) child nodes, recursively.
  *
  * @Flow\Proxy(false)
  */

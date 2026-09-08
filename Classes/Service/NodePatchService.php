@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace NEOSidekick\AiAssistant\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Flowpack\NodeTemplates\Domain\TemplateNodeCreationHandler;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Repository\NodeDataRepository;
@@ -70,12 +69,6 @@ class NodePatchService
      * @var PatchValidator
      */
     protected $patchValidator;
-
-    /**
-     * @Flow\Inject
-     * @var TemplateNodeCreationHandler
-     */
-    protected $templateNodeCreationHandler;
 
     /**
      * @Flow\Inject
@@ -268,8 +261,8 @@ class NodePatchService
     /**
      * Execute a createNode patch.
      *
-     * Returns extended information about all nodes that were created,
-     * including auto-created child nodes and nodes from NodeTemplates.
+     * Returns extended information about all nodes that were created: the
+     * requested node plus its tethered (auto-created) child nodes, recursively.
      *
      * @param CreateNodePatch $patch
      * @param int $index
@@ -328,9 +321,6 @@ class NodePatchService
                 $newNode->setProperty($propertyName, $propertyValue);
             }
 
-            // Apply NodeTemplates if configured in the NodeType
-            $this->templateNodeCreationHandler->handle($newNode, []);
-
             if ($patch->getRef() !== null) {
                 $this->refNodes[$patch->getRef()] = $newNode;
             }
@@ -365,8 +355,8 @@ class NodePatchService
      * Collect information about a node and all its descendants.
      *
      * This traverses the node tree to gather details about all nodes that
-     * were created, including auto-created child nodes (fixed children)
-     * and nodes created by NodeTemplates.
+     * were created, i.e. the node itself plus its tethered (auto-created)
+     * child nodes, recursively.
      *
      * @param NodeInterface $node The node to start collecting from
      * @param int $depth The depth relative to the main created node (0 = main node)

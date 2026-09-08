@@ -942,7 +942,7 @@ Rules:
 
 - A `ref` must be declared by an **earlier** patch (index order); it must be unique within the request and match `^[A-Za-z][A-Za-z0-9_-]{0,63}$`. `ref` on `updateNode`, `moveNode` or `deleteNode` is refused.
 - Node ids are UUIDs, so the `$` prefix cannot collide with a stored node. Requests without refs behave exactly as before.
-- Refs are request-scoped aliases: they are never persisted, never echoed in success rows and never an authorization input. Nodes created by NodeTemplates are not addressable through a ref; create such children explicitly.
+- Refs are request-scoped aliases: they are never persisted, never echoed in success rows and never an authorization input.
 - Validation is a single pre-pass over the whole request before the transaction opens. A `$<ref>` anchor is validated against the declared NodeType (`allowsChildNodeType`), a `$<ref>/<childName>` anchor against the NodeType's grandchild constraints for that child; an unknown child name is refused with the valid names. Stored UUID anchors keep the parent-type check they always had, so a type that only the auto-created `main` forbids is still refused at execution (rolled back, `rollbackPerformed: true`).
 
 **Sibling order.** Repeated `into` on one anchor appends in patch order. Repeated `before X` keeps patch order. Repeated `after X` **reverses** the order, because each node is inserted directly behind `X`. To place several new nodes after an existing node in order, anchor the first on it and each further one on the previous patch's `$ref` with `after`:
@@ -1046,8 +1046,9 @@ For `createNode` operations, the response includes a `createdNodes` array with d
 
 This includes:
 - The main node that was explicitly created
-- Auto-created child nodes (fixed children configured in NodeType's `childNodes`)
-- Nodes created by NodeTemplates (if configured in `options.template`)
+- Auto-created child nodes (fixed children configured in NodeType's `childNodes`), recursively
+
+Since 3.1.0 nothing else is created; earlier versions also ran the node type's `options.template` (Flowpack.NodeTemplates) after `createNode`, which added template children and could null caller-supplied properties.
 
 The MCP tool formats this as JSX matching the `getDocumentContent` tool output:
 
@@ -1118,7 +1119,6 @@ A reference failure, refused before the transaction:
 - All patches are executed within a single database transaction, in request order; patches are never reordered
 - If any patch fails, all previous changes are rolled back and discarded; nothing of the batch is written, not even by the end-of-request persist (`rollbackPerformed: true`)
 - All patches are validated before the transaction opens (node existence, batch-local references, child constraints, and properties using the `Flowpack.NodeTemplates` PropertiesProcessor); the first error refuses the whole request (`rollbackPerformed: false`)
-- NodeTemplates configured in `options.template` are automatically applied after `createNode`
 - On installs with `Neos.Neos.eventLog.enabled: true` (off by default), a rolled-back batch may still leave `Node.Updated` rows in the event log, because the event log collects the changed nodes in memory and materialises them at the end of the request; this is accepted — no node data is written
 
 ### Workspace Limitations

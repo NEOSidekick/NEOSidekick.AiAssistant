@@ -18,6 +18,8 @@
           '*': false
           'NEOSidekick.AiAssistant.Testing:Text': true
           'NEOSidekick.AiAssistant.Testing:Container': true
+          'NEOSidekick.AiAssistant.Testing:TemplatedText': true
+          'NEOSidekick.AiAssistant.Testing:TemplatedContainer': true
 'NEOSidekick.AiAssistant.Testing:Text':
   superTypes:
     'Neos.Neos:Content': true
@@ -34,3 +36,29 @@
     nodeTypes:
       '*': false
       'NEOSidekick.AiAssistant.Testing:Text': true
+
+# NodeTemplates fixtures. `TemplatedText` mirrors `CodeQ.Site:Document.Person`: a root
+# `options.template.properties` entry reading creation-dialog data, which the API never supplies.
+# `TemplatedContainer` mirrors `CodeQ.Site:Content.Accordion.Item`: an unconditional template child.
+'NEOSidekick.AiAssistant.Testing:TemplatedText':
+  superTypes:
+    'Neos.Neos:Content': true
+  properties:
+    text:
+      type: string
+  options:
+    template:
+      properties:
+        text: '${data.text}'
+'NEOSidekick.AiAssistant.Testing:TemplatedContainer':
+  superTypes:
+    'Neos.Neos:Content': true
+  constraints:
+    nodeTypes:
+      '*': false
+      'NEOSidekick.AiAssistant.Testing:Text': true
+  options:
+    template:
+      childNodes:
+        text:
+          type: 'NEOSidekick.AiAssistant.Testing:Text'

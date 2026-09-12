@@ -7,6 +7,7 @@ use InvalidArgumentException;
 use Neos\ContentRepository\Domain\Model\Node;
 use Neos\ContentRepository\Domain\Model\NodeData;
 use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
+use Neos\ContentRepository\Domain\Service\Context;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\ContentRepository\Exception\NodeException;
@@ -20,6 +21,7 @@ use Neos\Media\Exception\ThumbnailServiceException;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodeData;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Dto\NodeTypeWithImageMetadataSchemaDto;
+use NEOSidekick\AiAssistant\Factory\FindDocumentNodeDataFactory;
 use NEOSidekick\AiAssistant\Factory\FindImageDataFactory;
 use PDO;
 use Psr\Log\LoggerInterface;
@@ -46,6 +48,24 @@ class NodeWithImageService extends AbstractNodeService
      * @var FindImageDataFactory
      */
     protected $findImageDataFactory;
+
+    /**
+     * @Flow\Inject
+     * @var FindDocumentNodeDataFactory
+     */
+    protected $findDocumentNodeDataFactory;
+
+    /**
+     * @Flow\Inject
+     * @var SiteService
+     */
+    protected $siteService;
+
+    /**
+     * @Flow\Inject
+     * @var NodeService
+     */
+    protected $nodeService;
 
     /**
      * @Flow\Inject
@@ -121,6 +141,20 @@ class NodeWithImageService extends AbstractNodeService
         }
         $contentNodesQueryBuilder->andWhere($pathConstraints);
 
+        // Doctrine silently DROPS the constraint above when the document list is empty (an Orx
+        // without parts), which would widen the query to every site. Constrain the site
+        // explicitly, exactly as NodeService::find() does.
+        $currentSitePath = NodePaths::addNodePathSegment(
+            SiteService::SITES_ROOT_PATH,
+            $this->siteService->getSiteByHostName($controllerContext->getRequest()->getHttpRequest()->getUri()->getHost())->getNodeName()
+        );
+        $contentNodesQueryBuilder->andWhere($contentNodesQueryBuilder->expr()->orX(
+            $contentNodesQueryBuilder->expr()->eq('n.path', ':currentSitePath'),
+            $contentNodesQueryBuilder->expr()->like('n.path', ':currentSitePathWithWildcard')
+        ));
+        $contentNodesQueryBuilder->setParameter('currentSitePath', $currentSitePath);
+        $contentNodesQueryBuilder->setParameter('currentSitePathWithWildcard', $currentSitePath . '/%');
+
         if (!empty($filter->getLanguageDimensionFilter())) {
             // Mirror the document query in NodeService::find(): preset identifiers are not
             // necessarily dimension values, so the constraint has to use the presets' configured
@@ -146,23 +180,55 @@ class NodeWithImageService extends AbstractNodeService
 
         $itemsReducedByWorkspaceChain = $this->reduceNodeVariantsByWorkspaces($items, $workspaceChain);
 
+        // Container rows are built here rather than taken from the document list, so the document
+        // node type filter - which the editor sets as "Restrict to page type" - has to be applied
+        // to them explicitly. It only lives in the document list otherwise.
+        $allowedDocumentNodeTypeNames = $this->nodeService->getNodeTypeFilter($filter);
+
         $result = $findDocumentNodeDataDtos;
         foreach ($itemsReducedByWorkspaceChain as $itemNodeData) {
-            $closestAggregateNodeData = $this->findClosestAggregate($itemNodeData);
-
-            if ($closestAggregateNodeData === null) {
-                $this->systemLogger->warning(sprintf('Nodes must at least have one aggregate ancestor, found node "%s" without.', $itemNodeData->getContextPath()));
-                continue;
-            }
-
             $context = $this->createContentContext($filter->getWorkspace(), $itemNodeData->getDimensionValues());
             $contentNode = new Node($itemNodeData, $context);
-            $closestAggregateNode = $context->getNode($closestAggregateNodeData->getPath());
 
-            $findDocumentNodeData = $result[$closestAggregateNode->getContextPath()] ?? null;
-            // Skip if the document closest aggregate is not in the list of filtered document nodes
+            $closestAggregateNodeData = $this->findClosestAggregate($itemNodeData);
+            $closestAggregateNode = $closestAggregateNodeData !== null
+                ? $context->getNode($closestAggregateNodeData->getPath())
+                : null;
+
+            $findDocumentNodeData = $closestAggregateNode !== null
+                ? ($result[$closestAggregateNode->getContextPath()] ?? null)
+                : null;
             if (!$findDocumentNodeData) {
-                continue;
+                // The document can be a shine-through fallback in the selected dimension while THIS
+                // content node is a real variant of it - an editor localizing a single element on an
+                // otherwise inherited page. The editable unit of this module is the content node, so
+                // the document serves as a container row only and its own dimension must not gate
+                // it. Content nodes that are themselves fallbacks are rejected here instead:
+                // generating for those would materialize a variant as a save side effect.
+                if (!$this->contentNodeMatchesLanguageDimensionFilter($itemNodeData, $filter)) {
+                    continue;
+                }
+                // Such a document is not visible in the content node's own dimension values, so the
+                // container row has to be addressed through the full fallback chain of the preset.
+                // NodeData::getParent() filters ancestors by the node's OWN dimension values, so
+                // findClosestAggregate() cannot cross the fallback boundary either - the collection
+                // and the document above a localized element only exist in the origin dimension.
+                $closestAggregateNode = $this->findClosestAggregateNodeInContext(
+                    $itemNodeData,
+                    $this->createContentContext(
+                        $filter->getWorkspace(),
+                        $this->addLanguageFallbackChainToDimensionValues($itemNodeData)
+                    )
+                );
+                if ($closestAggregateNode === null) {
+                    $this->systemLogger->warning(sprintf('Nodes must at least have one aggregate ancestor, found node "%s" without.', $itemNodeData->getContextPath()));
+                    continue;
+                }
+                if (!in_array($closestAggregateNode->getNodeType()->getName(), $allowedDocumentNodeTypeNames, true)) {
+                    continue;
+                }
+                $findDocumentNodeData = $this->findDocumentNodeDataFactory->createFromNode($closestAggregateNode, $controllerContext, $contentNode);
+                $result[$closestAggregateNode->getContextPath()] = $findDocumentNodeData;
             }
 
             $imagePropertiesForNodeType = $nodeTypeSchemaDtos[$contentNode->getNodeType()->getName()];
@@ -191,6 +257,74 @@ class NodeWithImageService extends AbstractNodeService
      * @return NodeData|null
      * @throws NodeTypeNotFoundException
      */
+    /**
+     * Whether the content node itself belongs to one of the selected language presets. The SQL
+     * constraint of the content query admits every value of the selected presets' fallback chains,
+     * so this is what keeps shine-through content nodes out of the selection.
+     */
+    /**
+     * Walks up the node's PATH inside the given context until an aggregate is found. Unlike
+     * {@see findClosestAggregate}, which relies on NodeData::getParent() and therefore stays inside
+     * the node's own dimension values, this crosses fallback boundaries.
+     */
+    protected function findClosestAggregateNodeInContext(NodeData $nodeData, Context $context): ?Node
+    {
+        $path = $nodeData->getPath();
+        while ($path !== '' && $path !== '/') {
+            $node = $context->getNode($path);
+            if ($node !== null && $node->getNodeType()->isAggregate()) {
+                return $node;
+            }
+            $path = NodePaths::getParentPath($path);
+        }
+
+        return null;
+    }
+
+    /**
+     * The content node's dimension values, but with the language dimension widened to the full
+     * fallback chain of the preset the node belongs to. Needed to address a document that only
+     * shines through into that preset: it is invisible in the node's own values alone.
+     *
+     * @return array<string, array<string>>
+     */
+    protected function addLanguageFallbackChainToDimensionValues(NodeData $nodeData): array
+    {
+        $dimensionValues = $nodeData->getDimensionValues();
+        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+            return $dimensionValues;
+        }
+
+        $presetsConfiguration = $this->contentDimensions[$this->languageDimensionName]['presets'] ?? [];
+        $presetIdentifier = LanguageDimensionPresetMatcher::resolvePresetIdentifier(
+            $dimensionValues[$this->languageDimensionName] ?? [],
+            $presetsConfiguration
+        );
+        $fallbackChain = $presetIdentifier !== null ? ($presetsConfiguration[$presetIdentifier]['values'] ?? null) : null;
+        if (is_array($fallbackChain) && $fallbackChain !== []) {
+            $dimensionValues[$this->languageDimensionName] = array_values($fallbackChain);
+        }
+
+        return $dimensionValues;
+    }
+
+    protected function contentNodeMatchesLanguageDimensionFilter(NodeData $nodeData, FindDocumentNodesFilter $filter): bool
+    {
+        if (!isset($this->languageDimensionName, $this->contentDimensions[$this->languageDimensionName])) {
+            return true;
+        }
+        $selectedPresetIdentifiers = $filter->getLanguageDimensionFilter();
+        if (empty($selectedPresetIdentifiers)) {
+            return true;
+        }
+
+        return LanguageDimensionPresetMatcher::matchesAnyPreset(
+            $nodeData->getDimensionValues()[$this->languageDimensionName] ?? [],
+            $selectedPresetIdentifiers,
+            $this->contentDimensions[$this->languageDimensionName]['presets'] ?? []
+        );
+    }
+
     protected function findClosestAggregate(NodeData $nodeData): ?NodeData
     {
         $currentNode = $nodeData;

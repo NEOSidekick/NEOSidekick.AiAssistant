@@ -56,7 +56,13 @@ class FindDocumentNodeDataFactory
      * @throws MissingActionNameException
      * @throws IllegalObjectTypeException
      */
-    public function createFromNode(Node $node, ControllerContext $controllerContext): FindDocumentNodeData
+    /**
+     * @param Node|null $languageSourceNode the node the generation language is taken from, if it is
+     *        not $node itself. The image module addresses a shine-through document as the container
+     *        of a content node that IS a real variant, and the language of that content node is the
+     *        one content has to be generated in.
+     */
+    public function createFromNode(Node $node, ControllerContext $controllerContext, ?Node $languageSourceNode = null): FindDocumentNodeData
     {
         $publicUri = $previewUri = $this->nodeLinkingService->createNodeUri($controllerContext, $node, null, 'html', true);
         if ($node->getContext()->getWorkspace()->getBaseWorkspace()) {
@@ -74,7 +80,7 @@ class FindDocumentNodeDataFactory
             $previewUri,
             (array)$node->getProperties(),
             // todo language keys of the Sidekick API are not necessarily dimension values - a mapping is still missing
-            $this->resolveLanguage($node)
+            $this->resolveLanguage($languageSourceNode ?? $node)
         );
     }
 

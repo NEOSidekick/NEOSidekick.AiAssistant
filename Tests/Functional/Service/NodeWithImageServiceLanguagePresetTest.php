@@ -199,6 +199,44 @@ class NodeWithImageServiceLanguagePresetTest extends FunctionalTestCase
     }
 
     /**
+     * Container rows are built inside the image module instead of being taken from the document
+     * list, so the document node type filter - the editor's "Restrict to page type" - has to be
+     * applied to them explicitly.
+     *
+     * @test
+     */
+    public function itAppliesTheDocumentNodeTypeFilterToContainerRows(): void
+    {
+        $this->localizeImageNode('/sites/example/node-wan-kenodi/main/image-image1', ['it', 'de'], 'it');
+        [, $nodeWithImageService] = $this->servicesWithTestDimensions();
+        $controllerContext = $this->createControllerContextForDomain('example.com');
+
+        $matchingNodeType = $nodeWithImageService->findDocumentNodesHavingChildNodesWithImages(
+            new FindDocumentNodesFilter(
+                filter: 'custom',
+                workspace: 'live',
+                languageDimensionFilter: 'it',
+                nodeTypeFilter: 'NEOSidekick.AiAssistant.Testing:Page'
+            ),
+            [],
+            $controllerContext
+        );
+        $this->assertCount(1, $matchingNodeType, 'The container page is of the filtered node type');
+
+        $otherNodeType = $nodeWithImageService->findDocumentNodesHavingChildNodesWithImages(
+            new FindDocumentNodesFilter(
+                filter: 'custom',
+                workspace: 'live',
+                languageDimensionFilter: 'it',
+                nodeTypeFilter: 'NEOSidekick.AiAssistant.Testing:HomePage'
+            ),
+            [],
+            $controllerContext
+        );
+        $this->assertEmpty($otherNodeType, 'A container row must not bypass the document node type filter');
+    }
+
+    /**
      * @test
      */
     public function itKeepsOneContainerRowPerLocalizedDimension(): void

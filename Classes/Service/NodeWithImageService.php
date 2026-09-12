@@ -227,6 +227,9 @@ class NodeWithImageService extends AbstractNodeService
                 if (!in_array($closestAggregateNode->getNodeType()->getName(), $allowedDocumentNodeTypeNames, true)) {
                     continue;
                 }
+                if (!in_array($closestAggregateNode->getNodeType()->getName(), $allowedDocumentNodeTypeNames, true)) {
+                    continue;
+                }
                 $findDocumentNodeData = $this->findDocumentNodeDataFactory->createFromNode($closestAggregateNode, $controllerContext, $contentNode);
                 $result[$closestAggregateNode->getContextPath()] = $findDocumentNodeData;
             }

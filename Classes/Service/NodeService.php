@@ -363,7 +363,7 @@ class NodeService extends AbstractNodeService
      *
      * @return array<string>
      */
-    protected function getNodeTypeFilter(FindDocumentNodesFilter $findDocumentNodesFilter): array
+    public function getNodeTypeFilter(FindDocumentNodesFilter $findDocumentNodesFilter): array
     {
         $documentNodeTypeFilter = $findDocumentNodesFilter->getNodeTypeFilter() ?? 'Neos.Neos:Document';
         $baseNodeTypeFilter = $findDocumentNodesFilter->getBaseNodeTypeFilter() ?? self::BASE_NODE_TYPE;

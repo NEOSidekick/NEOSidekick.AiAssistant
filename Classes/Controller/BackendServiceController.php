@@ -36,6 +36,27 @@ use Throwable;
 class BackendServiceController extends ActionController
 {
     /**
+     * Properties of {@see FindDocumentNodesFilter} the backend module frontend may send.
+     * Flow's PropertyMapper silently DROPS everything not listed here, so a missing entry
+     * makes the corresponding filter fall back to its server-side default.
+     *
+     * Protected, not private: Flow compiles this controller into a proxy that EXTENDS the
+     * original class, and private constants are not inherited by it.
+     *
+     * @var string[]
+     */
+    protected const FIND_DOCUMENT_NODES_ALLOWED_PROPERTIES = [
+        'filter',
+        'workspace',
+        'seoPropertiesFilter',
+        'imagePropertiesFilter',
+        'focusKeywordPropertyFilter',
+        'languageDimensionFilter',
+        'nodeTypeFilter',
+        'baseNodeTypeFilter'
+    ];
+
+    /**
      * @Flow\Inject
      * @var AssetService
      */
@@ -169,15 +190,7 @@ class BackendServiceController extends ActionController
         $this->arguments->getArgument('configuration')
             ->getPropertyMappingConfiguration()
             ->skipUnknownProperties()
-            ->allowProperties(
-                'filter',
-                'workspace',
-                'seoPropertiesFilter',
-                'imagePropertiesFilter',
-                'focusKeywordPropertyFilter',
-                'languageDimensionFilter',
-                'nodeTypeFilter'
-            );
+            ->allowProperties(...self::FIND_DOCUMENT_NODES_ALLOWED_PROPERTIES);
     }
 
     /**
@@ -263,15 +276,7 @@ class BackendServiceController extends ActionController
         $this->arguments->getArgument('configuration')
             ->getPropertyMappingConfiguration()
             ->skipUnknownProperties()
-            ->allowProperties(
-                'filter',
-                'workspace',
-                'seoPropertiesFilter',
-                'imagePropertiesFilter',
-                'focusKeywordPropertyFilter',
-                'languageDimensionFilter',
-                'nodeTypeFilter'
-            );
+            ->allowProperties(...self::FIND_DOCUMENT_NODES_ALLOWED_PROPERTIES);
     }
 
     /**

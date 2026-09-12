@@ -4,9 +4,23 @@ on:
   push:
     branches:
       - '3.x'
+      # Work branches, so a branch is verified before a pull request exists. The workflow file
+      # travels with the branch, so this only applies to branches cut from 3.x - a feature branch
+      # off 4.x keeps 4.x's own triggers.
+      - 'bugfix-*'
+      - 'fix-*'
+      - 'feature-*'
+      - 'change-*'
+      - 'frontend-*'
   pull_request:
     branches:
       - '3.x'
+
+# Cancel superseded runs on the same ref: iterating on a branch otherwise leaves a full four-job
+# matrix running per force-push.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:

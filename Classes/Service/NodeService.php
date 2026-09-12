@@ -287,9 +287,20 @@ class NodeService extends AbstractNodeService
                 $contextPathSegments['dimensions']
             );
             $node = $context->getNode($contextPathSegments['nodePath']);
-            $this->assertNodeIsNotADimensionFallback($node, $updateItem->getNodeContextPath());
-            foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
-                $node->setProperty($propertyName, $propertyValue);
+            if ($node === null) {
+                throw new InvalidArgumentException(sprintf(
+                    'No node could be resolved for context path "%s". Please reload the page.',
+                    $updateItem->getNodeContextPath()
+                ), 1757682000001);
+            }
+            // Only a document WRITE can materialize a document variant, so the fallback guard
+            // belongs to that write. The image module sends no document properties at all - its
+            // editable unit is the image node below, which is guarded separately.
+            if ($updateItem->getProperties() !== []) {
+                $this->assertNodeIsNotADimensionFallback($node, $updateItem->getNodeContextPath());
+                foreach ($updateItem->getProperties() as $propertyName => $propertyValue) {
+                    $node->setProperty($propertyName, $propertyValue);
+                }
             }
 
             foreach ($updateItem->getImages() as $imageNodeContextPath => $imageNodeProperties) {
@@ -299,6 +310,12 @@ class NodeService extends AbstractNodeService
 
                 $imageNodeContextPathSegments = NodePaths::explodeContextPath($imageNodeContextPath);
                 $imageNode = $context->getNode($imageNodeContextPathSegments['nodePath']);
+                if ($imageNode === null) {
+                    throw new InvalidArgumentException(sprintf(
+                        'No node could be resolved for context path "%s". Please reload the page.',
+                        $imageNodeContextPath
+                    ), 1757682000002);
+                }
                 $this->assertNodeIsNotADimensionFallback($imageNode, $imageNodeContextPath);
                 foreach ($imageNodeProperties as $propertyName => $propertyValue) {
                     $imageNode->setProperty($propertyName, $propertyValue);

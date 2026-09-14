@@ -3,6 +3,9 @@ NEOSidekick:
     # The content repository this package operates on (single-CR assumption, see ContentRepositoryProvider)
     contentRepositoryId: 'default'
     apikey: ''
+    # The language content is generated in when a node carries no language dimension value,
+    # i.e. on installations that do not use a language dimension. Nodes of an installation WITH
+    # one take their language from the dimension they are served in.
     defaultLanguage: 'en'
     chatSidebarEnabled: true
     # The language dimension is usually called "language" in most Neos projects

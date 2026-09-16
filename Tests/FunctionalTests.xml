@@ -1,23 +1,25 @@
 <?xml version="1.0"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/9.3/phpunit.xsd"
+         xsi:noNamespaceSchemaLocation="https://schema.phpunit.de/11.5/phpunit.xsd"
          beStrictAboutChangesToGlobalState="true"
          beStrictAboutOutputDuringTests="true"
          bootstrap="FunctionalTestBootstrap.php"
-         convertErrorsToExceptions="true"
-         convertNoticesToExceptions="true"
-         convertWarningsToExceptions="true"
+         cacheDirectory=".phpunit.cache"
+         displayDetailsOnTestsThatTriggerNotices="true"
+         displayDetailsOnTestsThatTriggerWarnings="true"
+         failOnNotice="true"
+         failOnWarning="true"
          timeoutForSmallTests="0">
     <testsuites>
         <testsuite name="NEOSidekick.AiAssistant">
             <directory>Functional</directory>
         </testsuite>
     </testsuites>
-    <coverage includeUncoveredFiles="true">
+    <source>
         <include>
             <directory>../../../Data/Temporary/Testing/Cache/Code/Flow_Object_Classes/</directory>
         </include>
-    </coverage>
+    </source>
     <logging>
         <junit outputFile="Reports/FunctionalTests.xml"/>
         <testdoxText outputFile="Reports/FunctionalTestDox.txt"/>

@@ -4,6 +4,7 @@ namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
 use NEOSidekick\AiAssistant\Service\NodeTreeExtractor;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * The node-tree agent API defaults to no dimensions; on a dimensioned content repository
@@ -44,9 +45,7 @@ class NodeTreeExtractorTest extends FunctionalTestCase
         return $mostGeneral === false ? null : $mostGeneral->getCoordinate($dimensionId);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function emptyDimensionsFallBackToTheMostGeneralDimensionSpacePoint(): void
     {
         /** @var NodeTreeExtractor $extractor */

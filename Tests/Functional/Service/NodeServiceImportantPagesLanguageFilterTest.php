@@ -6,6 +6,7 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * An empty language dimension filter means "all languages": findImportantPages() must not
@@ -23,9 +24,7 @@ class NodeServiceImportantPagesLanguageFilterTest extends FunctionalTestCase
         $this->createPageWithImageNodes($siteNode, 'lang-page', 'Lang Page', []);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function importantPagesWithoutLanguageFilterReturnsRows(): void
     {
         $languageSegment = $this->primaryLanguage() !== null ? $this->languageUriSegment() . '/' : '';

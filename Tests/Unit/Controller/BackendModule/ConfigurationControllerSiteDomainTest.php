@@ -4,6 +4,7 @@ namespace NEOSidekick\AiAssistant\Tests\Unit\Controller\BackendModule;
 
 use NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController;
 use NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 use ReflectionProperty;
@@ -15,9 +16,7 @@ use ReflectionProperty;
  */
 class ConfigurationControllerSiteDomainTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function getSiteDomainReturnsUrlEncodedDomainWhenHostIsPresent(): void
     {
         $result = $this->invokeGetSiteDomain('https://www.example.com');
@@ -25,9 +24,7 @@ class ConfigurationControllerSiteDomainTest extends TestCase
         self::assertSame(rawurlencode('https://www.example.com'), $result);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function getSiteDomainReturnsEmptyStringWhenHostCannotBeDetermined(): void
     {
         $result = $this->invokeGetSiteDomain('http://');

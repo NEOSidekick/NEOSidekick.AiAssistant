@@ -4,6 +4,7 @@ namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
 use NEOSidekick\AiAssistant\Service\DocumentNodeListExtractor;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * The document list is built from ONE findSubtree() query over the document tree (Neos 8
@@ -52,9 +53,7 @@ class DocumentNodeListExtractorTest extends FunctionalTestCase
         return $dimensionId === null ? [] : [$dimensionId->value => [$this->primaryLanguage()]];
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function depthCountsDocumentLevelsAndPathsUseTheAbsoluteFormat(): void
     {
         $documents = $this->extractDocumentsByName();
@@ -68,9 +67,7 @@ class DocumentNodeListExtractorTest extends FunctionalTestCase
         $this->assertSame(2, $documents['example']['childDocumentCount']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function boundedDepthStillReportsChildDocumentCountsAtTheBoundary(): void
     {
         $documents = $this->extractDocumentsByName(1);
@@ -82,9 +79,7 @@ class DocumentNodeListExtractorTest extends FunctionalTestCase
         $this->assertSame(1, $documents['Page B']['childDocumentCount']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function maximumIntegerDepthIsEffectivelyUnlimited(): void
     {
         $documents = $this->extractDocumentsByName(PHP_INT_MAX);
@@ -93,9 +88,7 @@ class DocumentNodeListExtractorTest extends FunctionalTestCase
         $this->assertSame(2, $documents['Page A1']['depth']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function disabledDocumentsAreListedWithTheirOwnHiddenState(): void
     {
         $documents = $this->extractDocumentsByName();

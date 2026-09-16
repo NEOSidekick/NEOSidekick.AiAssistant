@@ -10,6 +10,7 @@ use NEOSidekick\AiAssistant\Dto\UpdateNodeProperties;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * Fallback pages (a dimension serving another dimension's content through a specialization,
@@ -83,9 +84,7 @@ class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
         }
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function importantPagesReAddressesFallbackUrlsToTheirOrigin(): void
     {
         $this->requireSpecializationPair();
@@ -111,9 +110,7 @@ class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
         $this->assertSame($this->generalizationValue, reset($foundNodes)->getLanguage(), 'The row must be labeled with the origin language');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function importantPagesKeepsRealVariantsInTheirOwnDimension(): void
     {
         $this->requireSpecializationPair();
@@ -138,9 +135,7 @@ class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
         $this->assertArrayHasKey($variantKey, $foundNodes, 'A real variant must stay addressed in its own dimension');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function updateRejectsWritesToFallbackAddresses(): void
     {
         $this->requireSpecializationPair();
@@ -167,9 +162,7 @@ class NodeServiceFallbackDimensionsTest extends FunctionalTestCase
         ]);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function updateAcceptsWritesToRealVariants(): void
     {
         $this->requireSpecializationPair();

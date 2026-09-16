@@ -4,6 +4,7 @@ namespace NEOSidekick\AiAssistant\Tests\Unit\Infrastructure;
 
 use GuzzleHttp\Psr7\Uri;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -23,13 +24,13 @@ class ApiFacadeTest extends TestCase
         return $this->deduplicateMethod->invoke(null, $input);
     }
 
-    /** @test */
+    #[Test]
     public function itReturnsEmptyArrayForEmptyInput(): void
     {
         $this->assertSame([], $this->deduplicate([]));
     }
 
-    /** @test */
+    #[Test]
     public function itReturnsSingleUri(): void
     {
         $result = $this->deduplicate(['https://example.com/de/page.html']);
@@ -38,7 +39,7 @@ class ApiFacadeTest extends TestCase
         $this->assertSame('/de/page.html', $result[0]->getPath());
     }
 
-    /** @test */
+    #[Test]
     public function itDeduplicatesIdenticalUrls(): void
     {
         $result = $this->deduplicate([
@@ -52,8 +53,8 @@ class ApiFacadeTest extends TestCase
     /**
      * Deduplication keys by path only — different hosts with the same path collapse.
      * The last occurrence wins.
-     * @test
      */
+    #[Test]
     public function itDeduplicatesByPathIgnoringHost(): void
     {
         $result = $this->deduplicate([
@@ -66,8 +67,8 @@ class ApiFacadeTest extends TestCase
 
     /**
      * Different paths are kept as separate entries.
-     * @test
      */
+    #[Test]
     public function itKeepsDifferentPaths(): void
     {
         $result = $this->deduplicate([
@@ -82,8 +83,8 @@ class ApiFacadeTest extends TestCase
 
     /**
      * Scheme/port variations with the same path collapse.
-     * @test
      */
+    #[Test]
     public function itDeduplicatesSchemeAndPortVariants(): void
     {
         $result = $this->deduplicate([
@@ -97,8 +98,8 @@ class ApiFacadeTest extends TestCase
 
     /**
      * A URL without a path is normalised to "/".
-     * @test
      */
+    #[Test]
     public function itNormalisesEmptyPathToSlash(): void
     {
         $result = $this->deduplicate([

@@ -6,6 +6,7 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
 {
@@ -31,8 +32,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     /**
      * Negative case: API returns a page that has a non-empty focus keyword, but filter is "only-empty-focus-keywords".
      * Expectation: it must NOT be returned.
-     * @test
      */
+    #[Test]
     public function itFindsImportantPagesWithEmptyFocusKeyword(): void
     {
         $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
@@ -75,8 +76,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     /**
      * Positive case: API returns a page that has a non-empty focus keyword and filter requires existing focus keyword.
      * Expectation: the page should be returned.
-     * @test
      */
+    #[Test]
     public function itFindsImportantPagesWithExistingFocusKeyword(): void
     {
         $apiFacadeMock = $this->getMockBuilder(ApiFacade::class)
@@ -110,8 +111,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
 
     /**
      * URL with the configured uriPathSuffix (e.g. ".html") resolves directly.
-     * @test
      */
+    #[Test]
     public function itResolvesUrlWithConfiguredUriPathSuffix(): void
     {
         $foundNodes = $this->findImportantPagesForCandidates([
@@ -125,8 +126,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     /**
      * A trailing-slash URL resolves because NodeFindingService strips the trailing
      * slash and retries with the configured suffix appended.
-     * @test
      */
+    #[Test]
     public function itResolvesUrlWithTrailingSlash(): void
     {
         $foundNodes = $this->findImportantPagesForCandidates([
@@ -140,8 +141,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     /**
      * A bare URL (no suffix, no trailing slash) resolves because NodeFindingService
      * retries with the configured suffix appended.
-     * @test
      */
+    #[Test]
     public function itResolvesUrlWithoutAnySuffix(): void
     {
         $foundNodes = $this->findImportantPagesForCandidates([
@@ -155,8 +156,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
     /**
      * All three URL variants (with suffix, trailing slash, bare) point to the same
      * node and must deduplicate to a single result.
-     * @test
      */
+    #[Test]
     public function itDeduplicatesAllUrlVariantsToSameNode(): void
     {
         $base = 'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi';
@@ -172,8 +173,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
 
     /**
      * Duplicate candidate URLs must map to a single unique node result.
-     * @test
      */
+    #[Test]
     public function itDeduplicatesCandidates(): void
     {
         $url = 'https://example.com/' . $this->languageUriSegment() . '/node-wan-kenodi' . $this->getUriPathSuffix();
@@ -187,8 +188,8 @@ class NodeServiceWithImportantPagesFilterAndMultipleDimensionsAndOneSiteTest ext
      * Verifies that uriMatchesControllerContext compares hostnames only, so that
      * scheme variations (http vs https) and default-port variations (:80, :443)
      * do not prevent a URL from resolving.
-     * @test
      */
+    #[Test]
     public function itMatchesHostRegardlessOfSchemeAndDefaultPort(): void
     {
         $basePath = '/' . $this->languageUriSegment() . '/node-wan-kenodi' . $this->getUriPathSuffix();

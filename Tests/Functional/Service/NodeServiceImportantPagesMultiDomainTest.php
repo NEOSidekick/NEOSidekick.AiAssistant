@@ -6,6 +6,7 @@ use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Infrastructure\ApiFacade;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
 {
@@ -22,8 +23,8 @@ class NodeServiceImportantPagesMultiDomainTest extends FunctionalTestCase
 
     /**
      * Important pages should be filtered to the current ControllerContext domain.
-     * @test
      */
+    #[Test]
     public function itFiltersImportantPagesByCurrentDomain(): void
     {
         if ($this->primaryLanguage() === null) {

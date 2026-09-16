@@ -4,13 +4,14 @@ namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
 use Neos\Flow\Tests\FunctionalTestCase;
 use NEOSidekick\AiAssistant\Service\NodeTypeService;
+use PHPUnit\Framework\Attributes\Test;
 
 class NodeTypeServiceTest extends FunctionalTestCase
 {
     /**
-     * @test
      * @return void
      */
+    #[Test]
     public function itFindsTestingNodeTypeWithImageAlternativeTextOrTitleConfiguration(): void
     {
         $nodeTypeService = $this->objectManager->get(NodeTypeService::class);

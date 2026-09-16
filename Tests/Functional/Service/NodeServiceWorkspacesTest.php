@@ -5,6 +5,7 @@ namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * Documents how {@see NodeService::find()} interacts with workspaces and disabling.
@@ -29,8 +30,8 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
 
     /**
      * Ensure user workspace changes do not leak to live until published.
-     * @test
      */
+    #[Test]
     public function itFindsNodesInUserWorkspace(): void
     {
         $userWsNode = $this->getNodeByPath('/sites/example/workspace-test', $this->currentUserWorkspace);
@@ -64,8 +65,8 @@ class NodeServiceWorkspacesTest extends FunctionalTestCase
     /**
      * After publishing the disable from user to live, live must exclude the node too.
      * (Neos 8 behaved differently here — see class docblock.)
-     * @test
      */
+    #[Test]
     public function itReflectsPublishingStateChanges(): void
     {
         $userWsNode = $this->getNodeByPath('/sites/example/workspace-test', $this->currentUserWorkspace);

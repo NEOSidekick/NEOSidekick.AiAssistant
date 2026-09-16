@@ -22,6 +22,10 @@ Neos:
         # Flowpack.NodeTemplates (dependency) ships behat-based test cases referencing
         # neos/behat, which is usually not installed; exclude them from reflection.
         'Flowpack.NodeTemplates': ['Flowpack\\NodeTemplates\\(?!Tests\\Functional).*']
+        # neos/neos 9.0.16/9.1.9 migrated its own functional tests to PHPUnit 11 ahead of any
+        # matching neos/flow release; its ConfigurationValidationTest redeclares a property of
+        # Flow's as static, which is a fatal as soon as reflection loads it.
+        'Neos.Neos': ['Neos\\Neos\\(?!Tests\\Functional).*']
 
   # Flow's testable persistence drops non-ORM tables (neos_asset_usage, soft-removal
   # conflicts) when compiling the test schema; these catch-up hooks would fail during CR

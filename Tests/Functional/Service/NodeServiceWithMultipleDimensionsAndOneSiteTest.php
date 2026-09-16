@@ -6,6 +6,7 @@ use InvalidArgumentException;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
 {
@@ -29,9 +30,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         }
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itFindsVisibleNestedPages(): void
     {
         $nodeService = $this->objectManager->get(NodeService::class);
@@ -46,9 +45,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $this->assertCount(8, $foundNodes);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itDoesNotFindHiddenPages(): void
     {
         $nodeToBeHidden = $this->getNodeByPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace);
@@ -68,9 +65,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $this->assertCount(6, $foundNodes);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itDoesNotFindRemovedPages(): void
     {
         $nodeToBeRemoved = $this->getNodeByPath('/sites/example/node-wan-kenodi', $this->currentUserWorkspace);
@@ -87,9 +82,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $this->assertCount(6, $foundNodes);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itFindsVisibleNestedPagesInGermanOnly(): void
     {
         $nodeService = $this->objectManager->get(NodeService::class);
@@ -104,9 +97,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $this->assertCount(4, $foundNodes);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itFindsVisibleNestedPagesWithoutFocusKeywordOnly(): void
     {
         $nodeService = $this->objectManager->get(NodeService::class);
@@ -121,9 +112,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $this->assertCount(6, $foundNodes);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itFindsVisibleNestedPagesWithFocusKeywordOnly(): void
     {
         $nodeService = $this->objectManager->get(NodeService::class);
@@ -138,9 +127,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $this->assertCount(2, $foundNodes);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itFindsVisibleNestedPagesMatchingNodeTypeFilter(): void
     {
         $nodeService = $this->objectManager->get(NodeService::class);
@@ -152,9 +139,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $this->assertCount(2, $foundNodes);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itThrowsExceptionIfWorkspaceDoesNotExist(): void
     {
         $nodeService = $this->objectManager->get(NodeService::class);
@@ -167,9 +152,7 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $nodeService->find($findDocumentNodesFilter, $controllerContext);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itFindsVisiblePagesInEnglishOnly(): void
     {
         $nodeService = $this->objectManager->get(NodeService::class);

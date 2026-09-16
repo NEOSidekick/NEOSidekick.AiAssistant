@@ -21,12 +21,8 @@ jobs:
         include:
           - neos-versions: '9.0'
             neos-constraint: '~9.0.0'
-          # The 9.1 jobs broke in the composer install step right after the 9.1.7/9.1.8
-          # releases (15.07.2026, run 30249483831) while ~9.0.0 kept passing; the failure is
-          # not reproducible locally, so pin the version this migration was developed and
-          # CI-verified against until the newer patch releases are investigated.
           - neos-versions: '9.1'
-            neos-constraint: '9.1.6'
+            neos-constraint: '~9.1.0'
     runs-on: ubuntu-latest
 
     # The Neos 9 content graph requires MariaDB/MySQL — the functional tests cannot run
@@ -129,4 +125,4 @@ jobs:
       - name: Run functional tests
         run: |
           cd "${{ env.NEOS_FOLDER }}"
-          bin/phpunit --colors --stop-on-failure -c ${{ env.DIST_FOLDER }}/Tests/FunctionalTests.xml --testsuite "NEOSidekick.AiAssistant" --verbose
+          bin/phpunit --colors --stop-on-failure -c ${{ env.DIST_FOLDER }}/Tests/FunctionalTests.xml --testsuite "NEOSidekick.AiAssistant"

@@ -3,15 +3,14 @@
 namespace NEOSidekick\AiAssistant\Tests\Unit\Controller;
 
 use NEOSidekick\AiAssistant\Controller\AgentController;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
 use ReflectionMethod;
 
 class AgentControllerAuthorizationCompletionTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function deriveOriginReturnsOriginWithoutPath(): void
     {
         self::assertSame(
@@ -20,9 +19,7 @@ class AgentControllerAuthorizationCompletionTest extends TestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function deriveOriginReturnsNullForInvalidDomain(): void
     {
         self::assertNull($this->invokeAgentControllerMethod('deriveOrigin', ['']));
@@ -30,9 +27,7 @@ class AgentControllerAuthorizationCompletionTest extends TestCase
         self::assertNull($this->invokeAgentControllerMethod('deriveOrigin', ['javascript://api.neosidekick.com']));
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function completionResponsePostsSuccessEventToTrustedOrigin(): void
     {
         $response = $this->invokeAgentControllerMethod('buildAuthorizationCompleteResponse', [
@@ -44,9 +39,7 @@ class AgentControllerAuthorizationCompletionTest extends TestCase
         self::assertStringContainsString('"https:\/\/api.neosidekick.com"', $response);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function completionResponseDoesNotPostSuccessEventWithoutTrustedOrigin(): void
     {
         $response = $this->invokeAgentControllerMethod('buildAuthorizationCompleteResponse', [null]);

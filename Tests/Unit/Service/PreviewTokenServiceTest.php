@@ -6,6 +6,7 @@ namespace NEOSidekick\AiAssistant\Tests\Unit\Service;
 
 use Neos\Flow\Security\Cryptography\HashService;
 use NEOSidekick\AiAssistant\Service\PreviewTokenService;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionProperty;
 
@@ -55,7 +56,7 @@ class PreviewTokenServiceTest extends TestCase
         ];
     }
 
-    /** @test */
+    #[Test]
     public function itGeneratesAPreviewPathWithAllExpectedQueryParameters(): void
     {
         $result = $this->service->generatePreviewPath('node-123', 'user-admin', '{"language":["de"]}');
@@ -70,7 +71,7 @@ class PreviewTokenServiceTest extends TestCase
         $this->assertNotSame('', $params['token']);
     }
 
-    /** @test */
+    #[Test]
     public function itUsesTheDefaultTtlOfFifteenMinutes(): void
     {
         $result = $this->service->generatePreviewPath('node-123', 'user-admin');
@@ -79,7 +80,7 @@ class PreviewTokenServiceTest extends TestCase
         $this->assertSame($result['expires'], $result['expiresAt']->getTimestamp());
     }
 
-    /** @test */
+    #[Test]
     public function itValidatesARoundTrippedToken(): void
     {
         $params = $this->generateAndParseQueryParams('{"language":["de"]}');
@@ -93,7 +94,7 @@ class PreviewTokenServiceTest extends TestCase
         ));
     }
 
-    /** @test */
+    #[Test]
     public function itRejectsATamperedToken(): void
     {
         $params = $this->generateAndParseQueryParams();
@@ -107,7 +108,7 @@ class PreviewTokenServiceTest extends TestCase
         ));
     }
 
-    /** @test */
+    #[Test]
     public function itRejectsAnEmptyToken(): void
     {
         $params = $this->generateAndParseQueryParams();
@@ -121,7 +122,7 @@ class PreviewTokenServiceTest extends TestCase
         ));
     }
 
-    /** @test */
+    #[Test]
     public function itRejectsTamperedParameters(): void
     {
         $params = $this->generateAndParseQueryParams();
@@ -144,7 +145,7 @@ class PreviewTokenServiceTest extends TestCase
         );
     }
 
-    /** @test */
+    #[Test]
     public function itRejectsAnExpiredToken(): void
     {
         $params = $this->generateAndParseQueryParams('{}', -60);

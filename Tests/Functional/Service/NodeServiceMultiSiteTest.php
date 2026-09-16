@@ -5,6 +5,7 @@ namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
 use NEOSidekick\AiAssistant\Service\NodeService;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 class NodeServiceMultiSiteTest extends FunctionalTestCase
 {
@@ -35,9 +36,7 @@ class NodeServiceMultiSiteTest extends FunctionalTestCase
         }
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itFindsNodesFromCurrentSiteAcrossMultipleDomains(): void
     {
         /** @var NodeService $nodeService */
@@ -58,9 +57,7 @@ class NodeServiceMultiSiteTest extends FunctionalTestCase
         $this->assertArrayNotHasKey($this->addressForPath('/sites/example2/node-two-mc-nodeface', $this->currentUserWorkspace), $foundNodes);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function itFindsNodesForTheControllerContextDomain(): void
     {
         /** @var NodeService $nodeService */

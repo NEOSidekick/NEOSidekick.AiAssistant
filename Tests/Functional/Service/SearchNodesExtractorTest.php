@@ -4,6 +4,7 @@ namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
 use NEOSidekick\AiAssistant\Service\SearchNodesExtractor;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+use PHPUnit\Framework\Attributes\Test;
 
 /**
  * The identifier lookup must evaluate the nodeTypeFilter string with the same semantics as
@@ -42,9 +43,7 @@ class SearchNodesExtractorTest extends FunctionalTestCase
         );
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function identifierLookupAcceptsMultiTypeFilters(): void
     {
         $result = $this->search('Neos.Neos:Document,Neos.Neos:Content');
@@ -53,9 +52,7 @@ class SearchNodesExtractorTest extends FunctionalTestCase
         $this->assertSame($this->searchPageAggregateId, $result['results'][0]['identifier']);
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function identifierLookupLetsDenyRulesWin(): void
     {
         $result = $this->search('Neos.Neos:Node,!Neos.Neos:Document');
@@ -63,9 +60,7 @@ class SearchNodesExtractorTest extends FunctionalTestCase
         $this->assertSame(0, $result['resultCount'], 'A deny rule must exclude the page even when an allow rule matches');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function identifierLookupAllowsEverythingElseWithDenyOnlyFilters(): void
     {
         $result = $this->search('!Neos.Neos:ContentCollection');
@@ -73,9 +68,7 @@ class SearchNodesExtractorTest extends FunctionalTestCase
         $this->assertSame(1, $result['resultCount'], 'A deny-only filter must allow all non-denied types');
     }
 
-    /**
-     * @test
-     */
+    #[Test]
     public function pathRestrictionDoesNotCrossSegmentBoundaries(): void
     {
         $result = $this->search(

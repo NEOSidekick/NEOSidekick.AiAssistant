@@ -3,6 +3,7 @@
 namespace NEOSidekick\AiAssistant\Tests\Unit\Controller;
 
 use NEOSidekick\AiAssistant\Controller\AgentController;
+use PHPUnit\Framework\Attributes\Test;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -15,9 +16,7 @@ use ReflectionMethod;
  */
 class AgentControllerCsrfProtectionTest extends TestCase
 {
-    /**
-     * @test
-     */
+    #[Test]
     public function authorizeActionDoesNotSkipCsrfProtection(): void
     {
         $docComment = (new ReflectionMethod(AgentController::class, 'authorizeAction'))->getDocComment();

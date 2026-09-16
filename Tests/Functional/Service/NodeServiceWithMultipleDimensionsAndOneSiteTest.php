@@ -45,6 +45,31 @@ class NodeServiceWithMultipleDimensionsAndOneSiteTest extends FunctionalTestCase
         $this->assertCount(8, $foundNodes);
     }
 
+    /**
+     * The backend module frontend always sends nodeTypeFilter and baseNodeTypeFilter, as empty
+     * strings when unset. They must behave like "not set" - falling back to the default document
+     * and base node types - instead of producing an empty node type intersection and therefore
+     * zero results. Compared against the unfiltered result, so the test does not depend on how
+     * many languages the hosting distribution configures.
+     */
+    #[Test]
+    public function itTreatsEmptyStringNodeTypeFiltersAsUnset(): void
+    {
+        $nodeService = $this->objectManager->get(NodeService::class);
+        $controllerContext = $this->createControllerContextForDomain('example.com');
+
+        $unfiltered = $nodeService->find(new FindDocumentNodesFilter('custom', $this->currentUserWorkspace), $controllerContext);
+        $withEmptyStrings = $nodeService->find(new FindDocumentNodesFilter(
+            filter: 'custom',
+            workspace: $this->currentUserWorkspace,
+            nodeTypeFilter: '',
+            baseNodeTypeFilter: ''
+        ), $controllerContext);
+
+        $this->assertNotEmpty($withEmptyStrings, 'Empty-string node type filters must not empty the result');
+        $this->assertSame(array_keys($unfiltered), array_keys($withEmptyStrings));
+    }
+
     #[Test]
     public function itDoesNotFindHiddenPages(): void
     {

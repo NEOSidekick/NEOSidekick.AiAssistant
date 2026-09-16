@@ -75,7 +75,16 @@ NEOSidekick:
     defaultLanguage: 'en'
 ```
 
-English (`en`) is configured out of the box. Supported languages are:
+`defaultLanguage` is used for every node that carries no language dimension value, i.e. on
+installations without a language dimension. English (`en`) is configured out of the box.
+
+> **Before you upgrade:** the generation language of a node without any language dimension value
+> used to be hardcoded to German (`de`), ignoring `defaultLanguage`. It now follows
+> `defaultLanguage`, which ships as `en`. If you do not use a language dimension, set
+> `defaultLanguage` to your content's language *before* upgrading — otherwise generation silently
+> switches to English.
+
+Supported languages are:
 
 * English `en`
 * English (US) `en_US`

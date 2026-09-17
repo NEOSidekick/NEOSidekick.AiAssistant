@@ -7,12 +7,11 @@ use Neos\Eel\ProtectedContextAwareInterface;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Http\BaseUriProvider;
 use Neos\Flow\Http\Exception as HttpException;
+use Neos\Flow\Package\Exception as PackageException;
 use Neos\Flow\Package\PackageManager;
 use Neos\Flow\Persistence\Doctrine\PersistenceManager;
 use Neos\Flow\Security\Authorization\PrivilegeManagerInterface;
-use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Flow\Security\Cryptography\HashService;
-use Neos\Flow\Session\SessionManagerInterface;
 use Neos\Neos\Domain\Repository\DomainRepository;
 use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Service\UserService;
@@ -69,18 +68,6 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
 
     /**
      * @Flow\Inject
-     * @var SessionManagerInterface
-     */
-    protected $sessionManager;
-
-    /**
-     * @Flow\Inject
-     * @var SecurityContext
-     */
-    protected $securityContext;
-
-    /**
-     * @Flow\Inject
      * @var BaseUriProvider
      */
     protected $baseUriProvider;
@@ -113,12 +100,6 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
         return sha1($this->persistenceManager->getIdentifierByObject($this->userService->getBackendUser()));
     }
 
-    public function sessionId(): string
-    {
-        $session = $this->sessionManager->getCurrentSession();
-        return $session->isStarted() ? $session->getId() : '';
-    }
-
     public function sessionsIsSameSite(): bool
     {
         return strtolower($this->sessionCookieSameSite ?? '') === 'strict';
@@ -130,12 +111,25 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     }
 
     /**
-     * The backend session's CSRF protection token, exposed to the Neos UI plugin so it can
-     * make CSRF-protected same-origin POSTs (e.g. silent re-authorization to do-authorize).
+     * The installed version of this package, forwarded to the assistant as an iframe parameter so
+     * plugin rollout can be segmented server-side.
+     *
+     * Source and path installs DO resolve: Composer records them in composer.lock, so a checkout
+     * tracking a branch reports its branch alias (e.g. `dev-main`). The empty string — on which the
+     * parameter is omitted rather than sent blank — happens only when the package is not registered
+     * with Composer at all.
      */
-    public function csrfToken(): string
+    public function pluginVersion(): string
     {
-        return $this->securityContext->getCsrfProtectionToken();
+        if (!$this->packageManager->isPackageAvailable('NEOSidekick.AiAssistant')) {
+            return '';
+        }
+
+        try {
+            return (string)$this->packageManager->getPackage('NEOSidekick.AiAssistant')->getInstalledVersion();
+        } catch (PackageException $exception) {
+            return '';
+        }
     }
 
     public function apiKey(): string
@@ -144,6 +138,30 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
     }
 
     public function domain(): string
+    {
+        $trustedDomain = $this->resolveTrustedDomain();
+        if ($trustedDomain !== null) {
+            return $trustedDomain;
+        }
+
+        // No active HTTP request (e.g. CLI) and no configured baseUri:
+        // fall back to the previous globals-based behaviour as a last resort.
+        $uriFromGlobals = ServerRequest::getUriFromGlobals();
+        $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
+        return "$schemeFromGlobals://" . $uriFromGlobals->getHost();
+    }
+
+    /**
+     * The site domain as derived from a Neos domain record or from Flow's configured /
+     * trusted-proxy corrected base URI - null when neither exists. This is the embed's
+     * `domain`, the public site host; the signing-key push labels the installation with its
+     * base or request origin instead (AgentInstallHostCollector), never with a Domain record.
+     *
+     * Null is the case in which {@see domain()} falls back to a superglobals guess
+     * (typically "http://localhost" on the CLI). That guess is fine as a display value
+     * but must never be persisted anywhere as an identity.
+     */
+    public function resolveTrustedDomain(): ?string
     {
         $currentDomain = $this->domainRepository->findOneByActiveRequest();
         if ($currentDomain) {
@@ -161,11 +179,7 @@ class NEOSidekickInternalHelper implements ProtectedContextAwareInterface
         try {
             return rtrim((string)$this->baseUriProvider->getConfiguredBaseUriOrFallbackToCurrentRequest(), '/');
         } catch (HttpException $exception) {
-            // No active HTTP request (e.g. CLI) and no configured baseUri:
-            // fall back to the previous globals-based behaviour as a last resort.
-            $uriFromGlobals = ServerRequest::getUriFromGlobals();
-            $schemeFromGlobals = $uriFromGlobals->getScheme() ?: 'http';
-            return "$schemeFromGlobals://" . $uriFromGlobals->getHost();
+            return null;
         }
     }
 

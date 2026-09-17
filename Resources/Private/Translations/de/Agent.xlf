@@ -26,8 +26,26 @@
             <trans-unit id="continueAuthorizationButton" xml:space="preserve">
                 <source>Autorisierung fortsetzen</source>
             </trans-unit>
-            <trans-unit id="testJwtAuthButton" xml:space="preserve">
-                <source>JWT-Authentifizierung testen</source>
+            <trans-unit id="externalAuthorizationTitle" xml:space="preserve">
+                <source>Externe Anwendung verbinden</source>
+            </trans-unit>
+            <trans-unit id="externalClientUnnamed" xml:space="preserve">
+                <source>Unbenannte Anwendung</source>
+            </trans-unit>
+            <trans-unit id="externalClientMessage" xml:space="preserve">
+                <source>Eine Anwendung, die sich "{0}" nennt (nicht von NEOSidekick überprüft), fordert Zugriff auf diese Neos-Installation an.</source>
+            </trans-unit>
+            <trans-unit id="externalIdentityMessage" xml:space="preserve">
+                <source>Wenn du zustimmst, kann die Anwendung Inhalte mit deinen eigenen Redaktionsrechten lesen und schreiben, als {0}. Sie wird niemals etwas live veröffentlichen.</source>
+            </trans-unit>
+            <trans-unit id="externalRedirectMessage" xml:space="preserve">
+                <source>Die Anwendung gibt an, dich anschließend zu {0} zurückzuleiten.</source>
+            </trans-unit>
+            <trans-unit id="externalAuthorizeButton" xml:space="preserve">
+                <source>Zugriff erlauben</source>
+            </trans-unit>
+            <trans-unit id="externalDeclineLink" xml:space="preserve">
+                <source>Abbrechen und Zugriff verweigern</source>
             </trans-unit>
         </body>
     </file>

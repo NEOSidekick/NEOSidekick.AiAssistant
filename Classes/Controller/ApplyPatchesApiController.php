@@ -7,6 +7,8 @@ namespace NEOSidekick\AiAssistant\Controller;
 use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
+use NEOSidekick\AiAssistant\Dto\Patch\PatchError;
+use NEOSidekick\AiAssistant\Dto\Patch\PatchResult;
 use NEOSidekick\AiAssistant\Service\NodePatchService;
 use Neos\Neos\Service\UserService;
 
@@ -14,7 +16,7 @@ use Neos\Neos\Service\UserService;
  * API controller to apply atomic patches to nodes.
  *
  * Processes LLM-generated node operations (create, update, move, delete)
- * with validation, transaction-based rollback, and dry-run support.
+ * with validation and transaction-based rollback.
  *
  * Authentication is done via JWT Bearer token (Flow security provider).
  *
@@ -53,7 +55,6 @@ class ApplyPatchesApiController extends ActionController
      * Accepts a JSON body with the following structure:
      * {
      *   "dimensions": {"language": ["de"]},
-     *   "dryRun": false,
      *   "patches": [
      *     { "operation": "createNode", "positionRelativeToNodeId": "uuid", "nodeType": "...", "position": "into", "properties": {...} },
      *     { "operation": "updateNode", "nodeId": "uuid", "properties": {...} },
@@ -108,16 +109,13 @@ class ApplyPatchesApiController extends ActionController
 
         // Extract parameters with defaults
         $dimensions = $data['dimensions'] ?? [];
-        // dryRun is validated as boolean in validateRequestData, safe to use directly
-        $dryRun = $data['dryRun'] ?? false;
         $patches = $data['patches'];
 
         // Apply the patches
         $result = $this->patchService->applyPatches(
             $patches,
             $workspace,
-            $dimensions,
-            $dryRun
+            $dimensions
         );
 
         // Set appropriate HTTP status code
@@ -210,13 +208,17 @@ class ApplyPatchesApiController extends ActionController
             }
         }
 
-        // Validate dryRun if provided - must be a boolean, not a string
-        if (isset($data['dryRun']) && !is_bool($data['dryRun'])) {
-            $this->response->setStatusCode(400);
-            return json_encode([
-                'error' => 'Bad Request',
-                'message' => 'Field "dryRun" must be a boolean (true or false), not a string'
-            ], JSON_THROW_ON_ERROR);
+        // dryRun was removed in 3.1.0. A truthy value must never silently write, so it is refused
+        // with the failure body shape; false or absent is ignored.
+        if (!empty($data['dryRun'])) {
+            $this->response->setStatusCode(422);
+            return json_encode(
+                PatchResult::failure(
+                    new PatchError('dry-run is no longer supported; apply the batch, a failure writes nothing', 0, 'batch'),
+                    false
+                ),
+                JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT
+            );
         }
 
         return null;

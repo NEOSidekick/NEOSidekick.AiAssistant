@@ -45,7 +45,8 @@
             ".editorconfig",
             ".gitattributes",
             ".github",
-            ".gitignore"
+            ".gitignore",
+            ".nvmrc"
         ]
     },
     "autoload": {

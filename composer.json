@@ -15,6 +15,7 @@
     ],
     "require": {
         "php": "^8.3",
+        "ext-openssl": "*",
         "neos/neos": "^9.0 || dev-master",
         "neos/media": "^9.0 || dev-master",
         "neos/neos-ui": "^9.0 || dev-master",

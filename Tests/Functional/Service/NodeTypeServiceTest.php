@@ -4,10 +4,13 @@ namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
 
 use Neos\Flow\Tests\FunctionalTestCase;
 use NEOSidekick\AiAssistant\Service\NodeTypeService;
+use NEOSidekick\AiAssistant\Tests\Functional\FlowTestNameCompatibility;
 use PHPUnit\Framework\Attributes\Test;
 
 class NodeTypeServiceTest extends FunctionalTestCase
 {
+    use FlowTestNameCompatibility;
+
     /**
      * @return void
      */

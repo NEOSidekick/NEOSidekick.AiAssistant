@@ -109,17 +109,21 @@ export class IFrameApiService {
         });
     }
 
-    respondWithContentTree = (contentTree: unknown): void => {
+    /**
+     * @param siteNodeName Node name of the site the editor currently works on, empty when unknown.
+     */
+    respondWithContentTree = (contentTree: unknown, siteNodeName: string): void => {
         this.sendMessage({
             version: '1.0',
             eventName: 'content-tree-response',
             data: {
                 contentTree,
+                siteNodeName,
             },
         });
     }
 
-    private sendMessage = (message: object, onSend?: Function, retiesCount: number = 0): void => {
+    private sendMessage = (message: object, onSend?: Function, retriesCount: number = 0): void => {
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {
             console.log('Sending message to frame', message);
@@ -129,12 +133,14 @@ export class IFrameApiService {
                 onSend();
             }
         } else {
-            if (retiesCount > 20) {
+            if (retriesCount > 20) {
                 alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');
                 return;
             }
-            retiesCount++;
-            setTimeout(() => this.sendMessage(message, onSend), 250);
+            // The counter must be carried into the retry: dropping it resets the budget on every
+            // hop, so the cap above (and its support hint) would never be reached and a frame that
+            // never loads would be polled forever.
+            setTimeout(() => this.sendMessage(message, onSend, retriesCount + 1), 250);
         }
     }
 

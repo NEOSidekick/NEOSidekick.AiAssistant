@@ -65,6 +65,8 @@ use NEOSidekick\AiAssistant\Service\NodeVisibility;
  */
 abstract class FunctionalTestCase extends \Neos\Flow\Tests\FunctionalTestCase
 {
+    use FlowTestNameCompatibility;
+
     protected static $testablePersistenceEnabled = true;
 
     private ?array $rootLanguageValuesCache = null;

@@ -7,6 +7,7 @@ use Neos\Flow\Property\PropertyMappingConfiguration;
 use Neos\Flow\Tests\FunctionalTestCase;
 use NEOSidekick\AiAssistant\Controller\BackendServiceController;
 use NEOSidekick\AiAssistant\Dto\FindDocumentNodesFilter;
+use NEOSidekick\AiAssistant\Tests\Functional\FlowTestNameCompatibility;
 use PHPUnit\Framework\Attributes\Test;
 use ReflectionClass;
 
@@ -21,6 +22,8 @@ use ReflectionClass;
  */
 class BackendServiceControllerPropertyMappingTest extends FunctionalTestCase
 {
+    use FlowTestNameCompatibility;
+
     /**
      * The source array as sent by Resources/Private/BackendModule/src/Service/NeosBackendService.ts
      *

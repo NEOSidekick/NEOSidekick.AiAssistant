@@ -940,10 +940,11 @@ Node ids are minted by the server and only surface in the response, so without r
 
 Rules:
 
-- A `ref` must be declared by an **earlier** patch (index order); it must be unique within the request and match `^[A-Za-z][A-Za-z0-9_-]{0,63}$`. `ref` on `updateNode`, `moveNode` or `deleteNode` is refused.
+- A `ref` must be declared by an **earlier** patch (index order); it must be unique within the request and match `^[A-Za-z][A-Za-z0-9_-]{0,63}$`. `ref` on `updateNode`, `moveNode` or `deleteNode` is refused. A ref stays taken for the whole request, also after a `deleteNode` on it.
 - Node ids are UUIDs, so the `$` prefix cannot collide with a stored node. Requests without refs behave exactly as before.
 - Refs are request-scoped aliases: they are never persisted, never echoed in success rows and never an authorization input.
 - Validation is a single pre-pass over the whole request before any patch is executed. A `$<ref>` anchor is validated against the declared NodeType (`allowsChildNodeType`), a `$<ref>/<childName>` anchor against the constraints the NodeType declares for that child; an unknown child name is refused with the valid names. Stored UUID anchors are checked the way the content repository checks them when it handles the command: a stored auto-created child (such as `main`) imposes the constraints its owner declares for it, so a type only that child forbids is refused before anything is written.
+- The pre-pass tracks what the request itself changes: a `moveNode` re-parents its node for the anchors of later patches, and a `deleteNode` makes its node and everything the request would create below it unaddressable — a later patch on one of them is refused instead of failing after the deletion was executed.
 
 **Sibling order.** Repeated `into` on one anchor appends in patch order. Repeated `before X` keeps patch order. Repeated `after X` **reverses** the order, because each node is inserted directly behind `X`. To place several new nodes after an existing node in order, anchor the first on it and each further one on the previous patch's `$ref` with `after`:
 
@@ -1136,6 +1137,11 @@ curl -X POST "https://example.com/neosidekick/api/apply-patches" \
   node types, the child constraints the content repository itself applies, and properties via the
   `Flowpack.NodeTemplates` PropertiesProcessor. The first error refuses the whole request and
   nothing has been executed
+- The pre-pass also refuses what the content repository refuses only while handling the command,
+  which without a rollback would leave the earlier patches applied: moving or deleting an
+  auto-created child node (it is part of its parent's NodeType), moving a node into its own
+  subtree, and moving a node under a parent that already has a child of that name — for documents
+  that name is the URI path segment
 - Patches are never reordered
 - Execution is sequential and **not** transactional; a mid-batch execution failure leaves the
   preceding patches applied (`rollbackPerformed: false`)

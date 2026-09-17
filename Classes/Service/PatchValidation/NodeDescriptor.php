@@ -211,6 +211,15 @@ final class NodeDescriptor
         return $definition === null ? null : $this->nodeTypeManager->getNodeType($definition->nodeTypeName);
     }
 
+    /**
+     * Whether this node is an auto-created (tethered) child of its parent. The content repository
+     * refuses to move or remove such a node.
+     */
+    public function isTetheredNode(): bool
+    {
+        return $this->isTethered();
+    }
+
     private function isTethered(): bool
     {
         return $this->storedNode !== null

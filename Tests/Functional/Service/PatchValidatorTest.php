@@ -40,6 +40,10 @@ class PatchValidatorTest extends FunctionalTestCase
     private string $pageId;
     private string $mainId;
     private string $siteMainId;
+    private string $storedTextId;
+    private string $siteId;
+    private string $otherPageId;
+    private string $samePathSegmentPageId;
 
     protected function setUpContentInLive(): void
     {
@@ -63,6 +67,43 @@ class PatchValidatorTest extends FunctionalTestCase
         $main = $this->subgraph()->findNodeByPath(NodeName::fromString('main'), $pageId);
         $this->assertNotNull($main);
         $this->mainId = $main->aggregateId->value;
+
+        $this->siteId = $site->aggregateId->value;
+
+        // A second page, and inside it a page with the path segment the first page uses: moving it up
+        // to the site collides with that name.
+        $otherPageId = NodeAggregateId::create();
+        $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
+            WorkspaceName::forLive(),
+            $otherPageId,
+            NodeTypeName::fromString(self::PAGE),
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint()),
+            $site->aggregateId,
+            initialPropertyValues: PropertyValuesToWrite::fromArray(['title' => 'Other', 'uriPathSegment' => 'other'])
+        )->withNodeName(NodeName::fromString('other')));
+        $this->otherPageId = $otherPageId->value;
+
+        $samePathSegmentPageId = NodeAggregateId::create();
+        $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
+            WorkspaceName::forLive(),
+            $samePathSegmentPageId,
+            NodeTypeName::fromString(self::PAGE),
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint()),
+            $otherPageId,
+            initialPropertyValues: PropertyValuesToWrite::fromArray(['title' => 'Same Segment', 'uriPathSegment' => 'validator-test'])
+        )->withNodeName(NodeName::fromString('validator-test')));
+        $this->samePathSegmentPageId = $samePathSegmentPageId->value;
+
+        $storedTextId = NodeAggregateId::create();
+        $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
+            WorkspaceName::forLive(),
+            $storedTextId,
+            NodeTypeName::fromString(self::TEXT),
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint()),
+            $siteMain->aggregateId,
+            initialPropertyValues: PropertyValuesToWrite::fromArray(['text' => 'stored'])
+        ));
+        $this->storedTextId = $storedTextId->value;
     }
 
     #[Test]
@@ -329,6 +370,181 @@ class PatchValidatorTest extends FunctionalTestCase
         self::assertSame('$t', $exception->getNodeId());
         self::assertSame(
             'NodeType "' . self::FORBIDDEN . '" is not allowed as child of "$container" (' . self::CONTAINER . '). Allowed child types: "' . self::TEXT . '".',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * The same for a stored node: after the batch moved it, a sibling anchored on it is checked against
+     * the parent the batch gives it. Without that the batch would pass and the move would already be
+     * written when the content repository refuses the last patch.
+     */
+    #[Test]
+    public function aSiblingOfAMovedStoredNodeIsCheckedAgainstTheNewParent(): void
+    {
+        $exception = $this->expectFailure([
+            $this->create($this->mainId, self::CONTAINER, 'into', 'container'),
+            ['operation' => 'moveNode', 'nodeId' => $this->storedTextId, 'targetNodeId' => '$container', 'position' => 'into'],
+            $this->create($this->storedTextId, self::FORBIDDEN, 'after'),
+        ]);
+
+        self::assertSame(2, $exception->getPatchIndex());
+        self::assertSame('createNode', $exception->getOperation());
+        self::assertSame($this->storedTextId, $exception->getNodeId());
+        self::assertSame(
+            'NodeType "' . self::FORBIDDEN . '" is not allowed as child of "$container" (' . self::CONTAINER . '). Allowed child types: "' . self::TEXT . '".',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * Deleting a ref takes the refs the batch would create below it with it: the nodes are never created,
+     * so a later patch addressing one of them is refused instead of failing after the deletion happened.
+     */
+    #[Test]
+    public function anAnchorOnARefBelowADeletedRefIsUndefined(): void
+    {
+        $exception = $this->expectFailure([
+            $this->create($this->mainId, self::CONTAINER, 'into', 'parent'),
+            $this->create('$parent', self::TEXT, 'into', 'child'),
+            ['operation' => 'deleteNode', 'nodeId' => '$parent'],
+            ['operation' => 'updateNode', 'nodeId' => '$child', 'properties' => []],
+        ]);
+
+        self::assertSame(3, $exception->getPatchIndex());
+        self::assertSame('updateNode', $exception->getOperation());
+        self::assertSame('$child', $exception->getNodeId());
+        self::assertSame(
+            'Undefined reference "$child" in "nodeId" at patch 3: no earlier createNode patch declares "ref": "child". No refs are declared before patch 3; add "ref" to the createNode patch that creates this node and place it earlier in the batch.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * The content repository refuses to remove or move a tethered node (ConstraintChecks::
+     * requireNodeAggregateNotToBeTethered() / requireNodeAggregateToBeUntethered()), so the batch is
+     * refused before the page it would have created is written.
+     */
+    #[Test]
+    public function anAutoCreatedChildOfARefCannotBeDeleted(): void
+    {
+        $exception = $this->expectFailure([
+            $this->create($this->pageId, self::PAGE, 'into', 'page'),
+            ['operation' => 'deleteNode', 'nodeId' => '$page/main'],
+        ]);
+
+        self::assertSame(1, $exception->getPatchIndex());
+        self::assertSame('deleteNode', $exception->getOperation());
+        self::assertSame('$page/main', $exception->getNodeId());
+        self::assertSame(
+            '"$page/main" is an auto-created child node and cannot be deleted: it is part of its parent node type. Delete the nodes inside it instead, or its parent node.',
+            $exception->getMessage()
+        );
+    }
+
+    #[Test]
+    public function aStoredAutoCreatedChildCannotBeMoved(): void
+    {
+        $exception = $this->expectFailure([
+            ['operation' => 'moveNode', 'nodeId' => $this->mainId, 'targetNodeId' => $this->siteMainId, 'position' => 'into'],
+        ]);
+
+        self::assertSame(0, $exception->getPatchIndex());
+        self::assertSame('moveNode', $exception->getOperation());
+        self::assertSame($this->mainId, $exception->getNodeId());
+        self::assertSame(
+            'Node "' . $this->mainId . '" is an auto-created child node and cannot be moved: it is part of its parent node type. Move the nodes inside it instead, or its parent node.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * A ref is unique for the whole request, so deleting the node it names does not free it again.
+     */
+    #[Test]
+    public function aRefStaysTakenAfterItsNodeWasDeleted(): void
+    {
+        $exception = $this->expectFailure([
+            $this->create($this->mainId, self::CONTAINER, 'into', 'x'),
+            ['operation' => 'deleteNode', 'nodeId' => '$x'],
+            $this->create($this->mainId, self::TEXT, 'into', 'x'),
+        ]);
+
+        self::assertSame(2, $exception->getPatchIndex());
+        self::assertSame('createNode', $exception->getOperation());
+        self::assertSame(
+            'Duplicate ref "x" at patch 2: it was already declared by patch 0. Refs must be unique within the batch; rename one of them.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * The content repository refuses a move into the moved node's own subtree
+     * (ConstraintChecks::requireNodeAggregateToNotBeDescendant()).
+     */
+    #[Test]
+    public function aNodeCannotBeMovedIntoItsOwnSubtree(): void
+    {
+        $exception = $this->expectFailure([
+            ['operation' => 'moveNode', 'nodeId' => $this->otherPageId, 'targetNodeId' => $this->samePathSegmentPageId, 'position' => 'into'],
+        ]);
+
+        self::assertSame(0, $exception->getPatchIndex());
+        self::assertSame('moveNode', $exception->getOperation());
+        self::assertSame($this->otherPageId, $exception->getNodeId());
+        self::assertSame(
+            'Node "' . $this->otherPageId . '" cannot be moved into node "' . $this->samePathSegmentPageId . '": the target is the node itself or one of its descendants.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * Node names are unique among siblings (ConstraintChecks::requireNodeNameToBeUncovered()), and a
+     * document's name is its path segment - two pages with the same path segment cannot end up under
+     * the same parent.
+     */
+    #[Test]
+    public function aMoveIsRejectedWhenTheNewParentAlreadyHasAChildOfThatName(): void
+    {
+        $exception = $this->expectFailure([
+            ['operation' => 'moveNode', 'nodeId' => $this->samePathSegmentPageId, 'targetNodeId' => $this->siteId, 'position' => 'into'],
+        ]);
+
+        self::assertSame(0, $exception->getPatchIndex());
+        self::assertSame($this->samePathSegmentPageId, $exception->getNodeId());
+        self::assertSame(
+            'Node "' . $this->samePathSegmentPageId . '" cannot be moved into node "' . $this->siteId . '": it already has a child node named "validator-test", and node names are unique among siblings.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * The name is only taken as long as the batch leaves the sibling where it is.
+     */
+    #[Test]
+    public function aMoveIntoTheNameOfASiblingTheBatchDeletesPasses(): void
+    {
+        $this->validate([
+            ['operation' => 'deleteNode', 'nodeId' => $this->pageId],
+            ['operation' => 'moveNode', 'nodeId' => $this->samePathSegmentPageId, 'targetNodeId' => $this->siteId, 'position' => 'into'],
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
+    #[Test]
+    public function anAnchorOnANodeTheBatchDeletedIsRejected(): void
+    {
+        $exception = $this->expectFailure([
+            ['operation' => 'deleteNode', 'nodeId' => $this->storedTextId],
+            ['operation' => 'updateNode', 'nodeId' => $this->storedTextId, 'properties' => []],
+        ]);
+
+        self::assertSame(1, $exception->getPatchIndex());
+        self::assertSame('updateNode', $exception->getOperation());
+        self::assertSame($this->storedTextId, $exception->getNodeId());
+        self::assertSame(
+            'Node "' . $this->storedTextId . '" in "nodeId" at patch 1 was deleted by patch 0 of this batch and cannot be addressed afterwards.',
             $exception->getMessage()
         );
     }

@@ -78,6 +78,31 @@ class PatchValidator
     private array $pendingNodes = [];
 
     /**
+     * Every `ref` the batch declares, keyed by ref, with the patch index that declared it. Kept even
+     * when the node is deleted again, because a ref is unique for the whole request.
+     *
+     * @var array<string, int>
+     */
+    private array $declaredRefs = [];
+
+    /**
+     * The new parent of every node the batch moves, keyed by node aggregate id: a later
+     * `before`/`after` anchor on a moved node is checked against where the batch puts it, not against
+     * where it still is while the batch is being validated.
+     *
+     * @var array<string, NodeDescriptor>
+     */
+    private array $movedNodeParents = [];
+
+    /**
+     * The stored nodes the batch deletes, keyed by node aggregate id, with the patch index that
+     * deleted them: a later patch cannot address a node that is gone by then.
+     *
+     * @var array<string, int>
+     */
+    private array $deletedStoredNodeIds = [];
+
+    /**
      * Validate a whole batch before execution, in patch order, stopping at the first error.
      *
      * @param array<int, AbstractPatch> $patches
@@ -87,12 +112,18 @@ class PatchValidator
     public function validatePatches(array $patches, ContentSubgraphInterface $subgraph): void
     {
         $this->pendingNodes = [];
+        $this->declaredRefs = [];
+        $this->movedNodeParents = [];
+        $this->deletedStoredNodeIds = [];
         try {
             foreach ($patches as $patchIndex => $patch) {
                 $this->validatePatch($patch, $patchIndex, $subgraph);
             }
         } finally {
             $this->pendingNodes = [];
+            $this->declaredRefs = [];
+            $this->movedNodeParents = [];
+            $this->deletedStoredNodeIds = [];
         }
     }
 
@@ -159,14 +190,14 @@ class PatchValidator
             );
         }
 
-        if (isset($this->pendingNodes[$ref])) {
+        if (isset($this->declaredRefs[$ref])) {
             throw new PatchFailedException(
                 sprintf(
                     'Duplicate ref "%s" at patch %d: it was already declared by patch %d. '
                     . 'Refs must be unique within the batch; rename one of them.',
                     $ref,
                     $patchIndex,
-                    $this->pendingNodes[$ref]->getDeclaredAtPatchIndex()
+                    $this->declaredRefs[$ref]
                 ),
                 $patchIndex,
                 'createNode'
@@ -249,6 +280,7 @@ class PatchValidator
 
         if ($patch->getRef() !== null) {
             $this->pendingNodes[$patch->getRef()] = NodeDescriptor::forPendingNode($patch->getRef(), $patchIndex, $nodeType, $actualParent);
+            $this->declaredRefs[$patch->getRef()] = $patchIndex;
         }
     }
 
@@ -299,6 +331,8 @@ class PatchValidator
         // Validate target node exists
         $targetNode = $this->resolveAnchor($patch->getTargetNodeId(), 'targetNodeId', $patchIndex, 'moveNode', $subgraph, $contentRepository);
 
+        $this->requireUntetheredNode($node, $patchIndex, 'moveNode', $patch->getNodeId(), 'moved');
+
         // Validate position
         $this->validatePosition($patch->getPosition(), $patchIndex, 'moveNode', $patch->getNodeId());
 
@@ -333,9 +367,15 @@ class PatchValidator
             );
         }
 
-        // A moved pending node reports its new parent to later before/after anchors
+        $this->requireMoveTargetToBeValid($node, $newParentNode, $subgraph, $contentRepository, $patchIndex, $patch->getNodeId());
+
+        // A moved node reports its new parent to later before/after anchors
         if ($node->isPendingNode()) {
             $this->pendingNodes[$node->getRef()] = $node->withParent($newParentNode);
+        }
+        $movedStoredNode = $node->getStoredNode();
+        if ($movedStoredNode !== null) {
+            $this->movedNodeParents[$movedStoredNode->aggregateId->value] = $newParentNode;
         }
     }
 
@@ -357,9 +397,139 @@ class PatchValidator
         // Validate node exists
         $node = $this->resolveAnchor($patch->getNodeId(), 'nodeId', $patchIndex, 'deleteNode', $subgraph, $contentRepository);
 
-        // A deleted pending node stops being addressable: later anchors on its ref are undefined
-        if ($node->isPendingNode()) {
-            unset($this->pendingNodes[$node->getRef()]);
+        $this->requireUntetheredNode($node, $patchIndex, 'deleteNode', $patch->getNodeId(), 'deleted');
+
+        // A deleted node stops being addressable, and it takes the nodes the batch would create
+        // below it with it: later anchors on those refs are undefined
+        $this->forgetPendingNodesBelow($node);
+        $deletedStoredNode = $node->getStoredNode();
+        if ($deletedStoredNode !== null) {
+            $this->deletedStoredNodeIds[$deletedStoredNode->aggregateId->value] = $patchIndex;
+        }
+    }
+
+    /**
+     * Auto-created child nodes are part of their parent's node type: the content repository refuses
+     * to move or remove them (ConstraintChecks::requireNodeAggregateToBeUntethered()), so a batch
+     * that asks for it is refused before any of its patches is executed.
+     *
+     * @throws PatchFailedException
+     */
+    private function requireUntetheredNode(NodeDescriptor $node, int $patchIndex, string $operation, string $anchor, string $verb): void
+    {
+        if (!$node->isTetheredNode()) {
+            return;
+        }
+
+        throw new PatchFailedException(
+            sprintf(
+                '%s is an auto-created child node and cannot be %s: it is part of its parent node type. '
+                . '%s the nodes inside it instead, or its parent node.',
+                ucfirst($node->getLabel()),
+                $verb,
+                $operation === 'moveNode' ? 'Move' : 'Delete'
+            ),
+            $patchIndex,
+            $operation,
+            $anchor
+        );
+    }
+
+    /**
+     * What the content repository checks for a move besides the child constraints: the target must not
+     * be inside the node being moved (requireNodeAggregateToNotBeDescendant()) and the node's name must
+     * be free under the new parent (requireNodeNameToBeUncovered()).
+     *
+     * Both are checked against the state the batch has built up, so a sibling this batch moves away or
+     * deletes does not count as a collision.
+     *
+     * @throws PatchFailedException
+     */
+    private function requireMoveTargetToBeValid(NodeDescriptor $node, NodeDescriptor $newParent, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository, int $patchIndex, string $anchor): void
+    {
+        for ($ancestor = $newParent; $ancestor !== null; $ancestor = $this->resolveParent($ancestor, $subgraph, $contentRepository)) {
+            if (!$this->isSameNode($ancestor, $node)) {
+                continue;
+            }
+
+            throw new PatchFailedException(
+                sprintf(
+                    '%s cannot be moved into %s: the target is the node itself or one of its descendants.',
+                    ucfirst($node->getLabel()),
+                    $newParent->getLabel()
+                ),
+                $patchIndex,
+                'moveNode',
+                $anchor
+            );
+        }
+
+        $movedStoredNode = $node->getStoredNode();
+        $newParentStoredNode = $newParent->getStoredNode();
+        if ($movedStoredNode === null || $movedStoredNode->name === null || $newParentStoredNode === null) {
+            return;
+        }
+
+        $sibling = $subgraph->findNodeByPath($movedStoredNode->name, $newParentStoredNode->aggregateId);
+        if ($sibling === null || $sibling->aggregateId->equals($movedStoredNode->aggregateId)) {
+            return;
+        }
+        $siblingId = $sibling->aggregateId->value;
+        $siblingLeavesTheParent = isset($this->deletedStoredNodeIds[$siblingId])
+            || (isset($this->movedNodeParents[$siblingId]) && !$this->isSameNode($this->movedNodeParents[$siblingId], $newParent));
+        if ($siblingLeavesTheParent) {
+            return;
+        }
+
+        throw new PatchFailedException(
+            sprintf(
+                '%s cannot be moved into %s: it already has a child node named "%s", and node names are unique among siblings.',
+                ucfirst($node->getLabel()),
+                $newParent->getLabel(),
+                $movedStoredNode->name->value
+            ),
+            $patchIndex,
+            'moveNode',
+            $anchor
+        );
+    }
+
+    /**
+     * Whether both descriptors address the same node: the same stored node, or the same ref.
+     */
+    private function isSameNode(NodeDescriptor $left, NodeDescriptor $right): bool
+    {
+        $leftStoredNode = $left->getStoredNode();
+        $rightStoredNode = $right->getStoredNode();
+        if ($leftStoredNode !== null && $rightStoredNode !== null) {
+            return $leftStoredNode->aggregateId->equals($rightStoredNode->aggregateId);
+        }
+
+        return $left->getRef() !== null && $left->getRef() === $right->getRef();
+    }
+
+    /**
+     * Drops a deleted node and every node the batch would create below it from the pending-node map,
+     * so a later anchor on one of their refs is refused as undefined instead of resolving to a node
+     * the batch no longer creates.
+     */
+    private function forgetPendingNodesBelow(NodeDescriptor $node): void
+    {
+        $deletedRef = $node->getRef();
+        $deletedStoredNodeId = $node->getStoredNode()?->aggregateId->value;
+        if ($deletedRef !== null) {
+            unset($this->pendingNodes[$deletedRef]);
+        }
+
+        foreach ($this->pendingNodes as $ref => $pendingNode) {
+            for ($ancestor = $pendingNode->getPendingParent(); $ancestor !== null; $ancestor = $ancestor->getPendingParent()) {
+                $isBelowDeletedNode = ($deletedRef !== null && $ancestor->getRef() === $deletedRef)
+                    || ($deletedStoredNodeId !== null && $ancestor->getStoredNode()?->aggregateId->value === $deletedStoredNodeId);
+                if ($isBelowDeletedNode) {
+                    unset($this->pendingNodes[$ref]);
+                    break;
+                }
+            }
         }
     }
 
@@ -446,6 +616,20 @@ class PatchValidator
 
         if ($refAnchor === null) {
             $node = $this->getNodeById($anchor, $patchIndex, $operation, $subgraph);
+            if (isset($this->deletedStoredNodeIds[$node->aggregateId->value])) {
+                throw new PatchFailedException(
+                    sprintf(
+                        'Node "%s" in "%s" at patch %d was deleted by patch %d of this batch and cannot be addressed afterwards.',
+                        $anchor,
+                        $field,
+                        $patchIndex,
+                        $this->deletedStoredNodeIds[$node->aggregateId->value]
+                    ),
+                    $patchIndex,
+                    $operation,
+                    $anchor
+                );
+            }
 
             return NodeDescriptor::forStoredNode(
                 $node,
@@ -520,6 +704,9 @@ class PatchValidator
         $storedNode = $node->getStoredNode();
         if ($storedNode === null) {
             return $node->getPendingParent();
+        }
+        if (isset($this->movedNodeParents[$storedNode->aggregateId->value])) {
+            return $this->movedNodeParents[$storedNode->aggregateId->value];
         }
 
         $parentNode = $subgraph->findParentNode($storedNode->aggregateId);

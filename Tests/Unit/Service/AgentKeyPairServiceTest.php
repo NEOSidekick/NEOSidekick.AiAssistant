@@ -6,7 +6,7 @@ namespace NEOSidekick\AiAssistant\Tests\Unit\Service;
 
 use DateTimeImmutable;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\Driver\AbstractDriverException as DriverException;
+use Doctrine\DBAL\Driver\AbstractException;
 use Doctrine\DBAL\Exception\TableNotFoundException;
 use Doctrine\ORM\EntityManagerInterface;
 use Neos\Flow\Persistence\Doctrine\Exception\DatabaseStructureException;
@@ -299,10 +299,7 @@ class AgentKeyPairServiceTest extends TestCase
     public function aWriteIntoTheMissingTableNamesTheMigrationWithoutAnyKeyMaterial(): void
     {
         $connection = $this->createMock(Connection::class);
-        $connection->method('insert')->willThrowException(new TableNotFoundException(
-            'An exception occurred while executing \'INSERT INTO ...\' with params ["-----BEGIN PRIVATE KEY-----"]: Base table or view not found',
-            new DriverException('Table \'...agentsigningkeyrecord\' doesn\'t exist', '42S02', 1146)
-        ));
+        $connection->method('insert')->willThrowException($this->missingTableOnWrite());
         $entityManager = $this->createMock(EntityManagerInterface::class);
         $entityManager->method('getConnection')->willReturn($connection);
         $repository = new AgentSigningKeyRecordRepository();
@@ -701,6 +698,24 @@ class AgentKeyPairServiceTest extends TestCase
     private function missingTableOnRead(): DatabaseStructureException
     {
         return new DatabaseStructureException('A table or view seems to be missing from the database.', 1146);
+    }
+
+    /**
+     * What DBAL throws for an INSERT into a missing table, with the bound PEM in its message. DBAL 2
+     * (Neos 8.3) takes that message as first argument, DBAL 3 (Neos 8.4) derives it from the driver exception.
+     */
+    private function missingTableOnWrite(): TableNotFoundException
+    {
+        $driverException = new class (
+            'An exception occurred while executing \'INSERT INTO ...\' with params ["-----BEGIN PRIVATE KEY-----"]: Base table or view not found',
+            '42S02',
+            1146
+        ) extends AbstractException {
+        };
+
+        return method_exists(TableNotFoundException::class, 'getQuery')
+            ? new TableNotFoundException($driverException, null)
+            : new TableNotFoundException($driverException->getMessage(), $driverException);
     }
 
     private function fixturePublicKeyPem(): string

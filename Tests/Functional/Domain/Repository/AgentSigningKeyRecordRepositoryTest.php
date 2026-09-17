@@ -417,11 +417,14 @@ class AgentSigningKeyRecordRepositoryTest extends FunctionalTestCase
         self::assertStringNotContainsString('-----BEGIN', $caughtException->getMessage());
         $previousException = $caughtException->getPrevious();
         self::assertNotNull($previousException, 'the driver exception stays available for a stack trace');
-        self::assertStringContainsString(
-            '-----BEGIN',
-            $previousException->getMessage(),
-            'the leak this wrapper exists for must be real: DBAL puts the key PEM into its own message'
-        );
+        // Only DBAL 2 (Neos 8.3) puts the bound values into its message; DBAL 3 (Neos 8.4) keeps them on getQuery()
+        if (!method_exists($previousException, 'getQuery')) {
+            self::assertStringContainsString(
+                '-----BEGIN',
+                $previousException->getMessage(),
+                'the leak this wrapper exists for must be real: DBAL puts the key PEM into its own message'
+            );
+        }
     }
 
     /**

@@ -136,6 +136,18 @@ roles:
 Of course, you can also define the privilege for any
 other role that you are using for example `Neos.Neos:Administrator`.
 
+### Multi-site installations
+
+The page list the assistant works with belongs to one Neos site. When the assistant names a
+site, that site is used; otherwise the site whose active Domain record matches the host the
+request came in on (the same suffix matching the frontend routing uses, and regardless of
+whether the site is online); if no record matches, Neos's default site is used (the one
+configured as `Neos.Neos.defaultSiteNodeName`, else the first online site). Only when Neos
+has no default site either does the first site below the sites root step in, and that
+fallback is logged. Every answer lists the site node names of the installation, so
+the assistant can ask for another site by name; naming a site that does not exist is refused
+with a `400` listing the available names.
+
 ### Signing key of this installation
 
 This installation identifies itself to NEOSidekick with an RSA key pair. It lives in one

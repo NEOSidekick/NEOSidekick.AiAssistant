@@ -8,7 +8,6 @@ use Flowpack\NodeTemplates\Domain\ErrorHandling\ProcessingErrors;
 use Flowpack\NodeTemplates\Domain\NodeCreation\PropertiesProcessor;
 use Flowpack\NodeTemplates\Domain\NodeCreation\ReferencesProcessor;
 use Flowpack\NodeTemplates\Domain\NodeCreation\TransientNode;
-use Flowpack\NodeTemplates\Domain\TemplateNodeCreationHandlerFactory;
 use Neos\ContentRepository\Core\ContentRepository;
 use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
@@ -31,6 +30,7 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryId;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeVariantSelectionStrategy;
 use Neos\ContentRepository\Core\SharedModel\Node\ReferenceName;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
@@ -38,8 +38,6 @@ use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\Image;
-use Neos\Neos\Ui\Domain\NodeCreation\NodeCreationCommands;
-use Neos\Neos\Ui\Domain\NodeCreation\NodeCreationElements;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\CreatedNodeInfo;
 use NEOSidekick\AiAssistant\Dto\Patch\CreateNodePatch;
@@ -47,6 +45,7 @@ use NEOSidekick\AiAssistant\Dto\Patch\DeleteNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\MoveNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\PatchError;
 use NEOSidekick\AiAssistant\Dto\Patch\PatchResult;
+use NEOSidekick\AiAssistant\Dto\Patch\RefAnchor;
 use NEOSidekick\AiAssistant\Dto\Patch\UpdateNodePatch;
 use NEOSidekick\AiAssistant\Exception\PatchFailedException;
 
@@ -58,6 +57,9 @@ use NEOSidekick\AiAssistant\Exception\PatchFailedException;
  * there is no database-transaction based rollback anymore: patches that were
  * already applied when a later patch fails stay applied, and dry-run mode
  * performs validation only.
+ *
+ * A createNode patch may declare a batch-local `ref`; later patches of the same batch address
+ * the created node as `$<ref>` and its tethered child nodes as `$<ref>/<childName>`.
  */
 class NodePatchService
 {
@@ -68,12 +70,6 @@ class NodePatchService
      * @var PatchValidator
      */
     protected $patchValidator;
-
-    /**
-     * @Flow\Inject
-     * @var TemplateNodeCreationHandlerFactory
-     */
-    protected $templateNodeCreationHandlerFactory;
 
     /**
      * @Flow\Inject
@@ -98,6 +94,15 @@ class NodePatchService
      * @var ContentRepositoryRegistry
      */
     protected $contentRepositoryRegistry;
+
+    /**
+     * Nodes created by the batch currently being executed, keyed by the `ref` their createNode patch
+     * declared. Anchors (`positionRelativeToNodeId`, `nodeId`, `targetNodeId`) of the form `$<ref>` and
+     * `$<ref>/<childName>` are resolved through this map before the subgraph is asked.
+     *
+     * @var array<string, NodeAggregateId>
+     */
+    private array $refNodeAggregateIds = [];
 
     /**
      * Apply a batch of patches to the content repository.
@@ -144,17 +149,15 @@ class NodePatchService
             );
         }
 
-        // Pre-validate all patches before executing any of them
-        foreach ($patches as $index => $patch) {
-            try {
-                $this->patchValidator->validatePatch($patch, $index, $subgraph);
-            } catch (PatchFailedException $e) {
-                return PatchResult::failure(
-                    $dryRun,
-                    new PatchError($e->getMessage(), $e->getPatchIndex(), $e->getOperation(), $e->getNodeId()),
-                    false
-                );
-            }
+        // Pre-validate the whole batch before executing any of its patches
+        try {
+            $this->patchValidator->validatePatches($patches, $subgraph);
+        } catch (PatchFailedException $e) {
+            return PatchResult::failure(
+                $dryRun,
+                new PatchError($e->getMessage(), $e->getPatchIndex(), $e->getOperation(), $e->getNodeId()),
+                false
+            );
         }
 
         if ($dryRun) {
@@ -164,10 +167,12 @@ class NodePatchService
             // rollback, so dry-run now stops after validation and returns minimal results.
             $results = [];
             foreach ($patches as $index => $patch) {
+                $nodeId = method_exists($patch, 'getNodeId') ? $patch->getNodeId() : null;
                 $results[] = [
                     'index' => $index,
                     'operation' => $patch->getOperation(),
-                    'nodeId' => method_exists($patch, 'getNodeId') ? $patch->getNodeId() : null,
+                    // Refs are request-scoped aliases and never echoed in result rows
+                    'nodeId' => $nodeId !== null && RefAnchor::isAnchor($nodeId) ? null : $nodeId,
                 ];
             }
             return PatchResult::success(true, $results);
@@ -175,6 +180,7 @@ class NodePatchService
 
         // Execute patches sequentially
         $results = [];
+        $this->refNodeAggregateIds = [];
         // Track current patch index for error reporting in case of unexpected exceptions
         $currentIndex = 0;
 
@@ -200,7 +206,56 @@ class NodePatchService
                 new PatchError($e->getMessage(), $currentIndex, 'unknown'),
                 false
             );
+        } finally {
+            $this->refNodeAggregateIds = [];
         }
+    }
+
+    /**
+     * Resolve an anchor field: `$<ref>` and `$<ref>/<childName>` through the nodes created so far in this
+     * batch, anything else as a node aggregate id or node address in the subgraph.
+     *
+     * @throws PatchFailedException
+     */
+    private function resolveAnchor(string $anchor, int $index, string $operation, ContentSubgraphInterface $subgraph): Node
+    {
+        $refAnchor = RefAnchor::fromAnchor($anchor);
+        if ($refAnchor === null) {
+            return $this->requireNode($anchor, $index, $operation, $subgraph);
+        }
+
+        $nodeAggregateId = $this->refNodeAggregateIds[$refAnchor->getRef()] ?? null;
+        $node = null;
+        if ($nodeAggregateId !== null) {
+            $node = $refAnchor->getChildName() === null
+                ? $subgraph->findNodeById($nodeAggregateId)
+                : $subgraph->findNodeByPath(NodeName::fromString($refAnchor->getChildName()), $nodeAggregateId);
+        }
+        if ($node === null) {
+            throw new PatchFailedException(
+                sprintf('Node "%s" not found', $anchor),
+                $index,
+                $operation,
+                $anchor
+            );
+        }
+
+        return $node;
+    }
+
+    /**
+     * How a failure message names the anchor: the id for stored nodes, the alias plus the resolved id for refs.
+     */
+    private function describeAnchor(string $anchor, ?Node $resolvedNode): string
+    {
+        if (!RefAnchor::isAnchor($anchor)) {
+            return sprintf('node "%s"', $anchor);
+        }
+        if ($resolvedNode === null) {
+            return sprintf('"%s"', $anchor);
+        }
+
+        return sprintf('"%s" (node "%s")', $anchor, $resolvedNode->aggregateId->value);
     }
 
     /**
@@ -250,8 +305,8 @@ class NodePatchService
     /**
      * Execute a createNode patch.
      *
-     * Returns extended information about all nodes that were created,
-     * including auto-created child nodes and nodes from NodeTemplates.
+     * Returns extended information about all nodes that were created: the
+     * requested node plus its tethered (auto-created) child nodes, recursively.
      *
      * @param CreateNodePatch $patch
      * @param int $index
@@ -262,8 +317,9 @@ class NodePatchService
      */
     private function executeCreateNode(CreateNodePatch $patch, int $index, ContentRepository $contentRepository, ContentSubgraphInterface $subgraph): array
     {
+        $referenceNode = null;
         try {
-            $referenceNode = $this->requireNode($patch->getPositionRelativeToNodeId(), $index, 'createNode', $subgraph);
+            $referenceNode = $this->resolveAnchor($patch->getPositionRelativeToNodeId(), $index, 'createNode', $subgraph);
 
             $nodeTypeManager = $contentRepository->getNodeTypeManager();
             $nodeType = $nodeTypeManager->getNodeType($patch->getNodeType());
@@ -337,16 +393,13 @@ class NodePatchService
                 empty($initialProperties) ? null : PropertyValuesToWrite::fromArray($initialProperties)
             );
 
-            // Apply NodeTemplates if configured in the NodeType.
-            // NodeCreationCommands/NodeCreationElements constructors are @internal, but this is
-            // the same enrichment mechanism the Neos UI uses for node creation handlers.
-            $commands = NodeCreationCommands::fromFirstCommand($createCommand, $nodeTypeManager);
-            $commands = $this->templateNodeCreationHandlerFactory
-                ->build($contentRepository)
-                ->handle($commands, new NodeCreationElements([], []));
+            // Only the requested node and its tethered children: Flowpack.NodeTemplates is a creation
+            // dialog handler, and without dialog data its templates would overwrite the properties given
+            // here and add child nodes nobody asked for.
+            $contentRepository->handle($createCommand);
 
-            foreach ($commands as $command) {
-                $contentRepository->handle($command);
+            if ($patch->getRef() !== null) {
+                $this->refNodeAggregateIds[$patch->getRef()] = $newNodeAggregateId;
             }
 
             $referencesCommand = $this->createReferencesCommand($subgraph->getWorkspaceName(), $newNodeAggregateId, $originDimensionSpacePoint, $references);
@@ -390,7 +443,11 @@ class NodePatchService
             throw $e;
         } catch (\Exception $e) {
             throw new PatchFailedException(
-                sprintf('Failed to create node: %s', $e->getMessage()),
+                sprintf(
+                    'Failed to create node relative to %s: %s',
+                    $this->describeAnchor($patch->getPositionRelativeToNodeId(), $referenceNode),
+                    $e->getMessage()
+                ),
                 $index,
                 'createNode',
                 $patch->getPositionRelativeToNodeId(),
@@ -403,8 +460,8 @@ class NodePatchService
      * Collect information about a node and all its descendants.
      *
      * This traverses the node tree to gather details about all nodes that
-     * were created, including auto-created child nodes (tethered children)
-     * and nodes created by NodeTemplates.
+     * were created, i.e. the node itself plus its tethered (auto-created)
+     * child nodes, recursively.
      *
      * @param Node $node The node to start collecting from
      * @param int $depth The depth relative to the main created node (0 = main node)
@@ -525,8 +582,9 @@ class NodePatchService
      */
     private function executeUpdateNode(UpdateNodePatch $patch, int $index, ContentRepository $contentRepository, ContentSubgraphInterface $subgraph): string
     {
+        $node = null;
         try {
-            $node = $this->requireNode($patch->getNodeId(), $index, 'updateNode', $subgraph);
+            $node = $this->resolveAnchor($patch->getNodeId(), $index, 'updateNode', $subgraph);
 
             $nodeTypeManager = $contentRepository->getNodeTypeManager();
             $nodeType = $nodeTypeManager->getNodeType($node->nodeTypeName);
@@ -613,7 +671,7 @@ class NodePatchService
             throw $e;
         } catch (\Exception $e) {
             throw new PatchFailedException(
-                sprintf('Failed to update node: %s', $e->getMessage()),
+                sprintf('Failed to update %s: %s', $this->describeAnchor($patch->getNodeId(), $node), $e->getMessage()),
                 $index,
                 'updateNode',
                 $patch->getNodeId(),
@@ -634,10 +692,11 @@ class NodePatchService
      */
     private function executeMoveNode(MoveNodePatch $patch, int $index, ContentRepository $contentRepository, ContentSubgraphInterface $subgraph): string
     {
+        $node = null;
         try {
-            $node = $this->requireNode($patch->getNodeId(), $index, 'moveNode', $subgraph);
+            $node = $this->resolveAnchor($patch->getNodeId(), $index, 'moveNode', $subgraph);
 
-            $targetNode = $this->requireNode($patch->getTargetNodeId(), $index, 'moveNode', $subgraph);
+            $targetNode = $this->resolveAnchor($patch->getTargetNodeId(), $index, 'moveNode', $subgraph);
 
             // Determine new parent and siblings based on position
             $newPrecedingSibling = null;
@@ -677,7 +736,7 @@ class NodePatchService
             throw $e;
         } catch (\Exception $e) {
             throw new PatchFailedException(
-                sprintf('Failed to move node: %s', $e->getMessage()),
+                sprintf('Failed to move %s: %s', $this->describeAnchor($patch->getNodeId(), $node), $e->getMessage()),
                 $index,
                 'moveNode',
                 $patch->getNodeId(),
@@ -698,8 +757,9 @@ class NodePatchService
      */
     private function executeDeleteNode(DeleteNodePatch $patch, int $index, ContentRepository $contentRepository, ContentSubgraphInterface $subgraph): string
     {
+        $node = null;
         try {
-            $node = $this->requireNode($patch->getNodeId(), $index, 'deleteNode', $subgraph);
+            $node = $this->resolveAnchor($patch->getNodeId(), $index, 'deleteNode', $subgraph);
 
             // allSpecializations is the closest equivalent to the old variant-scoped remove()
             $contentRepository->handle(RemoveNodeAggregate::create(
@@ -714,7 +774,7 @@ class NodePatchService
             throw $e;
         } catch (\Exception $e) {
             throw new PatchFailedException(
-                sprintf('Failed to delete node: %s', $e->getMessage()),
+                sprintf('Failed to delete %s: %s', $this->describeAnchor($patch->getNodeId(), $node), $e->getMessage()),
                 $index,
                 'deleteNode',
                 $patch->getNodeId(),

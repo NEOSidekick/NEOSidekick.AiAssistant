@@ -16,8 +16,11 @@ use Neos\ContentRepository\Core\SharedModel\ContentRepository\ContentRepositoryI
 use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepository\Core\SharedModel\Workspace\WorkspaceName;
 use Neos\Flow\Annotations as Flow;
+use Neos\Neos\Domain\Repository\DomainRepository;
+use Neos\Neos\Domain\Repository\SiteRepository;
 use Neos\Neos\Domain\SubtreeTagging\NeosSubtreeTag;
 use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
+use Psr\Log\LoggerInterface;
 
 /**
  * Service to extract document node list from Neos.
@@ -48,6 +51,24 @@ class DocumentNodeListExtractor
     protected \NEOSidekick\AiAssistant\Service\ContentRepositoryProvider $contentRepositoryProvider;
 
     /**
+     * @Flow\Inject
+     * @var DomainRepository
+     */
+    protected $domainRepository;
+
+    /**
+     * @Flow\Inject
+     * @var SiteRepository
+     */
+    protected $siteRepository;
+
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $logger;
+
+    /**
      * Get the list of properties to include.
      *
      * @return array
@@ -62,9 +83,10 @@ class DocumentNodeListExtractor
      *
      * @param string $workspace Workspace name (default: 'live')
      * @param array $dimensions Content dimensions
-     * @param string|null $siteNodeName Site node name (null = first site)
+     * @param string|null $siteNodeName Site node name (null = the site whose Domain record matches the request host, else Neos's default site)
      * @param string $nodeTypeFilter Filter by NodeType
      * @param int $depth Maximum traversal depth (-1 = unlimited)
+     * @param string|null $requestHost Host of the incoming request, used when no site node name is given
      * @return array
      */
     public function extract(
@@ -72,7 +94,8 @@ class DocumentNodeListExtractor
         array $dimensions = [],
         ?string $siteNodeName = null,
         string $nodeTypeFilter = self::DOCUMENT_TYPE,
-        int $depth = -1
+        int $depth = -1,
+        ?string $requestHost = null
     ): array {
         $contentRepository = $this->contentRepositoryProvider->getContentRepository();
         $workspaceObject = $contentRepository->findWorkspaceByName(WorkspaceName::fromString($workspace));
@@ -89,7 +112,11 @@ class DocumentNodeListExtractor
         $subgraph = $contentRepository->getContentGraph($workspaceObject->workspaceName)
             ->getSubgraph($dimensionSpacePoint, NodeVisibility::excludeRemoved());
 
-        $siteNode = $this->resolveSiteNode($contentRepository, $subgraph, $siteNodeName);
+        $sitesRootNode = $subgraph->findRootNodeByType(NodeTypeName::fromString(self::SITES_ROOT_TYPE));
+        $availableSiteNodes = $sitesRootNode === null ? [] : $this->findAvailableSiteNodes($subgraph, $sitesRootNode);
+        $siteNode = $sitesRootNode === null
+            ? null
+            : $this->resolveSiteNode($subgraph, $sitesRootNode, $siteNodeName, $requestHost, $availableSiteNodes);
 
         if ($siteNode === null) {
             throw new \InvalidArgumentException('No site found', 1735660100);
@@ -121,34 +148,103 @@ class DocumentNodeListExtractor
                 'nodeType' => $siteNode->nodeTypeName->value,
                 'identifier' => $siteNode->aggregateId->value,
             ],
+            'availableSites' => $this->describeSiteNodes($availableSiteNodes),
             'documents' => $documents,
             'documentCount' => count($documents),
         ];
     }
 
     /**
-     * Resolve the site node to query.
+     * Resolve the site node to query: an explicitly requested site, else the site whose active
+     * Domain record matches the request host (Neos's suffix matching, site state ignored), else
+     * Neos's default site (`Neos.Neos.defaultSiteNodeName`, else the first online site); only
+     * when Neos has no default either, the first site below the sites root, logged.
+     *
+     * @param array<int, Node> $availableSiteNodes
+     * @throws \InvalidArgumentException If a site node name is given that is not a site node name or does not exist
      */
-    private function resolveSiteNode(ContentRepository $contentRepository, ContentSubgraphInterface $subgraph, ?string $siteNodeName): ?Node
+    private function resolveSiteNode(
+        ContentSubgraphInterface $subgraph,
+        Node $sitesRootNode,
+        ?string $siteNodeName,
+        ?string $requestHost,
+        array $availableSiteNodes
+    ): ?Node {
+        if ($siteNodeName !== null) {
+            $normalizedSiteNodeName = strtolower($siteNodeName);
+            $siteNode = preg_match(NodeName::PATTERN, $normalizedSiteNodeName) === 1
+                ? $subgraph->findNodeByPath(NodeName::fromString($normalizedSiteNodeName), $sitesRootNode->aggregateId)
+                : null;
+            if ($siteNode === null) {
+                throw new \InvalidArgumentException(sprintf(
+                    'No site "%s" found. Available sites: %s',
+                    $siteNodeName,
+                    implode(', ', array_map(static fn(Node $node): string => (string)$node->name?->value, $availableSiteNodes))
+                ), 1735660100);
+            }
+
+            return $siteNode;
+        }
+
+        $hostSiteNode = $this->resolveSiteNodeByHost($subgraph, $sitesRootNode, $requestHost);
+        if ($hostSiteNode !== null) {
+            return $hostSiteNode;
+        }
+
+        $this->logger->info(sprintf(
+            'NEOSidekick document list: no site matches the request host "%s", falling back to the first site of the installation.',
+            $requestHost ?? ''
+        ), ['requestHost' => $requestHost]);
+
+        return $availableSiteNodes[0] ?? null;
+    }
+
+    /**
+     * The node of the site whose active Domain record matches the given host, else Neos's default
+     * site (`Neos.Neos.defaultSiteNodeName`, else the first online site). Null when there is no
+     * host at all or when Neos has no default site either.
+     */
+    private function resolveSiteNodeByHost(ContentSubgraphInterface $subgraph, Node $sitesRootNode, ?string $requestHost): ?Node
     {
-        $sitesRootNode = $subgraph->findRootNodeByType(NodeTypeName::fromString(self::SITES_ROOT_TYPE));
-        if ($sitesRootNode === null) {
+        if ($requestHost === null) {
             return null;
         }
 
-        // If a specific site is requested, resolve it directly
-        if ($siteNodeName !== null) {
-            return $subgraph->findNodeByPath(NodeName::fromString($siteNodeName), $sitesRootNode->aggregateId);
+        $site = $this->domainRepository->findOneByHost($requestHost, true)?->getSite()
+            ?? $this->siteRepository->findDefault();
+        if ($site === null) {
+            return null;
         }
 
-        // Try to get the first site below the sites root node
-        $childNodes = $subgraph->findChildNodes($sitesRootNode->aggregateId, FindChildNodesFilter::create(nodeTypes: self::SITE_TYPE));
-        if ($childNodes->count() > 0) {
-            return $childNodes->first();
+        return $subgraph->findNodeByPath(NodeName::fromString($site->getNodeName()->value), $sitesRootNode->aggregateId);
+    }
+
+    /**
+     * All site nodes of this installation, in tree order.
+     *
+     * @return array<int, Node>
+     */
+    private function findAvailableSiteNodes(ContentSubgraphInterface $subgraph, Node $sitesRootNode): array
+    {
+        $siteNodes = $subgraph->findChildNodes($sitesRootNode->aggregateId, FindChildNodesFilter::create(nodeTypes: self::SITE_TYPE));
+        if ($siteNodes->count() === 0) {
+            // for sites with custom NodeTypes
+            $siteNodes = $subgraph->findChildNodes($sitesRootNode->aggregateId, FindChildNodesFilter::create());
         }
 
-        // Fallback: get any child node of the sites root (for sites with custom NodeTypes)
-        return $subgraph->findChildNodes($sitesRootNode->aggregateId, FindChildNodesFilter::create())->first();
+        return iterator_to_array($siteNodes, false);
+    }
+
+    /**
+     * @param array<int, Node> $siteNodes
+     * @return array<int, array{nodeName: string, name: string}>
+     */
+    private function describeSiteNodes(array $siteNodes): array
+    {
+        return array_map(static fn(Node $node): array => [
+            'nodeName' => (string)$node->name?->value,
+            'name' => (string)($node->getProperty('title') ?? $node->name?->value),
+        ], $siteNodes);
     }
 
     /**

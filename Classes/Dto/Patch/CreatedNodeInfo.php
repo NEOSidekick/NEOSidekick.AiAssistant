@@ -11,7 +11,7 @@ use Neos\Flow\Annotations as Flow;
  * DTO representing information about a created node.
  *
  * Used to return details about nodes created during a createNode patch operation,
- * including auto-created child nodes (fixed child nodes) and nodes from NodeTemplates.
+ * i.e. the requested node and its tethered (auto-created) child nodes, recursively.
  *
  * @Flow\Proxy(false)
  */

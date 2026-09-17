@@ -16,14 +16,17 @@ use Neos\ContentRepository\Core\Projection\ContentGraph\ContentSubgraphInterface
 use Neos\ContentRepository\Core\Projection\ContentGraph\Node;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAddress;
 use Neos\ContentRepository\Core\SharedModel\Node\NodeAggregateId;
+use Neos\ContentRepository\Core\SharedModel\Node\NodeName;
 use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\CreateNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\DeleteNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\MoveNodePatch;
+use NEOSidekick\AiAssistant\Dto\Patch\RefAnchor;
 use NEOSidekick\AiAssistant\Dto\Patch\UpdateNodePatch;
 use NEOSidekick\AiAssistant\Exception\PatchFailedException;
+use NEOSidekick\AiAssistant\Service\PatchValidation\NodeDescriptor;
 
 /**
  * Validates patches before execution using NodeTemplates' PropertiesProcessor.
@@ -31,9 +34,18 @@ use NEOSidekick\AiAssistant\Exception\PatchFailedException;
  * This service validates properties against NodeType schemas before applying
  * any changes to the content repository, ensuring that invalid patches are
  * caught early without affecting the database.
+ *
+ * The validation is a single static pre-pass over the batch. Nodes that a createNode patch declares
+ * with `ref` are recorded in a pending-node map (ref → node type and parent descriptor) so that later
+ * patches may anchor on `$<ref>` or `$<ref>/<childName>` and get the same checks as stored anchors.
  */
 class PatchValidator
 {
+    /**
+     * Longest list of node type names quoted in an error message.
+     */
+    private const MAX_LISTED_NODE_TYPES = 20;
+
     /**
      * @Flow\Inject
      * @var PropertiesProcessor
@@ -59,6 +71,32 @@ class PatchValidator
     protected $contentRepositoryRegistry;
 
     /**
+     * Nodes declared with `ref` by the createNode patches validated so far, keyed by ref.
+     *
+     * @var array<string, NodeDescriptor>
+     */
+    private array $pendingNodes = [];
+
+    /**
+     * Validate a whole batch before execution, in patch order, stopping at the first error.
+     *
+     * @param array<int, AbstractPatch> $patches
+     * @param ContentSubgraphInterface $subgraph The content subgraph (workspace + dimensions) to validate against
+     * @throws PatchFailedException If validation fails
+     */
+    public function validatePatches(array $patches, ContentSubgraphInterface $subgraph): void
+    {
+        $this->pendingNodes = [];
+        try {
+            foreach ($patches as $patchIndex => $patch) {
+                $this->validatePatch($patch, $patchIndex, $subgraph);
+            }
+        } finally {
+            $this->pendingNodes = [];
+        }
+    }
+
+    /**
      * Validate a patch before execution.
      *
      * @param AbstractPatch $patch The patch to validate
@@ -66,8 +104,10 @@ class PatchValidator
      * @param ContentSubgraphInterface $subgraph The content subgraph (workspace + dimensions) to validate against
      * @throws PatchFailedException If validation fails
      */
-    public function validatePatch(AbstractPatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
+    private function validatePatch(AbstractPatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
+        $this->validateRefDeclaration($patch, $patchIndex);
+
         if ($patch instanceof CreateNodePatch) {
             $this->validateCreateNodePatch($patch, $patchIndex, $subgraph);
         } elseif ($patch instanceof UpdateNodePatch) {
@@ -76,6 +116,61 @@ class PatchValidator
             $this->validateMoveNodePatch($patch, $patchIndex, $subgraph);
         } elseif ($patch instanceof DeleteNodePatch) {
             $this->validateDeleteNodePatch($patch, $patchIndex, $subgraph);
+        }
+    }
+
+    /**
+     * `ref` is only allowed on createNode, must match the ref pattern and must be unique in the batch.
+     *
+     * @throws PatchFailedException
+     */
+    private function validateRefDeclaration(AbstractPatch $patch, int $patchIndex): void
+    {
+        $ref = $patch->getRef();
+        if ($ref === null) {
+            return;
+        }
+
+        if (!$patch instanceof CreateNodePatch) {
+            throw new PatchFailedException(
+                sprintf(
+                    '"ref" is only allowed on createNode patches, but patch %d (%s) declares ref "%s". '
+                    . 'Remove "ref" from this patch; a %s patch addresses its node through "nodeId".',
+                    $patchIndex,
+                    $patch->getOperation(),
+                    $ref,
+                    $patch->getOperation()
+                ),
+                $patchIndex,
+                $patch->getOperation()
+            );
+        }
+
+        if (preg_match(RefAnchor::REF_PATTERN, $ref) !== 1) {
+            throw new PatchFailedException(
+                sprintf(
+                    'Invalid ref "%s" at patch %d: a ref must be %s.',
+                    $ref,
+                    $patchIndex,
+                    RefAnchor::REF_PATTERN_DESCRIPTION
+                ),
+                $patchIndex,
+                'createNode'
+            );
+        }
+
+        if (isset($this->pendingNodes[$ref])) {
+            throw new PatchFailedException(
+                sprintf(
+                    'Duplicate ref "%s" at patch %d: it was already declared by patch %d. '
+                    . 'Refs must be unique within the batch; rename one of them.',
+                    $ref,
+                    $patchIndex,
+                    $this->pendingNodes[$ref]->getDeclaredAtPatchIndex()
+                ),
+                $patchIndex,
+                'createNode'
+            );
         }
     }
 
@@ -108,7 +203,7 @@ class PatchValidator
         }
 
         // Validate reference node exists (parent for 'into', sibling for 'before'/'after')
-        $referenceNode = $this->getNodeById($patch->getPositionRelativeToNodeId(), $patchIndex, 'createNode', $subgraph);
+        $referenceNode = $this->resolveAnchor($patch->getPositionRelativeToNodeId(), 'positionRelativeToNodeId', $patchIndex, 'createNode', $subgraph, $contentRepository);
 
         // Validate position
         $this->validatePosition($patch->getPosition(), $patchIndex, 'createNode', $patch->getPositionRelativeToNodeId());
@@ -119,7 +214,7 @@ class PatchValidator
         if ($patch->getPosition() === 'into') {
             $actualParent = $referenceNode;
         } else {
-            $actualParent = $subgraph->findParentNode($referenceNode->aggregateId);
+            $actualParent = $this->resolveParent($referenceNode, $subgraph, $contentRepository);
             if ($actualParent === null) {
                 throw new PatchFailedException(
                     sprintf('Reference node "%s" has no parent', $patch->getPositionRelativeToNodeId()),
@@ -130,10 +225,9 @@ class PatchValidator
             }
         }
 
-        $parentNodeType = $contentRepository->getNodeTypeManager()->getNodeType($actualParent->nodeTypeName);
-        if ($parentNodeType === null) {
+        if ($actualParent->getNodeType() === null) {
             throw new PatchFailedException(
-                sprintf('NodeType "%s" of the parent node is not known to the schema', $actualParent->nodeTypeName->value),
+                sprintf('NodeType "%s" of the parent node is not known to the schema', $actualParent->getStoredNode()?->nodeTypeName->value),
                 $patchIndex,
                 'createNode',
                 $patch->getPositionRelativeToNodeId()
@@ -141,13 +235,9 @@ class PatchValidator
         }
 
         // Validate node type is allowed as child of the actual parent
-        if (!$parentNodeType->allowsChildNodeType($nodeType)) {
+        if (!$actualParent->allowsChildNodeType($nodeType)) {
             throw new PatchFailedException(
-                sprintf(
-                    'NodeType "%s" is not allowed as child of parent node type "%s"',
-                    $nodeType->name->value,
-                    $actualParent->nodeTypeName->value
-                ),
+                $this->buildChildConstraintMessage($nodeType, $actualParent, $contentRepository),
                 $patchIndex,
                 'createNode',
                 $patch->getPositionRelativeToNodeId()
@@ -156,6 +246,10 @@ class PatchValidator
 
         // Validate properties using PropertiesProcessor
         $this->validateProperties($patch->getProperties(), $nodeType, $patchIndex, 'createNode', $subgraph);
+
+        if ($patch->getRef() !== null) {
+            $this->pendingNodes[$patch->getRef()] = NodeDescriptor::forPendingNode($patch->getRef(), $patchIndex, $nodeType, $actualParent);
+        }
     }
 
     /**
@@ -168,14 +262,15 @@ class PatchValidator
      */
     private function validateUpdateNodePatch(UpdateNodePatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
-        // Validate node exists
-        $node = $this->getNodeById($patch->getNodeId(), $patchIndex, 'updateNode', $subgraph);
         $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
 
-        $nodeType = $contentRepository->getNodeTypeManager()->getNodeType($node->nodeTypeName);
+        // Validate node exists
+        $node = $this->resolveAnchor($patch->getNodeId(), 'nodeId', $patchIndex, 'updateNode', $subgraph, $contentRepository);
+
+        $nodeType = $node->getNodeType();
         if ($nodeType === null) {
             throw new PatchFailedException(
-                sprintf('NodeType "%s" of node "%s" is not known to the schema', $node->nodeTypeName->value, $patch->getNodeId()),
+                sprintf('NodeType "%s" of node "%s" is not known to the schema', $node->getStoredNode()?->nodeTypeName->value, $patch->getNodeId()),
                 $patchIndex,
                 'updateNode',
                 $patch->getNodeId()
@@ -196,11 +291,13 @@ class PatchValidator
      */
     private function validateMoveNodePatch(MoveNodePatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
+        $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
+
         // Validate source node exists
-        $node = $this->getNodeById($patch->getNodeId(), $patchIndex, 'moveNode', $subgraph);
+        $node = $this->resolveAnchor($patch->getNodeId(), 'nodeId', $patchIndex, 'moveNode', $subgraph, $contentRepository);
 
         // Validate target node exists
-        $targetNode = $this->getNodeById($patch->getTargetNodeId(), $patchIndex, 'moveNode', $subgraph);
+        $targetNode = $this->resolveAnchor($patch->getTargetNodeId(), 'targetNodeId', $patchIndex, 'moveNode', $subgraph, $contentRepository);
 
         // Validate position
         $this->validatePosition($patch->getPosition(), $patchIndex, 'moveNode', $patch->getNodeId());
@@ -210,7 +307,7 @@ class PatchValidator
             $newParentNode = $targetNode;
         } else {
             // For 'before' or 'after', parent will be target's parent
-            $newParentNode = $subgraph->findParentNode($targetNode->aggregateId);
+            $newParentNode = $this->resolveParent($targetNode, $subgraph, $contentRepository);
             if ($newParentNode === null) {
                 throw new PatchFailedException(
                     sprintf('Target node "%s" has no parent node', $patch->getTargetNodeId()),
@@ -220,29 +317,33 @@ class PatchValidator
                 );
             }
         }
-        $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
+
         // Unknown node types must fail here like in the create/update validations — a silent
         // skip would defer the failure to CR execution time, mid-batch and without rollback.
-        $newParentNodeType = $this->getNodeType($newParentNode->nodeTypeName->value, $patchIndex, 'moveNode', $contentRepository);
-        $nodeType = $this->getNodeType($node->nodeTypeName->value, $patchIndex, 'moveNode', $contentRepository);
+        $this->requireKnownNodeType($newParentNode, $patchIndex, 'moveNode');
+        $nodeType = $this->requireKnownNodeType($node, $patchIndex, 'moveNode');
 
         // Validate node type constraints in the new location
-        if (!$newParentNodeType->allowsChildNodeType($nodeType)) {
+        if (!$newParentNode->allowsChildNodeType($nodeType)) {
             throw new PatchFailedException(
-                sprintf(
-                    'NodeType "%s" is not allowed as child of "%s"',
-                    $node->nodeTypeName->value,
-                    $newParentNode->nodeTypeName->value
-                ),
+                $this->buildChildConstraintMessage($nodeType, $newParentNode, $contentRepository, $node),
                 $patchIndex,
                 'moveNode',
                 $patch->getNodeId()
             );
         }
+
+        // A moved pending node reports its new parent to later before/after anchors
+        if ($node->isPendingNode()) {
+            $this->pendingNodes[$node->getRef()] = $node->withParent($newParentNode);
+        }
     }
 
     /**
      * Validate a deleteNode patch.
+     *
+     * Deleting a pending node drops it from the pending-node map, so a later anchor on its ref is
+     * refused as undefined instead of resolving to a node the batch no longer creates.
      *
      * @param DeleteNodePatch $patch
      * @param int $patchIndex
@@ -251,8 +352,15 @@ class PatchValidator
      */
     private function validateDeleteNodePatch(DeleteNodePatch $patch, int $patchIndex, ContentSubgraphInterface $subgraph): void
     {
+        $contentRepository = $this->contentRepositoryRegistry->get($subgraph->getContentRepositoryId());
+
         // Validate node exists
-        $this->getNodeById($patch->getNodeId(), $patchIndex, 'deleteNode', $subgraph);
+        $node = $this->resolveAnchor($patch->getNodeId(), 'nodeId', $patchIndex, 'deleteNode', $subgraph, $contentRepository);
+
+        // A deleted pending node stops being addressable: later anchors on its ref are undefined
+        if ($node->isPendingNode()) {
+            unset($this->pendingNodes[$node->getRef()]);
+        }
     }
 
     /**
@@ -267,10 +375,7 @@ class PatchValidator
      */
     private function getNodeType(string $nodeTypeName, int $patchIndex, string $operation, ContentRepository $contentRepository): NodeType
     {
-        // Check with hasNodeType() first, because getNodeType() returns a
-        // FallbackNode instead of null when a fallback NodeType is configured.
-        $nodeTypeManager = $contentRepository->getNodeTypeManager();
-        $nodeType = $nodeTypeManager->hasNodeType($nodeTypeName) ? $nodeTypeManager->getNodeType($nodeTypeName) : null;
+        $nodeType = $this->findNodeType($nodeTypeName, $contentRepository);
         if ($nodeType === null) {
             throw new PatchFailedException(
                 sprintf('NodeType "%s" does not exist. Hint: Check the TypeScript node type definitions in your system prompt', $nodeTypeName),
@@ -280,6 +385,166 @@ class PatchValidator
         }
 
         return $nodeType;
+    }
+
+    /**
+     * Check with hasNodeType() first, because getNodeType() returns a FallbackNode instead of null
+     * when a fallback NodeType is configured.
+     */
+    private function findNodeType(string $nodeTypeName, ContentRepository $contentRepository): ?NodeType
+    {
+        $nodeTypeManager = $contentRepository->getNodeTypeManager();
+
+        return $nodeTypeManager->hasNodeType($nodeTypeName) ? $nodeTypeManager->getNodeType($nodeTypeName) : null;
+    }
+
+    /**
+     * The type of an anchored node, which a pending node always has; a stored node of a type unknown
+     * to the schema fails like a createNode of an unknown type.
+     *
+     * @throws PatchFailedException
+     */
+    private function requireKnownNodeType(NodeDescriptor $node, int $patchIndex, string $operation): NodeType
+    {
+        $nodeType = $node->getNodeType();
+        if ($nodeType === null) {
+            throw new PatchFailedException(
+                sprintf('NodeType "%s" does not exist. Hint: Check the TypeScript node type definitions in your system prompt', $node->getStoredNode()?->nodeTypeName->value),
+                $patchIndex,
+                $operation
+            );
+        }
+
+        return $nodeType;
+    }
+
+    /**
+     * Resolve an anchor field (`positionRelativeToNodeId`, `nodeId`, `targetNodeId`): a stored node id, a
+     * pending `$<ref>` declared by an earlier createNode patch, or one auto-created child `$<ref>/<childName>`.
+     *
+     * @throws PatchFailedException
+     */
+    private function resolveAnchor(string $anchor, string $field, int $patchIndex, string $operation, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository): NodeDescriptor
+    {
+        try {
+            $refAnchor = RefAnchor::fromAnchor($anchor);
+        } catch (\InvalidArgumentException $e) {
+            throw new PatchFailedException(
+                sprintf(
+                    'Malformed reference "%s" in "%s" at patch %d: %s. Use "$<ref>" for a node created earlier '
+                    . 'in this batch, or "$<ref>/<childName>" for one of its auto-created child nodes.',
+                    $anchor,
+                    $field,
+                    $patchIndex,
+                    $e->getMessage()
+                ),
+                $patchIndex,
+                $operation,
+                $anchor
+            );
+        }
+
+        if ($refAnchor === null) {
+            $node = $this->getNodeById($anchor, $patchIndex, $operation, $subgraph);
+
+            return NodeDescriptor::forStoredNode(
+                $node,
+                $this->findNodeType($node->nodeTypeName->value, $contentRepository),
+                $subgraph,
+                $contentRepository->getNodeTypeManager()
+            );
+        }
+
+        $pendingNode = $this->pendingNodes[$refAnchor->getRef()] ?? null;
+        if ($pendingNode === null) {
+            $declaredRefs = array_keys($this->pendingNodes);
+            throw new PatchFailedException(
+                sprintf(
+                    'Undefined reference "%s" in "%s" at patch %d: no earlier createNode patch declares "ref": "%s". %s',
+                    $anchor,
+                    $field,
+                    $patchIndex,
+                    $refAnchor->getRef(),
+                    $declaredRefs === []
+                        ? sprintf(
+                            'No refs are declared before patch %d; add "ref" to the createNode patch that creates '
+                            . 'this node and place it earlier in the batch.',
+                            $patchIndex
+                        )
+                        : sprintf('Refs declared before patch %d: %s.', $patchIndex, $this->quoteList($declaredRefs))
+                ),
+                $patchIndex,
+                $operation,
+                $anchor
+            );
+        }
+
+        $childName = $refAnchor->getChildName();
+        if ($childName === null) {
+            return $pendingNode;
+        }
+
+        $childNodeName = $this->tryNodeName($childName);
+        $childNodeType = $childNodeName === null ? null : $pendingNode->getAutoCreatedChildNodeType($childNodeName);
+        if ($childNodeName === null || $childNodeType === null) {
+            $childNames = $pendingNode->getAutoCreatedChildNames();
+            throw new PatchFailedException(
+                sprintf(
+                    'Unknown child "%s" in "%s" at patch %d: node type "%s" (ref "%s") '
+                    . 'has no auto-created child node named "%s". %s',
+                    $anchor,
+                    $field,
+                    $patchIndex,
+                    $pendingNode->getNodeType()?->name->value,
+                    $refAnchor->getRef(),
+                    $childName,
+                    $childNames === []
+                        ? sprintf('It has no auto-created child nodes; use "$%s" to address the node itself.', $refAnchor->getRef())
+                        : sprintf('Valid child names: %s.', $this->quoteList($childNames))
+                ),
+                $patchIndex,
+                $operation,
+                $anchor
+            );
+        }
+
+        return NodeDescriptor::forAutoCreatedChildOfPendingNode($anchor, $childNodeName, $childNodeType, $pendingNode);
+    }
+
+    /**
+     * The parent an anchored node has (a stored node's from the subgraph, a pending node's as declared or
+     * moved within the batch); null for a stored node without a parent.
+     */
+    private function resolveParent(NodeDescriptor $node, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository): ?NodeDescriptor
+    {
+        $storedNode = $node->getStoredNode();
+        if ($storedNode === null) {
+            return $node->getPendingParent();
+        }
+
+        $parentNode = $subgraph->findParentNode($storedNode->aggregateId);
+
+        return $parentNode === null
+            ? null
+            : NodeDescriptor::forStoredNode(
+                $parentNode,
+                $this->findNodeType($parentNode->nodeTypeName->value, $contentRepository),
+                $subgraph,
+                $contentRepository->getNodeTypeManager()
+            );
+    }
+
+    /**
+     * Child names that cannot be node names (Neos 9 names are lowercase letters, digits and dashes) name
+     * no auto-created child.
+     */
+    private function tryNodeName(string $name): ?NodeName
+    {
+        try {
+            return NodeName::fromString($name);
+        } catch (\InvalidArgumentException $e) {
+            return null;
+        }
     }
 
     /**
@@ -313,13 +578,53 @@ class PatchValidator
         $node = $subgraph->findNodeById($nodeAggregateId);
         if ($node === null) {
             throw new PatchFailedException(
-                sprintf('Node with identifier "%s" does not exist', $nodeId),
+                sprintf(
+                    'Node with identifier "%s" does not exist. Use the id of an existing node, '
+                    . 'or "$<ref>" to address a node created by an earlier createNode patch of this batch.',
+                    $nodeId
+                ),
                 $patchIndex,
                 $operation,
                 $nodeId
             );
         }
         return $node;
+    }
+
+    /**
+     * Message for a node type that the parent forbids, listing what the parent does allow.
+     *
+     * @param NodeDescriptor|null $movedNode The moved node, when the check is for a moveNode patch
+     */
+    private function buildChildConstraintMessage(NodeType $nodeType, NodeDescriptor $parent, ContentRepository $contentRepository, ?NodeDescriptor $movedNode = null): string
+    {
+        $allowedNames = $parent->allowedChildNodeTypeNames($contentRepository->getNodeTypeManager()->getNodeTypes(false));
+
+        return sprintf(
+            'NodeType "%s"%s is not allowed as child of %s (%s). %s',
+            $nodeType->name->value,
+            $movedNode === null ? '' : sprintf(' of %s', $movedNode->getLabel()),
+            $parent->getLabel(),
+            $parent->getNodeType()?->name->value,
+            $allowedNames === []
+                ? 'It allows no child nodes at all; choose a different parent.'
+                : sprintf('Allowed child types: %s.', $this->quoteList($allowedNames))
+        );
+    }
+
+    /**
+     * Quote and join names for a message, capped at MAX_LISTED_NODE_TYPES entries.
+     *
+     * @param array<int, string> $names
+     */
+    private function quoteList(array $names): string
+    {
+        $quoted = array_map(static fn(string $name): string => '"' . $name . '"', array_slice($names, 0, self::MAX_LISTED_NODE_TYPES));
+        if (count($names) > self::MAX_LISTED_NODE_TYPES) {
+            $quoted[] = sprintf('… (%d more)', count($names) - self::MAX_LISTED_NODE_TYPES);
+        }
+
+        return implode(', ', $quoted);
     }
 
     /**

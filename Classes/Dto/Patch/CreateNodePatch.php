@@ -100,7 +100,7 @@ final class CreateNodePatch extends AbstractPatch
     }
 
     /**
-     * @param array{operation: string, positionRelativeToNodeId: string, nodeType: string, position?: string, properties?: array<string, mixed>} $data
+     * @param array{operation: string, positionRelativeToNodeId: string, nodeType: string, position?: string, properties?: array<string, mixed>, ref?: string} $data
      * @return self
      */
     public static function fromArray(array $data): self
@@ -121,16 +121,21 @@ final class CreateNodePatch extends AbstractPatch
     }
 
     /**
-     * @return array{operation: string, positionRelativeToNodeId: string, nodeType: string, position: string, properties: array<string, mixed>}
+     * @return array{operation: string, positionRelativeToNodeId: string, nodeType: string, position: string, properties: array<string, mixed>, ref?: string}
      */
     public function jsonSerialize(): array
     {
-        return [
+        $data = [
             'operation' => $this->operation,
             'positionRelativeToNodeId' => $this->positionRelativeToNodeId,
             'nodeType' => $this->nodeType,
             'position' => $this->position,
             'properties' => $this->properties,
         ];
+        if ($this->ref !== null) {
+            $data['ref'] = $this->ref;
+        }
+
+        return $data;
     }
 }

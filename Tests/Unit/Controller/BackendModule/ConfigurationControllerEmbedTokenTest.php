@@ -56,10 +56,7 @@ class ConfigurationControllerEmbedTokenTest extends TestCase
         self::assertSame('test-api-key', $assignments['apiKey']);
         self::assertSame('https://api.neosidekick.com', $assignments['apiDomain']);
         self::assertSame(rawurlencode('https://neos.example.com'), $assignments['siteDomain']);
-        self::assertSame(
-            ['exists' => false, 'fingerprint' => '', 'status' => 'none', 'pushedAt' => '', 'regenerateIncomplete' => false, 'relabelPending' => false, 'hostStatusKnown' => false, 'installAddress' => null, 'registeredHosts' => [], 'thisHost' => null, 'thisHostRegistered' => false, 'hostsResult' => null],
-            $assignments['signingKey']
-        );
+        self::assertFalse($assignments['connectionHealth']);
     }
 
     /**

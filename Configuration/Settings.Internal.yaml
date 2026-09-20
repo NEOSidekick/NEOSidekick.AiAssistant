@@ -112,6 +112,13 @@ Neos:
             controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController'
             privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
             mainStylesheet: Lite
+          keyManagement:
+            label: 'NEOSidekick.AiAssistant:BackendModule.KeyManagement:label'
+            description: 'NEOSidekick.AiAssistant:BackendModule.KeyManagement:description'
+            icon: 'fas fa-key'
+            controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\KeyManagementController'
+            privilegeTarget: 'NEOSidekick.AiAssistant:ManageKeys'
+            mainStylesheet: Lite
   Flow:
     mvc:
       routes:

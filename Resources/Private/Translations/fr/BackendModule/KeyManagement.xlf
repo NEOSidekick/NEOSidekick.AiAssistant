@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="label" xml:space="preserve">
+                <source>Key management</source>
+                <target xml:lang="fr" state="translated">Gestion des clés</target>
+            </trans-unit>
+            <trans-unit id="description" xml:space="preserve">
+                <source>Check the connection between this Neos installation and NEOSidekick, and fix it.</source>
+                <target xml:lang="fr" state="translated">Vérifie la connexion entre cette installation Neos et NEOSidekick et corrige les problèmes.</target>
+            </trans-unit>
+            <trans-unit id="intro" xml:space="preserve">
+                <source>Connection problems between this Neos installation and NEOSidekick are usually a missing domain or a copied database. This page finds the cause.</source>
+                <target xml:lang="fr" state="translated">Les problèmes de connexion entre cette installation Neos et NEOSidekick viennent le plus souvent d'un domaine manquant ou d'une base de données copiée. Cette page en trouve la cause.</target>
+            </trans-unit>
+            <trans-unit id="pending.banner" xml:space="preserve">
+                <source>A key change was started but not confirmed. It is retried each time you open this page.</source>
+                <target xml:lang="fr" state="translated">Un changement de clé a été lancé mais non confirmé. Il est retenté à chaque ouverture de cette page.</target>
+            </trans-unit>
+            <trans-unit id="needsNewKey.missing" xml:space="preserve">
+                <source>The stored key cannot be used. Restore a backup, or give this installation a new key.</source>
+                <target xml:lang="fr" state="translated">La clé enregistrée est inutilisable. Restaurez une sauvegarde ou donnez une nouvelle clé à cette installation.</target>
+            </trans-unit>
+            <trans-unit id="needsNewKey.revoked" xml:space="preserve">
+                <source>This installation's key was replaced somewhere else, often on a copy of this database. Give this installation a new key.</source>
+                <target xml:lang="fr" state="translated">La clé de cette installation a été remplacée ailleurs, souvent sur une copie de cette base de données. Donnez-lui une nouvelle clé.</target>
+            </trans-unit>
+            <trans-unit id="needsNewKey.button" xml:space="preserve">
+                <source>Give this installation a new key</source>
+                <target xml:lang="fr" state="translated">Donner une nouvelle clé à cette installation</target>
+            </trans-unit>
+            <trans-unit id="checkFailed.expired" xml:space="preserve">
+                <source>The server clock of this installation is off. Ask your hosting provider to fix the time, then reload.</source>
+                <target xml:lang="fr" state="translated">L'horloge du serveur de cette installation est décalée. Demandez à votre hébergeur de la corriger, puis rechargez la page.</target>
+            </trans-unit>
+            <trans-unit id="checkFailed.generic" xml:space="preserve">
+                <source>The connection check did not complete. Reload; if this persists, see Technical details.</source>
+                <target xml:lang="fr" state="translated">La vérification de la connexion n'a pas abouti. Rechargez la page ; si cela persiste, voyez les détails techniques.</target>
+            </trans-unit>
+            <trans-unit id="healthy.status" xml:space="preserve">
+                <source>Connected as {0}.</source>
+                <target xml:lang="fr" state="translated">Connecté en tant que {0}.</target>
+            </trans-unit>
+            <trans-unit id="healthy.replaceKey" xml:space="preserve">
+                <source>Replace key</source>
+                <target xml:lang="fr" state="translated">Remplacer la clé</target>
+            </trans-unit>
+            <trans-unit id="healthy.isCopy" xml:space="preserve">
+                <source>This is a copy of another installation</source>
+                <target xml:lang="fr" state="translated">Ceci est une copie d'une autre installation</target>
+            </trans-unit>
+            <trans-unit id="replaceKey.confirm" xml:space="preserve">
+                <source>Replace this installation's key, for example after sharing a database dump. Editors and tools here keep working. Copies still using the old key stop working.</source>
+                <target xml:lang="fr" state="translated">Remplacer la clé de cette installation, par exemple après le partage d'un dump de base ? Les éditeurs et outils d'ici continuent. Les copies qui utilisent l'ancienne clé cessent de fonctionner.</target>
+            </trans-unit>
+            <trans-unit id="reenrol.confirm" xml:space="preserve">
+                <source>Give this installation its own key? {0} keeps working. Tools and editors connected here must be connected again.</source>
+                <target xml:lang="fr" state="translated">Donner à cette installation sa propre clé ? {0} continue de fonctionner. Les outils et éditeurs connectés ici devront être reconnectés.</target>
+            </trans-unit>
+            <trans-unit id="reenrol.confirmGeneric" xml:space="preserve">
+                <source>Give this installation its own key? Tools and editors connected here must be connected again.</source>
+                <target xml:lang="fr" state="translated">Donner à cette installation sa propre clé ? Les outils et éditeurs connectés ici devront être reconnectés.</target>
+            </trans-unit>
+            <trans-unit id="question.intro" xml:space="preserve">
+                <source>This installation answers on {0}. NEOSidekick registered it as {1}. Did you copy this database from another installation? Then choose "This is a copy".</source>
+                <target xml:lang="fr" state="translated">Cette installation répond sur {0}. NEOSidekick l'a enregistrée comme {1}. Avez-vous copié cette base depuis une autre installation ? Alors choisissez « Ceci est une copie ».</target>
+            </trans-unit>
+            <trans-unit id="answer.or" xml:space="preserve">
+                <source>or</source>
+                <target xml:lang="fr" state="translated">ou</target>
+            </trans-unit>
+            <trans-unit id="answer1.title" xml:space="preserve">
+                <source>Same installation, new web address</source>
+                <target xml:lang="fr" state="translated">Même installation, nouvelle adresse web</target>
+            </trans-unit>
+            <trans-unit id="answer1.body1" xml:space="preserve">
+                <source>We added a web address, or this is a temporary tunnel address.</source>
+                <target xml:lang="fr" state="translated">Nous avons ajouté une adresse web, ou il s'agit d'une adresse de tunnel temporaire.</target>
+            </trans-unit>
+            <trans-unit id="answer1.body2" xml:space="preserve">
+                <source>Add {0} as a domain for the site you are editing in Neos &gt; Sites. Then open this page once on {1}, and reload it here afterwards. The new address may ask you to log in again.</source>
+                <target xml:lang="fr" state="translated">Ajoutez {0} comme domaine du site que vous éditez dans Neos &gt; Sites. Ouvrez ensuite cette page une fois sur {1}, puis rechargez-la ici. La nouvelle adresse vous demandera peut-être de vous reconnecter.</target>
+            </trans-unit>
+            <trans-unit id="answer1.button" xml:space="preserve">
+                <source>Open Sites module</source>
+                <target xml:lang="fr" state="translated">Ouvrir le module Sites</target>
+            </trans-unit>
+            <trans-unit id="answer2.title" xml:space="preserve">
+                <source>This is a copy</source>
+                <target xml:lang="fr" state="translated">Ceci est une copie</target>
+            </trans-unit>
+            <trans-unit id="answer2.body" xml:space="preserve">
+                <source>We restored a database dump of {0} here (staging, test, local). The copy gets its own key. {0} keeps working.</source>
+                <target xml:lang="fr" state="translated">Nous avons restauré ici un dump de {0} (préproduction, test, local). La copie reçoit sa propre clé. {0} continue de fonctionner.</target>
+            </trans-unit>
+            <trans-unit id="answer2.button" xml:space="preserve">
+                <source>Give this copy its own key</source>
+                <target xml:lang="fr" state="translated">Donner à cette copie sa propre clé</target>
+            </trans-unit>
+            <trans-unit id="answer3.title" xml:space="preserve">
+                <source>We moved the site</source>
+                <target xml:lang="fr" state="translated">Nous avons déplacé le site</target>
+            </trans-unit>
+            <trans-unit id="answer3.body1" xml:space="preserve">
+                <source>{0} is gone and {1} replaces it.</source>
+                <target xml:lang="fr" state="translated">{0} n'existe plus et {1} le remplace.</target>
+            </trans-unit>
+            <trans-unit id="answer3.body2" xml:space="preserve">
+                <source>Only choose this if {0} is really gone: it will be disconnected from NEOSidekick and its editors lose the assistant.</source>
+                <target xml:lang="fr" state="translated">Ne choisissez ceci que si {0} a vraiment disparu : cette adresse sera déconnectée de NEOSidekick et ses éditeurs perdront l'assistant.</target>
+            </trans-unit>
+            <trans-unit id="answer3.button" xml:space="preserve">
+                <source>Disconnect the old address and register this one</source>
+                <target xml:lang="fr" state="translated">Déconnecter l'ancienne adresse et enregistrer celle-ci</target>
+            </trans-unit>
+            <trans-unit id="answer3.confirm" xml:space="preserve">
+                <source>Disconnect {0} from NEOSidekick and register this address instead? Editors on {0} lose the assistant.</source>
+                <target xml:lang="fr" state="translated">Déconnecter {0} de NEOSidekick et enregistrer cette adresse à la place ? Les éditeurs sur {0} perdront l'assistant.</target>
+            </trans-unit>
+            <trans-unit id="technical.headline" xml:space="preserve">
+                <source>Technical details</source>
+                <target xml:lang="fr" state="translated">Détails techniques</target>
+            </trans-unit>
+            <trans-unit id="technical.fingerprint" xml:space="preserve">
+                <source>Fingerprint</source>
+                <target xml:lang="fr" state="translated">Empreinte</target>
+            </trans-unit>
+            <trans-unit id="technical.registeredHosts" xml:space="preserve">
+                <source>Registered addresses</source>
+                <target xml:lang="fr" state="translated">Adresses enregistrées</target>
+            </trans-unit>
+            <trans-unit id="technical.thisHost" xml:space="preserve">
+                <source>This address</source>
+                <target xml:lang="fr" state="translated">Cette adresse</target>
+            </trans-unit>
+            <trans-unit id="technical.rawResult" xml:space="preserve">
+                <source>Result code</source>
+                <target xml:lang="fr" state="translated">Code de résultat</target>
+            </trans-unit>
+            <trans-unit id="technical.installationId" xml:space="preserve">
+                <source>Installation id</source>
+                <target xml:lang="fr" state="translated">Identifiant d'installation</target>
+            </trans-unit>
+            <trans-unit id="technical.none" xml:space="preserve">
+                <source>none</source>
+                <target xml:lang="fr" state="translated">aucune</target>
+            </trans-unit>
+            <trans-unit id="technical.unknown" xml:space="preserve">
+                <source>unknown</source>
+                <target xml:lang="fr" state="translated">inconnu</target>
+            </trans-unit>
+            <trans-unit id="failure.title" xml:space="preserve">
+                <source>The key was not changed.</source>
+                <target xml:lang="fr" state="translated">La clé n'a pas été modifiée.</target>
+            </trans-unit>
+            <trans-unit id="failure.body" xml:space="preserve">
+                <source>NEOSidekick did not accept the change: «{0}». Nothing has changed — this installation keeps using its current key.</source>
+                <target xml:lang="fr" state="translated">NEOSidekick n'a pas accepté la modification : « {0} ». Rien n'a changé — cette installation garde sa clé actuelle.</target>
+            </trans-unit>
+            <trans-unit id="failure.chainDomainMismatchHint" xml:space="preserve">
+                <source>This installation's key is registered for another domain. Answer the question above: a copy needs its own key, a move needs "We moved the site".</source>
+                <target xml:lang="fr" state="translated">La clé de cette installation est enregistrée pour un autre domaine. Répondez à la question ci-dessus : une copie a besoin de sa propre clé, un déménagement de « Nous avons déplacé le site ».</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

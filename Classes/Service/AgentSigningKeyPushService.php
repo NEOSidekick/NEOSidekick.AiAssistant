@@ -150,11 +150,17 @@ class AgentSigningKeyPushService
      *                    last successful push is younger than {@see FORCED_PUSH_MIN_INTERVAL_SECONDS}.
      *                    A hint, not an instruction: the payload is built from local state alone,
      *                    and a pending pair is retried on its own schedule regardless.
+     * @param bool $bypassThrottle Push despite {@see FORCED_PUSH_MIN_INTERVAL_SECONDS} and retry a
+     *                             pending pair before its {@see PENDING_RETRY_SECONDS} back-off is
+     *                             due. For the administrators-only key management module, which
+     *                             must produce a fresh verdict on demand. The pending back-off is
+     *                             skipped on its own; the settled-and-fresh short-circuit still
+     *                             needs $force as well.
      *
      * Unattended, so a pending pair whose chain the backend refuses is not re-sent in the same
      * call ({@see pushPendingKeyPair}); it chains on its next due retry.
      */
-    public function pushIfNecessary(bool $force = false): ?AgentSigningKeyPushResult
+    public function pushIfNecessary(bool $force = false, bool $bypassThrottle = false): ?AgentSigningKeyPushResult
     {
         try {
             $target = $this->getTarget();
@@ -170,7 +176,7 @@ class AgentSigningKeyPushService
             }
 
             if ($this->agentKeyPairService->hasPendingKeyPair()) {
-                if (!$this->pendingRetryIsDue()) {
+                if (!$bypassThrottle && !$this->pendingRetryIsDue()) {
                     return null;
                 }
                 $this->agentKeyPairService->markPendingKeyPairRetried();
@@ -180,7 +186,7 @@ class AgentSigningKeyPushService
                 if (
                     $settled
                     && !$this->recordedPushIsStale()
-                    && (!$force || time() - (int)$this->recordedPush()?->getPushedAt()?->getTimestamp() < self::FORCED_PUSH_MIN_INTERVAL_SECONDS)
+                    && (!$force || (!$bypassThrottle && time() - (int)$this->recordedPush()?->getPushedAt()?->getTimestamp() < self::FORCED_PUSH_MIN_INTERVAL_SECONDS))
                 ) {
                     return null;
                 }

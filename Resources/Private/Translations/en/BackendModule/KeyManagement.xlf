@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" datatype="plaintext">
+        <body>
+            <trans-unit id="label" xml:space="preserve">
+                <source>Key management</source>
+            </trans-unit>
+            <trans-unit id="description" xml:space="preserve">
+                <source>Check the connection between this Neos installation and NEOSidekick, and fix it.</source>
+            </trans-unit>
+            <trans-unit id="intro" xml:space="preserve">
+                <source>Connection problems between this Neos installation and NEOSidekick are usually a missing domain or a copied database. This page finds the cause.</source>
+            </trans-unit>
+            <trans-unit id="pending.banner" xml:space="preserve">
+                <source>A key change was started but not confirmed. It is retried each time you open this page.</source>
+            </trans-unit>
+            <trans-unit id="needsNewKey.missing" xml:space="preserve">
+                <source>The stored key cannot be used. Restore a backup, or give this installation a new key.</source>
+            </trans-unit>
+            <trans-unit id="needsNewKey.revoked" xml:space="preserve">
+                <source>This installation's key was replaced somewhere else, often on a copy of this database. Give this installation a new key.</source>
+            </trans-unit>
+            <trans-unit id="needsNewKey.button" xml:space="preserve">
+                <source>Give this installation a new key</source>
+            </trans-unit>
+            <trans-unit id="checkFailed.expired" xml:space="preserve">
+                <source>The server clock of this installation is off. Ask your hosting provider to fix the time, then reload.</source>
+            </trans-unit>
+            <trans-unit id="checkFailed.generic" xml:space="preserve">
+                <source>The connection check did not complete. Reload; if this persists, see Technical details.</source>
+            </trans-unit>
+            <trans-unit id="healthy.status" xml:space="preserve">
+                <source>Connected as {0}.</source>
+            </trans-unit>
+            <trans-unit id="healthy.replaceKey" xml:space="preserve">
+                <source>Replace key</source>
+            </trans-unit>
+            <trans-unit id="healthy.isCopy" xml:space="preserve">
+                <source>This is a copy of another installation</source>
+            </trans-unit>
+            <trans-unit id="replaceKey.confirm" xml:space="preserve">
+                <source>Replace this installation's key, for example after sharing a database dump. Editors and tools here keep working. Copies still using the old key stop working.</source>
+            </trans-unit>
+            <trans-unit id="reenrol.confirm" xml:space="preserve">
+                <source>Give this installation its own key? {0} keeps working. Tools and editors connected here must be connected again.</source>
+            </trans-unit>
+            <trans-unit id="reenrol.confirmGeneric" xml:space="preserve">
+                <source>Give this installation its own key? Tools and editors connected here must be connected again.</source>
+            </trans-unit>
+            <trans-unit id="question.intro" xml:space="preserve">
+                <source>This installation answers on {0}. NEOSidekick registered it as {1}. Did you copy this database from another installation? Then choose "This is a copy".</source>
+            </trans-unit>
+            <trans-unit id="answer.or" xml:space="preserve">
+                <source>or</source>
+            </trans-unit>
+            <trans-unit id="answer1.title" xml:space="preserve">
+                <source>Same installation, new web address</source>
+            </trans-unit>
+            <trans-unit id="answer1.body1" xml:space="preserve">
+                <source>We added a web address, or this is a temporary tunnel address.</source>
+            </trans-unit>
+            <trans-unit id="answer1.body2" xml:space="preserve">
+                <source>Add {0} as a domain for the site you are editing in Neos &gt; Sites. Then open this page once on {1}, and reload it here afterwards. The new address may ask you to log in again.</source>
+            </trans-unit>
+            <trans-unit id="answer1.button" xml:space="preserve">
+                <source>Open Sites module</source>
+            </trans-unit>
+            <trans-unit id="answer2.title" xml:space="preserve">
+                <source>This is a copy</source>
+            </trans-unit>
+            <trans-unit id="answer2.body" xml:space="preserve">
+                <source>We restored a database dump of {0} here (staging, test, local). The copy gets its own key. {0} keeps working.</source>
+            </trans-unit>
+            <trans-unit id="answer2.button" xml:space="preserve">
+                <source>Give this copy its own key</source>
+            </trans-unit>
+            <trans-unit id="answer3.title" xml:space="preserve">
+                <source>We moved the site</source>
+            </trans-unit>
+            <trans-unit id="answer3.body1" xml:space="preserve">
+                <source>{0} is gone and {1} replaces it.</source>
+            </trans-unit>
+            <trans-unit id="answer3.body2" xml:space="preserve">
+                <source>Only choose this if {0} is really gone: it will be disconnected from NEOSidekick and its editors lose the assistant.</source>
+            </trans-unit>
+            <trans-unit id="answer3.button" xml:space="preserve">
+                <source>Disconnect the old address and register this one</source>
+            </trans-unit>
+            <trans-unit id="answer3.confirm" xml:space="preserve">
+                <source>Disconnect {0} from NEOSidekick and register this address instead? Editors on {0} lose the assistant.</source>
+            </trans-unit>
+            <trans-unit id="technical.headline" xml:space="preserve">
+                <source>Technical details</source>
+            </trans-unit>
+            <trans-unit id="technical.fingerprint" xml:space="preserve">
+                <source>Fingerprint</source>
+            </trans-unit>
+            <trans-unit id="technical.registeredHosts" xml:space="preserve">
+                <source>Registered addresses</source>
+            </trans-unit>
+            <trans-unit id="technical.thisHost" xml:space="preserve">
+                <source>This address</source>
+            </trans-unit>
+            <trans-unit id="technical.rawResult" xml:space="preserve">
+                <source>Result code</source>
+            </trans-unit>
+            <trans-unit id="technical.installationId" xml:space="preserve">
+                <source>Installation id</source>
+            </trans-unit>
+            <trans-unit id="technical.none" xml:space="preserve">
+                <source>none</source>
+            </trans-unit>
+            <trans-unit id="technical.unknown" xml:space="preserve">
+                <source>unknown</source>
+            </trans-unit>
+            <trans-unit id="failure.title" xml:space="preserve">
+                <source>The key was not changed.</source>
+            </trans-unit>
+            <trans-unit id="failure.body" xml:space="preserve">
+                <source>NEOSidekick did not accept the change: «{0}». Nothing has changed — this installation keeps using its current key.</source>
+            </trans-unit>
+            <trans-unit id="failure.chainDomainMismatchHint" xml:space="preserve">
+                <source>This installation's key is registered for another domain. Answer the question above: a copy needs its own key, a move needs "We moved the site".</source>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

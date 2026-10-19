@@ -1459,6 +1459,82 @@ class AgentSigningKeyPushServiceTest extends TestCase
     }
 
     /**
+     * The key management module asks for the verdict on purpose, on a page only administrators
+     * reach - so its push is allowed past the throttle that holds the assistant's "Try again".
+     */
+    #[Test]
+    public function theThrottleIsBypassedOnDemand(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([$this->confirmedResponse(), $this->confirmedResponse(), $this->confirmedResponse()]);
+        self::assertNotNull($service->pushIfNecessary());
+        self::assertCount(1, $this->requestHistory);
+
+        self::assertNull($service->pushExistingKey(), 'a fresh success throttles the settings page');
+        self::assertNotNull($service->pushExistingKey(true), 'the key page pushes anyway');
+        self::assertCount(2, $this->requestHistory);
+
+        self::assertNull($service->pushIfNecessary(bypassThrottle: true), 'bypassing the throttle is not forcing the push');
+        self::assertCount(2, $this->requestHistory);
+    }
+
+    /**
+     * A refused key change stamps the pending pair as retried, and the unattended retry then
+     * waits a minute. The key management page must not go silent for that minute: its push
+     * bypasses the pending back-off too, so the page keeps reporting the waiting change instead
+     * of "the check did not complete".
+     */
+    #[Test]
+    public function theBypassAlsoRetriesAPendingPairBeforeItsBackOffIsDue(): void
+    {
+        $service = $this->createServiceWithFixtureKeyPair([
+            new Response(422, ['Content-Type' => 'application/json'], '{"error":"Signing key rejected.","reason":"chain_domain_mismatch"}'),
+            $this->confirmedResponse(),
+        ]);
+        self::assertFalse($service->rotateKeyPair()->successful);
+        self::assertTrue($this->createKeyPairService()->hasPendingKeyPair(), 'the refused successor waits');
+        self::assertCount(1, $this->requestHistory);
+
+        self::assertNull($service->pushIfNecessary(force: true), 'the unattended retry waits out its back-off');
+        self::assertCount(1, $this->requestHistory);
+
+        self::assertNotNull($service->pushExistingKey(true), 'the key page retries it at once');
+        self::assertCount(2, $this->requestHistory);
+    }
+
+    /**
+     * A backend module pushes on every render it allows, so that push must neither mint an
+     * identity - that stays with the authorization flow and the CLI - nor take the page down
+     * over an unreadable row.
+     */
+    #[Test]
+    public function theModulePushNeverMintsAKeypairAndNeverThrows(): void
+    {
+        $service = $this->createService([$this->confirmedResponse()]);
+
+        self::assertNull($service->pushExistingKey(true));
+        self::assertNull($this->repository->findInstallRecord(), 'no row was created');
+        self::assertCount(0, $this->requestHistory);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('warning');
+        $unreadable = $this->createService([$this->confirmedResponse()], logger: $logger);
+        $keyPairService = $this->createMock(AgentKeyPairService::class);
+        $keyPairService->method('hasKeyPair')->willThrowException(new AgentSigningKeyStorageException('The agent signing keypair could not be loaded from the database.', 1757000012));
+        $this->setProtectedProperty($unreadable, 'agentKeyPairService', $keyPairService);
+
+        self::assertNull($unreadable->pushExistingKey(true));
+        self::assertCount(0, $this->requestHistory);
+
+        $throwing = $this->getMockBuilder(AgentSigningKeyPushService::class)->onlyMethods(['pushIfNecessary'])->getMock();
+        $throwing->method('pushIfNecessary')->willThrowException(new \RuntimeException('unexpected'));
+        $this->setProtectedProperty($throwing, 'agentKeyPairService', $this->createKeyPairService());
+        $this->setProtectedProperty($throwing, 'logger', $this->createMock(LoggerInterface::class));
+        $this->repository->seed(new AgentSigningKeyRecord($this->fixturePrivateKeyPem(), $this->fixturePublicKeyPem()));
+
+        self::assertNull($throwing->pushExistingKey(true), 'the modules no longer catch, so the service must');
+    }
+
+    /**
      * A push refused because the backend cannot verify the chain (it never learned, or has
      * revoked, the live key) is recovered by announcing the live key unchained once and chaining
      * the pending key to it again - three round trips, and the re-enrolment the announcement may

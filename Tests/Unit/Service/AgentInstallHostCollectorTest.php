@@ -64,14 +64,16 @@ class AgentInstallHostCollectorTest extends TestCase
             $this->domainRecord('inactive.example', 'https', null, active: false),
             $this->domainRecord('offline.example', 'https', null, online: true, siteOnline: false),
             $this->domainRecord('orphan.example', 'https', null, hasSite: false),
+            $this->domainRecord('müller.example', 'https'),
+            $this->domainRecord('legacy_host.example', 'https'),
         ]);
 
         $hosts = $collector->collectHosts('https://front.example');
 
         self::assertSame(
-            ['https://front.example', 'http://cms.example', 'http://academy-new.codeq.at:8080', 'https://codeq.at:443', 'https://offline.example'],
+            ['https://front.example', 'http://cms.example', 'http://academy-new.codeq.at:8080', 'https://codeq.at:443', 'https://legacy_host.example', 'https://müller.example', 'https://offline.example'],
             $hosts,
-            'the label\'s and the request\'s host lead, the Domain records follow sorted; an offline site\'s host belongs to the installation too, while an inactive record and one without a site do not; an explicit :443 is kept as the record carries it'
+            'the label\'s and the request\'s host lead, the Domain records follow sorted; an offline site\'s host belongs to the installation too, while an inactive record and one without a site do not; an explicit :443 is kept as the record carries it; hostnames with an umlaut or an underscore keep one entry each'
         );
     }
 
@@ -172,7 +174,7 @@ class AgentInstallHostCollectorTest extends TestCase
     }
 
     #[Test]
-    public function originOfNormalizesAUrlOrABareHostAndRefusesTheUnreadable(): void
+    public function originOfAndHostOfNormalizeAUrlOrABareHostAndRefuseTheUnreadable(): void
     {
         self::assertSame('https://codeq.at', AgentInstallHostCollector::originOf(' codeq.at '));
         self::assertSame('https://codeq.at', AgentInstallHostCollector::originOf('https://CodeQ.at:443/neos'), 'a URL drops its default port the way Flow\'s Uri does; only a Domain record keeps an explicit :443');
@@ -180,6 +182,11 @@ class AgentInstallHostCollectorTest extends TestCase
         self::assertSame('http://codeq.at', AgentInstallHostCollector::originOf('http://codeq.at:80/'));
         self::assertNull(AgentInstallHostCollector::originOf(''));
         self::assertNull(AgentInstallHostCollector::originOf('https://'));
+
+        self::assertSame('www.codeq.at', AgentInstallHostCollector::hostOf('http://WWW.CodeQ.at:8443/neos'), 'NEOSidekick treats a www switch as a moved site, so www is kept');
+        self::assertSame('codeq.at', AgentInstallHostCollector::hostOf(' codeq.at '));
+        self::assertSame('legacy_host.example', AgentInstallHostCollector::hostOf('https://Legacy_Host.Example/path'), 'a host originOf() refuses still has a host');
+        self::assertNull(AgentInstallHostCollector::hostOf('https://'));
     }
 
     /**

@@ -65,7 +65,7 @@ class AgentKeyCommandControllerTest extends TestCase
         $output = $this->joinedOutput($controller);
         self::assertStringContainsString('confirmed', $output);
         self::assertStringContainsString('root-kid', $output);
-        self::assertStringContainsString('Regenerate key', $output, 'the module button is mentioned');
+        self::assertStringContainsString('NEOSidekick > Key management', $output, 'the module is named');
     }
 
     #[Test]
@@ -132,7 +132,7 @@ class AgentKeyCommandControllerTest extends TestCase
         self::assertStringContainsString('status 503', $output);
         self::assertStringContainsString('Nothing has changed', $output);
         self::assertStringContainsString('SAME pending key', $output);
-        self::assertStringContainsString('Regenerate key', $output);
+        self::assertStringContainsString('NEOSidekick > Key management', $output);
         self::assertStringNotContainsString('Generated', $output);
         self::assertTrue($this->agentKeyPairService->hasPendingKeyPair());
     }
@@ -199,7 +199,7 @@ class AgentKeyCommandControllerTest extends TestCase
         $helpText = (string)(new ReflectionMethod(AgentKeyCommandController::class, 'generateCommand'))->getDocComment();
 
         self::assertStringContainsString('Never run --relabel on a copy of another installation', $helpText);
-        self::assertStringContainsString('tick the re-enrolment checkbox on the regeneration form', $helpText, 'and names the remedy the module offers');
+        self::assertStringContainsString('"This is a copy of another installation" in', $helpText, 'and names the remedy the module offers');
     }
 
     /**
@@ -219,7 +219,7 @@ class AgentKeyCommandControllerTest extends TestCase
         $output = $this->joinedOutput($controller);
         self::assertStringContainsString('The stored agent signing keypair is unusable', $output);
         self::assertStringContainsString('Restore the signing-key row from a backup', $output);
-        self::assertStringContainsString('re-enrolment checkbox', $output);
+        self::assertStringContainsString('Give this installation a new key', $output);
         self::assertStringContainsString('DELETE FROM neosidekick_aiassistant_domain_model_agentsigningkeyrecord', $output);
         self::assertStringNotContainsString('agentkey:generate --force', $output, 'a regeneration cannot chain to an unusable key');
     }
@@ -243,7 +243,7 @@ class AgentKeyCommandControllerTest extends TestCase
         $output = $this->joinedOutput($controller);
         self::assertStringContainsString('the stored keypair is unusable', $output);
         self::assertStringContainsString('Restore the signing-key row from a backup', $output);
-        self::assertStringContainsString('re-enrolment checkbox on the regeneration form', $output);
+        self::assertStringContainsString('Give this installation a new key', $output);
         self::assertStringContainsString('DELETE FROM neosidekick_aiassistant_domain_model_agentsigningkeyrecord', $output);
         self::assertStringContainsString('./flow agentkey:generate', $output);
     }

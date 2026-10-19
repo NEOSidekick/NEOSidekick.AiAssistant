@@ -159,6 +159,7 @@ class ConfigurationModuleConnectionTest extends FunctionalTestCase
         self::assertSame(0, $this->countSigningKeyRecords(), 'rendering the module must never mint a key');
         self::assertCount(0, $this->requestHistory, 'and the forced push does not run without a key');
         self::assertStringContainsString('<iframe', $output, 'the module renders all the same');
+        self::assertStringContainsString('href="/neos/ai-assistant/keyManagement"', $output, 'the attention line links to the key management module, not into this one');
     }
 
     /**
@@ -250,7 +251,6 @@ class ConfigurationModuleConnectionTest extends FunctionalTestCase
         $view->assign('isAdministrator', $isAdministrator);
         $view->assign('csrfToken', 'csrf-token-value');
         $view->assign('connectionHealth', $connectionHealth);
-        $view->assign('keyManagementUri', '/neos/ai-assistant/keyManagement');
 
         return (string)$view->render();
     }

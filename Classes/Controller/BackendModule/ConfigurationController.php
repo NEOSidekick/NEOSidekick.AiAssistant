@@ -62,7 +62,6 @@ class ConfigurationController extends AbstractFusionViewController
         $this->view->assign('isAdministrator', $isAdministrator);
         $this->view->assign('csrfToken', $this->securityContext->getCsrfProtectionToken());
         $this->view->assign('connectionHealth', $this->getConnectionHealth($isAdministrator ? $this->agentSigningKeyPushService->pushExistingKey() : null));
-        $this->view->assign('keyManagementUri', $this->getKeyManagementUri());
     }
 
     /**
@@ -82,14 +81,6 @@ class ConfigurationController extends AbstractFusionViewController
         $recordedStatus = $this->agentSigningKeyPushService->getPushStatus()['status'] ?? 'none';
 
         return $recordedStatus === 'confirmed' || $recordedStatus === 'reenrolled';
-    }
-
-    /**
-     * Where the administrator goes when the line says the connection needs attention.
-     */
-    protected function getKeyManagementUri(): string
-    {
-        return $this->neosBackendModuleUri('ai-assistant/keyManagement');
     }
 
     /**

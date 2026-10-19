@@ -15,7 +15,14 @@ NEOSidekick.AiAssistant.BackendModule.KeyManagementController.index = NEOSidekic
     replaceKeyActionUri = ${replaceKeyActionUri}
     reenrolActionUri = ${reenrolActionUri}
     relabelActionUri = ${relabelActionUri}
-    sitesModuleUri = ${sitesModuleUri}
+    # Built on the main request: the module's own sub-request would namespace the link into this module.
+    sitesModuleUri = Neos.Fusion:ActionUri {
+        request = ${request.mainRequest}
+        package = 'Neos.Neos'
+        controller = 'Backend\\Module'
+        action = 'index'
+        arguments.module = 'administration/sites'
+    }
     regenerateFailure = ${regenerateFailure}
     regenerateRejectionReason = ${regenerateRejectionReason}
     relabelError = ${relabelError}

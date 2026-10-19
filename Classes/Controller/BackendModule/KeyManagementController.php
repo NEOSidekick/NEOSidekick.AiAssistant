@@ -85,7 +85,6 @@ class KeyManagementController extends AbstractFusionViewController
         $this->view->assign('reenrolActionUri', $this->uriBuilder->reset()->uriFor('reenrol'));
         $this->view->assign('relabelActionUri', $this->uriBuilder->reset()->uriFor('relabel'));
         $this->view->assign('csrfToken', $this->securityContext->getCsrfProtectionToken());
-        $this->view->assign('sitesModuleUri', $this->getSitesModuleUri());
         $this->view->assign('regenerateFailure', $flashMessages['message']);
         $this->view->assign('regenerateRejectionReason', $flashMessages['reason']);
         $this->view->assign('relabelError', $flashMessages['relabelError']);
@@ -495,14 +494,6 @@ class KeyManagementController extends AbstractFusionViewController
         }
 
         return $host === '' ? null : $host;
-    }
-
-    /**
-     * Where answer 1 sends the administrator to add the missing Domain record.
-     */
-    protected function getSitesModuleUri(): string
-    {
-        return $this->neosBackendModuleUri('administration/sites');
     }
 
     /**

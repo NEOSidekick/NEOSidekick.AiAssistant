@@ -6,7 +6,6 @@ namespace NEOSidekick\AiAssistant\Tests\Unit\Controller\BackendModule;
 
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\FlashMessage\FlashMessageContainer;
-use Neos\Flow\Mvc\Routing\UriBuilder;
 use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Fusion\View\FusionView;
 use NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController;
@@ -108,11 +107,10 @@ class ConfigurationControllerConnectionHealthTest extends TestCase
     }
 
     /** @test */
-    public function theModuleAssignsTheKeyManagementLinkAndNothingAboutKeys(): void
+    public function theModuleAssignsNothingAboutKeys(): void
     {
         $assigned = $this->renderIndex(true);
 
-        self::assertSame('/neos/ai-assistant/keyManagement', $assigned['keyManagementUri']);
         self::assertSame('csrf-token', $assigned['csrfToken']);
         self::assertTrue($assigned['isAdministrator']);
         foreach (['signingKey', 'regenerateActionUri', 'regenerateFailure', 'regenerateRejectionReason'] as $goneVariable) {
@@ -158,19 +156,11 @@ class ConfigurationControllerConnectionHealthTest extends TestCase
         AgentSigningKeyPushService $pushService,
         bool $isAdministrator = true
     ): ConfigurationController {
-        $controller = new class () extends ConfigurationController {
-            protected function neosBackendModuleUri(string $modulePath): string
-            {
-                return '/neos/' . $modulePath;
-            }
-        };
+        $controller = new ConfigurationController();
 
         $securityContext = $this->createMock(SecurityContext::class);
         $securityContext->method('hasRole')->willReturnCallback(fn (string $roleIdentifier): bool => $roleIdentifier === 'Neos.Neos:Administrator' && $isAdministrator);
         $securityContext->method('getCsrfProtectionToken')->willReturn('csrf-token');
-
-        $uriBuilder = $this->createMock(UriBuilder::class);
-        $uriBuilder->method('reset')->willReturnSelf();
 
         $controllerContext = $this->createMock(ControllerContext::class);
         $controllerContext->method('getFlashMessageContainer')->willReturn(new FlashMessageContainer());
@@ -183,7 +173,6 @@ class ConfigurationControllerConnectionHealthTest extends TestCase
 
         $this->setProtectedProperty($controller, 'agentSigningKeyPushService', $pushService);
         $this->setProtectedProperty($controller, 'securityContext', $securityContext);
-        $this->setProtectedProperty($controller, 'uriBuilder', $uriBuilder);
         $this->setProtectedProperty($controller, 'controllerContext', $controllerContext);
         $this->setProtectedProperty($controller, 'neosidekickInternalHelper', $internalHelper);
         $this->setProtectedProperty($controller, 'agentTokenService', $agentTokenService);

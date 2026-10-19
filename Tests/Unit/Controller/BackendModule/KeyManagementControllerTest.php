@@ -205,7 +205,6 @@ class KeyManagementControllerTest extends TestCase
         self::assertSame('/neos/ai-assistant/keyManagement?reenrol', $assigned['reenrolActionUri']);
         self::assertSame('/neos/ai-assistant/keyManagement?relabel', $assigned['relabelActionUri']);
         self::assertSame('csrf-token', $assigned['csrfToken']);
-        self::assertSame('/neos/administration/sites', $assigned['sitesModuleUri']);
         self::assertNull($assigned['regenerateFailure']);
         self::assertNull($assigned['regenerateRejectionReason']);
         self::assertNull($assigned['relabelError']);
@@ -667,11 +666,6 @@ class KeyManagementControllerTest extends TestCase
             protected function currentRequestHost(): ?string
             {
                 return $this->requestHost;
-            }
-
-            protected function neosBackendModuleUri(string $modulePath): string
-            {
-                return '/neos/' . $modulePath;
             }
         };
         $controller->requestHost = $requestHost;

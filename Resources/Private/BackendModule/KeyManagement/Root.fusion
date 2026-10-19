@@ -1,7 +1,7 @@
 include: resource://Neos.Fusion/Private/Fusion/Root.fusion
 
 ##
-# The "Key management" backend module (administrators only, Policy.yaml's ManageKeys target).
+# The "Key management" backend module (administrators only, Policy.yaml's ManageSigningKey target).
 #
 # Renders one of the four states the controller derives - `needs_new_key`, `check_failed`,
 # `host_unknown` and `healthy` - each offering only the action that fits it. The state is a box in
@@ -173,7 +173,7 @@ prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement.Status) < prototyp
 # answers on (`hosts_result = base_host_unknown`). Three answers side by side, harmless one first;
 # answer 3 is the irreversible move. Each button sits in its card because it only makes sense
 # next to its explanation. The confirmation dialogs are an accident guard - POST, CSRF and the
-# ManageKeys privilege are the controls.
+# ManageSigningKey privilege are the controls.
 #
 prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement.Question) < prototype(Neos.Fusion:Component) {
     sitesModuleUri = ''

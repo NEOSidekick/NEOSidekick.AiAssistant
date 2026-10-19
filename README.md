@@ -132,7 +132,7 @@ first time an editor authorizes the assistant. **A database dump contains the pr
 treat dumps as secret and replace the key after handing one out.
 
 The **Key management** module (administrators only, privilege target
-`NEOSidekick.AiAssistant:ManageKeys`) re-sends the key and this installation's host set on every
+`NEOSidekick.AiAssistant:ManageSigningKey`) re-sends the key and this installation's host set on every
 load and shows the fitting remedy. When the address is unknown it asks which of three applies:
 *same installation, new web address* (add a Domain record, then reload on an already registered
 address; no key change), *this is a copy* (own key, the original keeps working, tools connected

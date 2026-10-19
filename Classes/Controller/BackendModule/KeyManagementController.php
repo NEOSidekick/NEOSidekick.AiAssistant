@@ -23,7 +23,7 @@ use Throwable;
  * and the one action that answers it. Opening the page pushes the key past the push service's
  * throttle, because the page exists to get a fresh verdict.
  *
- * Administrators only via NEOSidekick.AiAssistant:ManageKeys (Policy.yaml), which also gives
+ * Administrators only via NEOSidekick.AiAssistant:ManageSigningKey (Policy.yaml), which also gives
  * every action Flow's CSRF check.
  *
  * @noinspection PhpUnused

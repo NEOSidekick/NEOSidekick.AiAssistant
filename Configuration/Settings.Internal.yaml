@@ -117,7 +117,7 @@ Neos:
             description: 'NEOSidekick.AiAssistant:BackendModule.KeyManagement:description'
             icon: 'fas fa-key'
             controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\KeyManagementController'
-            privilegeTarget: 'NEOSidekick.AiAssistant:ManageKeys'
+            privilegeTarget: 'NEOSidekick.AiAssistant:ManageSigningKey'
             mainStylesheet: Lite
             additionalResources:
               styleSheets:

@@ -95,12 +95,12 @@ jobs:
       - name: Run unit tests
         run: |
           cd "${{ env.NEOS_FOLDER }}"
-          bin/phpunit --colors --stop-on-failure --bootstrap ${{ env.DIST_FOLDER }}/Tests/UnitTestBootstrap.php -c ${{ env.DIST_FOLDER }}/Tests/UnitTests.xml --testsuite "NEOSidekick.AiAssistant Unit" --verbose
+          bin/phpunit --colors --stop-on-failure --bootstrap ${{ env.DIST_FOLDER }}/Tests/UnitTestBootstrap.php -c ${{ env.DIST_FOLDER }}/Tests/UnitTests.xml --testsuite "NEOSidekick.AiAssistant Unit"
 
       - name: Run functional tests
         run: |
           cd "${{ env.NEOS_FOLDER }}"
-          bin/phpunit --colors --stop-on-failure -c ${{ env.DIST_FOLDER }}/Tests/FunctionalTests.xml --testsuite "NEOSidekick.AiAssistant" --verbose
+          bin/phpunit --colors --stop-on-failure -c ${{ env.DIST_FOLDER }}/Tests/FunctionalTests.xml --testsuite "NEOSidekick.AiAssistant"
 
   javascript:
     name: "JavaScript tests"

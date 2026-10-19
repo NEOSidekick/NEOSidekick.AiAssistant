@@ -29,6 +29,9 @@
             <trans-unit id="checkFailed.generic" xml:space="preserve">
                 <source>The connection check did not complete. Reload; if this persists, see Technical details.</source>
             </trans-unit>
+            <trans-unit id="checkFailed.button" xml:space="preserve">
+                <source>Check again</source>
+            </trans-unit>
             <trans-unit id="healthy.status" xml:space="preserve">
                 <source>Connected as {0}.</source>
             </trans-unit>
@@ -49,9 +52,6 @@
             </trans-unit>
             <trans-unit id="question.intro" xml:space="preserve">
                 <source>This installation answers on {0}. NEOSidekick registered it as {1}. Did you copy this database from another installation? Then choose "This is a copy".</source>
-            </trans-unit>
-            <trans-unit id="answer.or" xml:space="preserve">
-                <source>or</source>
             </trans-unit>
             <trans-unit id="answer1.title" xml:space="preserve">
                 <source>Same installation, new web address</source>

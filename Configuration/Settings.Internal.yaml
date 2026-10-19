@@ -119,6 +119,9 @@ Neos:
             controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\KeyManagementController'
             privilegeTarget: 'NEOSidekick.AiAssistant:ManageKeys'
             mainStylesheet: Lite
+            additionalResources:
+              styleSheets:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/KeyManagement.css
   Flow:
     mvc:
       routes:

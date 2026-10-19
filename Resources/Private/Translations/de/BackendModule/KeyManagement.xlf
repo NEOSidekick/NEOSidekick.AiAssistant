@@ -38,6 +38,10 @@
                 <source>The connection check did not complete. Reload; if this persists, see Technical details.</source>
                 <target xml:lang="de" state="translated">Die Verbindungsprüfung wurde nicht abgeschlossen. Lade die Seite neu; wenn das bleibt, siehe Technische Details.</target>
             </trans-unit>
+            <trans-unit id="checkFailed.button" xml:space="preserve">
+                <source>Check again</source>
+                <target xml:lang="de" state="translated">Erneut prüfen</target>
+            </trans-unit>
             <trans-unit id="healthy.status" xml:space="preserve">
                 <source>Connected as {0}.</source>
                 <target xml:lang="de" state="translated">Verbunden als {0}.</target>
@@ -65,10 +69,6 @@
             <trans-unit id="question.intro" xml:space="preserve">
                 <source>This installation answers on {0}. NEOSidekick registered it as {1}. Did you copy this database from another installation? Then choose "This is a copy".</source>
                 <target xml:lang="de" state="translated">Diese Installation antwortet auf {0}. NEOSidekick hat sie als {1} registriert. Hast du diese Datenbank von einer anderen Installation kopiert? Dann wähle »Das ist eine Kopie«.</target>
-            </trans-unit>
-            <trans-unit id="answer.or" xml:space="preserve">
-                <source>or</source>
-                <target xml:lang="de" state="translated">oder</target>
             </trans-unit>
             <trans-unit id="answer1.title" xml:space="preserve">
                 <source>Same installation, new web address</source>

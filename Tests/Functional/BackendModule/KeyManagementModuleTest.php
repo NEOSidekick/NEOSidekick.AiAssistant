@@ -297,6 +297,26 @@ class KeyManagementModuleTest extends FunctionalTestCase
         self::assertStringContainsString('__csrfToken', (string)$output);
         self::assertStringContainsString('www.example.com', (string)$output, 'the registered host is named');
         self::assertStringContainsString('href="/neos/administration/sites"', (string)$output, 'answer 1 links to the Neos Sites module, not into this module');
+        self::assertMatchesRegularExpression('#<form id="neos-sidekick-key-post" method="POST"[^>]*>\s*<input type="hidden" name="__csrfToken"#', (string)$output, 'the helper form carries the token');
+        self::assertMatchesRegularExpression('#<button type="submit" form="neos-sidekick-key-post" formaction="[^"]*%40action%5D=relabel[^"]*"#', (string)$output, 'the move is confirmed in a modal that posts through the helper form');
+    }
+
+    /**
+     * NEOSidekick's answer is rendered as text in the status, the answers and the confirmation
+     * dialogs, so markup in it must arrive as text.
+     *
+     * @test
+     */
+    public function markupInTheRegisteredDomainIsRenderedAsText(): void
+    {
+        $this->authenticateAccount($this->createBackendAccount('Neos.Neos:Administrator'));
+        $this->stubNeosidekick([$this->registeredResponse('https://www.<nsk-injected>.example.com')]);
+
+        $output = (string)$this->get('index')->getContent();
+
+        self::assertStringContainsString('data-key-block="host-unknown"', $output);
+        self::assertStringNotContainsString('<nsk-injected>', $output);
+        self::assertStringContainsString('&lt;nsk-injected&gt;', $output);
     }
 
     /**

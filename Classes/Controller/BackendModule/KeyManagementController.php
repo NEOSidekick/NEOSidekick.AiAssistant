@@ -76,7 +76,6 @@ class KeyManagementController extends AbstractFusionViewController
 
     public function indexAction(): void
     {
-        $this->denyBrowserCaching();
         $pushResult = $this->agentSigningKeyPushService->pushExistingKey(true);
         $flashMessages = $this->consumeKeyManagementFlashMessages();
 
@@ -88,18 +87,6 @@ class KeyManagementController extends AbstractFusionViewController
         $this->view->assign('regenerateFailure', $flashMessages['message']);
         $this->view->assign('regenerateRejectionReason', $flashMessages['reason']);
         $this->view->assign('relabelError', $flashMessages['relabelError']);
-    }
-
-    /**
-     * The page is a verdict about right now, and the answers tell the administrator to come back
-     * to it after changing something elsewhere. Served from the browser's back/forward cache it
-     * would show the old verdict, so it is never stored. Neos' ModuleController merges these
-     * headers of the module sub-response into the main response.
-     */
-    protected function denyBrowserCaching(): void
-    {
-        $this->response->setHttpHeader('Cache-Control', 'no-store, max-age=0');
-        $this->response->setHttpHeader('Pragma', 'no-cache');
     }
 
     /**

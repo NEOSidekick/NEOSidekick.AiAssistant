@@ -347,6 +347,22 @@ class KeyManagementModuleTest extends FunctionalTestCase
         self::assertStringContainsString('&lt;nsk-injected&gt;', $output);
     }
 
+    /**
+     * The answers send the administrator elsewhere and back; a page restored from the back /
+     * forward cache would show the verdict from before that trip. Neos 9's module controller
+     * drops the module's Cache-Control header, so the page reloads itself instead.
+     */
+    #[Test]
+    public function aPageRestoredFromTheBackForwardCacheReloadsItself(): void
+    {
+        $this->authenticateAccount($this->createBackendAccount('Neos.Neos:Administrator'));
+        $this->stubNeosidekick([$this->registeredResponse('https://www.example.com')]);
+
+        $output = (string)$this->get('index')->getBody();
+
+        self::assertMatchesRegularExpression('#<script src="[^"]*/BackendModule/KeyManagement\.js#', $output);
+    }
+
     #[Test]
     public function anUnauthenticatedPostIsRefusedOnEveryMutatingAction(): void
     {

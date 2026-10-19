@@ -127,6 +127,8 @@ Neos:
             additionalResources:
               styleSheets:
                 module: resource://NEOSidekick.AiAssistant/Public/BackendModule/KeyManagement.css
+              javaScripts:
+                module: resource://NEOSidekick.AiAssistant/Public/BackendModule/KeyManagement.js
   Flow:
     mvc:
       routes:

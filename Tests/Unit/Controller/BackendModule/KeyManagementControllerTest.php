@@ -8,7 +8,6 @@ use Neos\Error\Messages\Error;
 use Neos\Error\Messages\Message;
 use Neos\Flow\I18n\Locale;
 use Neos\Flow\I18n\Translator;
-use Neos\Flow\Mvc\ActionResponse;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\FlashMessage\FlashMessageContainer;
 use Neos\Flow\Mvc\Routing\UriBuilder;
@@ -178,21 +177,6 @@ class KeyManagementControllerTest extends TestCase
         $assigned = $this->renderIndex($this->healthyKeyPairService(), $pushService);
 
         self::assertSame('healthy', $assigned['keyState']['state']);
-    }
-
-    /**
-     * The verdict is about right now, and the answers send the administrator away and back, so
-     * the page must not be restored from the browser's back / forward cache.
-     */
-    #[Test]
-    public function theIndexForbidsTheBrowsersBackForwardCache(): void
-    {
-        $response = new ActionResponse();
-
-        $this->renderIndex($this->healthyKeyPairService(), response: $response);
-
-        self::assertStringContainsString('no-store', (string)$response->getHttpHeader('Cache-Control'));
-        self::assertSame('no-cache', $response->getHttpHeader('Pragma'));
     }
 
     #[Test]
@@ -593,8 +577,7 @@ class KeyManagementControllerTest extends TestCase
         ?AgentKeyPairService $keyPairService = null,
         ?AgentSigningKeyPushService $pushService = null,
         ?FlashMessageContainer $flashMessageContainer = null,
-        ?string $requestHost = null,
-        ?ActionResponse $response = null
+        ?string $requestHost = null
     ): array {
         if ($keyPairService === null) {
             $keyPairService = $this->createMock(AgentKeyPairService::class);
@@ -604,7 +587,7 @@ class KeyManagementControllerTest extends TestCase
             $pushService = $this->createMock(AgentSigningKeyPushService::class);
             $pushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '']);
         }
-        $controller = $this->createController($pushService, $keyPairService, $flashMessageContainer, requestHost: $requestHost, response: $response);
+        $controller = $this->createController($pushService, $keyPairService, $flashMessageContainer, requestHost: $requestHost);
 
         $assigned = [];
         $view = $this->createMock(FusionView::class);
@@ -639,8 +622,7 @@ class KeyManagementControllerTest extends TestCase
         AgentKeyPairService $keyPairService,
         ?FlashMessageContainer $flashMessageContainer = null,
         ?string $translation = 'Der Signaturschlüssel wurde erneuert.',
-        ?string $requestHost = null,
-        ?ActionResponse $response = null
+        ?string $requestHost = null
     ): KeyManagementController {
         $controller = new class () extends KeyManagementController {
             public ?string $requestHost = null;
@@ -704,7 +686,6 @@ class KeyManagementControllerTest extends TestCase
                 };
             });
 
-        $this->setProtectedProperty($controller, 'response', $response ?? new ActionResponse());
         $this->setProtectedProperty($controller, 'agentKeyPairService', $keyPairService);
         $this->setProtectedProperty($controller, 'agentSigningKeyPushService', $pushService);
         $this->setProtectedProperty($controller, 'securityContext', $securityContext);

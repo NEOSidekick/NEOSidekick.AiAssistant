@@ -774,6 +774,50 @@ class PatchValidator
      */
     private function resolveAnchor(string $anchor, string $field, int $patchIndex, string $operation, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository): NodeDescriptor
     {
+        $node = $this->resolveAnchoredNode($anchor, $field, $patchIndex, $operation, $subgraph, $contentRepository);
+        $this->requireNoDeletedAncestor($node, $anchor, $field, $patchIndex, $operation, $subgraph, $contentRepository);
+
+        return $node;
+    }
+
+    /**
+     * Deleting a node removes its descendants with it, so a node inside a subtree the batch deleted earlier
+     * cannot be addressed any more - unless the batch moved it out of that subtree before.
+     *
+     * @throws PatchFailedException
+     */
+    private function requireNoDeletedAncestor(NodeDescriptor $node, string $anchor, string $field, int $patchIndex, string $operation, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository): void
+    {
+        if ($this->deletedStoredNodeIds === []) {
+            return;
+        }
+        for ($ancestor = $this->resolveParent($node, $subgraph, $contentRepository); $ancestor !== null; $ancestor = $this->resolveParent($ancestor, $subgraph, $contentRepository)) {
+            $ancestorId = $ancestor->getStoredNode()?->aggregateId->value;
+            if ($ancestorId === null || !isset($this->deletedStoredNodeIds[$ancestorId])) {
+                continue;
+            }
+
+            throw new PatchFailedException(
+                sprintf(
+                    'Node "%s" in "%s" at patch %d is inside node "%s", which patch %d of this batch deletes, and cannot be addressed afterwards.',
+                    $anchor,
+                    $field,
+                    $patchIndex,
+                    $ancestorId,
+                    $this->deletedStoredNodeIds[$ancestorId]
+                ),
+                $patchIndex,
+                $operation,
+                $anchor
+            );
+        }
+    }
+
+    /**
+     * @throws PatchFailedException
+     */
+    private function resolveAnchoredNode(string $anchor, string $field, int $patchIndex, string $operation, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository): NodeDescriptor
+    {
         try {
             $refAnchor = RefAnchor::fromAnchor($anchor);
         } catch (\InvalidArgumentException $e) {

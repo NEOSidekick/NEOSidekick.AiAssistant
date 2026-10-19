@@ -656,6 +656,38 @@ class PatchValidatorTest extends FunctionalTestCase
         );
     }
 
+    /**
+     * The projection removes the descendants of a removed node, so the batch would fail on the page inside
+     * the deleted one after the deletion is written.
+     */
+    #[Test]
+    public function anAnchorInsideANodeTheBatchDeletedIsRejected(): void
+    {
+        $exception = $this->expectFailure([
+            ['operation' => 'deleteNode', 'nodeId' => $this->otherPageId],
+            ['operation' => 'updateNode', 'nodeId' => $this->samePathSegmentPageId, 'properties' => []],
+        ]);
+
+        self::assertSame(1, $exception->getPatchIndex());
+        self::assertSame('updateNode', $exception->getOperation());
+        self::assertSame(
+            'Node "' . $this->samePathSegmentPageId . '" in "nodeId" at patch 1 is inside node "' . $this->otherPageId . '", which patch 0 of this batch deletes, and cannot be addressed afterwards.',
+            $exception->getMessage()
+        );
+    }
+
+    #[Test]
+    public function aNodeMovedOutOfASubtreeTheBatchDeletesStaysAddressable(): void
+    {
+        $this->validate([
+            ['operation' => 'moveNode', 'nodeId' => $this->samePathSegmentPageId, 'targetNodeId' => $this->pageId, 'position' => 'into'],
+            ['operation' => 'deleteNode', 'nodeId' => $this->otherPageId],
+            ['operation' => 'updateNode', 'nodeId' => $this->samePathSegmentPageId, 'properties' => []],
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
     #[Test]
     public function aStoredIdThatDoesNotExistPointsToRefs(): void
     {

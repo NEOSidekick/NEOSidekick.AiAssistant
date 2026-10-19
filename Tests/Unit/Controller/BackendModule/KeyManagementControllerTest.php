@@ -22,15 +22,14 @@ use NEOSidekick\AiAssistant\Exception\AgentSigningKeyStorageException;
 use NEOSidekick\AiAssistant\Service\AgentKeyPairService;
 use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
 use PHPUnit\Framework\TestCase;
-use Psr\Log\LoggerInterface;
 use ReflectionProperty;
 use RuntimeException;
 
 /**
  * The key management module answers one question - what is wrong with this installation's
  * connection - with one state, and offers exactly one action per answer. Load-bearing: the
- * remedy precedence, the push past the throttle, that nothing here ever mints a keypair, and the
- * moved-site refusal unless the exact registered host was retyped.
+ * remedy precedence, the push past the throttle and the moved-site refusal unless the exact
+ * registered host was retyped.
  */
 class KeyManagementControllerTest extends TestCase
 {
@@ -164,35 +163,21 @@ class KeyManagementControllerTest extends TestCase
     }
 
     /**
-     * The page exists to produce a fresh verdict. It still never mints a key, and an editor who
-     * reached it anyway pushes nothing.
+     * The page exists to produce a fresh verdict, so its push goes past the throttle. That it
+     * never mints a key is the push service's promise ({@see AgentSigningKeyPushService::pushExistingKey}).
      *
      * @test
      */
-    public function theIndexPushesPastTheThrottleForAdministratorsWithAKeyOnly(): void
+    public function theIndexPushesPastTheThrottle(): void
     {
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
         $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '']);
-        $pushService->expects(self::once())->method('pushIfNecessary')->with(true, true)
+        $pushService->expects(self::once())->method('pushExistingKey')->with(true)
             ->willReturn($this->answer(['https://www.example.com'], 'accepted'));
 
-        $assigned = $this->renderIndex(true, $this->healthyKeyPairService(), $pushService);
+        $assigned = $this->renderIndex($this->healthyKeyPairService(), $pushService);
+
         self::assertSame('healthy', $assigned['keyState']['state']);
-
-        $editorPushService = $this->createMock(AgentSigningKeyPushService::class);
-        $editorPushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '']);
-        $editorPushService->expects(self::never())->method('pushIfNecessary');
-        $assigned = $this->renderIndex(false, $this->healthyKeyPairService(), $editorPushService);
-        self::assertFalse($assigned['isAdministrator']);
-        self::assertSame('check_failed', $assigned['keyState']['state'], 'without an answer nothing is known');
-
-        $keyless = $this->createMock(AgentKeyPairService::class);
-        $keyless->method('hasKeyPair')->willReturn(false);
-        $keylessPushService = $this->createMock(AgentSigningKeyPushService::class);
-        $keylessPushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '']);
-        $keylessPushService->expects(self::never())->method('pushIfNecessary');
-        $assigned = $this->renderIndex(true, $keyless, $keylessPushService);
-        self::assertSame('needs_new_key', $assigned['keyState']['state']);
     }
 
     /**
@@ -205,36 +190,22 @@ class KeyManagementControllerTest extends TestCase
     {
         $response = new ActionResponse();
 
-        $this->renderIndex(true, $this->healthyKeyPairService(), response: $response);
+        $this->renderIndex($this->healthyKeyPairService(), response: $response);
 
         self::assertStringContainsString('no-store', (string)$response->getHttpHeader('Cache-Control'));
         self::assertSame('no-cache', $response->getHttpHeader('Pragma'));
     }
 
     /** @test */
-    public function aForcedPushThatThrowsIsLoggedAndLeavesTheCheckIncomplete(): void
-    {
-        $pushService = $this->createMock(AgentSigningKeyPushService::class);
-        $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '']);
-        $pushService->method('pushIfNecessary')->willThrowException(new RuntimeException('unexpected'));
-
-        $assigned = $this->renderIndex(true, $this->healthyKeyPairService(), $pushService);
-
-        self::assertSame(['check_failed', 'generic'], [$assigned['keyState']['state'], $assigned['keyState']['variant']]);
-        self::assertTrue($assigned['keyState']['exists'], 'the rest of the page is intact');
-    }
-
-    /** @test */
     public function theIndexAssignsTheFormTargetsAndTheTokenTheFormsCarry(): void
     {
-        $assigned = $this->renderIndex(true);
+        $assigned = $this->renderIndex();
 
         self::assertSame('/neos/ai-assistant/keyManagement?replaceKey', $assigned['replaceKeyActionUri']);
         self::assertSame('/neos/ai-assistant/keyManagement?reenrol', $assigned['reenrolActionUri']);
         self::assertSame('/neos/ai-assistant/keyManagement?relabel', $assigned['relabelActionUri']);
         self::assertSame('csrf-token', $assigned['csrfToken']);
         self::assertSame('/neos/administration/sites', $assigned['sitesModuleUri']);
-        self::assertTrue($assigned['isAdministrator']);
         self::assertNull($assigned['regenerateFailure']);
         self::assertNull($assigned['regenerateRejectionReason']);
         self::assertNull($assigned['relabelError']);
@@ -254,7 +225,7 @@ class KeyManagementControllerTest extends TestCase
         $container->addMessage(new Error('rejected with 100% certainty', KeyManagementController::REGENERATION_FAILED_MESSAGE_CODE, [], 'chain_domain_mismatch'));
         $container->addMessage(new Error('A key change is still waiting for NEOSidekick.', KeyManagementController::RELABEL_REFUSED_MESSAGE_CODE));
 
-        $assigned = $this->renderIndex(true, null, null, $container);
+        $assigned = $this->renderIndex(null, null, $container);
 
         self::assertSame('rejected with 100% certainty', $assigned['regenerateFailure']);
         self::assertSame('chain_domain_mismatch', $assigned['regenerateRejectionReason']);
@@ -268,7 +239,7 @@ class KeyManagementControllerTest extends TestCase
         $container = new FlashMessageContainer();
         $container->addMessage(new Error('Connection timed out', KeyManagementController::REGENERATION_FAILED_MESSAGE_CODE));
 
-        $assigned = $this->renderIndex(true, null, null, $container);
+        $assigned = $this->renderIndex(null, null, $container);
 
         self::assertSame('Connection timed out', $assigned['regenerateFailure']);
         self::assertNull($assigned['regenerateRejectionReason']);
@@ -435,7 +406,7 @@ class KeyManagementControllerTest extends TestCase
     public function theMoveIsCommittedAsARelabelRotation(): void
     {
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
-        $pushService->method('pushIfNecessary')->willReturn($this->answer(['https://www.example.com'], 'base_host_unknown'));
+        $pushService->method('pushExistingKey')->willReturn($this->answer(['https://www.example.com'], 'base_host_unknown'));
         $pushService->expects(self::once())->method('rotateKeyPair')->with(null, true, false)
             ->willReturn(AgentSigningKeyPushResult::success('confirmed', 'new-kid', 'AA:BB', 'root-kid-1'));
         $pushService->method('getPushStatus')->willReturn(['status' => 'confirmed', 'pushedAt' => '']);
@@ -463,7 +434,7 @@ class KeyManagementControllerTest extends TestCase
             'the push was skipped' => null,
         ] as $case => $pushAnswer) {
             $pushService = $this->createMock(AgentSigningKeyPushService::class);
-            $pushService->method('pushIfNecessary')->willReturn($pushAnswer);
+            $pushService->method('pushExistingKey')->willReturn($pushAnswer);
             $pushService->expects(self::never())->method('rotateKeyPair');
             $controller = $this->createController($pushService, $this->healthyKeyPairService(), translation: null);
 
@@ -485,7 +456,7 @@ class KeyManagementControllerTest extends TestCase
     public function aMoveWhileAKeyChangeIsPendingIsRefusedBeforeAnyPush(): void
     {
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
-        $pushService->expects(self::never())->method('pushIfNecessary');
+        $pushService->expects(self::never())->method('pushExistingKey');
         $pushService->expects(self::never())->method('rotateKeyPair');
         $keyPairService = $this->healthyKeyPairService();
         $keyPairService->method('hasPendingKeyPair')->willReturn(true);
@@ -543,7 +514,7 @@ class KeyManagementControllerTest extends TestCase
         $rejection = AgentSigningKeyPushResult::failure('The NEOSidekick backend rejected the signing key with status 422: kid_mismatch', 'new-kid', 'kid_mismatch');
 
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
-        $pushService->method('pushIfNecessary')->willReturn($this->answer(['https://www.example.com'], 'base_host_unknown'));
+        $pushService->method('pushExistingKey')->willReturn($this->answer(['https://www.example.com'], 'base_host_unknown'));
         $pushService->method('rotateKeyPair')->willReturn($rejection);
         $keyPairService = $this->healthyKeyPairService();
         $keyPairService->expects(self::once())->method('clearPendingRelabel');
@@ -564,7 +535,7 @@ class KeyManagementControllerTest extends TestCase
     public function aFailedMoveWhoseDisarmingThrowsStillReportsTheFailureAndRedirects(): void
     {
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
-        $pushService->method('pushIfNecessary')->willReturn($this->answer(['https://www.example.com'], 'base_host_unknown'));
+        $pushService->method('pushExistingKey')->willReturn($this->answer(['https://www.example.com'], 'base_host_unknown'));
         $pushService->method('rotateKeyPair')->willReturn(
             AgentSigningKeyPushResult::failure('The NEOSidekick backend rejected the signing key with status 422: kid_mismatch', 'new-kid', 'kid_mismatch')
         );
@@ -623,16 +594,15 @@ class KeyManagementControllerTest extends TestCase
     {
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
         $pushService->method('getPushStatus')->willReturn(['status' => $recordedStatus, 'pushedAt' => '']);
-        $pushService->method('pushIfNecessary')->willReturn($pushResult);
+        $pushService->method('pushExistingKey')->willReturn($pushResult);
 
-        return $this->renderIndex(true, $keyPairService, $pushService, requestHost: $requestHost)['keyState'];
+        return $this->renderIndex($keyPairService, $pushService, requestHost: $requestHost)['keyState'];
     }
 
     /**
      * @return array<string, mixed> The variables indexAction assigned to the view
      */
     private function renderIndex(
-        bool $isAdministrator,
         ?AgentKeyPairService $keyPairService = null,
         ?AgentSigningKeyPushService $pushService = null,
         ?FlashMessageContainer $flashMessageContainer = null,
@@ -647,7 +617,7 @@ class KeyManagementControllerTest extends TestCase
             $pushService = $this->createMock(AgentSigningKeyPushService::class);
             $pushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '']);
         }
-        $controller = $this->createController($pushService, $keyPairService, $isAdministrator, $flashMessageContainer, requestHost: $requestHost, response: $response);
+        $controller = $this->createController($pushService, $keyPairService, $flashMessageContainer, requestHost: $requestHost, response: $response);
 
         $assigned = [];
         $view = $this->createMock(FusionView::class);
@@ -666,7 +636,6 @@ class KeyManagementControllerTest extends TestCase
     private function createController(
         AgentSigningKeyPushService $pushService,
         AgentKeyPairService $keyPairService,
-        bool $isAdministrator = true,
         ?FlashMessageContainer $flashMessageContainer = null,
         ?string $translation = 'Der Signaturschlüssel wurde erneuert.',
         ?string $requestHost = null,
@@ -708,7 +677,6 @@ class KeyManagementControllerTest extends TestCase
         $controller->requestHost = $requestHost;
 
         $securityContext = $this->createMock(SecurityContext::class);
-        $securityContext->method('hasRole')->willReturnCallback(fn (string $roleIdentifier): bool => $roleIdentifier === 'Neos.Neos:Administrator' && $isAdministrator);
         $securityContext->method('getCsrfProtectionToken')->willReturn('csrf-token');
 
         $uriBuilder = $this->createMock(UriBuilder::class);
@@ -727,7 +695,7 @@ class KeyManagementControllerTest extends TestCase
         $translator->method('translateById')
             ->willReturnCallback(function (string $id, array $arguments, $quantity, Locale $locale, string $sourceName, string $packageKey) use ($translation): ?string {
                 self::assertEquals(new Locale('de'), $locale);
-                self::assertSame(['BackendModule/Configuration', 'NEOSidekick.AiAssistant'], [$sourceName, $packageKey]);
+                self::assertSame(['BackendModule/KeyManagement', 'NEOSidekick.AiAssistant'], [$sourceName, $packageKey]);
                 if ($translation === null) {
                     return null;
                 }
@@ -744,7 +712,6 @@ class KeyManagementControllerTest extends TestCase
         $this->setProtectedProperty($controller, 'securityContext', $securityContext);
         $this->setProtectedProperty($controller, 'uriBuilder', $uriBuilder);
         $this->setProtectedProperty($controller, 'controllerContext', $controllerContext);
-        $this->setProtectedProperty($controller, 'logger', $this->createMock(LoggerInterface::class));
         $this->setProtectedProperty($controller, 'userService', $userService);
         $this->setProtectedProperty($controller, 'translator', $translator);
 

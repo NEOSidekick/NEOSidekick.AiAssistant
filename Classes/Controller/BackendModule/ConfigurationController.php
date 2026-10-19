@@ -4,33 +4,18 @@ namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Log\Utility\LogEnvironment;
-use Neos\Flow\Mvc\View\ViewInterface;
-use Neos\Flow\Security\Context as SecurityContext;
-use Neos\Fusion\View\FusionView;
-use Neos\Neos\Controller\Module\AbstractModuleController;
 use NEOSidekick\AiAssistant\Dto\AgentSigningKeyPushResult;
 use NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper;
 use NEOSidekick\AiAssistant\Exception\AgentTokenException;
-use NEOSidekick\AiAssistant\Service\AgentKeyPairService;
 use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
 use NEOSidekick\AiAssistant\Service\AgentTokenService;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * @noinspection PhpUnused
  */
-class ConfigurationController extends AbstractModuleController
+class ConfigurationController extends AbstractFusionViewController
 {
-    protected $defaultViewObjectName = FusionView::class;
-
-    /**
-     * This is needed for type hinting in the IDE
-     *
-     * @var FusionView
-     */
-    protected $view;
-
     /**
      * @Flow\InjectConfiguration(path="apikey")
      * @var string
@@ -51,12 +36,6 @@ class ConfigurationController extends AbstractModuleController
 
     /**
      * @Flow\Inject
-     * @var AgentKeyPairService
-     */
-    protected $agentKeyPairService;
-
-    /**
-     * @Flow\Inject
      * @var AgentSigningKeyPushService
      */
     protected $agentSigningKeyPushService;
@@ -69,26 +48,9 @@ class ConfigurationController extends AbstractModuleController
 
     /**
      * @Flow\Inject
-     * @var SecurityContext
-     */
-    protected $securityContext;
-
-    /**
-     * @Flow\Inject
      * @var LoggerInterface
      */
     protected $logger;
-
-    /**
-     * @param FusionView $view
-     *
-     * @return void
-     */
-    protected function initializeView(ViewInterface $view): void
-    {
-        parent::initializeView($view);
-        $view->setFusionPathPattern('resource://NEOSidekick.AiAssistant/Private/BackendModule');
-    }
 
     public function indexAction(): void
     {
@@ -99,7 +61,7 @@ class ConfigurationController extends AbstractModuleController
         $this->view->assign('embedToken', $this->getEmbedToken());
         $this->view->assign('isAdministrator', $isAdministrator);
         $this->view->assign('csrfToken', $this->securityContext->getCsrfProtectionToken());
-        $this->view->assign('connectionHealth', $this->getConnectionHealth($isAdministrator ? $this->forceSigningKeyPush() : null));
+        $this->view->assign('connectionHealth', $this->getConnectionHealth($isAdministrator ? $this->agentSigningKeyPushService->pushExistingKey() : null));
         $this->view->assign('keyManagementUri', $this->getKeyManagementUri());
     }
 
@@ -131,23 +93,6 @@ class ConfigurationController extends AbstractModuleController
     }
 
     /**
-     * A link to another Neos backend module. Built on the MAIN request: this controller's own
-     * uriBuilder is bound to the module sub-request, which would namespace the arguments as this
-     * module's own ({@see MenuHelper}).
-     */
-    protected function neosBackendModuleUri(string $modulePath): string
-    {
-        try {
-            $uriBuilder = clone $this->uriBuilder;
-            $uriBuilder->setRequest($this->request->getMainRequest());
-
-            return $uriBuilder->reset()->uriFor('index', ['module' => $modulePath], 'Backend\\Module', 'Neos.Neos');
-        } catch (Throwable $throwable) {
-            return '';
-        }
-    }
-
-    /**
      * Mints the short-lived embed token the settings iframe carries, so the embedded page knows
      * which editor - not merely which account - is looking at it.
      *
@@ -163,29 +108,6 @@ class ConfigurationController extends AbstractModuleController
         } catch (AgentTokenException $exception) {
             $this->logger->warning(
                 'NEOSidekick settings module could not mint an embed token: ' . $exception->getMessage(),
-                LogEnvironment::fromMethodName(__METHOD__)
-            );
-
-            return null;
-        }
-    }
-
-    /**
-     * Opening the module re-sends the key and this installation's host set, keeping the push's
-     * own 60 s throttle; a skipped push leaves the health line to the record. Only an existing
-     * key is transmitted - a render must never mint one.
-     */
-    protected function forceSigningKeyPush(): ?AgentSigningKeyPushResult
-    {
-        try {
-            if (!$this->agentKeyPairService->hasKeyPair()) {
-                return null;
-            }
-
-            return $this->agentSigningKeyPushService->pushIfNecessary(true);
-        } catch (Throwable $throwable) {
-            $this->logger->warning(
-                'NEOSidekick settings module could not push the signing key: ' . $throwable->getMessage(),
                 LogEnvironment::fromMethodName(__METHOD__)
             );
 

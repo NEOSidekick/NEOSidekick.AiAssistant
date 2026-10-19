@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace NEOSidekick\AiAssistant\Tests\Unit\Controller\BackendModule;
 
-use Doctrine\ORM\EntityManagerInterface;
 use Neos\Flow\Mvc\Controller\ControllerContext;
 use Neos\Flow\Mvc\FlashMessage\FlashMessageContainer;
 use Neos\Flow\Mvc\Routing\UriBuilder;
@@ -13,10 +12,8 @@ use Neos\Fusion\View\FusionView;
 use NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController;
 use NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper;
 use NEOSidekick\AiAssistant\Exception\AgentTokenException;
-use NEOSidekick\AiAssistant\Service\AgentKeyPairService;
 use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
 use NEOSidekick\AiAssistant\Service\AgentTokenService;
-use NEOSidekick\AiAssistant\Tests\Unit\Fixtures\InMemoryAgentSigningKeyRecordRepository;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionProperty;
@@ -60,48 +57,9 @@ class ConfigurationControllerEmbedTokenTest extends TestCase
     }
 
     /**
-     * @test
-     */
-    public function mintingTheEmbedTokenOnAKeylessInstallationNeverCreatesTheSigningKeyRow(): void
-    {
-        $repository = new InMemoryAgentSigningKeyRecordRepository();
-        $tokenService = $this->createMock(AgentTokenService::class);
-        $tokenService->method('generateEmbedToken')->willThrowException(new AgentTokenException('no keypair'));
-
-        $assignments = $this->renderIndexAction($tokenService, null, $this->createKeyPairService($repository));
-
-        self::assertNull($repository->findInstallRecord(), 'the embed token minting generated a keypair');
-        self::assertNull($assignments['embedToken']);
-    }
-
-    /**
-     * A real keypair service on an in-memory row, so "did the render generate a key?" is a
-     * question about the row rather than about a mock's expectations.
-     */
-    private function createKeyPairService(InMemoryAgentSigningKeyRecordRepository $repository): AgentKeyPairService
-    {
-        $entityManager = $this->createMock(EntityManagerInterface::class);
-        $entityManager->method('contains')->willReturn(true);
-
-        $keyPairService = new AgentKeyPairService();
-        $this->setPropertyOn($keyPairService, 'agentSigningKeyRecordRepository', $repository);
-        $this->setPropertyOn($keyPairService, 'entityManager', $entityManager);
-        $this->setPropertyOn($keyPairService, 'logger', $this->createMock(LoggerInterface::class));
-
-        return $keyPairService;
-    }
-
-    private function setPropertyOn(object $object, string $name, mixed $value): void
-    {
-        $property = new ReflectionProperty(get_class($object), $name);
-        $property->setAccessible(true);
-        $property->setValue($object, $value);
-    }
-
-    /**
      * @return array<string, mixed>
      */
-    private function renderIndexAction(AgentTokenService $tokenService, ?LoggerInterface $logger = null, ?AgentKeyPairService $keyPairService = null): array
+    private function renderIndexAction(AgentTokenService $tokenService, ?LoggerInterface $logger = null): array
     {
         $assignments = [];
         $view = $this->createMock(FusionView::class);
@@ -111,10 +69,6 @@ class ConfigurationControllerEmbedTokenTest extends TestCase
             return $view;
         });
 
-        if ($keyPairService === null) {
-            $keyPairService = $this->createMock(AgentKeyPairService::class);
-            $keyPairService->method('hasKeyPair')->willReturn(false);
-        }
         $pushService = $this->createMock(AgentSigningKeyPushService::class);
         $pushService->method('getPushStatus')->willReturn(['status' => 'none', 'pushedAt' => '']);
         $internalHelper = $this->createMock(NEOSidekickInternalHelper::class);
@@ -137,7 +91,6 @@ class ConfigurationControllerEmbedTokenTest extends TestCase
         $this->setProperty($controller, 'apiKey', 'test-api-key');
         $this->setProperty($controller, 'apiDomain', 'https://api.neosidekick.com');
         $this->setProperty($controller, 'neosidekickInternalHelper', $internalHelper);
-        $this->setProperty($controller, 'agentKeyPairService', $keyPairService);
         $this->setProperty($controller, 'agentSigningKeyPushService', $pushService);
         $this->setProperty($controller, 'agentTokenService', $tokenService);
         $this->setProperty($controller, 'logger', $logger ?? $this->createMock(LoggerInterface::class));

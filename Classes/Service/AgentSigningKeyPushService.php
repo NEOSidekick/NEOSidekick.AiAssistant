@@ -201,6 +201,28 @@ class AgentSigningKeyPushService
     }
 
     /**
+     * The forced push a backend module makes when it renders. Only an existing key is
+     * transmitted: a render must never mint one, that stays with the authorization flow and the
+     * CLI. Null when there is no key or it cannot be read, so the module falls back to the record.
+     *
+     * @param bool $bypassThrottle See {@see pushIfNecessary}
+     */
+    public function pushExistingKey(bool $bypassThrottle = false): ?AgentSigningKeyPushResult
+    {
+        try {
+            if (!$this->agentKeyPairService->hasKeyPair()) {
+                return null;
+            }
+
+            return $this->pushIfNecessary(true, $bypassThrottle);
+        } catch (Throwable $throwable) {
+            $this->logPushFailure('for a backend module failed: ' . $throwable->getMessage());
+
+            return null;
+        }
+    }
+
+    /**
      * A pending pair without a retry stamp is due: pushing once too often is free.
      */
     private function pendingRetryIsDue(): bool

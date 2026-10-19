@@ -122,6 +122,27 @@
             <trans-unit id="failure.chainDomainMismatchHint" xml:space="preserve">
                 <source>This installation's key is registered for another domain. Answer the question above: a copy needs its own key, a move needs "We moved the site".</source>
             </trans-unit>
+            <trans-unit id="signingKey.status.reenrolled" xml:space="preserve">
+                <source>Registered as a new installation. Connected tools had to be reconnected with the new address.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.unusableAbort" xml:space="preserve">
+                <source>The key was not changed: the stored key cannot be used. Restore a backup, or give this installation a new key.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.success" xml:space="preserve">
+                <source>The key was replaced. This installation now identifies itself with the new key.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.unconfirmed" xml:space="preserve">
+                <source>The key was changed, but NEOSidekick reports it as {0}. Open key management again to finish the change.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.success" xml:space="preserve">
+                <source>This installation is now registered under its current domain. Connected tools keep working.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.pending" xml:space="preserve">
+                <source>A key change is still waiting for NEOSidekick. Reload this page until it is finished, then try again.</source>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.noRegisteredDomain" xml:space="preserve">
+                <source>NEOSidekick did not report a registered domain for this installation. Reload this page and try again.</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

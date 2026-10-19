@@ -6,18 +6,16 @@ namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
 use Neos\Error\Messages\Message;
 use Neos\Flow\Annotations as Flow;
+use Neos\Flow\I18n\Locale;
 use Neos\Flow\I18n\Translator;
-use Neos\Flow\Log\Utility\LogEnvironment;
 use Neos\Flow\Mvc\Exception\StopActionException;
 use Neos\Flow\Mvc\View\ViewInterface;
-use Neos\Flow\Security\Context as SecurityContext;
 use Neos\Fusion\View\FusionView;
-use Neos\Neos\Controller\Module\AbstractModuleController;
-use Neos\Neos\Service\UserService;
 use NEOSidekick\AiAssistant\Dto\AgentSigningKeyPushResult;
+use NEOSidekick\AiAssistant\Service\AgentInstallHostCollector;
 use NEOSidekick\AiAssistant\Service\AgentKeyPairService;
 use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
-use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -30,24 +28,24 @@ use Throwable;
  *
  * @noinspection PhpUnused
  */
-class KeyManagementController extends AbstractModuleController
+class KeyManagementController extends AbstractFusionViewController
 {
-    use SigningKeyRotationTrait;
+    /**
+     * A failed key change, carried to the module's index action.
+     */
+    public const REGENERATION_FAILED_MESSAGE_CODE = 1756800010;
+
+    /**
+     * A succeeded - or unconfirmed - key change. Its own code so it is left in the container for
+     * the Neos chrome instead of being consumed by the failure box.
+     */
+    public const REGENERATION_SUCCEEDED_MESSAGE_CODE = 1756800011;
 
     /**
      * A refused "we moved the site" confirmation. Its own code: it is not a failed key change
      * and renders next to the question rather than in the failure box.
      */
     public const RELABEL_REFUSED_MESSAGE_CODE = 1758300010;
-
-    protected $defaultViewObjectName = FusionView::class;
-
-    /**
-     * This is needed for type hinting in the IDE
-     *
-     * @var FusionView
-     */
-    protected $view;
 
     /**
      * @Flow\Inject
@@ -60,24 +58,6 @@ class KeyManagementController extends AbstractModuleController
      * @var AgentSigningKeyPushService
      */
     protected $agentSigningKeyPushService;
-
-    /**
-     * @Flow\Inject
-     * @var SecurityContext
-     */
-    protected $securityContext;
-
-    /**
-     * @Flow\Inject
-     * @var LoggerInterface
-     */
-    protected $logger;
-
-    /**
-     * @Flow\Inject
-     * @var UserService
-     */
-    protected $userService;
 
     /**
      * @Flow\Inject
@@ -97,8 +77,7 @@ class KeyManagementController extends AbstractModuleController
     public function indexAction(): void
     {
         $this->denyBrowserCaching();
-        $isAdministrator = $this->securityContext->hasRole('Neos.Neos:Administrator');
-        $pushResult = $isAdministrator ? $this->forceSigningKeyPush() : null;
+        $pushResult = $this->agentSigningKeyPushService->pushExistingKey(true);
         $flashMessages = $this->consumeKeyManagementFlashMessages();
 
         $this->view->assign('keyState', $this->deriveKeyState($pushResult));
@@ -110,7 +89,6 @@ class KeyManagementController extends AbstractModuleController
         $this->view->assign('regenerateFailure', $flashMessages['message']);
         $this->view->assign('regenerateRejectionReason', $flashMessages['reason']);
         $this->view->assign('relabelError', $flashMessages['relabelError']);
-        $this->view->assign('isAdministrator', $isAdministrator);
     }
 
     /**
@@ -192,8 +170,7 @@ class KeyManagementController extends AbstractModuleController
         }
 
         $registeredDomain = $this->pushedRegisteredDomain();
-        $registeredHost = $this->hostOf($registeredDomain);
-        if ($registeredHost === null) {
+        if ($registeredDomain === null || AgentInstallHostCollector::hostOf($registeredDomain) === null) {
             $this->addRelabelError(
                 $this->translateRegenerationOutcome(
                     'signingKey.relabel.noRegisteredDomain',
@@ -208,6 +185,132 @@ class KeyManagementController extends AbstractModuleController
 
         $this->rotateSigningKey(false, true);
         $this->redirect('index');
+    }
+
+    /**
+     * Changes this installation's signing key: the successor is transmitted chained to the
+     * current key and replaces it once NEOSidekick registered it; a failed push changes nothing.
+     * A key that cannot vouch for the successor aborts - re-enrolling orphans every connected
+     * tool, so it needs its own button. The two flags are never sent together, and a relabel
+     * NEOSidekick did not accept disarms itself so the unattended editor-authorize push cannot
+     * carry it into a later chained retry.
+     *
+     * @param bool $reenrol Enrol this installation as a new one, unchained
+     * @param bool $relabel Re-register this installation under the domain it answers as
+     */
+    protected function rotateSigningKey(bool $reenrol = false, bool $relabel = false): void
+    {
+        if (!$reenrol && $this->liveKeyPairIsUnusable()) {
+            $this->addSigningKeyFailure(
+                $this->translateRegenerationOutcome(
+                    'signingKey.regenerate.unusableAbort',
+                    [],
+                    'The signing key was not regenerated: the stored key is unusable, so nothing can vouch for a successor. Restore the signing-key row from a backup to keep this installation\'s identity, or give this installation a new key.'
+                )
+            );
+
+            return;
+        }
+
+        $result = $this->agentSigningKeyPushService->rotateKeyPair(null, $relabel, $reenrol);
+        if ($result->successful && $result->isConfirmed()) {
+            $this->addFlashMessage($this->successMessage($result, $relabel), '', Message::SEVERITY_OK, [], self::REGENERATION_SUCCEEDED_MESSAGE_CODE);
+
+            return;
+        }
+
+        if ($result->successful) {
+            $status = (string)$result->status;
+            $message = $this->translateRegenerationOutcome(
+                'signingKey.regenerate.unconfirmed',
+                [$status],
+                'The signing key was regenerated, but NEOSidekick reports it as ' . $status . '. Regenerate the key again to re-register this installation; connected tools will have to be reconnected.'
+            );
+            $this->addFlashMessage($message, '', Message::SEVERITY_WARNING, [], self::REGENERATION_SUCCEEDED_MESSAGE_CODE);
+
+            return;
+        }
+
+        if ($relabel) {
+            try {
+                $this->agentKeyPairService->clearPendingRelabel();
+            } catch (RuntimeException $exception) {
+                // Left armed, but bounded by the retry back-off; the flash below still reports the failure.
+            }
+        }
+
+        $this->addFlashMessage((string)$result->errorMessage, (string)$result->rejectionReason, Message::SEVERITY_ERROR, [], self::REGENERATION_FAILED_MESSAGE_CODE);
+    }
+
+    /**
+     * What the push actually recorded, not what was asked for: a relabel whose chain key was
+     * already revoked enrolled a new installation, and its tools must be reconnected.
+     */
+    protected function successMessage(AgentSigningKeyPushResult $result, bool $relabel): string
+    {
+        if (($this->agentSigningKeyPushService->getPushStatus()['status'] ?? '') === 'reenrolled') {
+            return $this->translateRegenerationOutcome(
+                'signingKey.status.reenrolled',
+                [],
+                'Registered as a new installation. Connected tools had to be reconnected with the new address.'
+            );
+        }
+
+        if ($relabel) {
+            return $this->translateRegenerationOutcome(
+                'signingKey.relabel.success',
+                [],
+                'This installation is now registered under its current domain. Connected tools keep working.'
+            );
+        }
+
+        return $this->translateRegenerationOutcome(
+            'signingKey.regenerate.success',
+            [],
+            'The signing key was regenerated. This installation now identifies itself with the new key.'
+        );
+    }
+
+    /**
+     * A refusal the module decided on itself: no backend reason, same box as a backend rejection.
+     */
+    protected function addSigningKeyFailure(string $message): void
+    {
+        $this->addFlashMessage($message, '', Message::SEVERITY_ERROR, [], self::REGENERATION_FAILED_MESSAGE_CODE);
+    }
+
+    /**
+     * Whether a stored keypair exists that cannot chain a successor. An unreadable row is not
+     * this state: the rotation itself reports that failure.
+     */
+    protected function liveKeyPairIsUnusable(): bool
+    {
+        try {
+            return $this->agentKeyPairService->hasKeyPair() && !$this->agentKeyPairService->isLiveKeyPairUsable();
+        } catch (RuntimeException $exception) {
+            return false;
+        }
+    }
+
+    /**
+     * The outcome shown to the administrator, translated here because the Neos chrome renders
+     * flash messages untranslated; a missing unit falls back to the English source text.
+     *
+     * @param array<int, string> $arguments The values for the unit's {0}, {1}, ... placeholders
+     * @param string $englishFallback The already-interpolated English source text
+     */
+    protected function translateRegenerationOutcome(string $unitId, array $arguments, string $englishFallback): string
+    {
+        $translated = $this->translator->translateById(
+            $unitId,
+            $arguments,
+            null,
+            new Locale($this->userService->getInterfaceLanguage()),
+            'BackendModule/KeyManagement',
+            'NEOSidekick.AiAssistant'
+        );
+
+        return $translated ?? $englishFallback;
     }
 
     /**
@@ -239,7 +342,7 @@ class KeyManagementController extends AbstractModuleController
             'variant' => $variant,
             'pendingChange' => $state !== 'needs_new_key' && $keyFacts['pending'],
             'registeredDomain' => $registeredDomain,
-            'registeredHost' => $this->hostOf($registeredDomain),
+            'registeredHost' => $registeredDomain === null ? null : AgentInstallHostCollector::hostOf($registeredDomain),
             'thisHost' => $this->lowercasedRequestHost(),
             'registeredHosts' => $this->echoedHosts($pushResult),
             'fingerprint' => $keyFacts['fingerprint'],
@@ -368,32 +471,9 @@ class KeyManagementController extends AbstractModuleController
      */
     protected function pushedRegisteredDomain(): ?string
     {
-        $result = $this->forceSigningKeyPush();
+        $result = $this->agentSigningKeyPushService->pushExistingKey(true);
 
         return $result !== null && $result->successful ? $result->registeredDomain : null;
-    }
-
-    /**
-     * Transmits the key and this installation's host set, bypassing the 60 s throttle: the page
-     * exists to answer "what is wrong right now". Only an existing key is transmitted - a render
-     * must never mint one, that stays with the authorization flow and the CLI.
-     */
-    protected function forceSigningKeyPush(): ?AgentSigningKeyPushResult
-    {
-        try {
-            if (!$this->agentKeyPairService->hasKeyPair()) {
-                return null;
-            }
-
-            return $this->agentSigningKeyPushService->pushIfNecessary(true, true);
-        } catch (Throwable $throwable) {
-            $this->logger->warning(
-                'NEOSidekick key management module could not push the signing key: ' . $throwable->getMessage(),
-                LogEnvironment::fromMethodName(__METHOD__)
-            );
-
-            return null;
-        }
     }
 
     protected function lowercasedRequestHost(): ?string
@@ -423,22 +503,6 @@ class KeyManagementController extends AbstractModuleController
     protected function getSitesModuleUri(): string
     {
         return $this->neosBackendModuleUri('administration/sites');
-    }
-
-    /**
-     * A link to another Neos backend module. Built on the MAIN request: this controller's own
-     * uriBuilder would namespace the arguments as this module's own ({@see MenuHelper}).
-     */
-    protected function neosBackendModuleUri(string $modulePath): string
-    {
-        try {
-            $uriBuilder = clone $this->uriBuilder;
-            $uriBuilder->setRequest($this->request->getMainRequest());
-
-            return $uriBuilder->reset()->uriFor('index', ['module' => $modulePath], 'Backend\Module', 'Neos.Neos');
-        } catch (Throwable $throwable) {
-            return '';
-        }
     }
 
     /**

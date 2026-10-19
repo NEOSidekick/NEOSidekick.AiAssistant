@@ -10,26 +10,6 @@
                 <source>Here you can define the company and target group briefing which Sidekick should take into account.</source>
                 <target xml:lang="de" state="translated">Hier kannst du Informationen über dein Unternehmen und deine Zielgruppe eingeben, die Sidekick dann berücksichtigt.</target>
             </trans-unit>
-            <trans-unit id="signingKey.status.reenrolled" xml:space="preserve">
-                <source>Registered as a new installation. Connected tools had to be reconnected with the new address.</source>
-                <target xml:lang="de" state="translated">Als neue Installation registriert. Verbundene Tools mussten mit der neuen Adresse neu verbunden werden.</target>
-            </trans-unit>
-            <trans-unit id="signingKey.regenerate.unusableAbort" xml:space="preserve">
-                <source>The key was not changed: the stored key cannot be used. Restore a backup, or give this installation a new key.</source>
-                <target xml:lang="de" state="translated">Der Schlüssel wurde nicht geändert: Der gespeicherte Schlüssel ist unbrauchbar. Spiele ein Backup ein oder gib dieser Installation einen neuen Schlüssel.</target>
-            </trans-unit>
-            <trans-unit id="signingKey.regenerate.success" xml:space="preserve">
-                <source>The key was replaced. This installation now identifies itself with the new key.</source>
-                <target xml:lang="de" state="translated">Der Schlüssel wurde ersetzt. Diese Installation weist sich jetzt mit dem neuen Schlüssel aus.</target>
-            </trans-unit>
-            <trans-unit id="signingKey.regenerate.unconfirmed" xml:space="preserve">
-                <source>The key was changed, but NEOSidekick reports it as {0}. Open key management again to finish the change.</source>
-                <target xml:lang="de" state="translated">Der Schlüssel wurde geändert, aber NEOSidekick meldet ihn als {0}. Öffne die Schlüsselverwaltung erneut, um die Änderung abzuschließen.</target>
-            </trans-unit>
-            <trans-unit id="signingKey.relabel.success" xml:space="preserve">
-                <source>This installation is now registered under its current domain. Connected tools keep working.</source>
-                <target xml:lang="de" state="translated">Diese Installation ist jetzt unter ihrer aktuellen Domain registriert. Verbundene Tools arbeiten weiter.</target>
-            </trans-unit>
             <trans-unit id="connection.attention" xml:space="preserve">
                 <source>Connection needs attention.</source>
                 <target xml:lang="de" state="translated">Die Verbindung braucht Aufmerksamkeit.</target>
@@ -37,14 +17,6 @@
             <trans-unit id="connection.openLink" xml:space="preserve">
                 <source>Open key management</source>
                 <target xml:lang="de" state="translated">Schlüsselverwaltung öffnen</target>
-            </trans-unit>
-            <trans-unit id="signingKey.relabel.pending" xml:space="preserve">
-                <source>A key change is still waiting for NEOSidekick. Reload this page until it is finished, then try again.</source>
-                <target xml:lang="de" state="translated">Eine Schlüsseländerung wartet noch auf NEOSidekick. Lade diese Seite neu, bis sie abgeschlossen ist, und versuche es dann erneut.</target>
-            </trans-unit>
-            <trans-unit id="signingKey.relabel.noRegisteredDomain" xml:space="preserve">
-                <source>NEOSidekick did not report a registered domain for this installation. Reload this page and try again.</source>
-                <target xml:lang="de" state="translated">NEOSidekick hat keine registrierte Domain für diese Installation gemeldet. Lade diese Seite neu und versuche es erneut.</target>
             </trans-unit>
         </body>
     </file>

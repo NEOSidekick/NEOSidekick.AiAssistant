@@ -1508,8 +1508,8 @@ class AgentSigningKeyPushServiceTest extends TestCase
         self::assertNotNull($service->pushIfNecessary());
         self::assertCount(1, $this->requestHistory);
 
-        self::assertNull($service->pushIfNecessary(force: true), 'a fresh success throttles the forced push');
-        self::assertNotNull($service->pushIfNecessary(force: true, bypassThrottle: true), 'the key page pushes anyway');
+        self::assertNull($service->pushExistingKey(), 'a fresh success throttles the settings page');
+        self::assertNotNull($service->pushExistingKey(true), 'the key page pushes anyway');
         self::assertCount(2, $this->requestHistory);
 
         self::assertNull($service->pushIfNecessary(bypassThrottle: true), 'bypassing the throttle is not forcing the push');
@@ -1537,8 +1537,42 @@ class AgentSigningKeyPushServiceTest extends TestCase
         self::assertNull($service->pushIfNecessary(force: true), 'the unattended retry waits out its back-off');
         self::assertCount(1, $this->requestHistory);
 
-        self::assertNotNull($service->pushIfNecessary(force: true, bypassThrottle: true), 'the key page retries it at once');
+        self::assertNotNull($service->pushExistingKey(true), 'the key page retries it at once');
         self::assertCount(2, $this->requestHistory);
+    }
+
+    /**
+     * A backend module pushes on every render it allows, so that push must neither mint an
+     * identity - that stays with the authorization flow and the CLI - nor take the page down
+     * over an unreadable row.
+     *
+     * @test
+     */
+    public function theModulePushNeverMintsAKeypairAndNeverThrows(): void
+    {
+        $service = $this->createService([$this->confirmedResponse()]);
+
+        self::assertNull($service->pushExistingKey(true));
+        self::assertNull($this->repository->findInstallRecord(), 'no row was created');
+        self::assertCount(0, $this->requestHistory);
+
+        $logger = $this->createMock(LoggerInterface::class);
+        $logger->expects(self::once())->method('warning');
+        $unreadable = $this->createService([$this->confirmedResponse()], logger: $logger);
+        $keyPairService = $this->createMock(AgentKeyPairService::class);
+        $keyPairService->method('hasKeyPair')->willThrowException(new AgentSigningKeyStorageException('The agent signing keypair could not be loaded from the database.', 1757000012));
+        $this->setProtectedProperty($unreadable, 'agentKeyPairService', $keyPairService);
+
+        self::assertNull($unreadable->pushExistingKey(true));
+        self::assertCount(0, $this->requestHistory);
+
+        $throwing = $this->getMockBuilder(AgentSigningKeyPushService::class)->onlyMethods(['pushIfNecessary'])->getMock();
+        $throwing->method('pushIfNecessary')->willThrowException(new \RuntimeException('unexpected'));
+        $this->setProtectedProperty($throwing, 'agentKeyPairService', $this->createKeyPairService());
+        $this->setProtectedProperty($throwing, 'logger', $this->createMock(LoggerInterface::class));
+        $this->repository->seed(new AgentSigningKeyRecord($this->fixturePrivateKeyPem(), $this->fixturePublicKeyPem()));
+
+        self::assertNull($throwing->pushExistingKey(true), 'the modules no longer catch, so the service must');
     }
 
     /**

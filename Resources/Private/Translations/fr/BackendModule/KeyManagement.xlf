@@ -162,6 +162,34 @@
                 <source>This installation's key is registered for another domain. Answer the question above: a copy needs its own key, a move needs "We moved the site".</source>
                 <target xml:lang="fr" state="translated">La clé de cette installation est enregistrée pour un autre domaine. Répondez à la question ci-dessus : une copie a besoin de sa propre clé, un déménagement de « Nous avons déplacé le site ».</target>
             </trans-unit>
+            <trans-unit id="signingKey.status.reenrolled" xml:space="preserve">
+                <source>Registered as a new installation. Connected tools had to be reconnected with the new address.</source>
+                <target xml:lang="fr">Enregistrée comme nouvelle installation. Les outils connectés ont dû être reconnectés avec la nouvelle adresse.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.unusableAbort" xml:space="preserve">
+                <source>The key was not changed: the stored key cannot be used. Restore a backup, or give this installation a new key.</source>
+                <target xml:lang="fr" state="translated">La clé n'a pas été modifiée : la clé enregistrée est inutilisable. Restaurez une sauvegarde ou donnez une nouvelle clé à cette installation.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.success" xml:space="preserve">
+                <source>The key was replaced. This installation now identifies itself with the new key.</source>
+                <target xml:lang="fr" state="translated">La clé a été remplacée. Cette installation s'identifie désormais avec la nouvelle clé.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.regenerate.unconfirmed" xml:space="preserve">
+                <source>The key was changed, but NEOSidekick reports it as {0}. Open key management again to finish the change.</source>
+                <target xml:lang="fr" state="translated">La clé a été modifiée, mais NEOSidekick la signale comme {0}. Rouvrez la gestion des clés pour terminer la modification.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.success" xml:space="preserve">
+                <source>This installation is now registered under its current domain. Connected tools keep working.</source>
+                <target xml:lang="fr">Cette installation est désormais enregistrée sous son domaine actuel. Les outils connectés continuent de fonctionner.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.pending" xml:space="preserve">
+                <source>A key change is still waiting for NEOSidekick. Reload this page until it is finished, then try again.</source>
+                <target xml:lang="fr" state="translated">Un changement de clé attend encore NEOSidekick. Rechargez cette page jusqu'à ce qu'il soit terminé, puis réessayez.</target>
+            </trans-unit>
+            <trans-unit id="signingKey.relabel.noRegisteredDomain" xml:space="preserve">
+                <source>NEOSidekick did not report a registered domain for this installation. Reload this page and try again.</source>
+                <target xml:lang="fr" state="translated">NEOSidekick n'a signalé aucun domaine enregistré pour cette installation. Rechargez cette page et réessayez.</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

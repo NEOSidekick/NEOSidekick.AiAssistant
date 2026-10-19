@@ -1,0 +1,103 @@
+/* Neos' own notification look, inline: its .neos-notification-* classes only style inside the toast container. */
+.neos-sidekick-key-status {
+    display: flex;
+    max-width: 960px;
+    margin: 0 0 24px 0;
+    color: #fff;
+}
+
+.neos-sidekick-key-status--success {
+    background-color: #00a338;
+}
+
+.neos-sidekick-key-status--warning {
+    background-color: #ff8700;
+}
+
+.neos-sidekick-key-status--error {
+    background-color: #ff460d;
+}
+
+.neos-sidekick-key-status__icon {
+    display: flex;
+    flex: 0 0 40px;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid rgba(255, 255, 255, .25);
+}
+
+.neos-sidekick-key-status__body {
+    padding: 12px 16px;
+    font-size: 14px;
+    line-height: 20px;
+}
+
+.neos-sidekick-key-status strong {
+    font-weight: 700;
+}
+
+.neos-sidekick-key-intro {
+    max-width: 90ch;
+    margin: 0 0 24px 0;
+}
+
+.neos-sidekick-key-answers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    max-width: 1200px;
+}
+
+.neos-sidekick-key-answer {
+    display: flex;
+    flex: 1 1 280px;
+    flex-direction: column;
+    padding: 16px;
+    background-color: #323232;
+    border-top: 4px solid #00b5ff;
+}
+
+.neos-sidekick-key-answer--warning {
+    border-top-color: #ff8700;
+}
+
+.neos-sidekick-key-answer--danger {
+    border-top-color: #ff460d;
+}
+
+.neos-sidekick-key-answer h3 {
+    margin: 0 0 8px 0;
+}
+
+.neos-sidekick-key-answer p {
+    margin: 0 0 8px 0;
+}
+
+.neos-sidekick-key-answer .neos-sidekick-key-status {
+    margin: 8px 0 0 0;
+}
+
+.neos-sidekick-key-answer__action {
+    margin-top: auto;
+    padding-top: 16px;
+}
+
+.neos-sidekick-key-details {
+    margin: 24px 0 0 0;
+    padding-top: 16px;
+    border-top: 1px solid #3f3f3f;
+}
+
+.neos-sidekick-key-details summary {
+    cursor: pointer;
+}
+
+.neos-sidekick-key-details dl {
+    margin: 16px 0 0 0;
+}
+
+.neos-sidekick-key-details dd {
+    margin: 0 0 16px 0;
+    font-family: monospace;
+    word-break: break-all;
+}

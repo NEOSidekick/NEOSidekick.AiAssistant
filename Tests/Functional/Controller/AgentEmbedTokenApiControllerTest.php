@@ -264,7 +264,7 @@ class AgentEmbedTokenApiControllerTest extends FunctionalTestCase
 
             public ?\Throwable $failure = null;
 
-            public function pushIfNecessary(bool $force = false): ?AgentSigningKeyPushResult
+            public function pushIfNecessary(bool $force = false, bool $bypassThrottle = false): ?AgentSigningKeyPushResult
             {
                 $this->forceArguments[] = $force;
                 if ($this->failure !== null) {

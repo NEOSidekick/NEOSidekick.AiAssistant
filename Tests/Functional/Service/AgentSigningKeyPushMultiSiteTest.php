@@ -146,67 +146,59 @@ class AgentSigningKeyPushMultiSiteTest extends FunctionalTestCase
     }
 
     /**
-     * The panel on each host: opening it pushes (forced past the daily cache) and renders the
-     * answer - registered on both sites' hosts, not registered on the alias the stored set does
-     * not name, with the remedy and the moved-site form only there.
+     * Opening the module on a host pushes (forced past the daily cache) and labels the
+     * installation with that host: what NEOSidekick is told is derived from the host the
+     * administrator is on, not from the site that happens to be first.
+     *
+     * What the module then SAYS about the answer is the key management module's business
+     * ({@see \NEOSidekick\AiAssistant\Tests\Unit\Controller\BackendModule\KeyManagementControllerTest}).
      *
      * @test
      */
-    public function thePanelReportsEachHostsStandingFromThePushItMakesOnLoad(): void
+    public function openingTheModuleOnEachHostPushesThatHostsLabelAndTheWholeHostSet(): void
     {
         $this->authenticateAccount($this->createBackendAccount('Neos.Neos:Administrator'));
         $storedSet = ['https://example.com', 'https://example2.com'];
 
         $this->stubNeosidekick([$this->confirmedResponse($storedSet)]);
-        $onTheFirstSite = $this->getModuleIndexOn('example.com');
-        self::assertCount(1, $this->requestHistory, 'opening the panel pushed');
+        $this->getModuleIndexOn('example.com');
+        self::assertCount(1, $this->requestHistory, 'opening the module pushed');
         self::assertSame('https://example.com', $this->lastRequestBody()['domain']);
         self::assertSame(['https://example.com', 'https://example2.com'], $this->lastRequestBody()['hosts']);
-        self::assertStringContainsString('data-signing-key-host-status="registered"', $onTheFirstSite);
-        self::assertStringContainsString('NEOSidekick calls this installation at https://example.com; registered hosts: https://example.com, https://example2.com; this host: registered; last push result: accepted.', $onTheFirstSite);
-        self::assertStringNotContainsString('moduleArguments[relabel]', $onTheFirstSite);
-        self::assertStringNotContainsString('moduleArguments[reenrol]', $onTheFirstSite);
-        self::assertStringContainsString('Regenerate key', $onTheFirstSite, 'regenerating is offered on every host');
 
         $this->seedSigningKeyRecord();
         $this->stubNeosidekick([$this->confirmedResponse($storedSet)]);
-        $onTheSecondSite = $this->getModuleIndexOn('example2.com');
+        $this->getModuleIndexOn('example2.com');
         self::assertSame('https://example2.com', $this->lastRequestBody()['domain']);
-        self::assertStringContainsString('data-signing-key-host-status="registered"', $onTheSecondSite);
-        self::assertStringContainsString('this host: registered;', $onTheSecondSite);
-        self::assertStringNotContainsString('moduleArguments[relabel]', $onTheSecondSite);
 
         $this->seedSigningKeyRecord();
         $this->stubNeosidekick([$this->confirmedResponse($storedSet, 'base_host_unknown')]);
-        $onTheAlias = $this->getModuleIndexOn('www.example.com');
-        self::assertSame('https://www.example.com', $this->lastRequestBody()['domain']);
-        self::assertStringContainsString('data-signing-key-host-status="not-registered"', $onTheAlias);
-        self::assertStringContainsString('this host: not registered; last push result: rejected', $onTheAlias);
-        self::assertStringContainsString('(base_host_unknown)', $onTheAlias);
-        self::assertStringContainsString('The assistant is refused on www.example.com', $onTheAlias);
-        self::assertStringContainsString('moduleArguments[relabel]', $onTheAlias, 'the moved-site answer');
-        self::assertStringContainsString('moduleArguments[reenrol]', $onTheAlias, 'the copy answer');
-        self::assertStringContainsString('Regenerate key', $onTheAlias);
+        $this->getModuleIndexOn('www.example.com');
+        self::assertSame('https://www.example.com', $this->lastRequestBody()['domain'], 'an alias Neos serves without a Domain record of its own');
+        self::assertSame(['https://www.example.com', 'https://example.com', 'https://example2.com'], $this->lastRequestBody()['hosts'], 'the request host leads');
     }
 
     /**
-     * Within a minute of a successful push the forced push is throttled, and the panel then has
-     * no answer to render: every host detail reads unknown, and no destructive answer is offered.
+     * Within a minute of a successful push the configuration module's forced push is throttled -
+     * a reload storm is not a push storm. The key management module is the way past it: its push
+     * bypasses the throttle, because the page exists to produce a fresh verdict.
      *
      * @test
      */
-    public function withinTheThrottleThePanelRendersTheHostStatusAsUnknown(): void
+    public function theThrottleHoldsTheModuleReloadButNotTheKeyManagementPush(): void
     {
         $this->authenticateAccount($this->createBackendAccount('Neos.Neos:Administrator'));
-        $this->stubNeosidekick([$this->confirmedResponse(['https://example.com'])]);
+        $this->stubNeosidekick([$this->confirmedResponse(['https://example.com']), $this->confirmedResponse(['https://example.com'])]);
 
         $this->getModuleIndexOn('example2.com');
-        $again = $this->getModuleIndexOn('example2.com');
+        $this->getModuleIndexOn('example2.com');
 
         self::assertCount(1, $this->requestHistory, 'the second load is throttled');
-        self::assertStringContainsString('data-signing-key-host-status="unknown"', $again);
-        self::assertStringContainsString('this host: unknown; last push result: unknown.', $again);
-        self::assertStringNotContainsString('moduleArguments[relabel]', $again);
+
+        $bypassed = $this->objectManager->get(AgentSigningKeyPushService::class)->pushIfNecessary(true, true);
+
+        self::assertNotNull($bypassed, 'the key management push is not throttled');
+        self::assertCount(2, $this->requestHistory);
     }
 
     /**

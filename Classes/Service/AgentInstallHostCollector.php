@@ -277,10 +277,23 @@ class AgentInstallHostCollector
     }
 
     /**
-     * The host part of an origin string, for the one-per-host rule.
+     * The host of a URL or a bare host the way NEOSidekick derives it (NeosSiteUrl::hostOf()):
+     * lowercased, scheme, port and path dropped, `www` NOT folded away - a `www` switch is a
+     * moved site there. Null when no host can be read from it. Deliberately not built on
+     * {@see originOf}: Domain records keep hostnames its pattern refuses (umlauts, underscores).
      */
-    private static function hostOf(string $origin): string
+    public static function hostOf(string $urlOrHost): ?string
     {
-        return (string)parse_url($origin, PHP_URL_HOST);
+        $candidate = trim($urlOrHost);
+        if ($candidate === '') {
+            return null;
+        }
+        if (!str_contains($candidate, '://')) {
+            $candidate = 'https://' . $candidate;
+        }
+
+        $host = parse_url($candidate, PHP_URL_HOST);
+
+        return is_string($host) && $host !== '' ? strtolower($host) : null;
     }
 }

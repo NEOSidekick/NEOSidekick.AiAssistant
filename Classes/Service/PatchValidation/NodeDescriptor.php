@@ -129,6 +129,14 @@ final class NodeDescriptor
         return $this->declaredAtPatchIndex;
     }
 
+    /**
+     * The name of an auto-created child of a pending node (`$<ref>/<childName>` form only).
+     */
+    public function getAutoCreatedChildName(): ?NodeName
+    {
+        return $this->autoCreatedChildName;
+    }
+
     public function isPendingNode(): bool
     {
         return $this->ref !== null;
@@ -218,6 +226,15 @@ final class NodeDescriptor
     public function isTetheredNode(): bool
     {
         return $this->isTethered();
+    }
+
+    /**
+     * Whether this is a root node (e.g. `Neos.Neos:Sites`). The content repository refuses to move it, and
+     * to remove it in a single dimension.
+     */
+    public function isRootNode(): bool
+    {
+        return $this->storedNode !== null && $this->storedNode->classification->isRoot();
     }
 
     private function isTethered(): bool

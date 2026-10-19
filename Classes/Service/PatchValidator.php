@@ -9,6 +9,8 @@ use Flowpack\NodeTemplates\Domain\NodeCreation\PropertiesProcessor;
 use Flowpack\NodeTemplates\Domain\NodeCreation\ReferencesProcessor;
 use Flowpack\NodeTemplates\Domain\NodeCreation\TransientNode;
 use Neos\ContentRepository\Core\ContentRepository;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePoint;
+use Neos\ContentRepository\Core\DimensionSpace\DimensionSpacePointSet;
 use Neos\ContentRepository\Core\DimensionSpace\OriginDimensionSpacePoint;
 use Neos\ContentRepository\Core\Feature\NodeCreation\Dto\NodeAggregateIdsByNodePaths;
 use Neos\ContentRepository\Core\NodeType\NodeType;
@@ -95,6 +97,21 @@ class PatchValidator
     private array $movedNodeParents = [];
 
     /**
+     * The names of the named stored nodes the batch moves, keyed by node aggregate id: a node moved under
+     * a parent earlier in the batch takes its name there.
+     *
+     * @var array<string, NodeName>
+     */
+    private array $movedNodeNames = [];
+
+    /**
+     * The dimension space points each node declared with `ref` will cover once created, keyed by ref.
+     *
+     * @var array<string, DimensionSpacePointSet>
+     */
+    private array $pendingNodeCoverage = [];
+
+    /**
      * The stored nodes the batch deletes, keyed by node aggregate id, with the patch index that
      * deleted them: a later patch cannot address a node that is gone by then.
      *
@@ -114,6 +131,8 @@ class PatchValidator
         $this->pendingNodes = [];
         $this->declaredRefs = [];
         $this->movedNodeParents = [];
+        $this->movedNodeNames = [];
+        $this->pendingNodeCoverage = [];
         $this->deletedStoredNodeIds = [];
         try {
             foreach ($patches as $patchIndex => $patch) {
@@ -123,6 +142,8 @@ class PatchValidator
             $this->pendingNodes = [];
             $this->declaredRefs = [];
             $this->movedNodeParents = [];
+            $this->movedNodeNames = [];
+            $this->pendingNodeCoverage = [];
             $this->deletedStoredNodeIds = [];
         }
     }
@@ -281,6 +302,10 @@ class PatchValidator
         if ($patch->getRef() !== null) {
             $this->pendingNodes[$patch->getRef()] = NodeDescriptor::forPendingNode($patch->getRef(), $patchIndex, $nodeType, $actualParent);
             $this->declaredRefs[$patch->getRef()] = $patchIndex;
+            // CreateNodeAggregateWithNode covers the origin's specializations that the parent covers
+            $this->pendingNodeCoverage[$patch->getRef()] = $contentRepository->getVariationGraph()
+                ->getSpecializationSet($subgraph->getDimensionSpacePoint())
+                ->getIntersection($this->coveredDimensionSpacePoints($actualParent, $subgraph, $contentRepository));
         }
     }
 
@@ -309,8 +334,41 @@ class PatchValidator
             );
         }
 
+        // Fallback nodes (origin differs from the requested dimension) are not editable:
+        // writing to the origin would change the source language's content, materializing a
+        // variant as a side effect would detach the page from its fallback chain. Variant
+        // creation must remain an explicit editor decision in the Neos UI.
+        $storedNode = $node->getStoredNode();
+        if ($storedNode !== null && !$storedNode->originDimensionSpacePoint->toDimensionSpacePoint()->equals($subgraph->getDimensionSpacePoint())) {
+            throw new PatchFailedException(
+                sprintf(
+                    'Node "%s" is a fallback of dimension %s in the requested dimension %s and cannot be edited. Create the variant in the Neos UI first.',
+                    $patch->getNodeId(),
+                    $storedNode->originDimensionSpacePoint->toJson(),
+                    $subgraph->getDimensionSpacePoint()->toJson()
+                ),
+                $patchIndex,
+                'updateNode',
+                $patch->getNodeId()
+            );
+        }
+
+        // Neos refuses to disable an auto-created child (NeosSubtreeTaggingConstraintChecks)
+        $properties = $patch->getProperties();
+        if (array_key_exists('_hidden', $properties) && (bool)$properties['_hidden'] && $node->isTetheredNode()) {
+            throw new PatchFailedException(
+                sprintf(
+                    '%s is an auto-created child node and cannot be hidden: it is part of its parent node type. Hide its parent node instead.',
+                    ucfirst($node->getLabel())
+                ),
+                $patchIndex,
+                'updateNode',
+                $patch->getNodeId()
+            );
+        }
+
         // Validate properties using PropertiesProcessor
-        $this->validateProperties($patch->getProperties(), $nodeType, $patchIndex, 'updateNode', $subgraph);
+        $this->validateProperties($properties, $nodeType, $patchIndex, 'updateNode', $subgraph);
     }
 
     /**
@@ -331,6 +389,7 @@ class PatchValidator
         // Validate target node exists
         $targetNode = $this->resolveAnchor($patch->getTargetNodeId(), 'targetNodeId', $patchIndex, 'moveNode', $subgraph, $contentRepository);
 
+        $this->requireNonRootNode($node, $patchIndex, 'moveNode', $patch->getNodeId(), 'moved');
         $this->requireUntetheredNode($node, $patchIndex, 'moveNode', $patch->getNodeId(), 'moved');
 
         // Validate position
@@ -376,6 +435,9 @@ class PatchValidator
         $movedStoredNode = $node->getStoredNode();
         if ($movedStoredNode !== null) {
             $this->movedNodeParents[$movedStoredNode->aggregateId->value] = $newParentNode;
+            if ($movedStoredNode->name !== null) {
+                $this->movedNodeNames[$movedStoredNode->aggregateId->value] = $movedStoredNode->name;
+            }
         }
     }
 
@@ -397,6 +459,7 @@ class PatchValidator
         // Validate node exists
         $node = $this->resolveAnchor($patch->getNodeId(), 'nodeId', $patchIndex, 'deleteNode', $subgraph, $contentRepository);
 
+        $this->requireNonRootNode($node, $patchIndex, 'deleteNode', $patch->getNodeId(), 'deleted');
         $this->requireUntetheredNode($node, $patchIndex, 'deleteNode', $patch->getNodeId(), 'deleted');
 
         // A deleted node stops being addressable, and it takes the nodes the batch would create
@@ -406,6 +469,26 @@ class PatchValidator
         if ($deletedStoredNode !== null) {
             $this->deletedStoredNodeIds[$deletedStoredNode->aggregateId->value] = $patchIndex;
         }
+    }
+
+    /**
+     * A root node spans the whole content repository: it refuses to move one
+     * (ConstraintChecks::requireNodeAggregateToNotBeRoot()) and to remove one in a single dimension.
+     *
+     * @throws PatchFailedException
+     */
+    private function requireNonRootNode(NodeDescriptor $node, int $patchIndex, string $operation, string $anchor, string $verb): void
+    {
+        if (!$node->isRootNode()) {
+            return;
+        }
+
+        throw new PatchFailedException(
+            sprintf('%s is a root node and cannot be %s.', ucfirst($node->getLabel()), $verb),
+            $patchIndex,
+            $operation,
+            $anchor
+        );
     }
 
     /**
@@ -437,11 +520,13 @@ class PatchValidator
 
     /**
      * What the content repository checks for a move besides the child constraints: the target must not
-     * be inside the node being moved (requireNodeAggregateToNotBeDescendant()) and the node's name must
-     * be free under the new parent (requireNodeNameToBeUncovered()).
+     * be inside the node being moved (requireNodeAggregateToNotBeDescendant()), the new parent must exist
+     * in every dimension the node does, because the move takes all its variants along (STRATEGY_GATHER_ALL,
+     * requireNodeAggregateToCoverDimensionSpacePoints()), and the node's name must be free under the new
+     * parent in every dimension (requireNodeNameToBeUncovered()).
      *
-     * Both are checked against the state the batch has built up, so a sibling this batch moves away or
-     * deletes does not count as a collision.
+     * All are checked against the state the batch has built up: a sibling this batch moves away or deletes
+     * entirely does not count as a collision, a node it moved under the new parent before does.
      *
      * @throws PatchFailedException
      */
@@ -464,20 +549,31 @@ class PatchValidator
             );
         }
 
-        $movedStoredNode = $node->getStoredNode();
-        $newParentStoredNode = $newParent->getStoredNode();
-        if ($movedStoredNode === null || $movedStoredNode->name === null || $newParentStoredNode === null) {
-            return;
+        $uncoveredDimensionSpacePoints = $this->coveredDimensionSpacePoints($node, $subgraph, $contentRepository)
+            ->getDifference($this->coveredDimensionSpacePoints($newParent, $subgraph, $contentRepository));
+        if (!$uncoveredDimensionSpacePoints->isEmpty()) {
+            throw new PatchFailedException(
+                sprintf(
+                    '%s cannot be moved into %s: a move takes every variant of the node along, and the target does not exist in %s. '
+                    . 'Create the missing variants of the target in the Neos UI first, or choose a target that exists in every dimension the node does.',
+                    ucfirst($node->getLabel()),
+                    $newParent->getLabel(),
+                    implode(', ', array_map(
+                        static fn (DimensionSpacePoint $dimensionSpacePoint): string => $dimensionSpacePoint->toJson(),
+                        iterator_to_array($uncoveredDimensionSpacePoints)
+                    ))
+                ),
+                $patchIndex,
+                'moveNode',
+                $anchor
+            );
         }
 
-        $sibling = $subgraph->findNodeByPath($movedStoredNode->name, $newParentStoredNode->aggregateId);
-        if ($sibling === null || $sibling->aggregateId->equals($movedStoredNode->aggregateId)) {
+        $movedStoredNode = $node->getStoredNode();
+        if ($movedStoredNode === null || $movedStoredNode->name === null) {
             return;
         }
-        $siblingId = $sibling->aggregateId->value;
-        $siblingLeavesTheParent = isset($this->deletedStoredNodeIds[$siblingId])
-            || (isset($this->movedNodeParents[$siblingId]) && !$this->isSameNode($this->movedNodeParents[$siblingId], $newParent));
-        if ($siblingLeavesTheParent) {
+        if (!$this->isNodeNameTaken($movedStoredNode->name, $movedStoredNode->aggregateId, $newParent, $subgraph, $contentRepository)) {
             return;
         }
 
@@ -495,7 +591,82 @@ class PatchValidator
     }
 
     /**
-     * Whether both descriptors address the same node: the same stored node, or the same ref.
+     * Whether a node other than the moved one carries the name under the new parent once the earlier patches
+     * of the batch are applied: an auto-created child of the parent, a node the batch moved there before, or
+     * the child the content graph has there in any dimension, unless the batch moves that child away or
+     * deletes it entirely.
+     */
+    private function isNodeNameTaken(NodeName $name, NodeAggregateId $movedNodeAggregateId, NodeDescriptor $newParent, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository): bool
+    {
+        // Also reserved on a parent the batch creates (requireNodeTypeNotToDeclareTetheredChildNodeName())
+        if ($newParent->getNodeType()?->tetheredNodeTypeDefinitions->contain($name)) {
+            return true;
+        }
+
+        foreach ($this->movedNodeNames as $nodeAggregateId => $nodeName) {
+            $isOtherNodeOfThatNameUnderTheNewParent = $nodeAggregateId !== $movedNodeAggregateId->value
+                && $nodeName->equals($name)
+                && $this->isSameNode($this->movedNodeParents[$nodeAggregateId], $newParent);
+            if ($isOtherNodeOfThatNameUnderTheNewParent && !$this->isDeletedEntirely($nodeAggregateId, $subgraph, $contentRepository)) {
+                return true;
+            }
+        }
+
+        $newParentStoredNode = $newParent->getStoredNode();
+        if ($newParentStoredNode === null) {
+            return false;
+        }
+        $sibling = $contentRepository->getContentGraph($subgraph->getWorkspaceName())
+            ->findChildNodeAggregateByName($newParentStoredNode->aggregateId, $name);
+        if ($sibling === null || $sibling->nodeAggregateId->equals($movedNodeAggregateId)) {
+            return false;
+        }
+        $siblingId = $sibling->nodeAggregateId->value;
+        $siblingIsMovedAway = isset($this->movedNodeParents[$siblingId]) && !$this->isSameNode($this->movedNodeParents[$siblingId], $newParent);
+
+        return !$siblingIsMovedAway && !$this->isDeletedEntirely($siblingId, $subgraph, $contentRepository);
+    }
+
+    /**
+     * Whether the batch deletes the stored node in every dimension it exists in: deleteNode removes the
+     * variant in the requested dimension and its specializations, a variant elsewhere stays.
+     *
+     * A surviving variant is assumed to stay under the same parent. With parents that differ per dimension
+     * this refuses a batch the content repository would accept, which is safe; the reverse is not.
+     */
+    private function isDeletedEntirely(string $nodeAggregateId, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository): bool
+    {
+        if (!isset($this->deletedStoredNodeIds[$nodeAggregateId])) {
+            return false;
+        }
+        $nodeAggregate = $contentRepository->getContentGraph($subgraph->getWorkspaceName())
+            ->findNodeAggregateById(NodeAggregateId::fromString($nodeAggregateId));
+
+        return $nodeAggregate === null || $nodeAggregate->coveredDimensionSpacePoints
+            ->getDifference($contentRepository->getVariationGraph()->getSpecializationSet($subgraph->getDimensionSpacePoint()))
+            ->isEmpty();
+    }
+
+    /**
+     * The dimension space points a node exists in: a stored node's from the content graph, a pending node's
+     * as its createNode patch creates it, an auto-created child's those of the pending node that owns it.
+     */
+    private function coveredDimensionSpacePoints(NodeDescriptor $node, ContentSubgraphInterface $subgraph, ContentRepository $contentRepository): DimensionSpacePointSet
+    {
+        $storedNode = $node->getStoredNode();
+        if ($storedNode !== null) {
+            return $contentRepository->getContentGraph($subgraph->getWorkspaceName())
+                ->findNodeAggregateById($storedNode->aggregateId)?->coveredDimensionSpacePoints
+                ?? new DimensionSpacePointSet([]);
+        }
+        $ref = $node->getRef() ?? $node->getPendingParent()?->getRef();
+
+        return ($ref === null ? null : $this->pendingNodeCoverage[$ref] ?? null) ?? new DimensionSpacePointSet([]);
+    }
+
+    /**
+     * Whether both descriptors address the same node: the same stored node, the same ref, or the same
+     * auto-created child of the same ref.
      */
     private function isSameNode(NodeDescriptor $left, NodeDescriptor $right): bool
     {
@@ -503,6 +674,13 @@ class PatchValidator
         $rightStoredNode = $right->getStoredNode();
         if ($leftStoredNode !== null && $rightStoredNode !== null) {
             return $leftStoredNode->aggregateId->equals($rightStoredNode->aggregateId);
+        }
+        $leftChildName = $left->getAutoCreatedChildName();
+        $rightChildName = $right->getAutoCreatedChildName();
+        if ($leftChildName !== null && $rightChildName !== null) {
+            $leftOwnerRef = $left->getPendingParent()?->getRef();
+
+            return $leftChildName->equals($rightChildName) && $leftOwnerRef !== null && $leftOwnerRef === $right->getPendingParent()?->getRef();
         }
 
         return $left->getRef() !== null && $left->getRef() === $right->getRef();

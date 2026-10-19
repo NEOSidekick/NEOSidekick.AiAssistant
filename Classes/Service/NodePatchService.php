@@ -38,6 +38,7 @@ use Neos\ContentRepositoryRegistry\ContentRepositoryRegistry;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\Image;
+use Neos\Neos\Domain\SubtreeTagging\NeosSubtreeTag;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\CreatedNodeInfo;
 use NEOSidekick\AiAssistant\Dto\Patch\CreateNodePatch;
@@ -619,23 +620,6 @@ class NodePatchService
             $references = $this->referencesProcessor->processAndValidateReferences($transientNode, $processingErrors);
             $this->throwOnProcessingErrors($processingErrors, $index, 'updateNode', $patch->getNodeId());
 
-            // Fallback nodes (origin differs from the requested dimension) are not editable:
-            // writing to the origin would change the source language's content, materializing a
-            // variant as a side effect would detach the page from its fallback chain. Variant
-            // creation must remain an explicit editor decision in the Neos UI.
-            if (!$node->originDimensionSpacePoint->toDimensionSpacePoint()->equals($subgraph->getDimensionSpacePoint())) {
-                throw new PatchFailedException(
-                    sprintf(
-                        'Node "%s" is a fallback of dimension %s in the requested dimension %s and cannot be edited. Create the variant in the Neos UI first.',
-                        $patch->getNodeId(),
-                        $node->originDimensionSpacePoint->toJson(),
-                        $subgraph->getDimensionSpacePoint()->toJson()
-                    ),
-                    $index,
-                    'updateNode',
-                    $patch->getNodeId()
-                );
-            }
             if (!empty($propertyValues)) {
                 $contentRepository->handle(SetNodeProperties::create(
                     $node->workspaceName,
@@ -650,14 +634,17 @@ class NodePatchService
                 $contentRepository->handle($referencesCommand);
             }
 
-            if ($hidden === true) {
+            // Neos 9 refuses to disable a node that is disabled already and to enable one that is not, so an
+            // unchanged "_hidden" is skipped; a node hidden only through an ancestor has nothing to enable.
+            $isDisabled = $node->tags->withoutInherited()->contain(NeosSubtreeTag::disabled());
+            if ($hidden === true && !$isDisabled) {
                 $contentRepository->handle(DisableNodeAggregate::create(
                     $node->workspaceName,
                     $node->aggregateId,
                     $subgraph->getDimensionSpacePoint(),
                     NodeVariantSelectionStrategy::STRATEGY_ALL_SPECIALIZATIONS
                 ));
-            } elseif ($hidden === false) {
+            } elseif ($hidden === false && $isDisabled) {
                 $contentRepository->handle(EnableNodeAggregate::create(
                     $node->workspaceName,
                     $node->aggregateId,

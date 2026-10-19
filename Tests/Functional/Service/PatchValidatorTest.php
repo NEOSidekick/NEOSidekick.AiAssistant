@@ -44,6 +44,9 @@ class PatchValidatorTest extends FunctionalTestCase
     private string $siteId;
     private string $otherPageId;
     private string $samePathSegmentPageId;
+    private string $pageNamedMainId;
+    private string $siteMainDupId;
+    private string $mainDupId;
 
     protected function setUpContentInLive(): void
     {
@@ -104,6 +107,14 @@ class PatchValidatorTest extends FunctionalTestCase
             initialPropertyValues: PropertyValuesToWrite::fromArray(['text' => 'stored'])
         ));
         $this->storedTextId = $storedTextId->value;
+
+        // A page named like the auto-created child of every page type, below a shortcut, which declares none
+        $shortcutId = $this->createNamedNode('Neos.Neos:Shortcut', $this->siteId, 'shortcut', ['title' => 'Shortcut', 'uriPathSegment' => 'shortcut']);
+        $this->pageNamedMainId = $this->createNamedNode(self::PAGE, $shortcutId, 'main', ['title' => 'Main', 'uriPathSegment' => 'main']);
+
+        // Two texts of the same name below different parents
+        $this->siteMainDupId = $this->createNamedNode(self::TEXT, $this->siteMainId, 'dup', ['text' => 'site main']);
+        $this->mainDupId = $this->createNamedNode(self::TEXT, $this->mainId, 'dup', ['text' => 'page main']);
     }
 
     #[Test]
@@ -532,6 +543,102 @@ class PatchValidatorTest extends FunctionalTestCase
         $this->addToAssertionCount(1);
     }
 
+    /**
+     * A node the batch moved under the parent before takes the name there, also under a parent the batch
+     * creates: the second move would fail after the page and the first move are written.
+     */
+    #[Test]
+    public function aMoveIsRejectedWhenTheBatchMovedANodeOfThatNameUnderTheNewParentBefore(): void
+    {
+        $exception = $this->expectFailure([
+            $this->create($this->otherPageId, self::PAGE, 'into', 'target'),
+            ['operation' => 'moveNode', 'nodeId' => $this->pageId, 'targetNodeId' => '$target', 'position' => 'into'],
+            ['operation' => 'moveNode', 'nodeId' => $this->samePathSegmentPageId, 'targetNodeId' => '$target', 'position' => 'into'],
+        ]);
+
+        self::assertSame(2, $exception->getPatchIndex());
+        self::assertSame($this->samePathSegmentPageId, $exception->getNodeId());
+        self::assertSame(
+            'Node "' . $this->samePathSegmentPageId . '" cannot be moved into "$target": it already has a child node named "validator-test", and node names are unique among siblings.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * A page the batch creates brings its auto-created children along, and their names with them
+     * (requireNodeTypeNotToDeclareTetheredChildNodeName()).
+     */
+    #[Test]
+    public function aMoveIsRejectedWhenAPageTheBatchCreatesHasAnAutoCreatedChildOfThatName(): void
+    {
+        $exception = $this->expectFailure([
+            $this->create($this->siteId, self::PAGE, 'into', 'new'),
+            ['operation' => 'moveNode', 'nodeId' => $this->pageNamedMainId, 'targetNodeId' => '$new', 'position' => 'into'],
+        ]);
+
+        self::assertSame(1, $exception->getPatchIndex());
+        self::assertSame(
+            'Node "' . $this->pageNamedMainId . '" cannot be moved into "$new": it already has a child node named "main", and node names are unique among siblings.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * `$<ref>/<childName>` addresses the same node in every patch, so the second text moved into it collides
+     * with the first.
+     */
+    #[Test]
+    public function twoNodesOfTheSameNameCannotBeMovedIntoTheAutoCreatedChildOfARef(): void
+    {
+        $exception = $this->expectFailure([
+            $this->create($this->otherPageId, self::PAGE, 'into', 'p'),
+            ['operation' => 'moveNode', 'nodeId' => $this->siteMainDupId, 'targetNodeId' => '$p/main', 'position' => 'into'],
+            ['operation' => 'moveNode', 'nodeId' => $this->mainDupId, 'targetNodeId' => '$p/main', 'position' => 'into'],
+        ]);
+
+        self::assertSame(2, $exception->getPatchIndex());
+        self::assertSame(
+            'Node "' . $this->mainDupId . '" cannot be moved into "$p/main": it already has a child node named "dup", and node names are unique among siblings.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * Neos refuses to disable an auto-created child (NeosSubtreeTaggingConstraintChecks), and only after the
+     * patch's property write.
+     */
+    #[Test]
+    public function anAutoCreatedChildCannotBeHidden(): void
+    {
+        $exception = $this->expectFailure([
+            ['operation' => 'updateNode', 'nodeId' => $this->mainId, 'properties' => ['_hidden' => true]],
+        ]);
+
+        self::assertSame(0, $exception->getPatchIndex());
+        self::assertSame(
+            'Node "' . $this->mainId . '" is an auto-created child node and cannot be hidden: it is part of its parent node type. Hide its parent node instead.',
+            $exception->getMessage()
+        );
+    }
+
+    /**
+     * The content repository removes a root node only in all dimensions at once (RemoveNodeAggregate).
+     */
+    #[Test]
+    public function aRootNodeCannotBeDeleted(): void
+    {
+        $exception = $this->expectFailure([
+            ['operation' => 'deleteNode', 'nodeId' => $this->sitesNodeAggregateId->value],
+        ]);
+
+        self::assertSame(0, $exception->getPatchIndex());
+        self::assertSame('deleteNode', $exception->getOperation());
+        self::assertSame(
+            'Node "' . $this->sitesNodeAggregateId->value . '" is a root node and cannot be deleted.',
+            $exception->getMessage()
+        );
+    }
+
     #[Test]
     public function anAnchorOnANodeTheBatchDeletedIsRejected(): void
     {
@@ -561,6 +668,24 @@ class PatchValidatorTest extends FunctionalTestCase
             'Node with identifier "ffffffff-0000-0000-0000-000000000000" does not exist. Use the id of an existing node, or "$<ref>" to address a node created by an earlier createNode patch of this batch.',
             $exception->getMessage()
         );
+    }
+
+    /**
+     * @param array<string, mixed> $properties
+     */
+    private function createNamedNode(string $nodeType, string $parentId, string $name, array $properties): string
+    {
+        $nodeAggregateId = NodeAggregateId::create();
+        $this->contentRepository->handle(CreateNodeAggregateWithNode::create(
+            WorkspaceName::forLive(),
+            $nodeAggregateId,
+            NodeTypeName::fromString($nodeType),
+            OriginDimensionSpacePoint::fromDimensionSpacePoint($this->dimensionSpacePoint()),
+            NodeAggregateId::fromString($parentId),
+            initialPropertyValues: PropertyValuesToWrite::fromArray($properties)
+        )->withNodeName(NodeName::fromString($name)));
+
+        return $nodeAggregateId->value;
     }
 
     /**

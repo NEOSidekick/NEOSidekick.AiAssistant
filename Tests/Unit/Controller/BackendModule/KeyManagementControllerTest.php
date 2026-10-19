@@ -28,8 +28,8 @@ use RuntimeException;
 /**
  * The key management module answers one question - what is wrong with this installation's
  * connection - with one state, and offers exactly one action per answer. Load-bearing: the
- * remedy precedence, the push past the throttle and the moved-site refusal unless the exact
- * registered host was retyped.
+ * remedy precedence, the push past the throttle and the refusal of the move without a
+ * registered domain or while a key change is pending.
  */
 class KeyManagementControllerTest extends TestCase
 {
@@ -140,7 +140,7 @@ class KeyManagementControllerTest extends TestCase
     }
 
     /**
-     * The label, its host alone (the string the administrator has to retype), the stored set
+     * The label, its host alone (the address the page names as registered), the stored set
      * trimmed, and the host this page was opened on.
      *
      * @test

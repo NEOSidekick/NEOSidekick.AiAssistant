@@ -76,7 +76,6 @@ class ConfigurationControllerEmbedTokenTest extends TestCase
 
         $securityContext = $this->createMock(SecurityContext::class);
         $securityContext->method('hasRole')->willReturn(false);
-        $securityContext->method('getCsrfProtectionToken')->willReturn('csrf-token');
         $uriBuilder = $this->createMock(UriBuilder::class);
         $uriBuilder->method('reset')->willReturnSelf();
         $uriBuilder->method('uriFor')->willReturn('/regenerate');

@@ -249,7 +249,6 @@ class ConfigurationModuleConnectionTest extends FunctionalTestCase
         $view->assign('siteDomain', '');
         $view->assign('embedToken', $embedToken);
         $view->assign('isAdministrator', $isAdministrator);
-        $view->assign('csrfToken', 'csrf-token-value');
         $view->assign('connectionHealth', $connectionHealth);
 
         return (string)$view->render();

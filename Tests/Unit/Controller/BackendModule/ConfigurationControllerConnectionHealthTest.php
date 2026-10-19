@@ -111,7 +111,6 @@ class ConfigurationControllerConnectionHealthTest extends TestCase
     {
         $assigned = $this->renderIndex(true);
 
-        self::assertSame('csrf-token', $assigned['csrfToken']);
         self::assertTrue($assigned['isAdministrator']);
         foreach (['signingKey', 'regenerateActionUri', 'regenerateFailure', 'regenerateRejectionReason'] as $goneVariable) {
             self::assertArrayNotHasKey($goneVariable, $assigned);
@@ -160,7 +159,6 @@ class ConfigurationControllerConnectionHealthTest extends TestCase
 
         $securityContext = $this->createMock(SecurityContext::class);
         $securityContext->method('hasRole')->willReturnCallback(fn (string $roleIdentifier): bool => $roleIdentifier === 'Neos.Neos:Administrator' && $isAdministrator);
-        $securityContext->method('getCsrfProtectionToken')->willReturn('csrf-token');
 
         $controllerContext = $this->createMock(ControllerContext::class);
         $controllerContext->method('getFlashMessageContainer')->willReturn(new FlashMessageContainer());

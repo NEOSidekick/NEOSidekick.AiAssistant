@@ -60,7 +60,6 @@ class ConfigurationController extends AbstractFusionViewController
         $this->view->assign('siteDomain', $this->getSiteDomain());
         $this->view->assign('embedToken', $this->getEmbedToken());
         $this->view->assign('isAdministrator', $isAdministrator);
-        $this->view->assign('csrfToken', $this->securityContext->getCsrfProtectionToken());
         $this->view->assign('connectionHealth', $this->getConnectionHealth($isAdministrator ? $this->agentSigningKeyPushService->pushExistingKey() : null));
     }
 

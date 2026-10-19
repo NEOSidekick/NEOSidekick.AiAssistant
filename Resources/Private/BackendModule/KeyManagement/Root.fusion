@@ -66,9 +66,12 @@ prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement) < prototype(Neos.
         # Rendered for every state the controller reports a pending change for, so a key change
         # waiting after a refused push is never hidden behind `check_failed`.
         pending = ${props.keyState.pendingChange && props.keyState.state != 'needs_new_key'}
-        showHealthyActions = ${props.keyState.state == 'healthy' && !this.pending}
-        showAnswerButtons = ${props.keyState.state == 'host_unknown' && !this.pending}
-        offerReenrol = ${this.showHealthyActions || this.showAnswerButtons || props.keyState.state == 'needs_new_key'}
+        showReplaceKey = ${props.keyState.state == 'healthy' && !this.pending}
+        showMove = ${props.keyState.state == 'host_unknown' && !this.pending}
+        # The copy answer stays offered while a change is pending: it replaces the waiting pair,
+        # the only way out of one NEOSidekick keeps refusing (chain_domain_mismatch).
+        showCopyInFooter = ${props.keyState.state == 'healthy' || (props.keyState.state == 'check_failed' && this.pending)}
+        offerReenrol = ${this.showCopyInFooter || props.keyState.state == 'host_unknown' || props.keyState.state == 'needs_new_key'}
         registeredHost = ${props.keyState.registeredHost ? String.htmlSpecialChars(props.keyState.registeredHost) : I18n.translate('technical.unknown', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}
         thisHost = ${props.keyState.thisHost ? String.htmlSpecialChars(props.keyState.thisHost) : I18n.translate('technical.unknown', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}
         reenrolConfirm = ${props.keyState.registeredHost ? I18n.translate('reenrol.confirm', null, [props.keyState.registeredHost], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant') : I18n.translate('reenrol.confirmGeneric', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}
@@ -101,7 +104,7 @@ prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement) < prototype(Neos.
                     @if={props.state == 'host_unknown'}
                     sitesModuleUri={props.sitesModuleUri}
                     relabelError={props.relabelError}
-                    showButtons={props.showAnswerButtons}
+                    showMove={props.showMove}
                     registeredHost={props.registeredHost}
                     thisHost={props.thisHost}
                 />
@@ -116,15 +119,15 @@ prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement) < prototype(Neos.
                     <input type="hidden" name="__csrfToken" value={props.csrfToken} />
                 </form>
 
-                <div @if={props.showHealthyActions || props.state == 'needs_new_key' || props.state == 'check_failed'} class="neos-footer">
-                    <button @if={props.showHealthyActions} type="button" class="neos-button" data-toggle="modal" href="#neos-sidekick-key-confirm-replace-key" data-key-form="replace-key">{I18n.translate('healthy.replaceKey', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</button>
-                    <button @if={props.showHealthyActions} type="button" class="neos-button neos-button-warning" data-toggle="modal" href="#neos-sidekick-key-confirm-reenrol" data-key-form="reenrol">{I18n.translate('healthy.isCopy', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</button>
-                    <button @if={props.state == 'needs_new_key'} type="button" class="neos-button neos-button-primary" data-toggle="modal" href="#neos-sidekick-key-confirm-reenrol" data-key-form="reenrol">{I18n.translate('needsNewKey.button', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</button>
+                <div @if={props.showReplaceKey || props.showCopyInFooter || props.state == 'needs_new_key' || props.state == 'check_failed'} class="neos-footer">
                     <a @if={props.state == 'check_failed'} href={props.keyManagementUri} class="neos-button neos-button-primary" data-key-link="recheck">{I18n.translate('checkFailed.button', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</a>
+                    <button @if={props.showReplaceKey} type="button" class="neos-button" data-toggle="modal" href="#neos-sidekick-key-confirm-replace-key" data-key-form="replace-key">{I18n.translate('healthy.replaceKey', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</button>
+                    <button @if={props.showCopyInFooter} type="button" class="neos-button neos-button-warning" data-toggle="modal" href="#neos-sidekick-key-confirm-reenrol" data-key-form="reenrol">{I18n.translate('healthy.isCopy', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</button>
+                    <button @if={props.state == 'needs_new_key'} type="button" class="neos-button neos-button-primary" data-toggle="modal" href="#neos-sidekick-key-confirm-reenrol" data-key-form="reenrol">{I18n.translate('needsNewKey.button', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</button>
                 </div>
 
                 <NEOSidekick.AiAssistant:BackendModule.KeyManagement.Confirm
-                    @if={props.showHealthyActions}
+                    @if={props.showReplaceKey}
                     id="neos-sidekick-key-confirm-replace-key"
                     question={I18n.translate('replaceKey.confirm', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}
                     actionUri={props.replaceKeyActionUri}
@@ -139,7 +142,7 @@ prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement) < prototype(Neos.
                     kind={props.state == 'needs_new_key' ? 'primary' : 'warning'}
                 />
                 <NEOSidekick.AiAssistant:BackendModule.KeyManagement.Confirm
-                    @if={props.showAnswerButtons}
+                    @if={props.showMove}
                     id="neos-sidekick-key-confirm-relabel"
                     question={I18n.translate('answer3.confirm', null, [props.keyState.registeredHost], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}
                     actionUri={props.relabelActionUri}
@@ -178,7 +181,8 @@ prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement.Status) < prototyp
 prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement.Question) < prototype(Neos.Fusion:Component) {
     sitesModuleUri = ''
     relabelError = null
-    showButtons = true
+    # The move is refused while a key change is pending; the copy answer is not
+    showMove = true
     registeredHost = ''
     thisHost = ''
 
@@ -201,7 +205,7 @@ prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement.Question) < protot
                 <div class="neos-sidekick-key-answer neos-sidekick-key-answer--warning" data-key-answer="2">
                     <h3>{I18n.translate('answer2.title', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</h3>
                     <p>{I18n.translate('answer2.body', null, [props.registeredHost], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</p>
-                    <div @if={props.showButtons} class="neos-sidekick-key-answer__action">
+                    <div class="neos-sidekick-key-answer__action">
                         <button type="button" class="neos-button neos-button-warning" data-toggle="modal" href="#neos-sidekick-key-confirm-reenrol" data-key-form="reenrol">{I18n.translate('answer2.button', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</button>
                     </div>
                 </div>
@@ -213,7 +217,7 @@ prototype(NEOSidekick.AiAssistant:BackendModule.KeyManagement.Question) < protot
                     <NEOSidekick.AiAssistant:BackendModule.KeyManagement.Status @if={props.relabelError} kind="error" attributes.data-key-relabel-error="true">
                         {String.htmlSpecialChars(props.relabelError)}
                     </NEOSidekick.AiAssistant:BackendModule.KeyManagement.Status>
-                    <div @if={props.showButtons} class="neos-sidekick-key-answer__action">
+                    <div @if={props.showMove} class="neos-sidekick-key-answer__action">
                         <button type="button" class="neos-button neos-button-danger" data-toggle="modal" href="#neos-sidekick-key-confirm-relabel" data-key-form="relabel">{I18n.translate('answer3.button', null, [], 'BackendModule/KeyManagement', 'NEOSidekick.AiAssistant')}</button>
                     </div>
                 </div>

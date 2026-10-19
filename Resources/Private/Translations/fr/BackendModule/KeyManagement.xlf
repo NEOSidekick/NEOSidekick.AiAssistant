@@ -159,8 +159,8 @@
                 <target xml:lang="fr" state="translated">NEOSidekick n'a pas accepté la modification : « {0} ». Rien n'a changé — cette installation garde sa clé actuelle.</target>
             </trans-unit>
             <trans-unit id="failure.chainDomainMismatchHint" xml:space="preserve">
-                <source>This installation's key is registered for another domain. Answer the question above: a copy needs its own key, a move needs "We moved the site".</source>
-                <target xml:lang="fr" state="translated">La clé de cette installation est enregistrée pour un autre domaine. Répondez à la question ci-dessus : une copie a besoin de sa propre clé, un déménagement de « Nous avons déplacé le site ».</target>
+                <source>This installation's key is registered for another domain. Give this installation its own key below; tools connected here must be connected again afterwards.</source>
+                <target xml:lang="fr" state="translated">La clé de cette installation est enregistrée pour un autre domaine. Donnez ci-dessous une clé propre à cette installation ; les outils connectés ici devront ensuite être reconnectés.</target>
             </trans-unit>
             <trans-unit id="signingKey.status.reenrolled" xml:space="preserve">
                 <source>Registered as a new installation. Connected tools had to be reconnected with the new address.</source>

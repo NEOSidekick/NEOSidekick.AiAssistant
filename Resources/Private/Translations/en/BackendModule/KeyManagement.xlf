@@ -120,7 +120,7 @@
                 <source>NEOSidekick did not accept the change: «{0}». Nothing has changed — this installation keeps using its current key.</source>
             </trans-unit>
             <trans-unit id="failure.chainDomainMismatchHint" xml:space="preserve">
-                <source>This installation's key is registered for another domain. Answer the question above: a copy needs its own key, a move needs "We moved the site".</source>
+                <source>This installation's key is registered for another domain. Give this installation its own key below; tools connected here must be connected again afterwards.</source>
             </trans-unit>
             <trans-unit id="signingKey.status.reenrolled" xml:space="preserve">
                 <source>Registered as a new installation. Connected tools had to be reconnected with the new address.</source>

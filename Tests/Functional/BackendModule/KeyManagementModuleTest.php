@@ -280,6 +280,38 @@ class KeyManagementModuleTest extends FunctionalTestCase
     }
 
     /**
+     * A successor NEOSidekick keeps refusing waits forever and blocks the replacement and the
+     * move, so the page must still offer the copy answer - and that answer must get out.
+     *
+     * @test
+     */
+    public function aRefusedPendingChangeStillOffersTheCopyAnswerAsTheWayOut(): void
+    {
+        $this->authenticateAccount($this->createBackendAccount('Neos.Neos:Administrator'));
+        $refusal = '{"error":"Signing key rejected.","reason":"chain_domain_mismatch"}';
+        $this->stubNeosidekick([
+            new Response(422, ['Content-Type' => 'application/json'], $refusal),
+            new Response(422, ['Content-Type' => 'application/json'], $refusal),
+            $this->confirmedResponse('root-kid-2', 'new-kid'),
+        ]);
+        $keyPairService = $this->objectManager->get(AgentKeyPairService::class);
+        $this->post('replaceKey');
+
+        $output = (string)$this->get('index')->getContent();
+
+        self::assertStringContainsString('data-key-pending-banner="true"', $output);
+        self::assertStringContainsString('data-key-form="reenrol"', $output, 'the copy answer is offered');
+        self::assertMatchesRegularExpression('#formaction="[^"]*%40action%5D=reenrol#', $output);
+        self::assertStringNotContainsString('data-key-form="replace-key"', $output);
+        self::assertStringNotContainsString('data-key-form="relabel"', $output);
+
+        $this->post('reenrol');
+
+        self::assertFalse($keyPairService->hasPendingKeyPair(), 'the waiting successor is gone');
+        self::assertNotSame(self::FIXTURE_KID, $keyPairService->getKeyId());
+    }
+
+    /**
      * Rendered for real through the index action, so a view variable the Fusion needs but the
      * controller does not assign fails here instead of in an administrator's browser.
      *

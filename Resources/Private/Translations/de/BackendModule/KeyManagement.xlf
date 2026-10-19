@@ -55,7 +55,7 @@
                 <target xml:lang="de" state="translated">Das ist eine Kopie einer anderen Installation</target>
             </trans-unit>
             <trans-unit id="replaceKey.confirm" xml:space="preserve">
-                <source>Replace this installation's key, for example after sharing a database dump. Editors and tools here keep working. Copies still using the old key stop working.</source>
+                <source>Replace this installation's key, for example after sharing a database dump? Editors and tools here keep working. Copies still using the old key stop working.</source>
                 <target xml:lang="de" state="translated">Schlüssel dieser Installation ersetzen, zum Beispiel nach der Weitergabe eines Datenbank-Dumps? Redakteure und Tools hier arbeiten weiter. Kopien mit dem alten Schlüssel funktionieren nicht mehr.</target>
             </trans-unit>
             <trans-unit id="reenrol.confirm" xml:space="preserve">

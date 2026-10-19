@@ -42,7 +42,7 @@
                 <source>This is a copy of another installation</source>
             </trans-unit>
             <trans-unit id="replaceKey.confirm" xml:space="preserve">
-                <source>Replace this installation's key, for example after sharing a database dump. Editors and tools here keep working. Copies still using the old key stop working.</source>
+                <source>Replace this installation's key, for example after sharing a database dump? Editors and tools here keep working. Copies still using the old key stop working.</source>
             </trans-unit>
             <trans-unit id="reenrol.confirm" xml:space="preserve">
                 <source>Give this installation its own key? {0} keeps working. Tools and editors connected here must be connected again.</source>

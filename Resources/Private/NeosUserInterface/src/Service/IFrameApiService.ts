@@ -1,6 +1,23 @@
 
+import {EMBED_TOKEN_FETCH_TIMEOUT_MS} from './embedToken';
+
 export const SILENT_AUTHORIZATION_COMPLETE_EVENT = 'neosidekick-agent-silent-authorization-complete';
 export const SILENT_AUTHORIZATION_FAILED_EVENT = 'neosidekick-agent-silent-authorization-failed';
+
+export const CALL_MODULE_EVENT = 'call-module';
+
+export const SEND_RETRY_INTERVAL_MS = 250;
+
+/**
+ * How long a message waits for the assistant frame before it is given up on.
+ *
+ * It must stay well above the time the frame needs to become addressable on a slow boot:
+ * SidekickIFrame renders the iframe only once the embed-token fetch settled
+ * (EMBED_TOKEN_FETCH_TIMEOUT_MS), and getAssistantFrame() additionally waits for that
+ * iframe's onLoad. A budget below that sum turns a slow backend into the "could not load"
+ * alert while the frame is still on its way.
+ */
+export const SEND_RETRY_BUDGET_MS = EMBED_TOKEN_FETCH_TIMEOUT_MS + 24000;
 
 export const createIFrameApiService = (assistantFrameOrigin: string): IFrameApiService => {
     return new IFrameApiService(assistantFrameOrigin);
@@ -35,7 +52,7 @@ export class IFrameApiService {
         this.isStreaming = true;
         const message = {
             version: '1.0',
-            eventName: 'call-module',
+            eventName: CALL_MODULE_EVENT,
             data: {
                 'platform': 'neos',
                 ...data,
@@ -123,7 +140,7 @@ export class IFrameApiService {
         });
     }
 
-    private sendMessage = (message: object, onSend?: Function, retriesCount: number = 0): void => {
+    private sendMessage = (message: object, onSend?: Function, waitedMs: number = 0): void => {
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {
             console.log('Sending message to frame', message);
@@ -133,15 +150,36 @@ export class IFrameApiService {
                 onSend();
             }
         } else {
-            if (retriesCount > 20) {
-                alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');
+            if (waitedMs >= SEND_RETRY_BUDGET_MS) {
+                this.abandonMessage(message);
                 return;
             }
-            // The counter must be carried into the retry: dropping it resets the budget on every
-            // hop, so the cap above (and its support hint) would never be reached and a frame that
-            // never loads would be polled forever.
-            setTimeout(() => this.sendMessage(message, onSend, retriesCount + 1), 250);
+            // The waited time must be carried into the retry: dropping it resets the budget on
+            // every hop, so the cap above (and its support hint) would never be reached and a
+            // frame that never loads would be polled forever.
+            setTimeout(
+                () => this.sendMessage(message, onSend, waitedMs + SEND_RETRY_INTERVAL_MS),
+                SEND_RETRY_INTERVAL_MS
+            );
         }
+    }
+
+    /**
+     * A message the frame never became ready for.
+     *
+     * callModule raises the streaming latch before sending, and only the assistant's own
+     * "finished" event lowers it again - which can never arrive for a message it never
+     * received. Without this the latch stays raised for the rest of the page's life and every
+     * later AI call is queued behind it forever, so the latch and the queue are dropped here:
+     * the editor is told to reload, and a call made after the frame did show up still works.
+     */
+    private abandonMessage = (message: object): void => {
+        if ((message as {eventName?: string}).eventName === CALL_MODULE_EVENT) {
+            this.isStreaming = false;
+            this.callModuleQueue = [];
+        }
+
+        alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');
     }
 
     private getAssistantFrame = (): HTMLIFrameElement|null => {

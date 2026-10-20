@@ -105,6 +105,77 @@ describe('IFrameApiService', () => {
     });
 
     /**
+     * Web context arriving during a call is deferred until the call is finished. Releasing an
+     * abandoned call without sending it would hold it back until the NEXT call finished, where
+     * it could overwrite newer context sent in between.
+     */
+    it('sends web context deferred during an abandoned call ahead of the next call', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal('alert', vi.fn());
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        service.callModule({moduleName: 'abandoned'});
+        service.updateWebContext(true, {page: 'deferred'});
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS);
+
+        frame = loadedFrame(postMessage);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+        service.callModule({moduleName: 'next'});
+
+        expect(postMessage.mock.calls.map(([message]) => message)).toMatchObject([
+            {eventName: 'page-changed', data: {page: 'deferred'}},
+            {eventName: 'call-module', data: {moduleName: 'next'}},
+        ]);
+    });
+
+    /**
+     * A cancelled call keeps retrying in the background. When it runs out of budget it must not
+     * release the latch of the call that replaced it, which would let a third call run alongside.
+     */
+    it('does not let a cancelled call release the call that replaced it', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal('alert', vi.fn());
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        service.callModule({moduleName: 'cancelled'});
+        await vi.advanceTimersByTimeAsync(1000);
+        service.cancelCallModule();
+        service.callModule({moduleName: 'current'});
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS - 1000);
+
+        frame = loadedFrame(postMessage);
+        service.callModule({moduleName: 'queued'});
+
+        expect(postMessage).not.toHaveBeenCalled();
+    });
+
+    /**
+     * Background tabs throttle timers to a second or more, so the budget is measured in elapsed
+     * time; counting hops would stretch it many times over.
+     */
+    it('measures the budget in elapsed time, so throttled timers cannot stretch it', async () => {
+        vi.useFakeTimers();
+        const alertSpy = vi.fn();
+        vi.stubGlobal('document', {getElementById: () => null});
+        vi.stubGlobal('alert', alertSpy);
+
+        createIFrameApiService(ASSISTANT_ORIGIN).notifySilentAuthorizationResult(true);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+        vi.setSystemTime(Date.now() + SEND_RETRY_BUDGET_MS);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+
+        expect(alertSpy).toHaveBeenCalledTimes(1);
+    });
+
+    /**
      * The SPA derives the default site of document listings from this field, so the response
      * must always carry it - an empty string when the store holds no site node.
      */

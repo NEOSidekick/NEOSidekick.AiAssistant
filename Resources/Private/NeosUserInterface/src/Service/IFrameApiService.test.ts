@@ -1,6 +1,12 @@
 import {afterEach, describe, expect, it, vi} from 'vitest';
 
-import {createIFrameApiService, SILENT_AUTHORIZATION_COMPLETE_EVENT} from './IFrameApiService';
+import {
+    createIFrameApiService,
+    SEND_RETRY_BUDGET_MS,
+    SEND_RETRY_INTERVAL_MS,
+    SILENT_AUTHORIZATION_COMPLETE_EVENT,
+} from './IFrameApiService';
+import {EMBED_TOKEN_FETCH_TIMEOUT_MS} from './embedToken';
 
 const ASSISTANT_ORIGIN = 'https://app.example.test';
 
@@ -17,11 +23,11 @@ describe('IFrameApiService', () => {
     });
 
     /**
-     * Without forwarding the retry counter into the recursive call the budget resets on every hop,
+     * Without forwarding the waited time into the recursive call the budget resets on every hop,
      * so the cap (and its support hint) is unreachable and a frame that never loads is polled
      * forever.
      */
-    it('gives up after the retry cap when the assistant frame never loads', async () => {
+    it('gives up after the retry budget when the assistant frame never loads', async () => {
         vi.useFakeTimers();
         const alertSpy = vi.fn();
         vi.stubGlobal('document', {getElementById: () => null});
@@ -29,10 +35,19 @@ describe('IFrameApiService', () => {
 
         createIFrameApiService(ASSISTANT_ORIGIN).notifySilentAuthorizationResult(true);
 
-        await vi.advanceTimersByTimeAsync(250 * 30);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS + SEND_RETRY_INTERVAL_MS);
 
         expect(alertSpy).toHaveBeenCalledTimes(1);
         expect(vi.getTimerCount()).toBe(0);
+    });
+
+    /**
+     * SidekickIFrame renders the iframe only once the embed-token fetch settled, and the frame
+     * then still has to load - so a budget inside that window alerts the editor on nothing but a
+     * slow boot.
+     */
+    it('waits past the embed-token fetch timeout before giving up', () => {
+        expect(SEND_RETRY_BUDGET_MS).toBeGreaterThan(EMBED_TOKEN_FETCH_TIMEOUT_MS);
     });
 
     it('still delivers the message once the frame shows up within the budget', async () => {
@@ -48,7 +63,7 @@ describe('IFrameApiService', () => {
 
         createIFrameApiService(ASSISTANT_ORIGIN).notifySilentAuthorizationResult(true);
 
-        await vi.advanceTimersByTimeAsync(250 * 5);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS * 5);
 
         expect(alertSpy).not.toHaveBeenCalled();
         expect(postMessage).toHaveBeenCalledTimes(1);
@@ -56,6 +71,37 @@ describe('IFrameApiService', () => {
             {version: '1.0', eventName: SILENT_AUTHORIZATION_COMPLETE_EVENT},
             ASSISTANT_ORIGIN
         );
+    });
+
+    /**
+     * callModule raises the streaming latch before sending, and only the assistant's "finished"
+     * event lowers it - which cannot arrive for a call it never received. An abandoned call
+     * therefore used to queue every later one behind it for the rest of the page's life.
+     */
+    it('lets a later AI call through after a call-module was abandoned', async () => {
+        vi.useFakeTimers();
+        const alertSpy = vi.fn();
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.stubGlobal('alert', alertSpy);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        service.callModule({moduleName: 'first'});
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS + SEND_RETRY_INTERVAL_MS);
+
+        expect(alertSpy).toHaveBeenCalledTimes(1);
+        expect(postMessage).not.toHaveBeenCalled();
+
+        frame = loadedFrame(postMessage);
+        service.callModule({moduleName: 'second'});
+
+        expect(postMessage).toHaveBeenCalledTimes(1);
+        expect(postMessage.mock.calls[0][0]).toMatchObject({
+            eventName: 'call-module',
+            data: {platform: 'neos', moduleName: 'second'},
+        });
     });
 
     /**

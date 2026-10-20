@@ -1,6 +1,21 @@
 
+import {EMBED_TOKEN_FETCH_TIMEOUT_MS} from './embedToken';
+
 export const SILENT_AUTHORIZATION_COMPLETE_EVENT = 'neosidekick-agent-silent-authorization-complete';
 export const SILENT_AUTHORIZATION_FAILED_EVENT = 'neosidekick-agent-silent-authorization-failed';
+
+export const SEND_RETRY_INTERVAL_MS = 250;
+
+/**
+ * How long a message waits for the assistant frame before it is given up on.
+ *
+ * It must stay well above the time the frame needs to become addressable on a slow boot:
+ * SidekickIFrame renders the iframe only once the embed-token fetch settled
+ * (EMBED_TOKEN_FETCH_TIMEOUT_MS), and getAssistantFrame() additionally waits for that
+ * iframe's onLoad. A budget below that sum turns a slow backend into the "could not load"
+ * alert while the frame is still on its way.
+ */
+export const SEND_RETRY_BUDGET_MS = EMBED_TOKEN_FETCH_TIMEOUT_MS + 24000;
 
 export const createIFrameApiService = (assistantFrameOrigin: string): IFrameApiService => {
     return new IFrameApiService(assistantFrameOrigin);
@@ -16,6 +31,7 @@ export class IFrameApiService {
     private unsyncedWebContextIsNewPage?: boolean;
     private unsyncedWebContextData?: object;
     private callModuleQueue: Array<ModuleCall> = [];
+    private currentCall?: object;
 
     /**
      * @param assistantFrameOrigin Origin of the embedded assistant iframe (the Laravel apiDomain).
@@ -41,11 +57,13 @@ export class IFrameApiService {
                 ...data,
             }
         }
+        this.currentCall = message;
         this.sendMessage(message, onStarted);
     }
 
     setStreamingFinished = (): void => {
         this.isStreaming = false;
+        this.currentCall = undefined;
         if (this.unsyncedWebContextData) {
             this.updateWebContext(this.unsyncedWebContextIsNewPage || false, this.unsyncedWebContextData);
             this.unsyncedWebContextData = undefined;
@@ -123,7 +141,7 @@ export class IFrameApiService {
         });
     }
 
-    private sendMessage = (message: object, onSend?: Function, retriesCount: number = 0): void => {
+    private sendMessage = (message: object, onSend?: Function, startedAt: number = Date.now()): void => {
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {
             console.log('Sending message to frame', message);
@@ -133,15 +151,33 @@ export class IFrameApiService {
                 onSend();
             }
         } else {
-            if (retriesCount > 20) {
-                alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');
+            // Elapsed wall-clock time, not counted hops: browsers throttle timers in background
+            // tabs to a second or more, which would stretch a hop-counted budget many times over.
+            // The start must be carried into the retry, or the cap is never reached.
+            if (Date.now() - startedAt >= SEND_RETRY_BUDGET_MS) {
+                this.abandonMessage(message);
                 return;
             }
-            // The counter must be carried into the retry: dropping it resets the budget on every
-            // hop, so the cap above (and its support hint) would never be reached and a frame that
-            // never loads would be polled forever.
-            setTimeout(() => this.sendMessage(message, onSend, retriesCount + 1), 250);
+            setTimeout(() => this.sendMessage(message, onSend, startedAt), SEND_RETRY_INTERVAL_MS);
         }
+    }
+
+    /**
+     * A message the frame never became ready for.
+     *
+     * callModule raises the streaming latch before sending, and only the assistant's own
+     * "finished" event lowers it again - which can never arrive for a call it never received.
+     * The abandoned call is therefore finished here instead, exactly as a delivered one would
+     * be: the latch drops, web context deferred during the call goes out ahead of any later
+     * call, and queued calls proceed with their own budget. Only the call holding the latch may
+     * do this - a cancelled call still retrying must not release the call that replaced it.
+     */
+    private abandonMessage = (message: object): void => {
+        if (message === this.currentCall) {
+            this.setStreamingFinished();
+        }
+
+        alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');
     }
 
     private getAssistantFrame = (): HTMLIFrameElement|null => {

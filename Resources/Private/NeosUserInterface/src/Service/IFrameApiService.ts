@@ -4,8 +4,6 @@ import {EMBED_TOKEN_FETCH_TIMEOUT_MS} from './embedToken';
 export const SILENT_AUTHORIZATION_COMPLETE_EVENT = 'neosidekick-agent-silent-authorization-complete';
 export const SILENT_AUTHORIZATION_FAILED_EVENT = 'neosidekick-agent-silent-authorization-failed';
 
-export const CALL_MODULE_EVENT = 'call-module';
-
 export const SEND_RETRY_INTERVAL_MS = 250;
 
 /**
@@ -33,6 +31,7 @@ export class IFrameApiService {
     private unsyncedWebContextIsNewPage?: boolean;
     private unsyncedWebContextData?: object;
     private callModuleQueue: Array<ModuleCall> = [];
+    private currentCall?: object;
 
     /**
      * @param assistantFrameOrigin Origin of the embedded assistant iframe (the Laravel apiDomain).
@@ -52,17 +51,19 @@ export class IFrameApiService {
         this.isStreaming = true;
         const message = {
             version: '1.0',
-            eventName: CALL_MODULE_EVENT,
+            eventName: 'call-module',
             data: {
                 'platform': 'neos',
                 ...data,
             }
         }
+        this.currentCall = message;
         this.sendMessage(message, onStarted);
     }
 
     setStreamingFinished = (): void => {
         this.isStreaming = false;
+        this.currentCall = undefined;
         if (this.unsyncedWebContextData) {
             this.updateWebContext(this.unsyncedWebContextIsNewPage || false, this.unsyncedWebContextData);
             this.unsyncedWebContextData = undefined;
@@ -140,7 +141,7 @@ export class IFrameApiService {
         });
     }
 
-    private sendMessage = (message: object, onSend?: Function, waitedMs: number = 0): void => {
+    private sendMessage = (message: object, onSend?: Function, startedAt: number = Date.now()): void => {
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {
             console.log('Sending message to frame', message);
@@ -150,17 +151,14 @@ export class IFrameApiService {
                 onSend();
             }
         } else {
-            if (waitedMs >= SEND_RETRY_BUDGET_MS) {
+            // Elapsed wall-clock time, not counted hops: browsers throttle timers in background
+            // tabs to a second or more, which would stretch a hop-counted budget many times over.
+            // The start must be carried into the retry, or the cap is never reached.
+            if (Date.now() - startedAt >= SEND_RETRY_BUDGET_MS) {
                 this.abandonMessage(message);
                 return;
             }
-            // The waited time must be carried into the retry: dropping it resets the budget on
-            // every hop, so the cap above (and its support hint) would never be reached and a
-            // frame that never loads would be polled forever.
-            setTimeout(
-                () => this.sendMessage(message, onSend, waitedMs + SEND_RETRY_INTERVAL_MS),
-                SEND_RETRY_INTERVAL_MS
-            );
+            setTimeout(() => this.sendMessage(message, onSend, startedAt), SEND_RETRY_INTERVAL_MS);
         }
     }
 
@@ -168,15 +166,15 @@ export class IFrameApiService {
      * A message the frame never became ready for.
      *
      * callModule raises the streaming latch before sending, and only the assistant's own
-     * "finished" event lowers it again - which can never arrive for a message it never
-     * received. Without this the latch stays raised for the rest of the page's life and every
-     * later AI call is queued behind it forever, so the latch and the queue are dropped here:
-     * the editor is told to reload, and a call made after the frame did show up still works.
+     * "finished" event lowers it again - which can never arrive for a call it never received.
+     * The abandoned call is therefore finished here instead, exactly as a delivered one would
+     * be: the latch drops, web context deferred during the call goes out ahead of any later
+     * call, and queued calls proceed with their own budget. Only the call holding the latch may
+     * do this - a cancelled call still retrying must not release the call that replaced it.
      */
     private abandonMessage = (message: object): void => {
-        if ((message as {eventName?: string}).eventName === CALL_MODULE_EVENT) {
-            this.isStreaming = false;
-            this.callModuleQueue = [];
+        if (message === this.currentCall) {
+            this.setStreamingFinished();
         }
 
         alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');

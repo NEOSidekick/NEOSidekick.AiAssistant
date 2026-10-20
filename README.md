@@ -136,6 +136,36 @@ roles:
 Of course, you can also define the privilege for any
 other role that you are using for example `Neos.Neos:Administrator`.
 
+### Multi-site installations
+
+The page list the assistant works with belongs to one Neos site. When the assistant names a
+site, that site is used; otherwise the site whose active Domain record matches the host the
+request came in on (the same suffix matching the frontend routing uses, and regardless of
+whether the site is online); if no record matches, Neos's default site is used (the one
+configured as `Neos.Neos.defaultSiteNodeName`, else the first online site). Only when Neos
+has no default site either does the first site below the sites root step in, and that
+fallback is logged. Every answer lists the site node names of the installation, so
+the assistant can ask for another site by name; naming a site that does not exist is refused
+with a `400` listing the available names.
+
+### Key management (signing key of this installation)
+
+This installation identifies itself to NEOSidekick with an RSA key pair, stored in one row of
+`neosidekick_aiassistant_domain_model_agentsigningkeyrecord` and generated automatically the
+first time an editor authorizes the assistant. **A database dump contains the private key**:
+treat dumps as secret and replace the key after handing one out.
+
+The **Key management** module (administrators only, privilege target
+`NEOSidekick.AiAssistant:ManageSigningKey`) re-sends the key and this installation's host set on every
+load and shows the fitting remedy. When the address is unknown it asks which of three applies:
+*same installation, new web address* (add a Domain record, then reload on an already registered
+address; no key change), *this is a copy* (own key, the original keeps working, tools connected
+here must be reconnected), or *we moved the site* (irreversible, confirmed in a dialog that
+names the consequence: the old domain is disconnected and its editors lose the assistant).
+
+Shell: `./flow agentkey:show`, `agentkey:push`, `agentkey:generate --force` (`--relabel` is the
+"we moved the site" equivalent). Re-enrolment fallback: delete the row, then `agentkey:generate`.
+
 ### Reverse proxy / headless setups (Zebra, Next.js)
 
 If you run Neos headless behind a frontend proxy — for example a

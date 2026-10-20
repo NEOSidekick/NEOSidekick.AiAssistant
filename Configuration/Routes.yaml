@@ -99,6 +99,40 @@
   httpMethods: ['GET']
 
 -
+  name:  'Agent Refresh Token API'
+  uriPattern: 'neosidekick/api/agentic/refresh-token'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'AgentRefreshTokenApi'
+    '@action':     'refresh'
+    '@format':     'json'
+  httpMethods: ['POST']
+
+-
+  name:  'Agent Revoke Refresh Token API'
+  uriPattern: 'neosidekick/api/agentic/revoke-refresh-token'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'AgentRevokeRefreshTokenApi'
+    '@action':     'revoke'
+    '@format':     'json'
+  httpMethods: ['POST']
+
+# POST deliberately (not GET): Flow's SecurityEntryPointMiddleware stores only safe
+# requests (GET) as the intercepted request for after-login redirects - a
+# session-authenticated GET here would poison the editor's next login into redirecting
+# to this JSON response when the backend session had expired.
+-
+  name:  'Agent Embed Token API'
+  uriPattern: 'neosidekick/api/agentic/embed-token'
+  defaults:
+    '@package':    'NEOSidekick.AiAssistant'
+    '@controller': 'AgentEmbedTokenApi'
+    '@action':     'issue'
+    '@format':     'json'
+  httpMethods: ['POST']
+
+-
   name:  'Public Preview Render'
   uriPattern: 'neosidekick/preview'
   defaults:
@@ -127,16 +161,10 @@
     '@action':     'index'
     '@format':     'html'
   httpMethods: ['GET']
-
--
-  name: 'Agent Test JWT Auth'
-  uriPattern: 'neosidekick/agent/test-jwt'
-  defaults:
-    '@package':    'NEOSidekick.AiAssistant'
-    '@controller': 'Agent'
-    '@action':     'testJwt'
-    '@format':     'json'
-  httpMethods: ['GET', 'POST']
+  # After Flow's login interception the LoginController rebuilds this URL through the
+  # router, so the query arguments (state, consumer, client_name, redirect_host) must be
+  # allowed to ride along - without this the not-logged-in first run ends in a 404.
+  appendExceedingArguments: true
 
 -
   name: 'Agent Authorization Action (JSON)'

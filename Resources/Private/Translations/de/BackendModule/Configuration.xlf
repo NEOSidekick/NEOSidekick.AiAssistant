@@ -10,6 +10,14 @@
                 <source>Here you can define the company and target group briefing which Sidekick should take into account.</source>
                 <target xml:lang="de" state="translated">Hier kannst du Informationen über dein Unternehmen und deine Zielgruppe eingeben, die Sidekick dann berücksichtigt.</target>
             </trans-unit>
+            <trans-unit id="connection.attention" xml:space="preserve">
+                <source>Connection needs attention.</source>
+                <target xml:lang="de" state="translated">Die Verbindung braucht Aufmerksamkeit.</target>
+            </trans-unit>
+            <trans-unit id="connection.openLink" xml:space="preserve">
+                <source>Open key management</source>
+                <target xml:lang="de" state="translated">Schlüsselverwaltung öffnen</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

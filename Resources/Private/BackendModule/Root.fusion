@@ -1,6 +1,7 @@
 include: resource://Neos.Fusion/Private/Fusion/Root.fusion
 include: resource://Neos.Neos.Ui/Private/Fusion/Prototypes/RenderConfiguration.fusion
 include: ./BackendModule.fusion
+include: ./KeyManagement/Root.fusion
 
 NEOSidekick.AiAssistant.BackendModule.ImageAlternativeTextController.index = NEOSidekick.AiAssistant:BackendModule {
     getAction = 'findAssets'
@@ -114,8 +115,41 @@ NEOSidekick.AiAssistant.BackendModule.SeoImageAlternativeTextController.index = 
 NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusion:Component {
     apiDomain = ${apiDomain}
     siteDomain = ${siteDomain}
+    embedToken = ${embedToken}
+    isAdministrator = ${isAdministrator}
+    connectionHealth = ${connectionHealth}
+    # Built on the main request: the module's own sub-request would namespace the link into this module.
+    keyManagementUri = Neos.Fusion:ActionUri {
+        request = ${request.mainRequest}
+        package = 'Neos.Neos'
+        controller = 'Backend\\Module'
+        action = 'index'
+        arguments.module = 'ai-assistant/keyManagement'
+    }
     renderer = afx`
         <div @if={props.apiDomain != 'https://api.neosidekick.com'} style="font-size: 1.5em; font-weight: bold; background: orange; padding: 1rem; margin-bottom: 1rem;">You are using a non-production API: {props.apiDomain}</div>
-        <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey + '&stay-in-settings=true' + (props.siteDomain ? '&domain=' + props.siteDomain : '')}></iframe>
+        <iframe style="width: 100%; min-height: 1000px; height: 100%; background: #3f3f3f;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey + '&stay-in-settings=true' + (props.siteDomain ? '&domain=' + props.siteDomain : '') + (props.embedToken ? '&embedToken=' + String.rawUrlEncode(props.embedToken) : '')}></iframe>
+        <NEOSidekick.AiAssistant:BackendModule.ConnectionHealth @if={props.isAdministrator} connectionHealth={props.connectionHealth} keyManagementUri={props.keyManagementUri} />
+    `
+}
+
+##
+# The one line this page says about the connection to NEOSidekick, for administrators only, and
+# only when that connection is not in order. Every key fact - fingerprint, registered addresses,
+# result codes - and every key action live in the "Key management" module; this line only says
+# that the connection needs attention and links there. The controller derives `healthy` from the
+# answer to its push, or from the recorded push status when that push was skipped by the 60 s
+# throttle.
+#
+prototype(NEOSidekick.AiAssistant:BackendModule.ConnectionHealth) < prototype(Neos.Fusion:Component) {
+    connectionHealth = false
+    keyManagementUri = ''
+
+    renderer = afx`
+        <p @if={!props.connectionHealth} style="margin-top: 2rem; color: #ff8700;" data-connection-health="attention">
+            {I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:connection.attention')}
+            {' '}
+            <a href={props.keyManagementUri}>{I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:connection.openLink')}</a>
+        </p>
     `
 }

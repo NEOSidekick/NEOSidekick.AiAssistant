@@ -1,11 +1,16 @@
 include: resource://Neos.Fusion/Private/Fusion/Root.fusion
 
 NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
-    user = ${user}
-    interfaceLanguage = ${interfaceLanguage}
+    userName = ${userName}
     csrfToken = ${csrfToken}
     authorizeActionUri = ${authorizeActionUri}
     state = ${state}
+    isExternalConsent = ${isExternalConsent}
+    consumer = ${consumer}
+    # A client without a name (or one the sanitizer emptied) must not render as an empty pair of quotes
+    clientName = ${clientName != '' ? clientName : I18n.translate('NEOSidekick.AiAssistant:Agent:externalClientUnnamed')}
+    redirectHost = ${redirectHost}
+    declineUri = ${declineUri}
 
     renderer = afx`
         <html>
@@ -14,7 +19,7 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
                 <link rel="stylesheet" href={StaticResource.uri('NEOSidekick.AiAssistant', 'Public/Agent.css')} />
             </head>
             <body>
-                <div class="auth-container">
+                <div class="auth-container" @if.isChatConsent={!props.isExternalConsent}>
                     <h1>{I18n.translate('NEOSidekick.AiAssistant:Agent:authorizationTitle')}</h1>
                     <p>{I18n.translate('NEOSidekick.AiAssistant:Agent:authorizationMessage')}</p>
                     <form method="POST" action={props.authorizeActionUri}>
@@ -24,16 +29,23 @@ NEOSidekick.AiAssistant.AgentController.index = Neos.Fusion:Component {
                             {I18n.translate('NEOSidekick.AiAssistant:Agent:authorizeButton')}
                         </button>
                     </form>
-                    <!--
-                    <hr style="margin: 20px 0;" />
-                    <form method="POST" action="/neosidekick/agent/test-jwt">
+                </div>
+                <div class="auth-container" @if.isExternalConsent={props.isExternalConsent}>
+                    <h1>{I18n.translate('NEOSidekick.AiAssistant:Agent:externalAuthorizationTitle')}</h1>
+                    <p>{I18n.translate('externalClientMessage', null, [String.htmlSpecialChars(props.clientName)], 'Agent', 'NEOSidekick.AiAssistant')}</p>
+                    <p>{I18n.translate('externalIdentityMessage', null, [String.htmlSpecialChars(props.userName)], 'Agent', 'NEOSidekick.AiAssistant')}</p>
+                    <p>{I18n.translate('externalRedirectMessage', null, [String.htmlSpecialChars(props.redirectHost)], 'Agent', 'NEOSidekick.AiAssistant')}</p>
+                    <form method="POST" action={props.authorizeActionUri}>
                         <input type="hidden" name="__csrfToken" value={props.csrfToken} />
-                        <button type="submit" class="auth-button" style="background: #555;">
-                            {I18n.translate('NEOSidekick.AiAssistant:Agent:testJwtAuthButton')}
+                        <input type="hidden" name="state" value={props.state} />
+                        <input type="hidden" name="consumer" value={props.consumer} />
+                        <button type="submit" class="auth-button">
+                            {I18n.translate('NEOSidekick.AiAssistant:Agent:externalAuthorizeButton')}
                         </button>
                     </form>
-                    <pre id="test-result"></pre>
-                    -->
+                    <p class="auth-decline">
+                        <a href={props.declineUri}>{I18n.translate('NEOSidekick.AiAssistant:Agent:externalDeclineLink')}</a>
+                    </p>
                 </div>
             </body>
         </html>

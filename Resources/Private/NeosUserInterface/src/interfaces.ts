@@ -3,9 +3,12 @@ export interface SidekickFrontendConfiguration {
     apiDomain: string;
     apiKey: string;
     userId: string;
-    sessionId: string;
     sessionsIsSameSite: boolean;
-    csrfToken: string;
+    /**
+     * Installed version of this package. Optional: dev checkouts cannot resolve a version and the
+     * Eel helper returns an empty string there, so the iframe parameter is omitted.
+     */
+    pluginVersion?: string;
     siteName: string;
     domain: string;
     referrer: string;

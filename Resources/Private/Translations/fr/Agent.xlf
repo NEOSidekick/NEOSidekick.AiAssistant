@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<xliff version="1.2" xmlns="urn:oasis:names:tc:xliff:document:1.2">
+    <file original="" source-language="en" target-language="fr" datatype="plaintext">
+        <body>
+            <trans-unit id="pageTitle" xml:space="preserve">
+                <source>NEOSidekick Agent Authorization</source>
+                <target xml:lang="fr" state="translated">Autorisation de l'agent NEOSidekick</target>
+            </trans-unit>
+            <trans-unit id="authorizationTitle" xml:space="preserve">
+                <source>Allow NEOSidekick to work together with you</source>
+                <target xml:lang="fr" state="translated">Autorise NEOSidekick à travailler avec toi</target>
+            </trans-unit>
+            <trans-unit id="authorizationMessage" xml:space="preserve">
+                <source>Allow NEOSidekick to access your workspace, read and write content. The chat will never publish any changes to live, you are always in control of what is published.</source>
+                <target xml:lang="fr" state="translated">Autorise NEOSidekick à accéder à ton espace de travail, à lire et à écrire du contenu. Le chat ne publiera jamais de modifications en ligne – tu gardes toujours le contrôle de ce qui est publié.</target>
+            </trans-unit>
+            <trans-unit id="authorizeButton" xml:space="preserve">
+                <source>Authorize</source>
+                <target xml:lang="fr" state="translated">Autoriser</target>
+            </trans-unit>
+            <trans-unit id="continueAuthorizationPageTitle" xml:space="preserve">
+                <source>Continue authorization</source>
+                <target xml:lang="fr" state="translated">Poursuivre l'autorisation</target>
+            </trans-unit>
+            <trans-unit id="continueAuthorizationTitle" xml:space="preserve">
+                <source>Continue authorization</source>
+                <target xml:lang="fr" state="translated">Poursuivre l'autorisation</target>
+            </trans-unit>
+            <trans-unit id="continueAuthorizationMessage" xml:space="preserve">
+                <source>Your Neos CMS uses strict security with SameSite session cookies. For this reason we need an extra-approval click.</source>
+                <target xml:lang="fr" state="translated">Ton Neos CMS applique une sécurité stricte avec des cookies de session SameSite. C'est pourquoi un clic de confirmation supplémentaire est nécessaire.</target>
+            </trans-unit>
+            <trans-unit id="continueAuthorizationButton" xml:space="preserve">
+                <source>Continue authorization</source>
+                <target xml:lang="fr" state="translated">Poursuivre l'autorisation</target>
+            </trans-unit>
+            <trans-unit id="externalAuthorizationTitle" xml:space="preserve">
+                <source>Connect an external application</source>
+                <target xml:lang="fr" state="translated">Connecter une application externe</target>
+            </trans-unit>
+            <trans-unit id="externalClientUnnamed" xml:space="preserve">
+                <source>Unnamed client</source>
+                <target xml:lang="fr" state="translated">Application sans nom</target>
+            </trans-unit>
+            <trans-unit id="externalClientMessage" xml:space="preserve">
+                <source>An application calling itself "{0}" (not verified by NEOSidekick) is asking for access to this Neos installation.</source>
+                <target xml:lang="fr" state="translated">Une application qui se présente sous le nom « {0} » (non vérifiée par NEOSidekick) demande l'accès à cette installation Neos.</target>
+            </trans-unit>
+            <trans-unit id="externalIdentityMessage" xml:space="preserve">
+                <source>If you allow it, the application can read and write content with your own editor permissions, as {0}. It will never publish anything to live.</source>
+                <target xml:lang="fr" state="translated">Si tu l'autorises, l'application pourra lire et écrire du contenu avec tes propres droits de rédaction, en tant que {0}. Elle ne publiera jamais rien en ligne.</target>
+            </trans-unit>
+            <trans-unit id="externalRedirectMessage" xml:space="preserve">
+                <source>The application says it will send you back to {0} afterwards.</source>
+                <target xml:lang="fr" state="translated">L'application indique qu'elle te redirigera ensuite vers {0}.</target>
+            </trans-unit>
+            <trans-unit id="externalAuthorizeButton" xml:space="preserve">
+                <source>Allow access</source>
+                <target xml:lang="fr" state="translated">Autoriser l'accès</target>
+            </trans-unit>
+            <trans-unit id="externalDeclineLink" xml:space="preserve">
+                <source>Cancel and deny access</source>
+                <target xml:lang="fr" state="translated">Annuler et refuser l'accès</target>
+            </trans-unit>
+        </body>
+    </file>
+</xliff>

@@ -3,25 +3,19 @@
 namespace NEOSidekick\AiAssistant\Controller\BackendModule;
 
 use Neos\Flow\Annotations as Flow;
-use Neos\Flow\Mvc\View\ViewInterface;
-use Neos\Fusion\View\FusionView;
-use Neos\Neos\Controller\Module\AbstractModuleController;
+use Neos\Flow\Log\Utility\LogEnvironment;
+use NEOSidekick\AiAssistant\Dto\AgentSigningKeyPushResult;
 use NEOSidekick\AiAssistant\EelHelper\NEOSidekickInternalHelper;
+use NEOSidekick\AiAssistant\Exception\AgentTokenException;
+use NEOSidekick\AiAssistant\Service\AgentSigningKeyPushService;
+use NEOSidekick\AiAssistant\Service\AgentTokenService;
+use Psr\Log\LoggerInterface;
 
 /**
  * @noinspection PhpUnused
  */
-class ConfigurationController extends AbstractModuleController
+class ConfigurationController extends AbstractFusionViewController
 {
-    protected $defaultViewObjectName = FusionView::class;
-
-    /**
-     * This is needed for type hinting in the IDE
-     *
-     * @var FusionView
-     */
-    protected $view;
-
     /**
      * @Flow\InjectConfiguration(path="apikey")
      * @var string
@@ -41,21 +35,74 @@ class ConfigurationController extends AbstractModuleController
     protected $neosidekickInternalHelper;
 
     /**
-     * @param FusionView $view
-     *
-     * @return void
+     * @Flow\Inject
+     * @var AgentSigningKeyPushService
      */
-    protected function initializeView(ViewInterface $view): void
-    {
-        parent::initializeView($view);
-        $view->setFusionPathPattern('resource://NEOSidekick.AiAssistant/Private/BackendModule');
-    }
+    protected $agentSigningKeyPushService;
+
+    /**
+     * @Flow\Inject
+     * @var AgentTokenService
+     */
+    protected $agentTokenService;
+
+    /**
+     * @Flow\Inject
+     * @var LoggerInterface
+     */
+    protected $logger;
 
     public function indexAction(): void
     {
+        $isAdministrator = $this->securityContext->hasRole('Neos.Neos:Administrator');
         $this->view->assign('apiKey', $this->apiKey);
         $this->view->assign('apiDomain', $this->apiDomain);
         $this->view->assign('siteDomain', $this->getSiteDomain());
+        $this->view->assign('embedToken', $this->getEmbedToken());
+        $this->view->assign('isAdministrator', $isAdministrator);
+        $this->view->assign('connectionHealth', $this->getConnectionHealth($isAdministrator ? $this->agentSigningKeyPushService->pushExistingKey() : null));
+    }
+
+    /**
+     * Whether the connection to NEOSidekick is in order; the page says a line only when it is
+     * not, and every remedy lives in the key management module. The verdict comes from the push
+     * made on this render; only when that push was skipped (throttled or keyless) does the
+     * record decide.
+     *
+     * @param AgentSigningKeyPushResult|null $forcedPushResult The answer of the push made on this render, null when it was skipped
+     */
+    protected function getConnectionHealth(?AgentSigningKeyPushResult $forcedPushResult = null): bool
+    {
+        if ($forcedPushResult !== null) {
+            return $forcedPushResult->successful && $forcedPushResult->hostsResult === 'accepted';
+        }
+
+        $recordedStatus = $this->agentSigningKeyPushService->getPushStatus()['status'] ?? 'none';
+
+        return $recordedStatus === 'confirmed' || $recordedStatus === 'reenrolled';
+    }
+
+    /**
+     * Mints the short-lived embed token the settings iframe carries, so the embedded page knows
+     * which editor - not merely which account - is looking at it.
+     *
+     * A failure (no signing keypair, legacy install) is not fatal: the token is omitted and the
+     * module still renders, with the editor-scoped section hidden.
+     *
+     * @return string|null
+     */
+    protected function getEmbedToken(): ?string
+    {
+        try {
+            return $this->agentTokenService->generateEmbedToken();
+        } catch (AgentTokenException $exception) {
+            $this->logger->warning(
+                'NEOSidekick settings module could not mint an embed token: ' . $exception->getMessage(),
+                LogEnvironment::fromMethodName(__METHOD__)
+            );
+
+            return null;
+        }
     }
 
     /**

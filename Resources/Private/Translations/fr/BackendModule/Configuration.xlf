@@ -50,6 +50,14 @@
                 <source>Italian</source>
                 <target xml:lang="fr">Italien</target>
             </trans-unit>
+            <trans-unit id="connection.attention" xml:space="preserve">
+                <source>Connection needs attention.</source>
+                <target xml:lang="fr" state="translated">La connexion nécessite votre attention.</target>
+            </trans-unit>
+            <trans-unit id="connection.openLink" xml:space="preserve">
+                <source>Open key management</source>
+                <target xml:lang="fr" state="translated">Ouvrir la gestion des clés</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

@@ -112,6 +112,9 @@ Neos:
             controller: 'NEOSidekick\AiAssistant\Controller\BackendModule\ConfigurationController'
             privilegeTarget: 'NEOSidekick.AiAssistant:CanUse'
             mainStylesheet: Lite
+            additionalResources:
+              javaScripts:
+                iframeAutoHeight: resource://NEOSidekick.AiAssistant/Public/BackendModule/IframeAutoHeight.js
           keyManagement:
             label: 'NEOSidekick.AiAssistant:BackendModule.KeyManagement:label'
             description: 'NEOSidekick.AiAssistant:BackendModule.KeyManagement:description'

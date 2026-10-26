@@ -126,6 +126,9 @@ export class ContentCanvasService {
             case 'show-content-node':
                 this.focusContentNodePath(message?.data?.data?.contentNodeId || message?.data?.data?.href);
                 break;
+            case 'review-document-node':
+                this.openDocumentReview(message?.data?.data?.documentNodeId, message?.data?.data?.documents);
+                break;
             case 'get-content-tree':
             case 'neosidekick-silent-authorize':
                 // handled in manifest.tsx; this service only handles canvas-modification events
@@ -256,6 +259,111 @@ export class ContentCanvasService {
         }
         this.store.dispatch(actions.UI.ContentCanvas.setSrc(targetNode.uri));
         this.store.dispatch(actions.CR.Nodes.setDocumentNode(targetNode.contextPath));
+    }
+
+    private async openDocumentReview(documentNodeId?: string, documents?: string[]): Promise<void> {
+        const currentDocumentNodePath = this.store.getState()?.cr?.nodes?.documentNode;
+        const currentContext = currentDocumentNodePath?.split('@')[1];
+        const workspace = currentContext?.split(';')[0];
+        if (!workspace || workspace === 'live' ||
+            (documents === undefined && (typeof documentNodeId !== 'string' || !UUID_REGEX.test(documentNodeId)))) {
+            this.addFlashMessage('neosidekick-review', 'Open a page in an editing workspace to review its changes.', 'error');
+            return;
+        }
+
+        // Explicit paths pin the language/other dimensions at link creation time.
+        // A plain node path deliberately selects every dimension variant of that page.
+        let reviewDocuments: string[] = [];
+        if (documents !== undefined) {
+            if (!Array.isArray(documents) || documents.length === 0) {
+                this.addFlashMessage('neosidekick-review', 'The review link must contain at least one page.', 'error');
+                return;
+            }
+            for (const document of documents) {
+                const normalized = this.normalizeReviewDocument(document, workspace);
+                if (!normalized) {
+                    this.addFlashMessage('neosidekick-review', 'The review link contains an invalid page or dimension selection.', 'error');
+                    return;
+                }
+                reviewDocuments.push(normalized);
+            }
+            reviewDocuments = [...new Set(reviewDocuments)];
+        }
+
+        const reviewUrl = new URL('management/workspaces/show', window.location.href);
+        reviewUrl.searchParams.set('moduleArguments[workspace][__identity]', workspace);
+        // Each entry needs its own []: commas can be dimension fallback values,
+        // never separators between pages. Never omit the filter or drop invalid entries.
+        for (const document of reviewDocuments) {
+            reviewUrl.searchParams.append('moduleArguments[documents][]', document);
+        }
+        // Explicit selections open their final URL immediately. Only legacy UUID
+        // links need a placeholder before the asynchronous lookup.
+        const reviewWindow = window.open(documents === undefined ? 'about:blank' : reviewUrl.toString(), '_blank', 'popup,width=1200,height=900');
+        if (!reviewWindow) {
+            this.addFlashMessage('neosidekick-review', 'Allow pop-up windows for this site to open the page review.', 'error');
+            return;
+        }
+        reviewWindow.opener = null;
+
+        try {
+            if (documents === undefined) {
+                const nodeTypesRegistry = this.globalRegistry.get('@neos-project/neos-ui-contentrepository');
+                const documentRole = nodeTypesRegistry.getRole('document');
+                if (!documentRole) {
+                    throw new Error('Document node types are not loaded.');
+                }
+                const documentTypes = new Set([documentRole, ...nodeTypesRegistry.getSubTypesOf(documentRole)]);
+                const matchesDocument = (node: any): boolean =>
+                    node?.identifier === documentNodeId &&
+                    typeof node?.contextPath === 'string' &&
+                    node.contextPath.startsWith('/sites/') &&
+                    node.contextPath.split('@')[1] === currentContext &&
+                    documentTypes.has(node.nodeType);
+
+                let documentNode = Object.values(this.store.getState()?.cr?.nodes?.byContextPath || {}).find(matchesDocument) as any;
+                if (!documentNode) {
+                    const nodes = await backend.get().q(currentDocumentNodePath).find('#' + documentNodeId).get();
+                    documentNode = nodes.find(matchesDocument);
+                }
+                if (!documentNode) {
+                    throw new Error('The page could not be found in the active workspace and language.');
+                }
+                if (this.store.getState()?.cr?.nodes?.documentNode !== currentDocumentNodePath || reviewWindow.closed) {
+                    reviewWindow.close();
+                    return;
+                }
+                reviewUrl.searchParams.append('moduleArguments[documents][]', documentNode.contextPath);
+                reviewWindow.location.replace(reviewUrl.toString());
+            }
+            window.addEventListener('focus', () => this.reloadAfterContentChange(), {once: true});
+        } catch (error) {
+            reviewWindow.close();
+            this.addFlashMessage('neosidekick-review', 'Could not open the page review. Please reload Neos and try again.', 'error', String(error));
+        }
+    }
+
+    private normalizeReviewDocument(document: unknown, workspace: string): string | null {
+        if (typeof document !== 'string') {
+            return null;
+        }
+        const match = /^(\/sites\/[a-z0-9-]+(?:\/[a-z0-9-]+)*)(?:@([a-z0-9-]+);(.+))?$/.exec(document);
+        if (!match) {
+            return null;
+        }
+        const [, path, , dimensions] = match;
+        if (dimensions === undefined) {
+            return path;
+        }
+        const names = new Set<string>();
+        for (const dimension of dimensions.split('&')) {
+            const pair = /^([a-zA-Z_]+)=([^=&;@?#\s,]+(?:,[^=&;@?#\s,]+)*)$/.exec(dimension);
+            if (!pair || names.has(pair[1])) {
+                return null;
+            }
+            names.add(pair[1]);
+        }
+        return `${path}@${workspace};${dimensions}`;
     }
 
     private focusContentNodePath(rawContentNodePath?: string): void {

@@ -9,6 +9,7 @@ use Firebase\JWT\Key;
 use GuzzleHttp\Psr7\ServerRequest;
 use Neos\Flow\Security\Account;
 use Neos\Flow\Security\AccountRepository;
+use Neos\Flow\Security\RequestPattern\ControllerObjectName;
 use Neos\Flow\Tests\FunctionalTestCase;
 use Neos\Neos\Domain\Model\User;
 use Neos\Party\Domain\Model\PersonName;
@@ -91,6 +92,34 @@ class AgentEmbedTokenApiControllerTest extends FunctionalTestCase
         $header = json_decode(JWT::urlsafeB64Decode(explode('.', $body['embed_token'])[0]), true);
         self::assertSame('RS256', $header['alg']);
         self::assertSame(AgentKeyPairService::deriveKeyId($publicKeyPem), $header['kid']);
+    }
+
+    /**
+     * Flow restores request patterns from the session's authentication token, including
+     * across logout/login when a flash message starts a replacement session. Adding a
+     * controller to Settings.yaml therefore does not update existing editors' patterns.
+     *
+     * @test
+     */
+    public function theEmbedTokenRouteMatchesBackendAuthenticationPatternsFromOlderSessions(): void
+    {
+        $request = $this->route(new ServerRequest(
+            'POST',
+            'http://localhost/neosidekick/api/agentic/embed-token',
+            ['Accept' => 'application/json']
+        ));
+        $sessionPattern = new ControllerObjectName([
+            'controllerObjectNamePattern' => 'NEOSidekick\\AiAssistant\\Controller\\(Backend.*|AgentController)',
+        ]);
+
+        self::assertTrue(
+            $sessionPattern->matchRequest($request),
+            'Existing backend sessions must recognize the embed-token controller after an upgrade.'
+        );
+
+        [$account] = $this->createEditorAccountWithUser();
+        $this->authenticateAccount($account);
+        self::assertSame(200, $this->requestEmbedToken()->getStatusCode());
     }
 
     /**

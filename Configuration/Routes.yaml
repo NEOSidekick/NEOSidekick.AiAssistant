@@ -127,7 +127,7 @@
   uriPattern: 'neosidekick/api/agentic/embed-token'
   defaults:
     '@package':    'NEOSidekick.AiAssistant'
-    '@controller': 'AgentEmbedTokenApi'
+    '@controller': 'BackendAgentEmbedTokenApi'
     '@action':     'issue'
     '@format':     'json'
   httpMethods: ['POST']

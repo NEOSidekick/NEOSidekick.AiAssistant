@@ -19,11 +19,13 @@ use Throwable;
  *
  * POST neosidekick/api/agentic/embed-token, answering {"embed_token": "<jwt>"}.
  *
- * Backend-session only: the controller is listed in the Neos.Neos:Backend
- * provider's request pattern (Settings.Internal.yaml) and in the
+ * Backend-session only: the controller matches the Neos.Neos:Backend
+ * provider's Backend.* request pattern (Settings.Internal.yaml) and is listed in the
  * NEOSidekick.AiAssistant:CanUse privilege target (Policy.yaml), so exactly an
  * authenticated Neos backend session may call it - the minted token's identity
  * comes from that session's security context, never from request input.
+ * The Backend prefix also matches the request patterns serialized in existing
+ * login sessions before this endpoint was added.
  *
  * The Neos UI plugin fetches a token here at iframe-src construction time and
  * again for every postMessage re-issuance request from the embedded assistant;
@@ -37,7 +39,7 @@ use Throwable;
  * the plugin's record looks fresh. Either way the key is announced before the
  * token that references it goes out.
  */
-class AgentEmbedTokenApiController extends ActionController
+class BackendAgentEmbedTokenApiController extends ActionController
 {
     /**
      * @var array<string>

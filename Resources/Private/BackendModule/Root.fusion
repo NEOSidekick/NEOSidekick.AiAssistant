@@ -128,10 +128,16 @@ NEOSidekick.AiAssistant.BackendModule.ConfigurationController.index = Neos.Fusio
         arguments.module = 'ai-assistant/keyManagement'
     }
     # The iframe is sized to its content by Public/BackendModule/IframeAutoHeight.js; its height only
-    # holds until the page in it reports its own.
+    # holds until the page in it reports its own, and until then the loader covers the empty frame.
     renderer = afx`
         <div @if={props.apiDomain != 'https://api.neosidekick.com'} style="font-size: 1.5em; font-weight: bold; background: orange; padding: 1rem; margin-bottom: 1rem;">You are using a non-production API: {props.apiDomain}</div>
-        <iframe data-neosidekick-auto-height style="display: block; width: 100%; height: 600px; border: 0;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey + '&stay-in-settings=true' + (props.siteDomain ? '&domain=' + props.siteDomain : '') + (props.embedToken ? '&embedToken=' + String.rawUrlEncode(props.embedToken) : '')}></iframe>
+        <div style="position: relative;">
+            <div data-neosidekick-auto-height-loader style="position: absolute; inset: 0; display: flex; justify-content: center; gap: 8px; padding-top: 120px; background: #222; color: #adadad;">
+                <i class="fas fa-spinner fa-spin" style="line-height: 20px;"></i>
+                {I18n.translate('NEOSidekick.AiAssistant:BackendModule.Configuration:loading')}
+            </div>
+            <iframe data-neosidekick-auto-height style="display: block; width: 100%; height: 600px; border: 0;" src={props.apiDomain + '/chat/account-context/edit?apikey=' + apiKey + '&stay-in-settings=true' + (props.siteDomain ? '&domain=' + props.siteDomain : '') + (props.embedToken ? '&embedToken=' + String.rawUrlEncode(props.embedToken) : '')}></iframe>
+        </div>
         <NEOSidekick.AiAssistant:BackendModule.ConnectionHealth @if={props.isAdministrator} connectionHealth={props.connectionHealth} keyManagementUri={props.keyManagementUri} />
     `
 }

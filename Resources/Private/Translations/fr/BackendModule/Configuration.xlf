@@ -58,6 +58,10 @@
                 <source>Open key management</source>
                 <target xml:lang="fr" state="translated">Ouvrir la gestion des clés</target>
             </trans-unit>
+            <trans-unit id="loading" xml:space="preserve">
+                <source>Loading settings …</source>
+                <target xml:lang="fr" state="translated">Chargement des paramètres …</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

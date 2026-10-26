@@ -14,6 +14,9 @@
             <trans-unit id="connection.openLink" xml:space="preserve">
                 <source>Open key management</source>
             </trans-unit>
+            <trans-unit id="loading" xml:space="preserve">
+                <source>Loading settings …</source>
+            </trans-unit>
         </body>
     </file>
 </xliff>

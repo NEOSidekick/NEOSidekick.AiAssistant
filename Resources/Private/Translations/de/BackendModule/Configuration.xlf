@@ -18,6 +18,10 @@
                 <source>Open key management</source>
                 <target xml:lang="de" state="translated">Schlüsselverwaltung öffnen</target>
             </trans-unit>
+            <trans-unit id="loading" xml:space="preserve">
+                <source>Loading settings …</source>
+                <target xml:lang="de" state="translated">Einstellungen werden geladen …</target>
+            </trans-unit>
         </body>
     </file>
 </xliff>

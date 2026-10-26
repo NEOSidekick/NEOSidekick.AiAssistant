@@ -10,6 +10,10 @@
  * We also tell the frame which slice of it the editor sees below the fixed top bar, so its toasts
  * and dialogs open there rather than in the middle of a tall frame.
  *
+ * A sibling marked data-neosidekick-auto-height-loader covers the frame until its first height
+ * arrives. A page that never reports one (an error page, say) loses the loader shortly after it
+ * has loaded, so it is not hidden forever.
+ *
  * Loaded in the head, before the frames exist, so all listeners sit on window and document.
  */
 (function () {
@@ -45,6 +49,14 @@
         post(iframe, {eventName: 'iframe-auto-height:viewport', data: visibleSlice(iframe)});
     }
 
+    function removeLoader(iframe) {
+        var loader = iframe.parentElement.querySelector('[data-neosidekick-auto-height-loader]');
+
+        if (loader) {
+            loader.remove();
+        }
+    }
+
     function init(iframe) {
         post(iframe, {eventName: 'iframe-auto-height:init'});
         sendViewport(iframe);
@@ -64,6 +76,7 @@
 
             if (eventName === 'iframe-auto-height:resize' && event.data.data && typeof event.data.data.height === 'number') {
                 iframe.style.height = event.data.data.height + 'px';
+                removeLoader(iframe);
                 sendViewport(iframe);
             }
         });
@@ -72,7 +85,12 @@
     // A frame's load event does not bubble, but it can be caught on its way down
     document.addEventListener('load', function (event) {
         if (event.target.matches && event.target.matches(FRAME_SELECTOR)) {
-            init(event.target);
+            var iframe = event.target;
+
+            init(iframe);
+            window.setTimeout(function () {
+                removeLoader(iframe);
+            }, 2000);
         }
     }, true);
 

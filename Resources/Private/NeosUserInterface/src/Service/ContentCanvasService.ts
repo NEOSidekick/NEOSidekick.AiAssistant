@@ -20,6 +20,7 @@ export class ContentCanvasService {
     private store: Store;
     private iFrameApiService: IFrameApiService;
     private currentlyHandledNodePath: string | null = null;
+    private documentNavigationRequest: number = 0;
     private workspaceInfoRefreshPromise: Promise<void> | null = null;
     private workspaceInfoRefreshQueued: boolean = false;
 
@@ -196,23 +197,53 @@ export class ContentCanvasService {
         });
     }
 
-    private navigateToDocumentNodePath(rawDocumentNodePath?: string): void {
-        const documentNodePath = this.normalizeNodePath(rawDocumentNodePath, DOCUMENT_NODE_PATH_PROTOCOL);
+    private async navigateToDocumentNodePath(rawDocumentNodePath?: string): Promise<void> {
+        const documentNodePath = this.normalizeNodePath(
+            rawDocumentNodePath?.trim().replace(/^show-document-node:\/\//, ''),
+            DOCUMENT_NODE_PATH_PROTOCOL
+        );
         if (!documentNodePath) {
             return;
         }
 
+        const navigationRequest = ++this.documentNavigationRequest;
         const state = this.store.getState();
+        const currentDocumentNodePath = state?.cr?.nodes?.documentNode;
+        const currentContext = currentDocumentNodePath?.split('@')[1];
         const allNodes = Object.values(state?.cr?.nodes?.byContextPath || {});
         const normalizedIdentifier = documentNodePath.replace(/^\/+/, '');
         const normalizedContextPath = documentNodePath.startsWith('/') ? documentNodePath : '/' + documentNodePath;
-        const targetNode = allNodes.find((node: any) => {
+        const matchesTarget = (node: any): boolean => {
             const contextPath = node?.contextPath;
             const identifier = node?.identifier;
+            const contextMatches = typeof contextPath === 'string' &&
+                (!currentContext || contextPath.split('@')[1] === currentContext);
             const contextPathMatches = typeof contextPath === 'string' && contextPath.split('@')[0] === normalizedContextPath;
             const identifierMatches = typeof identifier === 'string' && identifier === normalizedIdentifier;
-            return contextPathMatches || identifierMatches;
-        }) as any;
+            return contextMatches && (contextPathMatches || identifierMatches);
+        };
+        let targetNode = allNodes.find(matchesTarget) as any;
+        let loadedFromBackend = false;
+
+        // The UI store only contains pages loaded so far. Resolve missing/incomplete
+        // entries in the active document's workspace and content dimensions.
+        if ((!targetNode?.contextPath || !targetNode?.uri) && currentDocumentNodePath) {
+            try {
+                const {q} = backend.get();
+                const selector = UUID_REGEX.test(normalizedIdentifier) ? '#' + normalizedIdentifier : normalizedContextPath;
+                const nodes = await q(currentDocumentNodePath).find(selector).get();
+                targetNode = nodes.find(matchesTarget);
+                loadedFromBackend = true;
+            } catch {
+                targetNode = undefined;
+            }
+        }
+
+        // A later click or manual page/dimension change supersedes this lookup.
+        if (navigationRequest !== this.documentNavigationRequest ||
+            this.store.getState()?.cr?.nodes?.documentNode !== currentDocumentNodePath) {
+            return;
+        }
 
         if (!targetNode?.contextPath || !targetNode?.uri) {
             const errorMessage = 'Could not resolve document node path: ' + documentNodePath;
@@ -220,6 +251,9 @@ export class ContentCanvasService {
             return;
         }
 
+        if (loadedFromBackend) {
+            this.store.dispatch(actions.CR.Nodes.merge({[targetNode.contextPath]: targetNode}));
+        }
         this.store.dispatch(actions.UI.ContentCanvas.setSrc(targetNode.uri));
         this.store.dispatch(actions.CR.Nodes.setDocumentNode(targetNode.contextPath));
     }

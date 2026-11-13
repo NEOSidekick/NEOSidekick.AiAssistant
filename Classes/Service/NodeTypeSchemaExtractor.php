@@ -113,9 +113,9 @@ class NodeTypeSchemaExtractor
         $result = [];
 
         foreach ($properties as $propertyName => $propertyConfig) {
-            // Extract and translate UI configuration
+            // Extract and translate UI configuration; customer YAML may reset ui to a scalar ('' or ~)
             $ui = $propertyConfig['ui'] ?? [];
-            $ui = $this->translateLabelsInConfig($ui);
+            $ui = $this->translateLabelsInConfig(is_array($ui) ? $ui : []);
 
             // Include the full property configuration
             $result[$propertyName] = [

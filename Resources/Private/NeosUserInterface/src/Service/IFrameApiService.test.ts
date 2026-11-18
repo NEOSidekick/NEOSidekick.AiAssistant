@@ -163,6 +163,86 @@ describe('IFrameApiService', () => {
     });
 
     /**
+     * Creating a node with several generated properties queues one call per property. Giving each
+     * a budget of its own keeps the latch up for as many budgets as there are calls, and ends
+     * every one of them in the same alert.
+     */
+    it('gives up on the calls queued behind an abandoned call together with it', async () => {
+        vi.useFakeTimers();
+        const alertSpy = vi.fn();
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.stubGlobal('alert', alertSpy);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        const onAbandoned = [vi.fn(), vi.fn(), vi.fn()];
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        onAbandoned.forEach((callback, index) => service.callModule({moduleName: `call-${index}`}, undefined, callback));
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS);
+
+        onAbandoned.forEach((callback) => expect(callback).toHaveBeenCalledTimes(1));
+        expect(alertSpy).toHaveBeenCalledTimes(1);
+
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS * 3);
+
+        expect(alertSpy).toHaveBeenCalledTimes(1);
+
+        frame = loadedFrame(postMessage);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+        service.callModule({moduleName: 'later'});
+
+        expect(postMessage.mock.calls.map(([message]) => message)).toMatchObject([
+            {eventName: 'call-module', data: {moduleName: 'later'}},
+        ]);
+    });
+
+    /**
+     * Every message runs out of budget on its own. With a frame that never loads, an alert per
+     * message blocks the editor once for every page they open.
+     */
+    it('reports a frame that never loads once, not once per message', async () => {
+        vi.useFakeTimers();
+        const alertSpy = vi.fn();
+        vi.stubGlobal('document', {getElementById: () => null});
+        vi.stubGlobal('alert', alertSpy);
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        service.updateWebContext(true, {page: 'first'});
+        await vi.advanceTimersByTimeAsync(5000);
+        service.updateWebContext(true, {page: 'second'});
+        await vi.advanceTimersByTimeAsync(5000);
+        service.callModule({moduleName: 'call'});
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS * 2);
+
+        expect(alertSpy).toHaveBeenCalledTimes(1);
+        expect(vi.getTimerCount()).toBe(0);
+    });
+
+    it('reports a frame that goes missing again after it had been reachable', async () => {
+        vi.useFakeTimers();
+        const alertSpy = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.stubGlobal('alert', alertSpy);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        service.notifySilentAuthorizationResult(true);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS);
+
+        expect(alertSpy).toHaveBeenCalledTimes(1);
+
+        frame = loadedFrame(vi.fn());
+        service.notifySilentAuthorizationResult(true);
+        frame = null;
+        service.notifySilentAuthorizationResult(true);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS);
+
+        expect(alertSpy).toHaveBeenCalledTimes(2);
+    });
+
+    /**
      * Web context arriving during a call is deferred until the call is finished. Releasing an
      * abandoned call without sending it would hold it back until the NEXT call finished, where
      * it could overwrite newer context sent in between.

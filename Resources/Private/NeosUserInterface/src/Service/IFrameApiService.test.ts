@@ -60,10 +60,29 @@ describe('IFrameApiService', () => {
     /**
      * SidekickIFrame renders the iframe only once the embed-token fetch settled, and the frame
      * then still has to load - so a budget inside that window alerts the editor on nothing but a
-     * slow boot.
+     * slow boot. The boot is played through here: comparing the budget with the fetch timeout
+     * alone holds for any allowance on top of it, however small.
      */
-    it('waits past the embed-token fetch timeout before giving up', () => {
-        expect(SEND_RETRY_BUDGET_MS).toBeGreaterThan(EMBED_TOKEN_FETCH_TIMEOUT_MS);
+    it('still delivers after an embed-token fetch that timed out and a slow frame load', async () => {
+        const SLOW_FRAME_LOAD_MS = 10000;
+        vi.useFakeTimers();
+        const alertSpy = vi.fn();
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.stubGlobal('alert', alertSpy);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        createIFrameApiService(ASSISTANT_ORIGIN).updateWebContext(true, {page: 'first'});
+        await vi.advanceTimersByTimeAsync(EMBED_TOKEN_FETCH_TIMEOUT_MS + SLOW_FRAME_LOAD_MS);
+
+        expect(alertSpy).not.toHaveBeenCalled();
+
+        frame = loadedFrame(postMessage);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+
+        expect(alertSpy).not.toHaveBeenCalled();
+        expect(postMessage).toHaveBeenCalledTimes(1);
     });
 
     it('still delivers the message once the frame shows up within the budget', async () => {

@@ -450,7 +450,11 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
             module,
             arguments: args,
         }
-        this.props.iFrameApiService.callModule(data);
+        // An abandoned call is never answered by the assistant. Left in 'loading', the modal would
+        // show its spinner forever and cancel whichever call is running once it is closed.
+        this.props.iFrameApiService.callModule(data, undefined, () => {
+            this.setState({generatedText: '', generationState: 'empty'});
+        });
     }
 
     handleRegenerate = async (): Promise<void> => {

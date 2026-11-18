@@ -24,6 +24,13 @@ export const createIFrameApiService = (assistantFrameOrigin: string): IFrameApiS
 interface ModuleCall {
     data: object;
     onStarted?: () => void;
+    onAbandoned?: () => void;
+}
+
+/** The call holding the streaming latch, from callModule until it is finished. */
+interface CurrentCall {
+    message: object;
+    onAbandoned?: () => void;
 }
 
 export class IFrameApiService {
@@ -31,7 +38,7 @@ export class IFrameApiService {
     private unsyncedWebContextIsNewPage?: boolean;
     private unsyncedWebContextData?: object;
     private callModuleQueue: Array<ModuleCall> = [];
-    private currentCall?: object;
+    private currentCall?: CurrentCall;
 
     /**
      * @param assistantFrameOrigin Origin of the embedded assistant iframe (the Laravel apiDomain).
@@ -40,11 +47,18 @@ export class IFrameApiService {
      */
     constructor(private readonly assistantFrameOrigin: string) {}
 
-    // the function calling this, must reset isStreaming after the call is done
-    callModule = (data: object, onStarted?: () => void): void => {
+    /**
+     * The function calling this must reset isStreaming after the call is done.
+     *
+     * @param onStarted Called once the call was handed to the assistant frame.
+     * @param onAbandoned Called instead when the frame never became ready and the call was given
+     *        up on. No event of the assistant follows such a call, so a caller that shows progress
+     *        has to end it here.
+     */
+    callModule = (data: object, onStarted?: () => void, onAbandoned?: () => void): void => {
         // If busy, disallow further call-module events and throw error
         if (this.isStreaming) {
-            this.callModuleQueue.push({data, onStarted});
+            this.callModuleQueue.push({data, onStarted, onAbandoned});
             return;
         }
 
@@ -57,7 +71,7 @@ export class IFrameApiService {
                 ...data,
             }
         }
-        this.currentCall = message;
+        this.currentCall = {message, onAbandoned};
         this.sendMessage(message, onStarted);
     }
 
@@ -71,8 +85,8 @@ export class IFrameApiService {
         }
         const nextCallModule = this.callModuleQueue.shift();
         if (nextCallModule) {
-            const {data, onStarted} = nextCallModule;
-            this.callModule(data, onStarted);
+            const {data, onStarted, onAbandoned} = nextCallModule;
+            this.callModule(data, onStarted, onAbandoned);
         }
     }
 
@@ -173,10 +187,15 @@ export class IFrameApiService {
      * be: the latch drops, web context deferred during the call goes out ahead of any later
      * call, and queued calls proceed with their own budget. Only the call holding the latch may
      * do this - a cancelled call still retrying must not release the call that replaced it.
+     *
+     * Its caller is told as well: it would otherwise wait for an answer that cannot come, and
+     * later cancel a call that is not its own.
      */
     private abandonMessage = (message: object): void => {
-        if (message === this.currentCall) {
+        if (message === this.currentCall?.message) {
+            const {onAbandoned} = this.currentCall;
             this.setStreamingFinished();
+            onAbandoned?.();
         }
 
         alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');

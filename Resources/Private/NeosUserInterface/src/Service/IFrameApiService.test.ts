@@ -121,6 +121,48 @@ describe('IFrameApiService', () => {
     });
 
     /**
+     * The assistant answers a delivered call, which is how its caller learns that it is over. An
+     * abandoned call is answered by nobody, so the caller has to be told here - the AI modal
+     * otherwise keeps its spinner and, once closed, cancels a call that is not its own.
+     */
+    it('tells the caller that its call was abandoned', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal('alert', vi.fn());
+        vi.stubGlobal('document', {getElementById: () => null});
+        const onStarted = vi.fn();
+        const onAbandoned = vi.fn();
+
+        createIFrameApiService(ASSISTANT_ORIGIN).callModule({moduleName: 'abandoned'}, onStarted, onAbandoned);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS - SEND_RETRY_INTERVAL_MS);
+
+        expect(onAbandoned).not.toHaveBeenCalled();
+
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+
+        expect(onAbandoned).toHaveBeenCalledTimes(1);
+        expect(onStarted).not.toHaveBeenCalled();
+    });
+
+    it('does not report a delivered call as abandoned', async () => {
+        vi.useFakeTimers();
+        vi.stubGlobal('alert', vi.fn());
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        const onStarted = vi.fn();
+        const onAbandoned = vi.fn();
+
+        createIFrameApiService(ASSISTANT_ORIGIN).callModule({moduleName: 'delivered'}, onStarted, onAbandoned);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+        frame = loadedFrame(postMessage);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS * 2);
+
+        expect(onStarted).toHaveBeenCalledTimes(1);
+        expect(onAbandoned).not.toHaveBeenCalled();
+    });
+
+    /**
      * Web context arriving during a call is deferred until the call is finished. Releasing an
      * abandoned call without sending it would hold it back until the NEXT call finished, where
      * it could overwrite newer context sent in between.

@@ -39,6 +39,7 @@ export class IFrameApiService {
     private unsyncedWebContextData?: object;
     private callModuleQueue: Array<ModuleCall> = [];
     private currentCall?: CurrentCall;
+    private frameFailureReported: boolean = false;
 
     /**
      * @param assistantFrameOrigin Origin of the embedded assistant iframe (the Laravel apiDomain).
@@ -158,6 +159,7 @@ export class IFrameApiService {
     private sendMessage = (message: object, onSend?: Function, startedAt: number = performance.now()): void => {
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {
+            this.frameFailureReported = false;
             console.log('Sending message to frame', message);
             assistantFrame.contentWindow?.postMessage(message, this.assistantFrameOrigin);
 
@@ -184,20 +186,40 @@ export class IFrameApiService {
      * callModule raises the streaming latch before sending, and only the assistant's own
      * "finished" event lowers it again - which can never arrive for a call it never received.
      * The abandoned call is therefore finished here instead, exactly as a delivered one would
-     * be: the latch drops, web context deferred during the call goes out ahead of any later
-     * call, and queued calls proceed with their own budget. Only the call holding the latch may
-     * do this - a cancelled call still retrying must not release the call that replaced it.
+     * be: the latch drops and web context deferred during the call goes out ahead of any later
+     * call. Only the call holding the latch may do this - a cancelled call still retrying must
+     * not release the call that replaced it.
      *
-     * Its caller is told as well: it would otherwise wait for an answer that cannot come, and
-     * later cancel a call that is not its own.
+     * The calls queued behind it are given up on with it. They waited for the same frame, and a
+     * budget of their own for each would keep the latch up for as many budgets as there are
+     * calls - a single node with several generated properties queues that many at once.
+     *
+     * Their callers are told as well: they would otherwise wait for an answer that cannot come,
+     * and later cancel a call that is not their own.
      */
     private abandonMessage = (message: object): void => {
         if (message === this.currentCall?.message) {
-            const {onAbandoned} = this.currentCall;
+            const abandonedCalls = [this.currentCall, ...this.callModuleQueue];
+            this.callModuleQueue = [];
             this.setStreamingFinished();
-            onAbandoned?.();
+            abandonedCalls.forEach(({onAbandoned}) => onAbandoned?.());
         }
 
+        this.reportFrameFailure();
+    }
+
+    /**
+     * Tells the editor that the assistant frame could not be loaded - once per outage, not once
+     * per message. Every message runs out of budget on its own, and each raising its own
+     * blocking alert interrupts the editor again and again over the same missing frame. The
+     * outage is over as soon as the frame takes a message.
+     */
+    private reportFrameFailure = (): void => {
+        if (this.frameFailureReported) {
+            return;
+        }
+
+        this.frameFailureReported = true;
         alert('NEOSidekick AI-Error: Could not load assistant frame, please reload the page or contact support@neosidekick.com.');
     }
 

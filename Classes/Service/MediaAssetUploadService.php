@@ -55,6 +55,12 @@ class MediaAssetUploadService
     protected $persistenceManager;
 
     /**
+     * @Flow\InjectConfiguration(package="Neos.Flow", path="resource.extensionsBlockedFromUpload")
+     * @var array<string, bool>|null
+     */
+    protected $extensionsBlockedFromUpload;
+
+    /**
      * Upload an asset from a remote URL.
      *
      * @param string $sourceUrl
@@ -80,6 +86,14 @@ class MediaAssetUploadService
             );
         }
 
+        // Flow checks blocked extensions on import, where a stream has no name yet: check before storing anything.
+        $filename = $this->resolveFilename(
+            $sourceUrl,
+            $response->getHeaderLine('Content-Disposition'),
+            $response->getHeaderLine('Content-Type')
+        );
+        $this->assertFilenameIsNotBlocked($filename);
+
         $responseBody = $response->getBody();
         $importStream = fopen('php://temp', 'wb+');
         if ($importStream === false) {
@@ -102,11 +116,7 @@ class MediaAssetUploadService
             }
         }
 
-        $resource->setFilename($this->resolveFilename(
-            $sourceUrl,
-            $response->getHeaderLine('Content-Disposition'),
-            $response->getHeaderLine('Content-Type')
-        ));
+        $resource->setFilename($filename);
 
         $existingAsset = $this->assetRepository->findOneByResourceSha1($resource->getSha1());
         $isNewAsset = !($existingAsset instanceof AssetInterface);
@@ -171,6 +181,26 @@ class MediaAssetUploadService
         $scheme = strtolower((string)parse_url($sourceUrl, PHP_URL_SCHEME));
         if (!in_array($scheme, ['http', 'https'], true)) {
             throw new InvalidArgumentException('Only "http" and "https" URLs are supported.');
+        }
+    }
+
+    /**
+     * Rejects a filename if any part after a dot is listed in Neos.Flow.resource.extensionsBlockedFromUpload,
+     * e.g. "php" and "png" in "foo.php.png", "htaccess" in ".htaccess".
+     *
+     * @param string $filename
+     * @return void
+     */
+    protected function assertFilenameIsNotBlocked(string $filename): void
+    {
+        $basename = basename(str_replace('\\', '/', rtrim($filename, ". \t\n\r\0\x0B")));
+        foreach (array_slice(explode('.', $basename), 1) as $extension) {
+            if (($this->extensionsBlockedFromUpload[strtolower($extension)] ?? false) === true) {
+                throw new InvalidArgumentException(sprintf(
+                    'Files with the extension "%s" cannot be uploaded.',
+                    strip_tags($extension)
+                ));
+            }
         }
     }
 

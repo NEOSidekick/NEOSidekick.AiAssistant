@@ -31,6 +31,8 @@ interface ModuleCall {
 interface CurrentCall {
     message: object;
     onAbandoned?: () => void;
+    /** 'waiting' for the frame, 'delivered' to it, or 'cancelled' before it got there. */
+    state: 'waiting' | 'delivered' | 'cancelled';
 }
 
 export class IFrameApiService {
@@ -72,8 +74,16 @@ export class IFrameApiService {
                 ...data,
             }
         }
-        this.currentCall = {message, onAbandoned};
-        this.sendMessage(message, onStarted);
+        const call: CurrentCall = {message, onAbandoned, state: 'waiting'};
+        this.currentCall = call;
+        this.sendMessage(
+            message,
+            () => {
+                call.state = 'delivered';
+                onStarted?.();
+            },
+            () => call.state === 'cancelled'
+        );
     }
 
     setStreamingFinished = (): void => {
@@ -96,7 +106,18 @@ export class IFrameApiService {
             version: '1.0',
             eventName: 'cancel-call-module'
         };
+        const cancelledCall = this.currentCall;
         this.setStreamingFinished();
+
+        // A call still waiting for the frame is taken back here instead: its retry stops, so it
+        // neither reaches the assistant after all nor ends in the "could not load" alert. The
+        // assistant never saw it, so there is nothing to cancel on its side - and a cancel
+        // message waiting for the frame in its place could hit a later call.
+        if (cancelledCall?.state === 'waiting') {
+            cancelledCall.state = 'cancelled';
+            return;
+        }
+
         this.sendMessage(message);
     }
 
@@ -156,7 +177,20 @@ export class IFrameApiService {
         });
     }
 
-    private sendMessage = (message: object, onSend?: Function, startedAt: number = performance.now()): void => {
+    /**
+     * @param isWithdrawn Asked before every attempt; a message that was withdrawn while it waited
+     *        for the frame is dropped without a word.
+     */
+    private sendMessage = (
+        message: object,
+        onSend?: Function,
+        isWithdrawn: () => boolean = () => false,
+        startedAt: number = performance.now()
+    ): void => {
+        if (isWithdrawn()) {
+            return;
+        }
+
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {
             this.frameFailureReported = false;
@@ -176,7 +210,7 @@ export class IFrameApiService {
                 this.abandonMessage(message);
                 return;
             }
-            setTimeout(() => this.sendMessage(message, onSend, startedAt), SEND_RETRY_INTERVAL_MS);
+            setTimeout(() => this.sendMessage(message, onSend, isWithdrawn, startedAt), SEND_RETRY_INTERVAL_MS);
         }
     }
 
@@ -187,8 +221,7 @@ export class IFrameApiService {
      * "finished" event lowers it again - which can never arrive for a call it never received.
      * The abandoned call is therefore finished here instead, exactly as a delivered one would
      * be: the latch drops and web context deferred during the call goes out ahead of any later
-     * call. Only the call holding the latch may do this - a cancelled call still retrying must
-     * not release the call that replaced it.
+     * call. Only the call holding the latch may do this, never any other message.
      *
      * The calls queued behind it are given up on with it. They waited for the same frame, and a
      * budget of their own for each would keep the latch up for as many budgets as there are

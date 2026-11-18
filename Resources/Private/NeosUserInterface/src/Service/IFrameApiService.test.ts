@@ -298,8 +298,60 @@ describe('IFrameApiService', () => {
     });
 
     /**
-     * A cancelled call keeps retrying in the background. When it runs out of budget it must not
-     * release the latch of the call that replaced it, which would let a third call run alongside.
+     * A call cancelled while it still waits for the frame is taken back. Left retrying, it would
+     * reach the assistant after all, and failing that end in the alert - for a call nobody wants
+     * any more.
+     */
+    it('takes back a cancelled call that never reached the frame', async () => {
+        vi.useFakeTimers();
+        const alertSpy = vi.fn();
+        vi.stubGlobal('alert', alertSpy);
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+        const onStarted = vi.fn();
+        const onAbandoned = vi.fn();
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        service.callModule({moduleName: 'cancelled'}, onStarted, onAbandoned);
+        await vi.advanceTimersByTimeAsync(1000);
+        service.cancelCallModule();
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+
+        expect(vi.getTimerCount()).toBe(0);
+
+        service.callModule({moduleName: 'current'});
+        await vi.advanceTimersByTimeAsync(1000);
+        frame = loadedFrame(postMessage);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS * 2);
+
+        expect(postMessage.mock.calls.map(([message]) => message)).toMatchObject([
+            {eventName: 'call-module', data: {moduleName: 'current'}},
+        ]);
+        expect(onStarted).not.toHaveBeenCalled();
+        expect(onAbandoned).not.toHaveBeenCalled();
+        expect(alertSpy).not.toHaveBeenCalled();
+    });
+
+    it('still cancels a call the assistant has received', () => {
+        const postMessage = vi.fn();
+        vi.stubGlobal('document', {getElementById: () => loadedFrame(postMessage)});
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        service.callModule({moduleName: 'delivered'});
+        service.cancelCallModule();
+
+        expect(postMessage.mock.calls.map(([message]) => message)).toMatchObject([
+            {eventName: 'call-module', data: {moduleName: 'delivered'}},
+            {eventName: 'cancel-call-module'},
+        ]);
+    });
+
+    /**
+     * The call that replaced a cancelled one holds the latch on its own. The cancelled call
+     * running out of budget must not release it, which would let a third call run alongside.
      */
     it('does not let a cancelled call release the call that replaced it', async () => {
         vi.useFakeTimers();

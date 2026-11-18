@@ -198,14 +198,18 @@ export class IFrameApiService {
      * and later cancel a call that is not their own.
      */
     private abandonMessage = (message: object): void => {
+        // Report first, release second. The alert blocks this window for as long as the editor
+        // leaves it open - timers stand still, the clock does not. Whatever the release sends
+        // starts its budget when it is sent, so sent ahead of the alert it would have used that
+        // budget up, unattempted, by the time the alert is closed.
+        this.reportFrameFailure();
+
         if (message === this.currentCall?.message) {
             const abandonedCalls = [this.currentCall, ...this.callModuleQueue];
             this.callModuleQueue = [];
             this.setStreamingFinished();
             abandonedCalls.forEach(({onAbandoned}) => onAbandoned?.());
         }
-
-        this.reportFrameFailure();
     }
 
     /**

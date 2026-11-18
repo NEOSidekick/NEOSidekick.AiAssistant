@@ -15,6 +15,22 @@ const loadedFrame = (postMessage: (message: object, origin: string) => void) => 
     contentWindow: {postMessage},
 });
 
+/**
+ * Lets time pass on the monotonic clock without running any timer, which is what a throttled
+ * background tab does to a pending retry. Call it after vi.useFakeTimers().
+ */
+const createMonotonicClock = () => {
+    const fakeNow = performance.now.bind(performance);
+    let skipped = 0;
+    vi.spyOn(performance, 'now').mockImplementation(() => fakeNow() + skipped);
+
+    return {
+        skip: (milliseconds: number): void => {
+            skipped += milliseconds;
+        },
+    };
+};
+
 describe('IFrameApiService', () => {
     afterEach(() => {
         vi.useRealTimers();
@@ -163,16 +179,43 @@ describe('IFrameApiService', () => {
      */
     it('measures the budget in elapsed time, so throttled timers cannot stretch it', async () => {
         vi.useFakeTimers();
+        const monotonicClock = createMonotonicClock();
         const alertSpy = vi.fn();
         vi.stubGlobal('document', {getElementById: () => null});
         vi.stubGlobal('alert', alertSpy);
 
         createIFrameApiService(ASSISTANT_ORIGIN).notifySilentAuthorizationResult(true);
         await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
-        vi.setSystemTime(Date.now() + SEND_RETRY_BUDGET_MS);
+        monotonicClock.skip(SEND_RETRY_BUDGET_MS);
         await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
 
         expect(alertSpy).toHaveBeenCalledTimes(1);
+    });
+
+    /**
+     * The wall clock is not a stopwatch: it jumps when the system time is corrected or the machine
+     * wakes from sleep. Such a jump must not be counted as time the message waited for the frame.
+     */
+    it('does not count a jump of the system clock as waiting time', async () => {
+        vi.useFakeTimers();
+        const alertSpy = vi.fn();
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.stubGlobal('alert', alertSpy);
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        createIFrameApiService(ASSISTANT_ORIGIN).notifySilentAuthorizationResult(true);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+        vi.setSystemTime(Date.now() + SEND_RETRY_BUDGET_MS);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+
+        expect(alertSpy).not.toHaveBeenCalled();
+
+        frame = loadedFrame(postMessage);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+
+        expect(postMessage).toHaveBeenCalledTimes(1);
     });
 
     /**

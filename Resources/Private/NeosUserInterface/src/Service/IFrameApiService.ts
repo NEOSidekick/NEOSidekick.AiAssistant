@@ -141,7 +141,7 @@ export class IFrameApiService {
         });
     }
 
-    private sendMessage = (message: object, onSend?: Function, startedAt: number = Date.now()): void => {
+    private sendMessage = (message: object, onSend?: Function, startedAt: number = performance.now()): void => {
         const assistantFrame = this.getAssistantFrame();
         if (assistantFrame) {
             console.log('Sending message to frame', message);
@@ -151,10 +151,12 @@ export class IFrameApiService {
                 onSend();
             }
         } else {
-            // Elapsed wall-clock time, not counted hops: browsers throttle timers in background
-            // tabs to a second or more, which would stretch a hop-counted budget many times over.
+            // Elapsed time, not counted hops: browsers throttle timers in background tabs to a
+            // second or more, which would stretch a hop-counted budget many times over. It is read
+            // from the monotonic clock, because the wall clock jumps - a corrected system time or
+            // a machine waking from sleep would count as waiting, or take waiting time back.
             // The start must be carried into the retry, or the cap is never reached.
-            if (Date.now() - startedAt >= SEND_RETRY_BUDGET_MS) {
+            if (performance.now() - startedAt >= SEND_RETRY_BUDGET_MS) {
                 this.abandonMessage(message);
                 return;
             }

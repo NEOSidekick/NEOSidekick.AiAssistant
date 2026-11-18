@@ -271,6 +271,33 @@ describe('IFrameApiService', () => {
     });
 
     /**
+     * alert() blocks the window until the editor closes it: timers stand still while the clock
+     * runs on. Web context sent on its way before the alert has used up its budget by the time
+     * the alert is closed, and is dropped on its first retry although the frame is about to load.
+     */
+    it('starts the budget of the deferred web context only once the alert is closed', async () => {
+        vi.useFakeTimers();
+        const monotonicClock = createMonotonicClock();
+        vi.stubGlobal('alert', () => monotonicClock.skip(SEND_RETRY_BUDGET_MS));
+        const postMessage = vi.fn();
+        let frame: object | null = null;
+        vi.stubGlobal('document', {getElementById: () => frame});
+        vi.spyOn(console, 'log').mockImplementation(() => undefined);
+
+        const service = createIFrameApiService(ASSISTANT_ORIGIN);
+        service.callModule({moduleName: 'abandoned'});
+        service.updateWebContext(true, {page: 'deferred'});
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_BUDGET_MS + SEND_RETRY_INTERVAL_MS);
+
+        frame = loadedFrame(postMessage);
+        await vi.advanceTimersByTimeAsync(SEND_RETRY_INTERVAL_MS);
+
+        expect(postMessage.mock.calls.map(([message]) => message)).toMatchObject([
+            {eventName: 'page-changed', data: {page: 'deferred'}},
+        ]);
+    });
+
+    /**
      * A cancelled call keeps retrying in the background. When it runs out of budget it must not
      * release the latch of the call that replaced it, which would let a third call run alongside.
      */

@@ -201,12 +201,25 @@ export class ContentCanvasService {
     }
 
     private async navigateToDocumentNodePath(rawDocumentNodePath?: string): Promise<void> {
-        const documentNodePath = this.normalizeNodePath(
-            rawDocumentNodePath?.trim().replace(/^show-document-node:\/\//, ''),
-            DOCUMENT_NODE_PATH_PROTOCOL
-        );
+        const rawTarget = rawDocumentNodePath?.trim().replace(/^show-document-node:\/\//, '');
+        const documentNodePath = this.normalizeNodePath(rawTarget, DOCUMENT_NODE_PATH_PROTOCOL);
         if (!documentNodePath) {
             return;
+        }
+
+        // `<uuid>?language=en` opens the same page in other content dimensions; dimensions the
+        // link does not name keep their active value.
+        const requestedDimensions = this.parseRequestedDimensions(rawTarget);
+        if (requestedDimensions.length > 0 && UUID_REGEX.test(documentNodePath)) {
+            const targetDimensions = this.resolveTargetDimensions(requestedDimensions);
+            if (!targetDimensions) {
+                this.addFlashMessage('neosidekick-dimension-link', 'The link points to a language or dimension that is not configured.', 'error');
+                return;
+            }
+            if (!this.equalsActiveDimensions(targetDimensions)) {
+                await this.navigateToDocumentInDimensions(documentNodePath, targetDimensions, requestedDimensions);
+                return;
+            }
         }
 
         const navigationRequest = ++this.documentNavigationRequest;
@@ -259,6 +272,85 @@ export class ContentCanvasService {
         }
         this.store.dispatch(actions.UI.ContentCanvas.setSrc(targetNode.uri));
         this.store.dispatch(actions.CR.Nodes.setDocumentNode(targetNode.contextPath));
+    }
+
+    /**
+     * Resolves the page like the Neos dimension switcher does. Loading its URI into the canvas
+     * makes the guest frame switch the active dimensions, which reloads the document tree.
+     */
+    private async navigateToDocumentInDimensions(identifier: string, targetDimensions: Record<string, string[]>, requestedDimensions: Array<[string, string]>): Promise<void> {
+        const navigationRequest = ++this.documentNavigationRequest;
+        const state = this.store.getState();
+        const currentDocumentNodePath = state?.cr?.nodes?.documentNode;
+        let result: {nodeFound?: boolean; nodeFrontendUri?: string; nodeContextPath?: string} | undefined;
+        try {
+            result = await backend.get().endpoints.getSingleNode(identifier, {
+                dimensions: targetDimensions,
+                workspaceName: state?.cr?.workspaces?.personalWorkspace?.name
+            });
+        } catch {
+            // The Neos backend connector already reported the failed request.
+            return;
+        }
+
+        // A later click or manual page/dimension change supersedes this lookup.
+        if (navigationRequest !== this.documentNavigationRequest ||
+            this.store.getState()?.cr?.nodes?.documentNode !== currentDocumentNodePath) {
+            return;
+        }
+
+        if (!result?.nodeFound || !result.nodeFrontendUri) {
+            const labels = requestedDimensions.map(([dimensionName, value]) => this.presetLabel(dimensionName, value)).join(', ');
+            this.addFlashMessage('neosidekick-dimension-link', `This page does not exist in ${labels} yet.`, 'info');
+            return;
+        }
+
+        this.store.dispatch(actions.UI.ContentCanvas.setSrc(result.nodeFrontendUri));
+        if (result.nodeContextPath) {
+            this.store.dispatch(actions.UI.PageTree.focus(result.nodeContextPath));
+        }
+    }
+
+    private parseRequestedDimensions(rawTarget?: string): Array<[string, string]> {
+        const queryStart = rawTarget?.indexOf('?') ?? -1;
+        if (!rawTarget || queryStart === -1) {
+            return [];
+        }
+        const query = rawTarget.slice(queryStart + 1).split('#')[0];
+        return [...new URLSearchParams(query).entries()].filter(([name, value]) => name !== '' && value !== '');
+    }
+
+    /**
+     * Each named dimension takes the full fallback chain of the preset matching the link value
+     * by preset key, otherwise by its first value. Null when a name or value is not configured.
+     */
+    private resolveTargetDimensions(requestedDimensions: Array<[string, string]>): Record<string, string[]> | null {
+        const contentDimensions = this.store.getState()?.cr?.contentDimensions;
+        const targetDimensions: Record<string, string[]> = {...(contentDimensions?.active || {})};
+        for (const [dimensionName, value] of requestedDimensions) {
+            const values = this.findPreset(dimensionName, value)?.values;
+            if (!Array.isArray(values) || values.length === 0) {
+                return null;
+            }
+            targetDimensions[dimensionName] = values;
+        }
+        return targetDimensions;
+    }
+
+    private findPreset(dimensionName: string, value: string): {label?: string; values?: string[]} | undefined {
+        const presets = this.store.getState()?.cr?.contentDimensions?.byName?.[dimensionName]?.presets || {};
+        return presets[value] || Object.values(presets).find((preset: any) => preset?.values?.[0] === value) as any;
+    }
+
+    private presetLabel(dimensionName: string, value: string): string {
+        const label = this.findPreset(dimensionName, value)?.label;
+        return label ? this.globalRegistry.get('i18n').translate(label) : value;
+    }
+
+    private equalsActiveDimensions(targetDimensions: Record<string, string[]>): boolean {
+        const activeDimensions = this.store.getState()?.cr?.contentDimensions?.active || {};
+        return Object.keys(targetDimensions).every(dimensionName =>
+            JSON.stringify(targetDimensions[dimensionName]) === JSON.stringify(activeDimensions[dimensionName]));
     }
 
     private async openDocumentReview(documentNodeId?: string, documents?: string[]): Promise<void> {
@@ -375,6 +467,7 @@ export class ContentCanvasService {
         const state = this.store.getState();
         const currentDocumentNodePath = state?.cr?.nodes?.documentNode;
         const currentDocumentPathWithoutDimensions = currentDocumentNodePath?.split('@')[0];
+        const currentContext = currentDocumentNodePath?.split('@')[1];
         if (!currentDocumentPathWithoutDimensions) {
             return;
         }
@@ -385,7 +478,10 @@ export class ContentCanvasService {
         const targetNode = allNodes.find((node: any) => {
             const contextPath = node?.contextPath;
             const identifier = node?.identifier;
+            // After a dimension switch the store still holds the previous variants; focusing one
+            // of them would make the inspector edit another language than the canvas shows.
             const isWithinCurrentDocument = typeof contextPath === 'string' &&
+                (!currentContext || contextPath.split('@')[1] === currentContext) &&
                 contextPath.split('@')[0].startsWith(currentDocumentPathWithoutDimensions + '/');
             const contextPathMatches = typeof contextPath === 'string' && contextPath.split('@')[0] === normalizedContextPath;
             const identifierMatches = typeof identifier === 'string' && identifier === normalizedIdentifier;

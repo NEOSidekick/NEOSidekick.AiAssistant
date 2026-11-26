@@ -9,6 +9,7 @@ import {createContentService} from './Service/ContentService';
 import {createContentCanvasService} from "./Service/ContentCanvasService";
 import {createIFrameApiService} from "./Service/IFrameApiService";
 import {ContentTreeService} from "./Service/ContentTreeService";
+import {translateContentDimensionLabels} from "./Service/contentDimensions";
 import {reducer} from './actions';
 
 import initializeEditor from './manifest.editors';
@@ -97,7 +98,16 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
 
         if (eventName === 'get-content-tree') {
             const contentTree = contentTreeService.getDocumentContentTree();
-            iFrameApiService.respondWithContentTree(contentTree, contentTreeService.getSiteNodeName());
+            // Read in the same tick as the tree: the guest frame switches document and active
+            // dimensions together, so both describe the same page variant.
+            const contentDimensions = store.getState()?.cr?.contentDimensions;
+            const i18nRegistry = globalRegistry.get('i18n');
+            iFrameApiService.respondWithContentTree(
+                contentTree,
+                contentTreeService.getSiteNodeName(),
+                translateContentDimensionLabels(contentDimensions?.byName, (label: string) => i18nRegistry.translate(label)),
+                contentDimensions?.active ?? null
+            );
             return;
         }
 

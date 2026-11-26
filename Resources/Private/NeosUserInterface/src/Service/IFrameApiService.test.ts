@@ -443,35 +443,37 @@ describe('IFrameApiService', () => {
      * must always carry it - an empty string when the store holds no site node.
      */
     describe('respondWithContentTree', () => {
-        const sendAndCaptureMessage = (contentTree: unknown, siteNodeName: string) => {
+        const sendAndCaptureMessage = (contentTree: unknown, siteNodeName: string, ...dimensions: unknown[]) => {
             const postMessage = vi.fn();
             vi.stubGlobal('document', {getElementById: () => loadedFrame(postMessage)});
             vi.spyOn(console, 'log').mockImplementation(() => undefined);
 
-            createIFrameApiService(ASSISTANT_ORIGIN).respondWithContentTree(contentTree, siteNodeName);
+            createIFrameApiService(ASSISTANT_ORIGIN).respondWithContentTree(contentTree, siteNodeName, ...dimensions);
 
             return postMessage.mock.calls[0];
         };
 
-        it('sends the content tree together with the site node name', () => {
+        it('sends the content tree together with the site node name and the dimensions', () => {
             const contentTree = {generatedAt: '2026-09-06T00:00:00.000Z', rootNode: {id: 'abc'}};
+            const contentDimensions = {language: {label: 'Sprachen', defaultPreset: 'de', presets: {de: {label: 'Deutsch', values: ['de']}}}};
+            const activeDimensions = {language: ['de']};
 
-            expect(sendAndCaptureMessage(contentTree, 'academy')).toEqual([
+            expect(sendAndCaptureMessage(contentTree, 'academy', contentDimensions, activeDimensions)).toEqual([
                 {
                     version: '1.0',
                     eventName: 'content-tree-response',
-                    data: {contentTree, siteNodeName: 'academy'},
+                    data: {contentTree, siteNodeName: 'academy', contentDimensions, activeDimensions},
                 },
                 ASSISTANT_ORIGIN,
             ]);
         });
 
-        it('still sends the site node name key when it is unknown', () => {
+        it('still sends the site node name and dimension keys when they are unknown', () => {
             expect(sendAndCaptureMessage(null, '')).toEqual([
                 {
                     version: '1.0',
                     eventName: 'content-tree-response',
-                    data: {contentTree: null, siteNodeName: ''},
+                    data: {contentTree: null, siteNodeName: '', contentDimensions: null, activeDimensions: null},
                 },
                 ASSISTANT_ORIGIN,
             ]);

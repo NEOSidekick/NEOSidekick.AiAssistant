@@ -929,6 +929,33 @@ Every field named `positionRelativeToNodeId`, `nodeId` or `targetNodeId` accepts
 | `operation` | string | **Yes** | - | Must be `deleteNode` |
 | `nodeId` | string | **Yes** | - | UUID or reference of node to delete |
 
+#### createVariant
+
+Creates an existing page in the request's `dimensions`, from the request's `sourceDimensions` - what the Neos dimension switcher offers as "Create empty" and "Create and copy".
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `operation` | string | **Yes** | - | Must be `createVariant` |
+| `nodeId` | string | **Yes** | - | UUID of the page (document node) |
+| `copyContent` | boolean | **Yes** | - | `true` copies the page with all its content, `false` creates it empty (auto-created child nodes such as `main` are created either way) |
+
+The request body carries the source next to `dimensions`:
+
+```json
+{
+  "dimensions": {"language": ["fr"]},
+  "sourceDimensions": {"language": ["de"]},
+  "patches": [
+    {"operation": "createVariant", "nodeId": "uuid-of-the-page", "copyContent": true}
+  ]
+}
+```
+
+- Parent pages that do not exist in the target dimensions are created the same way; their ids are returned as `createdParentVariants`.
+- A page that is only shown through a dimension fallback gets its own variant. A page that already has its own variant is refused.
+- The variant keeps the node identifier, so it stays linked to the other language variants. Packages listening to Neos' `afterAdoptNode` signal (e.g. Sitegeist.LostInTranslation) run as they do for the Neos UI.
+- `createVariant` cannot be combined with other operations in one request: the new nodes do not exist while the request is validated. Create the variant first, then change it in a following request.
+
 ### Content Dimensions and Fallbacks
 
 Patches are applied in the request's `dimensions`. Each dimension takes the full fallback chain of a configured preset, e.g. `{"language":["de_CH","de"]}`; the first value is where content is written. Neos does not check the values against the configured presets, so the caller must send configured chains only.
@@ -937,7 +964,7 @@ In a preset with fallback values, the old content repository would carry some ch
 
 | Patch | Refused when | What to do instead |
 |-------|--------------|--------------------|
-| `updateNode`, `moveNode`, `deleteNode` | The node is only shown through a dimension fallback (it has no variant in the first value) | Create the variant in the Neos UI first |
+| `updateNode`, `moveNode`, `deleteNode` | The node is only shown through a dimension fallback (it has no variant in the first value) | Give the page its own variant with `createVariant`, or create the variant in the Neos UI |
 | `deleteNode` | The node has its own variant but also exists in a fallback value. Publishing would remove only the variant, and the fallback content would show again | Hide it with `updateNode` and `"_hidden": true` |
 | `moveNode` | A content node moves to another parent and contains fallback nodes. They would be moved in the dimension they are shown from | Move it in that dimension |
 

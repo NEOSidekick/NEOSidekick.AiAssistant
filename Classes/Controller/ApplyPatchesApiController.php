@@ -109,13 +109,15 @@ class ApplyPatchesApiController extends ActionController
 
         // Extract parameters with defaults
         $dimensions = $data['dimensions'] ?? [];
+        $sourceDimensions = $data['sourceDimensions'] ?? [];
         $patches = $data['patches'];
 
         // Apply the patches
         $result = $this->patchService->applyPatches(
             $patches,
             $workspace,
-            $dimensions
+            $dimensions,
+            $sourceDimensions
         );
 
         // Set appropriate HTTP status code
@@ -179,19 +181,21 @@ class ApplyPatchesApiController extends ActionController
             }
         }
 
-        // Validate dimensions if provided
-        if (isset($data['dimensions']) && !is_array($data['dimensions'])) {
-            $this->response->setStatusCode(400);
-            return json_encode([
-                'error' => 'Bad Request',
-                'message' => 'Field "dimensions" must be an object'
-            ], JSON_THROW_ON_ERROR);
-        }
-
-        // Validate each dimension value is an array (e.g. {"language": ["de"]}, not {"language": "de"})
-        // This prevents TypeError in NodePatchService::createContext() where reset() is called on values
-        if (isset($data['dimensions']) && is_array($data['dimensions'])) {
-            foreach ($data['dimensions'] as $dimensionName => $dimensionValues) {
+        // Validate dimensions if provided: an object whose values are arrays (e.g. {"language": ["de"]},
+        // not {"language": "de"}). This prevents TypeError in NodePatchService::createContext() where
+        // reset() is called on the values.
+        foreach (['dimensions', 'sourceDimensions'] as $field) {
+            if (!isset($data[$field])) {
+                continue;
+            }
+            if (!is_array($data[$field])) {
+                $this->response->setStatusCode(400);
+                return json_encode([
+                    'error' => 'Bad Request',
+                    'message' => sprintf('Field "%s" must be an object', $field)
+                ], JSON_THROW_ON_ERROR);
+            }
+            foreach ($data[$field] as $dimensionName => $dimensionValues) {
                 if (!is_array($dimensionValues)) {
                     $this->response->setStatusCode(400);
                     $example = is_scalar($dimensionValues) ? (string)$dimensionValues : 'value';

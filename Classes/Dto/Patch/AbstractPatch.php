@@ -35,7 +35,7 @@ abstract class AbstractPatch implements JsonSerializable
     /**
      * Create a patch from an associative array.
      *
-     * @param array{operation: string, ref?: string, nodeId?: string, positionRelativeToNodeId?: string, nodeType?: string, position?: string, targetNodeId?: string, properties?: array<string, mixed>} $data
+     * @param array{operation: string, ref?: string, nodeId?: string, positionRelativeToNodeId?: string, nodeType?: string, position?: string, targetNodeId?: string, properties?: array<string, mixed>, copyContent?: bool} $data
      * @return AbstractPatch
      * @throws \InvalidArgumentException
      */
@@ -50,6 +50,7 @@ abstract class AbstractPatch implements JsonSerializable
             'updateNode' => UpdateNodePatch::fromArray($data),
             'moveNode' => MoveNodePatch::fromArray($data),
             'deleteNode' => DeleteNodePatch::fromArray($data),
+            'createVariant' => CreateVariantPatch::fromArray($data),
             default => throw new \InvalidArgumentException(sprintf('Unknown operation "%s"', $data['operation'])),
         };
 

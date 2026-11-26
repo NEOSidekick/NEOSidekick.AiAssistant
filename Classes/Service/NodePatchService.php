@@ -15,9 +15,11 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Persistence\PersistenceManagerInterface;
 use Neos\Media\Domain\Model\Asset;
 use Neos\Media\Domain\Model\Image;
+use Neos\Neos\Domain\Service\SiteService;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\CreatedNodeInfo;
 use NEOSidekick\AiAssistant\Dto\Patch\CreateNodePatch;
+use NEOSidekick\AiAssistant\Dto\Patch\CreateVariantPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\DeleteNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\MoveNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\PatchError;
@@ -86,6 +88,11 @@ class NodePatchService
     private array $refNodes = [];
 
     /**
+     * The context createVariant patches of the current batch create their variants from.
+     */
+    private ?Context $sourceContext = null;
+
+    /**
      * Apply a batch of patches to the content repository.
      *
      * All patches are executed within a database transaction. If any patch
@@ -94,9 +101,10 @@ class NodePatchService
      * @param array<int, array<string, mixed>> $patchesData Raw patch data from API request
      * @param string $workspace The workspace name to apply patches in
      * @param array<string, array<int, string>> $dimensions Content dimensions
+     * @param array<string, array<int, string>> $sourceDimensions Content dimensions createVariant patches create their variants from
      * @return PatchResult
      */
-    public function applyPatches(array $patchesData, string $workspace, array $dimensions): PatchResult
+    public function applyPatches(array $patchesData, string $workspace, array $dimensions, array $sourceDimensions = []): PatchResult
     {
         // Parse patches from raw data
         $patches = [];
@@ -113,6 +121,7 @@ class NodePatchService
 
         // Create content context for the workspace and dimensions
         $context = $this->createContext($workspace, $dimensions);
+        $this->sourceContext = $sourceDimensions === [] ? null : $this->createContext($workspace, $sourceDimensions);
 
         // Pre-validate all patches before starting the transaction
         try {
@@ -249,6 +258,8 @@ class NodePatchService
                 'operation' => $patch->getOperation(),
                 'nodeId' => $nodeId,
             ];
+        } elseif ($patch instanceof CreateVariantPatch) {
+            return $this->executeCreateVariant($patch, $index, $context);
         }
 
         throw new PatchFailedException(
@@ -586,6 +597,76 @@ class NodePatchService
                 $e
             );
         }
+    }
+
+    /**
+     * Execute a createVariant patch: create the page in the requested dimensions from the source
+     * dimensions, like "Create empty" / "Create and copy" of the Neos dimension switcher.
+     *
+     * @return array{index: int, operation: string, nodeId: string, createdParentVariants?: array<int, string>}
+     * @throws PatchFailedException
+     */
+    private function executeCreateVariant(CreateVariantPatch $patch, int $index, Context $context): array
+    {
+        $nodeId = $patch->getNodeId();
+        $fail = static fn(string $message): PatchFailedException => new PatchFailedException($message, $index, 'createVariant', $nodeId);
+
+        if ($this->sourceContext === null) {
+            throw $fail('createVariant needs "sourceDimensions": the dimensions the page is created from.');
+        }
+
+        $sourceNode = $this->sourceContext->getNodeByIdentifier($nodeId);
+        if ($sourceNode === null) {
+            throw $fail(sprintf(
+                'Node "%s" does not exist in the source dimensions (%s). Pass "sourceDimensions" naming dimensions in which the page exists.',
+                $nodeId,
+                $this->describeDimensions($this->sourceContext->getDimensions())
+            ));
+        }
+        if (!$sourceNode->getNodeType()->isOfType('Neos.Neos:Document')) {
+            throw $fail(sprintf('Node "%s" is not a page. createVariant creates pages (document nodes) in another dimension.', $nodeId));
+        }
+
+        $existingNode = $context->getNodeByIdentifier($nodeId);
+        if ($existingNode !== null && !DimensionFallbackDetector::isDimensionFallback($existingNode)) {
+            throw $fail(sprintf('Node "%s" already has its own variant in the requested dimensions. Change it with updateNode.', $nodeId));
+        }
+
+        try {
+            // Same steps as Neos\Neos\Controller\Service\NodesController::adoptNodeAndParents()
+            $context->adoptNode($sourceNode, $patch->shouldCopyContent());
+            $createdParentVariants = [];
+            $parentNode = $sourceNode;
+            while ($parentNode = $parentNode->getParent()) {
+                $isVisibleInContext = $context->getNodeByIdentifier($parentNode->getIdentifier()) !== null;
+                if ($parentNode->getPath() !== '/' && $parentNode->getPath() !== SiteService::SITES_ROOT_PATH && !$isVisibleInContext) {
+                    $context->adoptNode($parentNode, $patch->shouldCopyContent());
+                    $createdParentVariants[] = $parentNode->getIdentifier();
+                }
+            }
+        } catch (\Exception $e) {
+            throw new PatchFailedException(sprintf('Failed to create the variant of "%s": %s', $nodeId, $e->getMessage()), $index, 'createVariant', $nodeId, $e);
+        }
+
+        return [
+            'index' => $index,
+            'operation' => $patch->getOperation(),
+            'nodeId' => $nodeId,
+            ...($createdParentVariants === [] ? [] : ['createdParentVariants' => $createdParentVariants]),
+        ];
+    }
+
+    /**
+     * @param array<string, array<int, string>> $dimensions
+     */
+    private function describeDimensions(array $dimensions): string
+    {
+        $parts = [];
+        foreach ($dimensions as $dimensionName => $values) {
+            $parts[] = $dimensionName . '=' . implode(',', $values);
+        }
+
+        return implode(' and ', $parts);
     }
 
     /**

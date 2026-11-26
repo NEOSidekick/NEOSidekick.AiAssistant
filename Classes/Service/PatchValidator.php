@@ -15,6 +15,7 @@ use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\CreateNodePatch;
+use NEOSidekick\AiAssistant\Dto\Patch\CreateVariantPatch;
 use NEOSidekick\AiAssistant\Dto\Patch\DeleteNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\MoveNodePatch;
 use NEOSidekick\AiAssistant\Dto\Patch\RefAnchor;
@@ -82,12 +83,43 @@ class PatchValidator
     {
         $this->pendingNodes = [];
         try {
+            $this->refuseCreateVariantMixedWithOtherOperations($patches);
             $this->refuseChangesAffectingOtherDimensions($patches, $context);
             foreach ($patches as $patchIndex => $patch) {
                 $this->validatePatch($patch, $patchIndex, $context);
             }
         } finally {
             $this->pendingNodes = [];
+        }
+    }
+
+    /**
+     * A new variant's nodes do not exist while the batch is validated, so patches changing them
+     * cannot be checked in the same batch.
+     *
+     * @param array<int, AbstractPatch> $patches
+     * @throws PatchFailedException
+     */
+    private function refuseCreateVariantMixedWithOtherOperations(array $patches): void
+    {
+        $createVariantIndex = null;
+        $otherIndex = null;
+        foreach ($patches as $patchIndex => $patch) {
+            if ($patch instanceof CreateVariantPatch) {
+                $createVariantIndex ??= $patchIndex;
+            } else {
+                $otherIndex ??= $patchIndex;
+            }
+        }
+
+        if ($createVariantIndex !== null && $otherIndex !== null) {
+            throw new PatchFailedException(
+                'createVariant cannot be combined with other operations in one batch. Create the variants first, '
+                . 'then read the new variant and change it in a following batch.',
+                $createVariantIndex,
+                'createVariant',
+                $patches[$createVariantIndex]->getNodeId()
+            );
         }
     }
 

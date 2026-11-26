@@ -116,6 +116,12 @@ class NodeTreeExtractor
             $result[$propertyName] = $this->serializePropertyValue($propertyValue);
         }
 
+        // `_hidden` is the node's visibility flag, not a stored property: report the flag itself
+        unset($result['_hidden']);
+        if ($node->isHidden()) {
+            $result['_hidden'] = true;
+        }
+
         return $result;
     }
 

@@ -6,6 +6,7 @@ use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Service\Context;
 use NEOSidekick\AiAssistant\Dto\Patch\PatchResult;
 use NEOSidekick\AiAssistant\Service\NodePatchService;
+use NEOSidekick\AiAssistant\Service\NodeTreeExtractor;
 use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
 
 /**
@@ -129,6 +130,9 @@ class NodePatchServiceDimensionFallbackTest extends FunctionalTestCase
         $this->assertTrue($result->isSuccess(), json_encode($result));
         $this->resetContentRepositoryState();
         $this->assertTrue($this->getUkNode('text-variant')->isHidden());
+        $tree = $this->objectManager->get(NodeTreeExtractor::class)->extract($this->ids['main'], $this->currentUserWorkspace, self::UK_DIMENSIONS);
+        $hiddenFlags = array_column(array_column($this->collectTreeNodes($tree['rootNode']), 'properties', 'id'), '_hidden');
+        $this->assertSame([true], $hiddenFlags, 'Reading the content back reports exactly the hidden element as hidden');
         $visitorUkContext = $this->contextFactory->create([
             'workspaceName' => $this->currentUserWorkspace,
             'dimensions' => self::UK_DIMENSIONS,
@@ -282,6 +286,24 @@ class NodePatchServiceDimensionFallbackTest extends FunctionalTestCase
             'targetDimensions' => ['language' => 'en_UK'],
             'invisibleContentShown' => true,
         ]);
+    }
+
+    /**
+     * @param array<string, mixed> $node
+     * @return array<int, array<string, mixed>> the node and all its descendants
+     */
+    private function collectTreeNodes(array $node): array
+    {
+        $nodes = [$node];
+        foreach ($node['children'] ?? [] as $child) {
+            foreach (isset($child['nodes']) ? $child['nodes'] : [$child] as $childNode) {
+                if (is_array($childNode) && isset($childNode['id'])) {
+                    $nodes = array_merge($nodes, $this->collectTreeNodes($childNode));
+                }
+            }
+        }
+
+        return $nodes;
     }
 
     private function resetContentRepositoryState(): void

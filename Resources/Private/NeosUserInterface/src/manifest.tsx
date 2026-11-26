@@ -98,8 +98,9 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
 
         if (eventName === 'get-content-tree') {
             const contentTree = contentTreeService.getDocumentContentTree();
-            // Read in the same tick as the tree: the guest frame switches document and active
-            // dimensions together, so both describe the same page variant.
+            // The active dimensions are only the assistant's fallback for when no tree could be
+            // built: while Neos switches the language they already name the new one, so the
+            // assistant prefers the dimensions of the tree's own documentContextPath.
             const contentDimensions = store.getState()?.cr?.contentDimensions;
             const i18nRegistry = globalRegistry.get('i18n');
             iFrameApiService.respondWithContentTree(

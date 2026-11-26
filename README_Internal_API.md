@@ -911,7 +911,7 @@ Every field named `positionRelativeToNodeId`, `nodeId` or `targetNodeId` accepts
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `updateNode` |
 | `nodeId` | string | **Yes** | - | UUID or reference of node to update |
-| `properties` | object | **Yes** | - | Properties to set |
+| `properties` | object | **Yes** | - | Properties to set. `"_hidden": true` or `false` hides or shows the node |
 
 #### moveNode
 
@@ -928,6 +928,20 @@ Every field named `positionRelativeToNodeId`, `nodeId` or `targetNodeId` accepts
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `deleteNode` |
 | `nodeId` | string | **Yes** | - | UUID or reference of node to delete |
+
+### Content Dimensions and Fallbacks
+
+Patches are applied in the request's `dimensions`. Each dimension takes the full fallback chain of a configured preset, e.g. `{"language":["de_CH","de"]}`; the first value is where content is written. Neos does not check the values against the configured presets, so the caller must send configured chains only.
+
+In a preset with fallback values, the old content repository would carry some changes into another dimension. The validation pre-pass refuses these before anything is written (`rollbackPerformed: false`):
+
+| Patch | Refused when | What to do instead |
+|-------|--------------|--------------------|
+| `updateNode`, `moveNode`, `deleteNode` | The node is only shown through a dimension fallback (it has no variant in the first value) | Create the variant in the Neos UI first |
+| `deleteNode` | The node has its own variant but also exists in a fallback value. Publishing would remove only the variant, and the fallback content would show again | Hide it with `updateNode` and `"_hidden": true` |
+| `moveNode` | A content node moves to another parent and contains fallback nodes. They would be moved in the dimension they are shown from | Move it in that dimension |
+
+One error names every refused node of the request with its reason, so the request can be resent without them. The error carries the index, operation and node id of the first refused patch.
 
 ### Batch-Local References
 

@@ -10,6 +10,7 @@ use Flowpack\NodeTemplates\Domain\NodeCreation\TransientNode;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\Context;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
@@ -59,6 +60,12 @@ class PatchValidator
     protected $propertyNormalizer;
 
     /**
+     * @Flow\Inject
+     * @var ContextFactoryInterface
+     */
+    protected $contextFactory;
+
+    /**
      * Nodes declared with `ref` by the createNode patches validated so far, keyed by ref.
      *
      * @var array<string, NodeDescriptor>
@@ -75,12 +82,180 @@ class PatchValidator
     {
         $this->pendingNodes = [];
         try {
+            $this->refuseChangesAffectingOtherDimensions($patches, $context);
             foreach ($patches as $patchIndex => $patch) {
                 $this->validatePatch($patch, $patchIndex, $context);
             }
         } finally {
             $this->pendingNodes = [];
         }
+    }
+
+    /**
+     * Refuse the batch when it changes stored nodes in a way the legacy content repository carries
+     * over into other dimension variants. Variant creation and changes to other languages must
+     * remain explicit editor decisions in the Neos UI:
+     *
+     * - A node the requested dimensions only show through a dimension fallback: an update or a
+     *   reorder materializes a variant, a move to another parent relocates the node of the dimension
+     *   it is shown from, and a delete leaves a removed shadow that publishing drops.
+     * - Deleting a node's own variant while the node also exists in a fallback value: publishing
+     *   removes only this variant, and the fallback content shows again.
+     * - Moving a content node to another parent while it contains fallback nodes: those children are
+     *   moved in the dimension they are shown from.
+     *
+     * All such nodes of the batch are named at once, so the batch can be resent without them.
+     *
+     * @param array<int, AbstractPatch> $patches
+     * @throws PatchFailedException
+     */
+    private function refuseChangesAffectingOtherDimensions(array $patches, Context $context): void
+    {
+        $refusals = [];
+        $firstRefusal = null;
+        foreach ($patches as $patchIndex => $patch) {
+            if (!$patch instanceof UpdateNodePatch && !$patch instanceof MoveNodePatch && !$patch instanceof DeleteNodePatch) {
+                continue;
+            }
+
+            // `$<ref>` anchors address nodes created by this batch, which exist only in these dimensions
+            $nodeId = $patch->getNodeId();
+            if (RefAnchor::isAnchor($nodeId) || isset($refusals[$nodeId])) {
+                continue;
+            }
+
+            $node = $context->getNodeByIdentifier($nodeId);
+            $reason = $node === null ? null : $this->describeEffectOnOtherDimensions($patch, $node, $context);
+            if ($reason === null) {
+                continue;
+            }
+
+            $refusals[$nodeId] = sprintf('"%s" %s', $nodeId, $reason);
+            $firstRefusal ??= [$patchIndex, $patch->getOperation(), $nodeId];
+        }
+
+        if ($firstRefusal === null) {
+            return;
+        }
+
+        throw new PatchFailedException(
+            sprintf(
+                'Not applied, because these changes would affect other content dimensions: %s. '
+                . 'Resend the batch without them.',
+                implode('; ', $refusals)
+            ),
+            $firstRefusal[0],
+            $firstRefusal[1],
+            $firstRefusal[2]
+        );
+    }
+
+    private function describeEffectOnOtherDimensions(AbstractPatch $patch, NodeInterface $node, Context $context): ?string
+    {
+        if (DimensionFallbackDetector::isDimensionFallback($node)) {
+            return sprintf(
+                'is a dimension fallback shown from %s and cannot be updated, moved or deleted here. To give it its own '
+                . 'content in these dimensions, the editor must create the variant in the Neos UI first',
+                $this->describeDimensionValues($node->getNodeData()->getDimensionValues())
+            );
+        }
+
+        if ($patch instanceof DeleteNodePatch) {
+            $fallbackDimensions = $this->findFallbackDimensionsContainingNode($node, $context);
+            if ($fallbackDimensions !== null) {
+                return sprintf(
+                    'also exists in %1$s: deleting it here would only remove this variant, and the %1$s content would '
+                    . 'show again after publishing. Hide it instead by setting "_hidden" to true',
+                    $fallbackDimensions
+                );
+            }
+        }
+
+        if ($patch instanceof MoveNodePatch && !$node->getNodeType()->isOfType('Neos.Neos:Document') && $this->movesToAnotherParent($patch, $node, $context)) {
+            $fallbackDescendant = $this->findDimensionFallbackDescendant($node);
+            if ($fallbackDescendant !== null) {
+                return sprintf(
+                    'contains dimension fallbacks such as "%s", shown from %s, which would be moved there as well',
+                    $fallbackDescendant->getIdentifier(),
+                    $this->describeDimensionValues($fallbackDescendant->getNodeData()->getDimensionValues())
+                );
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * The fallback values (e.g. `language=de` for the chain de_CH, de) in which the node exists as well.
+     */
+    private function findFallbackDimensionsContainingNode(NodeInterface $node, Context $context): ?string
+    {
+        foreach ($context->getDimensions() as $dimensionName => $values) {
+            if (count($values) < 2) {
+                continue;
+            }
+
+            $fallbackDimensions = array_merge($context->getDimensions(), [$dimensionName => array_slice($values, 1)]);
+            $fallbackContext = $this->contextFactory->create([
+                'workspaceName' => $context->getWorkspaceName(),
+                'dimensions' => $fallbackDimensions,
+                'targetDimensions' => array_map(static fn(array $chain): string => (string)reset($chain), $fallbackDimensions),
+                'invisibleContentShown' => true,
+                'removedContentShown' => false,
+                'inaccessibleContentShown' => true,
+            ]);
+            // A legacy variant that stores the whole chain is found here as well; deleting it removes it
+            // from every value of the chain, so only a different variant counts as fallback content.
+            $fallbackNode = $fallbackContext->getNodeByIdentifier($node->getIdentifier());
+            if ($fallbackNode !== null && $fallbackNode->getNodeData()->getDimensionsHash() !== $node->getNodeData()->getDimensionsHash()) {
+                return $this->describeDimensionValues($fallbackNode->getNodeData()->getDimensionValues());
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Same-parent reorders keep the children in place; only a new parent moves them.
+     */
+    private function movesToAnotherParent(MoveNodePatch $patch, NodeInterface $node, Context $context): bool
+    {
+        $targetNodeId = $patch->getTargetNodeId();
+        if (RefAnchor::isAnchor($targetNodeId)) {
+            return true;
+        }
+
+        $targetNode = $context->getNodeByIdentifier($targetNodeId);
+        $newParent = $patch->getPosition() === 'into' ? $targetNode : $targetNode?->getParent();
+
+        return $newParent === null || $newParent->getIdentifier() !== $node->getParent()?->getIdentifier();
+    }
+
+    private function findDimensionFallbackDescendant(NodeInterface $node): ?NodeInterface
+    {
+        $pendingNodes = $node->getChildNodes();
+        while ($pendingNodes !== []) {
+            $childNode = array_shift($pendingNodes);
+            if (DimensionFallbackDetector::isDimensionFallback($childNode)) {
+                return $childNode;
+            }
+            array_push($pendingNodes, ...$childNode->getChildNodes());
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, array<int, string>> $dimensionValues
+     */
+    private function describeDimensionValues(array $dimensionValues): string
+    {
+        $parts = [];
+        foreach ($dimensionValues as $dimensionName => $values) {
+            $parts[] = $dimensionName . '=' . implode(',', $values);
+        }
+
+        return implode(' and ', $parts);
     }
 
     /**
@@ -241,8 +416,17 @@ class PatchValidator
         // Validate node exists
         $node = $this->resolveAnchor($patch->getNodeId(), 'nodeId', $patchIndex, 'updateNode', $context);
 
+        // `_hidden` is the node's visibility flag, not a property declared in the NodeType
+        $properties = $patch->getProperties();
+        if (array_key_exists('_hidden', $properties)) {
+            if (!is_bool($properties['_hidden'])) {
+                throw new PatchFailedException('Property "_hidden" must be true or false.', $patchIndex, 'updateNode', $patch->getNodeId());
+            }
+            unset($properties['_hidden']);
+        }
+
         // Validate properties using PropertiesProcessor
-        $this->validateProperties($patch->getProperties(), $node->getNodeType(), $patchIndex, 'updateNode', $context);
+        $this->validateProperties($properties, $node->getNodeType(), $patchIndex, 'updateNode', $context);
     }
 
     /**

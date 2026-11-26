@@ -500,9 +500,16 @@ class NodePatchService
                 );
             }
 
+            // `_hidden` is the node's visibility flag, not a property declared in the NodeType
+            $properties = $patch->getProperties();
+            if (array_key_exists('_hidden', $properties)) {
+                $node->setHidden((bool)$properties['_hidden']);
+                unset($properties['_hidden']);
+            }
+
             // Normalize and update properties
             // This converts asset objects (with 'identifier' key) to plain identifier strings
-            $normalizedProperties = $this->propertyNormalizer->normalizeProperties($patch->getProperties(), $node->getNodeType());
+            $normalizedProperties = $this->propertyNormalizer->normalizeProperties($properties, $node->getNodeType());
             foreach ($normalizedProperties as $propertyName => $propertyValue) {
                 $node->setProperty($propertyName, $propertyValue);
             }

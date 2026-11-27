@@ -1,0 +1,379 @@
+<?php
+
+namespace NEOSidekick\AiAssistant\Tests\Functional\Service;
+
+use Neos\ContentRepository\Domain\Model\NodeInterface;
+use Neos\ContentRepository\Domain\Service\Context;
+use NEOSidekick\AiAssistant\Dto\Patch\PatchResult;
+use NEOSidekick\AiAssistant\Service\NodePatchService;
+use NEOSidekick\AiAssistant\Service\NodeTreeExtractor;
+use NEOSidekick\AiAssistant\Tests\Functional\FunctionalTestCase;
+
+/**
+ * Patches applied in a preset with a fallback chain (en_UK -> en) must not reach into the fallback
+ * dimension: the old CR materializes variants on update/reorder/delete of fallback nodes, moves
+ * fallback children in their origin dimension, and lets a deleted variant's fallback content show
+ * again after publishing. The batch is refused instead, naming every such node at once.
+ *
+ * Content of the page, as seen in en_UK:
+ *
+ * - `text-fallback`      exists in en only (shown through the fallback)
+ * - `text-variant`       has its own en_UK variant next to the en node
+ * - `text-uk-only`       exists in en_UK only
+ * - `container-variant`  has its own en_UK variant; its child `text-inner` exists in en only
+ */
+class NodePatchServiceDimensionFallbackTest extends FunctionalTestCase
+{
+    private const PAGE_PATH = '/sites/example/patch-page';
+    private const MAIN_PATH = self::PAGE_PATH . '/main';
+    private const TEXT_NODE_TYPE = 'NEOSidekick.AiAssistant.Testing:Text';
+    private const CONTAINER_NODE_TYPE = 'NEOSidekick.AiAssistant.Testing:Container';
+    private const UK_DIMENSIONS = ['language' => ['en_UK', 'en']];
+
+    protected array $dimensions = ['en', 'en_UK'];
+    protected array $siteHosts = ['example.com'];
+
+    /**
+     * @var array<string, string> node identifiers by node name
+     */
+    private array $ids = [];
+
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $englishContext = $this->contextFactory->create([
+            'workspaceName' => 'live',
+            'dimensions' => ['language' => ['en']],
+        ]);
+        $ukContext = $this->createUkContext('live');
+        $englishSiteNode = $this->rootNode->getNode('/sites/example')->createVariantForContext($englishContext);
+
+        $restrictedPageType = $this->nodeTypeManager->getNodeType('NEOSidekick.AiAssistant.Testing:RestrictedPage');
+        $textType = $this->nodeTypeManager->getNodeType(self::TEXT_NODE_TYPE);
+        $containerType = $this->nodeTypeManager->getNodeType(self::CONTAINER_NODE_TYPE);
+
+        $page = $englishSiteNode->createNode('patch-page', $restrictedPageType);
+        $otherPage = $englishSiteNode->createNode('other-page', $restrictedPageType);
+        $main = $page->getNode('main');
+        $otherMain = $otherPage->getNode('main');
+
+        $textFallback = $main->createNode('text-fallback', $textType);
+        $textFallback->setProperty('text', 'english only');
+        $textVariant = $main->createNode('text-variant', $textType);
+        $textVariant->setProperty('text', 'english');
+        $containerVariant = $main->createNode('container-variant', $containerType);
+        $textInner = $containerVariant->createNode('text-inner', $textType);
+        $textInner->setProperty('text', 'english inner');
+
+        $textVariant->createVariantForContext($ukContext)->setProperty('text', 'british');
+        $containerVariant->createVariantForContext($ukContext);
+        $textUkOnly = $ukContext->getNode(self::MAIN_PATH)->createNode('text-uk-only', $textType);
+
+        $this->ids = [
+            'page' => $page->getIdentifier(),
+            'other-page' => $otherPage->getIdentifier(),
+            'main' => $main->getIdentifier(),
+            'other-main' => $otherMain->getIdentifier(),
+            'text-fallback' => $textFallback->getIdentifier(),
+            'text-variant' => $textVariant->getIdentifier(),
+            'text-uk-only' => $textUkOnly->getIdentifier(),
+            'container-variant' => $containerVariant->getIdentifier(),
+            'text-inner' => $textInner->getIdentifier(),
+        ];
+
+        $this->saveNodesAndTearDownRootNodeAndRepository();
+        $this->setUpRootNodeAndRepository();
+    }
+
+    /**
+     * @test
+     */
+    public function fallbackNodesCannotBeUpdatedMovedOrDeletedAndAreNamedTogether(): void
+    {
+        $result = $this->applyPatches([
+            ['operation' => 'updateNode', 'nodeId' => $this->ids['text-variant'], 'properties' => ['text' => 'changed']],
+            ['operation' => 'updateNode', 'nodeId' => $this->ids['text-fallback'], 'properties' => ['text' => 'changed']],
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['text-fallback'], 'targetNodeId' => $this->ids['text-variant'], 'position' => 'after'],
+            ['operation' => 'deleteNode', 'nodeId' => $this->ids['text-inner']],
+        ]);
+
+        $this->assertFalse($result->isSuccess(), json_encode($result));
+        $this->assertFalse($result->isRollbackPerformed(), 'Refused before anything is written');
+        $this->assertSame(1, $result->getError()->getPatchIndex());
+        $message = $result->getError()->getMessage();
+        $this->assertStringContainsString(sprintf('"%s" is a dimension fallback shown from language=en', $this->ids['text-fallback']), $message);
+        $this->assertStringContainsString(sprintf('"%s" is a dimension fallback shown from language=en', $this->ids['text-inner']), $message);
+        $this->assertStringNotContainsString($this->ids['text-variant'], $message);
+
+        $this->resetContentRepositoryState();
+        $this->assertSame('british', $this->getUkNode('text-variant')->getProperty('text'));
+        $this->assertSame(['language' => ['en']], $this->getUkNode('text-fallback')->getNodeData()->getDimensionValues(), 'No variant was materialized');
+    }
+
+    /**
+     * @test
+     */
+    public function deletingAVariantThatAlsoExistsInTheFallbackIsRefusedAndHidingItWorks(): void
+    {
+        $result = $this->applyPatches([
+            ['operation' => 'deleteNode', 'nodeId' => $this->ids['text-variant']],
+        ]);
+
+        $this->assertFalse($result->isSuccess(), json_encode($result));
+        $this->assertStringContainsString(
+            sprintf('"%s" also exists in language=en: deleting it here would only remove this variant', $this->ids['text-variant']),
+            $result->getError()->getMessage()
+        );
+        $this->assertStringContainsString('Hide it instead by setting "_hidden" to true', $result->getError()->getMessage());
+
+        $result = $this->applyPatches([
+            ['operation' => 'updateNode', 'nodeId' => $this->ids['text-variant'], 'properties' => ['_hidden' => true]],
+        ]);
+
+        $this->assertTrue($result->isSuccess(), json_encode($result));
+        $this->resetContentRepositoryState();
+        $this->assertTrue($this->getUkNode('text-variant')->isHidden());
+        $tree = $this->objectManager->get(NodeTreeExtractor::class)->extract($this->ids['main'], $this->currentUserWorkspace, self::UK_DIMENSIONS);
+        $hiddenFlags = array_column(array_column($this->collectTreeNodes($tree['rootNode']), 'properties', 'id'), '_hidden');
+        $this->assertSame([true], $hiddenFlags, 'Reading the content back reports exactly the hidden element as hidden');
+        $visitorUkContext = $this->contextFactory->create([
+            'workspaceName' => $this->currentUserWorkspace,
+            'dimensions' => self::UK_DIMENSIONS,
+            'targetDimensions' => ['language' => 'en_UK'],
+            'invisibleContentShown' => false,
+        ]);
+        $this->assertNull(
+            $visitorUkContext->getNodeByIdentifier($this->ids['text-variant']),
+            'The hidden variant does not let the English content show through'
+        );
+        $englishNode = $this->contextFactory->create([
+            'workspaceName' => $this->currentUserWorkspace,
+            'dimensions' => ['language' => ['en']],
+        ])->getNodeByIdentifier($this->ids['text-variant']);
+        $this->assertNotNull($englishNode, 'The English node stays visible');
+        $this->assertSame('english', $englishNode->getProperty('text'));
+    }
+
+    /**
+     * @test
+     */
+    public function hidingRequiresABooleanValue(): void
+    {
+        $result = $this->applyPatches([
+            ['operation' => 'updateNode', 'nodeId' => $this->ids['text-variant'], 'properties' => ['_hidden' => 'yes']],
+        ]);
+
+        $this->assertFalse($result->isSuccess(), json_encode($result));
+        $this->assertSame('Property "_hidden" must be true or false.', $result->getError()->getMessage());
+    }
+
+    /**
+     * @test
+     */
+    public function aNodeThatExistsOnlyInTheRequestedDimensionsCanBeDeleted(): void
+    {
+        $result = $this->applyPatches([
+            ['operation' => 'deleteNode', 'nodeId' => $this->ids['text-uk-only']],
+        ]);
+
+        $this->assertTrue($result->isSuccess(), json_encode($result));
+        $this->resetContentRepositoryState();
+        $this->assertNull($this->createUkContext($this->currentUserWorkspace)->getNodeByIdentifier($this->ids['text-uk-only']));
+    }
+
+    /**
+     * @test
+     */
+    public function movingAContainerWithFallbackChildrenToAnotherParentIsRefused(): void
+    {
+        $result = $this->applyPatches([
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['container-variant'], 'targetNodeId' => $this->ids['other-main'], 'position' => 'into'],
+        ]);
+
+        $this->assertFalse($result->isSuccess(), json_encode($result));
+        $this->assertStringContainsString(
+            sprintf('"%s" contains dimension fallbacks such as "%s", shown from language=en', $this->ids['container-variant'], $this->ids['text-inner']),
+            $result->getError()->getMessage()
+        );
+    }
+
+    /**
+     * @test
+     */
+    public function reorderingAContainerWithFallbackChildrenWithinItsParentLeavesTheFallbackContentInPlace(): void
+    {
+        $result = $this->applyPatches([
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['container-variant'], 'targetNodeId' => $this->ids['text-variant'], 'position' => 'before'],
+        ]);
+
+        $this->assertTrue($result->isSuccess(), json_encode($result));
+        $this->resetContentRepositoryState();
+        $textInner = $this->getUkNode('text-inner');
+        $this->assertSame(self::MAIN_PATH . '/container-variant/text-inner', $textInner->getPath());
+        $this->assertSame(['language' => ['en']], $textInner->getNodeData()->getDimensionValues());
+    }
+
+    /**
+     * The anchor's parent is only known once the earlier patches of the batch have run.
+     *
+     * @test
+     */
+    public function aMoveCannotPassTheGuardBehindAnEarlierMoveOfItsAnchor(): void
+    {
+        $result = $this->applyPatches([
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['text-variant'], 'targetNodeId' => $this->ids['other-main'], 'position' => 'into'],
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['container-variant'], 'targetNodeId' => $this->ids['text-variant'], 'position' => 'after'],
+        ]);
+
+        $this->assertFalse($result->isSuccess(), json_encode($result));
+        $this->assertTrue($result->isRollbackPerformed());
+        $this->assertSame(1, $result->getError()->getPatchIndex());
+        $this->assertStringContainsString(
+            sprintf('"%s" contains dimension fallbacks such as "%s", shown from language=en', $this->ids['container-variant'], $this->ids['text-inner']),
+            $result->getError()->getMessage()
+        );
+
+        $this->resetContentRepositoryState();
+        $this->assertSame(self::MAIN_PATH . '/text-variant', $this->getUkNode('text-variant')->getPath(), 'The earlier move was rolled back');
+        $this->assertSame(self::MAIN_PATH . '/container-variant/text-inner', $this->getUkNode('text-inner')->getPath());
+    }
+
+    /**
+     * Not refused: a page has one place in the tree for all its dimension variants, in the Neos UI
+     * as well as here.
+     *
+     * @test
+     */
+    public function movingAPageMovesItInEveryDimension(): void
+    {
+        $variant = $this->applyPatches(
+            [['operation' => 'createVariant', 'nodeId' => $this->ids['other-page'], 'copyContent' => false]],
+            ['language' => ['en']]
+        );
+        $this->assertTrue($variant->isSuccess(), json_encode($variant));
+        // Neos refuses a page move that would leave a variant without a parent, so the new parent
+        // has to exist in every language - German included.
+        $this->contextFactory->create(['workspaceName' => 'live', 'dimensions' => ['language' => ['en']]])
+            ->getNodeByIdentifier($this->ids['page'])
+            ->createVariantForContext($this->contextFactory->create(['workspaceName' => 'live', 'dimensions' => ['language' => ['de']]]));
+        $this->resetContentRepositoryState();
+
+        $result = $this->applyPatches([
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['other-page'], 'targetNodeId' => $this->ids['page'], 'position' => 'into'],
+        ]);
+
+        $this->assertTrue($result->isSuccess(), json_encode($result));
+        $this->resetContentRepositoryState();
+        $englishPage = $this->contextFactory->create([
+            'workspaceName' => $this->currentUserWorkspace,
+            'dimensions' => ['language' => ['en']],
+        ])->getNodeByIdentifier($this->ids['other-page']);
+        $this->assertSame(self::PAGE_PATH . '/other-page', $englishPage->getPath());
+        $this->assertSame(self::PAGE_PATH . '/other-page', $this->getUkNode('other-page')->getPath());
+    }
+
+    /**
+     * Why deleting such a variant is refused: publishing removes only the variant.
+     *
+     * @test
+     */
+    public function withoutTheGuardTheFallbackContentShowsAgainOnceADeletedVariantIsPublished(): void
+    {
+        $this->getUkNode('text-variant')->remove();
+        $this->resetContentRepositoryState();
+        $this->assertNull($this->getUkNode('text-variant'), 'Gone in the workspace');
+
+        $removedVariant = $this->contextFactory->create([
+            'workspaceName' => $this->currentUserWorkspace,
+            'dimensions' => self::UK_DIMENSIONS,
+            'targetDimensions' => ['language' => 'en_UK'],
+            'removedContentShown' => true,
+        ])->getNodeByIdentifier($this->ids['text-variant']);
+        $removedVariant->getWorkspace()->publishNode($removedVariant, $this->liveWorkspace);
+        $this->resetContentRepositoryState();
+
+        $nodeAfterPublishing = $this->createUkContext('live')->getNodeByIdentifier($this->ids['text-variant']);
+        $this->assertNotNull($nodeAfterPublishing);
+        $this->assertSame('english', $nodeAfterPublishing->getProperty('text'));
+    }
+
+    /**
+     * Why such a move is refused: the fallback children are moved in the dimension they come from.
+     *
+     * @test
+     */
+    public function withoutTheGuardMovingAContainerAlsoMovesItsFallbackChildrenInTheirOwnDimension(): void
+    {
+        $this->getUkNode('container-variant')->moveInto($this->getUkNode('other-main'));
+        $this->resetContentRepositoryState();
+
+        $englishContext = $this->contextFactory->create([
+            'workspaceName' => $this->currentUserWorkspace,
+            'dimensions' => ['language' => ['en']],
+        ]);
+        $this->assertSame(
+            '/sites/example/other-page/main/container-variant/text-inner',
+            $englishContext->getNodeByIdentifier($this->ids['text-inner'])->getPath(),
+            'The English text left its page'
+        );
+        $this->assertSame(
+            self::MAIN_PATH . '/container-variant',
+            $englishContext->getNodeByIdentifier($this->ids['container-variant'])->getPath(),
+            'while its English container stayed'
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $patches
+     * @param array<string, array<int, string>> $sourceDimensions
+     */
+    private function applyPatches(array $patches, array $sourceDimensions = []): PatchResult
+    {
+        return $this->objectManager->get(NodePatchService::class)->applyPatches(
+            $patches,
+            $this->currentUserWorkspace,
+            self::UK_DIMENSIONS,
+            $sourceDimensions
+        );
+    }
+
+    private function getUkNode(string $nodeName): ?NodeInterface
+    {
+        return $this->createUkContext($this->currentUserWorkspace)->getNodeByIdentifier($this->ids[$nodeName]);
+    }
+
+    private function createUkContext(string $workspaceName): Context
+    {
+        return $this->contextFactory->create([
+            'workspaceName' => $workspaceName,
+            'dimensions' => self::UK_DIMENSIONS,
+            'targetDimensions' => ['language' => 'en_UK'],
+            'invisibleContentShown' => true,
+        ]);
+    }
+
+    /**
+     * @param array<string, mixed> $node
+     * @return array<int, array<string, mixed>> the node and all its descendants
+     */
+    private function collectTreeNodes(array $node): array
+    {
+        $nodes = [$node];
+        foreach ($node['children'] ?? [] as $child) {
+            foreach (isset($child['nodes']) ? $child['nodes'] : [$child] as $childNode) {
+                if (is_array($childNode) && isset($childNode['id'])) {
+                    $nodes = array_merge($nodes, $this->collectTreeNodes($childNode));
+                }
+            }
+        }
+
+        return $nodes;
+    }
+
+    private function resetContentRepositoryState(): void
+    {
+        $this->saveNodesAndTearDownRootNodeAndRepository();
+        $this->setUpRootNodeAndRepository();
+    }
+}

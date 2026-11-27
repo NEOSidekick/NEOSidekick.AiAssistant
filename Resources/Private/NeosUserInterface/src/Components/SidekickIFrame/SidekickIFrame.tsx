@@ -47,6 +47,11 @@ export default class SidekickIFrame extends PureComponent<SidekickIFrameProps, S
 
     private unmounted = false;
 
+    // Built once: a changed src would reload the chat - and drop the open conversation - every
+    // time the editor switches the language. The assistant reads the live dimensions from the
+    // page context messages instead.
+    private src: string | null = null;
+
     componentDidMount() {
         // Fetch a fresh embed token before the first iframe load, so the initial bootstrap
         // can release the authBindingToken in one round trip. fetchEmbedToken never rejects
@@ -54,9 +59,8 @@ export default class SidekickIFrame extends PureComponent<SidekickIFrameProps, S
         // blocked on a failure: settling with null just builds the src without the param,
         // and the assistant then obtains a token on demand through the postMessage channel.
         // This bodyless first-load fetch never pushes the signing key; only the handshake
-        // replies do. The token frozen into the src is single-use by design - the SPA
-        // re-reads this src on language switches, so it must never be treated as fresh
-        // after the first load.
+        // replies do. The token frozen into the src is single-use by design - it must never
+        // be treated as fresh after the first load.
         fetchEmbedToken().then((embedToken) => {
             if (!this.unmounted) {
                 this.setState({embedToken, embedTokenSettled: true});
@@ -114,11 +118,15 @@ export default class SidekickIFrame extends PureComponent<SidekickIFrameProps, S
             );
         }
 
+        if (this.src === null) {
+            this.src = this.getUri().toString();
+        }
+
         return (
             <iframe
                 id="neosidekickAssistant"
                 className={className}
-                src={this.getUri().toString()}
+                src={this.src}
                 allow="clipboard-write"
                 onLoad={(e) => (e.target as HTMLElement).dataset.loaded = "true"}
             />

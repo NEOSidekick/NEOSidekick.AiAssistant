@@ -911,7 +911,7 @@ Every field named `positionRelativeToNodeId`, `nodeId` or `targetNodeId` accepts
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `updateNode` |
 | `nodeId` | string | **Yes** | - | UUID or reference of node to update |
-| `properties` | object | **Yes** | - | Properties to set |
+| `properties` | object | **Yes** | - | Properties to set. `"_hidden": true` or `false` hides or shows the node |
 
 #### moveNode
 
@@ -928,6 +928,51 @@ Every field named `positionRelativeToNodeId`, `nodeId` or `targetNodeId` accepts
 |-------|------|----------|---------|-------------|
 | `operation` | string | **Yes** | - | Must be `deleteNode` |
 | `nodeId` | string | **Yes** | - | UUID or reference of node to delete |
+
+#### createVariant
+
+Creates an existing page in the request's `dimensions`, from the request's `sourceDimensions` - what the Neos dimension switcher offers as "Create empty" and "Create and copy".
+
+| Field | Type | Required | Default | Description |
+|-------|------|----------|---------|-------------|
+| `operation` | string | **Yes** | - | Must be `createVariant` |
+| `nodeId` | string | **Yes** | - | UUID of the page (document node) |
+| `copyContent` | boolean | **Yes** | - | `true` copies the page with all its content, `false` creates it empty (auto-created child nodes such as `main` are created either way) |
+
+The request body carries the source next to `dimensions`:
+
+```json
+{
+  "dimensions": {"language": ["fr"]},
+  "sourceDimensions": {"language": ["de"]},
+  "patches": [
+    {"operation": "createVariant", "nodeId": "uuid-of-the-page", "copyContent": true}
+  ]
+}
+```
+
+- Parent pages that do not exist in the target dimensions are created the same way; their ids are returned as `createdParentVariants`.
+- A page that is only shown through a dimension fallback gets its own variant. A page that already has its own variant is refused.
+- The variant keeps the node identifier, so it stays linked to the other language variants. Packages listening to Neos' `afterAdoptNode` signal (e.g. Sitegeist.LostInTranslation) run as they do for the Neos UI.
+- `createVariant` cannot be combined with other operations in one request: the new nodes do not exist while the request is validated. Create the variant first, then change it in a following request.
+
+### Content Dimensions and Fallbacks
+
+Patches are applied in the request's `dimensions`. Each dimension takes the full fallback chain of a configured preset, e.g. `{"language":["de_CH","de"]}`; the first value is where content is written. Neos does not check the values against the configured presets, so the caller must send configured chains only.
+
+In a preset with fallback values, the old content repository would carry some changes into another dimension. The validation pre-pass refuses these before anything is written (`rollbackPerformed: false`):
+
+| Patch | Refused when | What to do instead |
+|-------|--------------|--------------------|
+| `updateNode`, `moveNode`, `deleteNode` | The node is only shown through a dimension fallback (it has no variant in the first value) | Give the page its own variant with `createVariant`, or create the variant in the Neos UI |
+| `deleteNode` | The node has its own variant but also exists in a fallback value. Publishing would remove only the variant, and the fallback content would show again | Hide it with `updateNode` and `"_hidden": true` |
+| `moveNode` | A content node moves to another parent and contains fallback nodes. They would be moved in the dimension they are shown from | Move it in that dimension |
+
+One error names every refused node of the request with its reason, so the request can be resent without them. The error carries the index, operation and node id of the first refused patch.
+
+The move check is repeated when the patch is executed, because an earlier patch of the request may have moved the anchor; a refusal at that point rolls the request back (`rollbackPerformed: true`).
+
+**Moving a page is not refused.** Neos keeps one place in the tree for all dimension variants of a page (document node): `moveNode` on a page moves it in every dimension, exactly as when an editor moves the page in the Neos UI. Neos itself refuses the move if a variant would be left without a parent page.
 
 ### Batch-Local References
 

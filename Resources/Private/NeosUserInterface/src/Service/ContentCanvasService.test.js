@@ -16,19 +16,40 @@ const targetNode = {
     uri: '/neos/preview?node=tunnel'
 };
 
-function setup({cachedNodes = [], response = [targetNode], failure = null} = {}) {
+const contentDimensions = {
+    active: {language: ['es']},
+    byName: {language: {presets: {
+        es: {label: 'Español', values: ['es']},
+        en: {label: 'English', values: ['en']},
+        swiss: {label: 'Schweiz', values: ['de_CH', 'de']}
+    }}}
+};
+
+function setup({cachedNodes = [], response = [targetNode], failure = null, singleNode = null, singleNodeFailure = null} = {}) {
     const dispatched = [];
     const queries = [];
+    const singleNodeQueries = [];
     const action = type => (...args) => ({type, args});
     const actions = {
-        UI: {ContentCanvas: {setSrc: action('setSrc')}, FlashMessages: {add: action('flash')}},
-        CR: {Nodes: {setDocumentNode: action('setDocumentNode'), merge: action('merge')}}
+        UI: {
+            ContentCanvas: {setSrc: action('setSrc'), requestScrollIntoView: action('scrollIntoView')},
+            FlashMessages: {add: action('flash')},
+            PageTree: {focus: action('pageTreeFocus')}
+        },
+        CR: {Nodes: {setDocumentNode: action('setDocumentNode'), merge: action('merge'), focus: action('focus')}}
     };
-    const backend = {get: () => ({q: context => ({find: selector => ({get: async () => {
-        queries.push({context, selector});
-        if (failure) throw failure;
-        return response;
-    }})})})};
+    const backend = {get: () => ({
+        q: context => ({find: selector => ({get: async () => {
+            queries.push({context, selector});
+            if (failure) throw failure;
+            return response;
+        }})}),
+        endpoints: {getSingleNode: async (identifier, options) => {
+            singleNodeQueries.push({identifier, options});
+            if (singleNodeFailure) throw singleNodeFailure;
+            return singleNode;
+        }}
+    })};
     const module = {exports: {}};
     new Function('require', 'module', 'exports', serviceCode)(name => {
         if (name === '@neos-project/neos-ui-redux-store') return {actions};
@@ -39,22 +60,29 @@ function setup({cachedNodes = [], response = [targetNode], failure = null} = {})
     let listener;
     let currentDocumentNode = documentNode;
     new module.exports.ContentCanvasService(
-        {get: () => ({translate: (_key, fallback) => fallback})},
+        {get: () => ({translate: (key, fallback) => fallback ?? key})},
         {
-            getState: () => ({cr: {nodes: {
-                documentNode: currentDocumentNode,
-                byContextPath: Object.fromEntries(cachedNodes.map(node => [node.contextPath, node]))
-            }}}),
+            getState: () => ({cr: {
+                nodes: {
+                    documentNode: currentDocumentNode,
+                    byContextPath: Object.fromEntries(cachedNodes.map(node => [node.contextPath, node]))
+                },
+                contentDimensions,
+                workspaces: {personalWorkspace: {name: 'user-editor'}}
+            }}),
             dispatch: event => dispatched.push(event)
         },
         {listenToMessages: callback => {listener = callback;}}
     );
     return {
-        dispatched, queries,
+        dispatched, queries, singleNodeQueries,
         changeDocument: path => {currentDocumentNode = path;},
         async click(data = {documentNodeId: identifier, href: `show-document-node://${identifier}`}) {
             listener({data: {version: '1.0', eventName: 'show-document-node', data}});
             await new Promise(resolve => setImmediate(resolve));
+        },
+        focusContent(contentNodeId) {
+            listener({data: {version: '1.0', eventName: 'show-content-node', data: {contentNodeId}}});
         }
     };
 }
@@ -152,3 +180,75 @@ for (const [label, options] of [
         assert.equal(errors[0].args[1], `An error occurred while asking NEOSidekick: Could not resolve document node path: ${identifier}`);
     });
 }
+
+const englishNode = {
+    nodeFound: true,
+    nodeFrontendUri: '/neos/preview?node=tunnel-en',
+    nodeContextPath: '/sites/example/references/tunnel@user-editor;language=en'
+};
+
+test('opens the page in another language with the preset chain in the personal workspace', async () => {
+    const fixture = setup({singleNode: englishNode});
+    await fixture.click({documentNodeId: `${identifier}?language=en`});
+    assert.deepEqual(fixture.singleNodeQueries, [
+        {identifier, options: {dimensions: {language: ['en']}, workspaceName: 'user-editor'}}
+    ]);
+    assert.deepEqual(fixture.dispatched, [
+        {type: 'setSrc', args: [englishNode.nodeFrontendUri]},
+        {type: 'pageTreeFocus', args: [englishNode.nodeContextPath]}
+    ]);
+    assert.deepEqual(fixture.queries, []);
+});
+
+test('matches a dimension value when it is not a preset key', async () => {
+    const fixture = setup({singleNode: englishNode});
+    await fixture.click({documentNodeId: `${identifier}?language=de_CH`});
+    assert.deepEqual(fixture.singleNodeQueries[0].options.dimensions, {language: ['de_CH', 'de']});
+});
+
+test('uses the regular lookup when the link names the active dimensions', async () => {
+    const fixture = setup();
+    await fixture.click({documentNodeId: `${identifier}?language=es`});
+    assertNavigated(fixture.dispatched);
+    assert.deepEqual(fixture.singleNodeQueries, []);
+});
+
+test('rejects a language that is not configured without navigating', async () => {
+    const fixture = setup({singleNode: englishNode});
+    await fixture.click({documentNodeId: `${identifier}?language=fr`});
+    assert.deepEqual(fixture.singleNodeQueries, []);
+    assert.deepEqual(fixture.dispatched.map(event => event.type), ['flash']);
+});
+
+test('reports a page that has no variant in the requested language', async () => {
+    const fixture = setup({singleNode: {nodeFound: false}});
+    await fixture.click({documentNodeId: `${identifier}?language=en`});
+    assert.deepEqual(fixture.dispatched.map(event => event.type), ['flash']);
+    assert.equal(fixture.dispatched[0].args[1], 'This page does not exist in English yet.');
+});
+
+test('leaves a failed variant lookup to the backend error handler', async () => {
+    const fixture = setup({singleNodeFailure: new Error('Request failed')});
+    await fixture.click({documentNodeId: `${identifier}?language=en`});
+    assert.deepEqual(fixture.dispatched, []);
+});
+
+test('a slow variant lookup cannot override a manual page or dimension change', async () => {
+    let resolve;
+    const fixture = setup({singleNode: new Promise(done => {resolve = done;})});
+    const click = fixture.click({documentNodeId: `${identifier}?language=en`});
+    fixture.changeDocument('/sites/example@user-editor;language=en');
+    resolve(englishNode);
+    await click;
+    await new Promise(done => setImmediate(done));
+    assert.deepEqual(fixture.dispatched, []);
+});
+
+test('focuses only content nodes of the active dimensions', () => {
+    const contentIdentifier = '0b2f4f8e-0c55-4d57-9c43-3b7c3f0ad0e1';
+    const otherLanguage = {identifier: contentIdentifier, contextPath: '/sites/example/main/text@user-editor;language=en'};
+    const activeLanguage = {identifier: contentIdentifier, contextPath: '/sites/example/main/text@user-editor;language=es'};
+    const fixture = setup({cachedNodes: [otherLanguage, activeLanguage]});
+    fixture.focusContent(contentIdentifier);
+    assert.deepEqual(fixture.dispatched[0], {type: 'focus', args: [activeLanguage.contextPath]});
+});

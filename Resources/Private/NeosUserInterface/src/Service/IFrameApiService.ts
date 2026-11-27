@@ -165,14 +165,18 @@ export class IFrameApiService {
 
     /**
      * @param siteNodeName Node name of the site the editor currently works on, empty when unknown.
+     * @param contentDimensions The configured content dimensions with their presets (Neos UI `cr.contentDimensions.byName`).
+     * @param activeDimensions The dimension values active in the Neos UI; the tree's documentContextPath is authoritative for the page it describes.
      */
-    respondWithContentTree = (contentTree: unknown, siteNodeName: string): void => {
+    respondWithContentTree = (contentTree: unknown, siteNodeName: string, contentDimensions: unknown = null, activeDimensions: unknown = null): void => {
         this.sendMessage({
             version: '1.0',
             eventName: 'content-tree-response',
             data: {
                 contentTree,
                 siteNodeName,
+                contentDimensions,
+                activeDimensions,
             },
         });
     }

@@ -27,6 +27,7 @@ export interface ServerStreamMessage {
             | "reload-content"
             | "show-document-node"
             | "show-content-node"
+            | "review-document-node"
             | "get-content-tree"
             | "neosidekick-silent-authorize";
         data: {
@@ -39,6 +40,7 @@ export interface ServerStreamMessage {
             sourceTool?: string;
             toolCallId?: string;
             documentNodeId?: string;
+            documents?: string[];
             contentNodeId?: string;
             href?: string;
         };

@@ -9,6 +9,7 @@ import {createContentService} from './Service/ContentService';
 import {createContentCanvasService} from "./Service/ContentCanvasService";
 import {createIFrameApiService} from "./Service/IFrameApiService";
 import {ContentTreeService} from "./Service/ContentTreeService";
+import {translateContentDimensionLabels} from "./Service/contentDimensions";
 import {reducer} from './actions';
 
 import initializeEditor from './manifest.editors';
@@ -97,7 +98,17 @@ manifest("NEOSidekick.AiAssistant", {}, (globalRegistry: SynchronousMetaRegistry
 
         if (eventName === 'get-content-tree') {
             const contentTree = contentTreeService.getDocumentContentTree();
-            iFrameApiService.respondWithContentTree(contentTree, contentTreeService.getSiteNodeName());
+            // The active dimensions are only the assistant's fallback for when no tree could be
+            // built: while Neos switches the language they already name the new one, so the
+            // assistant prefers the dimensions of the tree's own documentContextPath.
+            const contentDimensions = store.getState()?.cr?.contentDimensions;
+            const i18nRegistry = globalRegistry.get('i18n');
+            iFrameApiService.respondWithContentTree(
+                contentTree,
+                contentTreeService.getSiteNodeName(),
+                translateContentDimensionLabels(contentDimensions?.byName, (label: string) => i18nRegistry.translate(label)),
+                contentDimensions?.active ?? null
+            );
             return;
         }
 

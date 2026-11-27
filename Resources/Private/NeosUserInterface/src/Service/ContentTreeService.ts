@@ -34,7 +34,7 @@ export class ContentTreeService {
         this.nodeTypesRegistry = nodeTypesRegistry;
     }
 
-    getDocumentContentTree(): { generatedAt: string; rootNode: ExtractedNode } | null {
+    getDocumentContentTree(): { generatedAt: string; documentContextPath: string; rootNode: ExtractedNode } | null {
         const state = this.store.getState();
         const documentContextPath = state?.cr?.nodes?.documentNode;
         if (!documentContextPath) {
@@ -48,6 +48,7 @@ export class ContentTreeService {
 
         return {
             generatedAt: new Date().toISOString(),
+            documentContextPath,
             rootNode
         };
     }
@@ -64,6 +65,7 @@ export class ContentTreeService {
 
     async getFullDocumentContentTree(): Promise<{
         generatedAt: string;
+        documentContextPath: string;
         rootNode: ExtractedNode;
     } | null> {
         await this.ensureAllContentNodesLoaded();

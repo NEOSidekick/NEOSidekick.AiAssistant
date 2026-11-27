@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace NEOSidekick\AiAssistant\Tests\Unit\Service;
 
 use Flowpack\NodeTemplates\Domain\NodeCreation\PropertiesProcessor;
+use Neos\ContentRepository\Domain\Model\NodeData;
 use Neos\ContentRepository\Domain\Model\NodeInterface;
 use Neos\ContentRepository\Domain\Model\NodeType;
 use Neos\ContentRepository\Domain\Service\Context;
+use Neos\ContentRepository\Domain\Service\ContextFactoryInterface;
 use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use NEOSidekick\AiAssistant\Dto\Patch\AbstractPatch;
 use NEOSidekick\AiAssistant\Exception\PatchFailedException;
@@ -43,6 +45,28 @@ class PatchValidatorTest extends TestCase
      */
     private array $nodeTypes = [];
 
+    /**
+     * Stored nodes a test adds on top of the page and its main collection.
+     *
+     * @var array<string, NodeInterface>
+     */
+    private array $additionalNodes = [];
+
+    /**
+     * Dimension chains of the context the batch is validated in.
+     *
+     * @var array<string, array<int, string>>
+     */
+    private array $contextDimensions = [];
+
+    /**
+     * Dimension values of the variant found when a node is looked up in the fallback values of the
+     * chain, keyed by node identifier.
+     *
+     * @var array<string, array<string, array<int, string>>>
+     */
+    private array $nodesInFallbackContext = [];
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -74,17 +98,29 @@ class PatchValidatorTest extends TestCase
         $mainNode = $this->createStoredNode(self::MAIN_ID, $this->nodeTypes['T:Collection'], $pageNode);
         $this->context = $this->createMock(Context::class);
         $this->context->method('getNodeByIdentifier')->willReturnCallback(
-            static fn(string $identifier): ?NodeInterface => match ($identifier) {
+            fn(string $identifier): ?NodeInterface => match ($identifier) {
                 self::MAIN_ID => $mainNode,
                 self::PAGE_ID => $pageNode,
-                default => null,
+                default => $this->additionalNodes[$identifier] ?? null,
             }
         );
+        $this->context->method('getDimensions')->willReturnCallback(fn(): array => $this->contextDimensions);
+        $this->context->method('getWorkspaceName')->willReturn('user-editor');
+
+        $fallbackContext = $this->createMock(Context::class);
+        $fallbackContext->method('getNodeByIdentifier')->willReturnCallback(
+            fn(string $identifier): ?NodeInterface => isset($this->nodesInFallbackContext[$identifier])
+                ? $this->createStoredNode($identifier, $this->nodeTypes['T:Text'], null, $this->nodesInFallbackContext[$identifier])
+                : null
+        );
+        $contextFactory = $this->createMock(ContextFactoryInterface::class);
+        $contextFactory->method('create')->willReturn($fallbackContext);
 
         $this->validator = new PatchValidator();
         $this->setProperty($this->validator, 'nodeTypeManager', $nodeTypeManager);
         $this->setProperty($this->validator, 'propertiesProcessor', $this->createMock(PropertiesProcessor::class));
         $this->setProperty($this->validator, 'propertyNormalizer', $this->createMock(PropertyNormalizer::class));
+        $this->setProperty($this->validator, 'contextFactory', $contextFactory);
     }
 
     /** @test */
@@ -367,6 +403,131 @@ class PatchValidatorTest extends TestCase
         );
     }
 
+    /** @test */
+    public function updatesMovesAndDeletesOfDimensionFallbacksAreRefusedTogether(): void
+    {
+        $this->addSwissFallbackNode('b1b2c3d4-0000-0000-0000-000000000011');
+        $this->addSwissFallbackNode('b1b2c3d4-0000-0000-0000-000000000012');
+        $this->addSwissFallbackNode('b1b2c3d4-0000-0000-0000-000000000013');
+
+        $exception = $this->expectFailure([
+            ['operation' => 'updateNode', 'nodeId' => self::MAIN_ID, 'properties' => []],
+            ['operation' => 'updateNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000011', 'properties' => []],
+            ['operation' => 'moveNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000012', 'targetNodeId' => self::MAIN_ID, 'position' => 'into'],
+            ['operation' => 'deleteNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000013'],
+        ]);
+
+        self::assertSame(1, $exception->getPatchIndex());
+        self::assertSame('updateNode', $exception->getOperation());
+        $fallbackReason = ' is a dimension fallback shown from language=de and cannot be updated, moved or deleted here. '
+            . 'To give it its own content in these dimensions, the editor must create the variant in the Neos UI first';
+        self::assertSame(
+            'Not applied, because these changes would affect other content dimensions: '
+            . '"b1b2c3d4-0000-0000-0000-000000000011"' . $fallbackReason . '; '
+            . '"b1b2c3d4-0000-0000-0000-000000000012"' . $fallbackReason . '; '
+            . '"b1b2c3d4-0000-0000-0000-000000000013"' . $fallbackReason . '. Resend the batch without them.',
+            $exception->getMessage()
+        );
+    }
+
+    /** @test */
+    public function deletingAnOwnVariantThatAlsoExistsInTheFallbackIsRefusedWithAHideHint(): void
+    {
+        $this->contextDimensions = ['language' => ['de_CH', 'de']];
+        $this->addNodeWithDimensions('b1b2c3d4-0000-0000-0000-000000000031', ['language' => ['de_CH']]);
+        $this->addNodeWithDimensions('b1b2c3d4-0000-0000-0000-000000000032', ['language' => ['de_CH']]);
+        $this->nodesInFallbackContext = ['b1b2c3d4-0000-0000-0000-000000000031' => ['language' => ['de']]];
+
+        $exception = $this->expectFailure([
+            ['operation' => 'deleteNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000032'],
+            ['operation' => 'deleteNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000031'],
+        ]);
+
+        self::assertSame(1, $exception->getPatchIndex());
+        self::assertSame(
+            'Not applied, because these changes would affect other content dimensions: '
+            . '"b1b2c3d4-0000-0000-0000-000000000031" also exists in language=de: deleting it here would only remove '
+            . 'this variant, and the language=de content would show again after publishing. Hide it instead by setting '
+            . '"_hidden" to true. Resend the batch without them.',
+            $exception->getMessage()
+        );
+    }
+
+    /** @test */
+    public function aLegacyVariantStoringTheWholeFallbackChainCanBeDeleted(): void
+    {
+        $this->contextDimensions = ['language' => ['de_CH', 'de']];
+        $this->addNodeWithDimensions('b1b2c3d4-0000-0000-0000-000000000033', ['language' => ['de', 'de_CH']]);
+        $this->nodesInFallbackContext = ['b1b2c3d4-0000-0000-0000-000000000033' => ['language' => ['de', 'de_CH']]];
+
+        $this->validate([
+            ['operation' => 'deleteNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000033'],
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
+    /** @test */
+    public function movingAContainerWithFallbackChildrenToAnotherParentIsRefused(): void
+    {
+        $this->contextDimensions = ['language' => ['de_CH', 'de']];
+        $this->addNodeWithDimensions('b1b2c3d4-0000-0000-0000-000000000042', ['language' => ['de']]);
+        $this->addNodeWithDimensions(
+            'b1b2c3d4-0000-0000-0000-000000000041',
+            ['language' => ['de_CH']],
+            [$this->additionalNodes['b1b2c3d4-0000-0000-0000-000000000042']]
+        );
+
+        $exception = $this->expectFailure([
+            ['operation' => 'moveNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000041', 'targetNodeId' => self::PAGE_ID, 'position' => 'into'],
+        ]);
+        self::assertStringContainsString(
+            '"b1b2c3d4-0000-0000-0000-000000000041" contains dimension fallbacks such as "b1b2c3d4-0000-0000-0000-000000000042", shown from language=de',
+            $exception->getMessage()
+        );
+
+        // Reordering within the same parent leaves the children where they are
+        $this->validate([
+            ['operation' => 'moveNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000041', 'targetNodeId' => self::MAIN_ID, 'position' => 'into'],
+        ]);
+    }
+
+    /** @test */
+    public function nodesWithTheirOwnVariantAndDimensionlessNodesAreNotFallbacks(): void
+    {
+        $this->addNodeWithDimensions('b1b2c3d4-0000-0000-0000-000000000021', ['language' => ['de_CH', 'de']]);
+
+        $this->validate([
+            ['operation' => 'updateNode', 'nodeId' => 'b1b2c3d4-0000-0000-0000-000000000021', 'properties' => []],
+            ['operation' => 'deleteNode', 'nodeId' => self::MAIN_ID],
+        ]);
+
+        $this->addToAssertionCount(1);
+    }
+
+    private function addSwissFallbackNode(string $identifier): void
+    {
+        $this->addNodeWithDimensions($identifier, ['language' => ['de']]);
+    }
+
+    /**
+     * Adds a stored text node, read in a context that targets `de_CH`, whose node data carries the
+     * given dimension values.
+     *
+     * @param array<string, array<int, string>> $dimensionValues
+     */
+    private function addNodeWithDimensions(string $identifier, array $dimensionValues, array $childNodes = []): void
+    {
+        $this->additionalNodes[$identifier] = $this->createStoredNode(
+            $identifier,
+            $this->nodeTypes['T:Text'],
+            $this->context->getNodeByIdentifier(self::MAIN_ID),
+            $dimensionValues,
+            ['language' => 'de_CH'],
+            $childNodes
+        );
+    }
+
     /**
      * @param array<int, array<string, mixed>> $patchesData
      */
@@ -408,12 +569,32 @@ class PatchValidatorTest extends TestCase
         return $patch;
     }
 
-    private function createStoredNode(string $identifier, NodeType $nodeType, ?NodeInterface $parent): NodeInterface
-    {
+    /**
+     * @param array<string, array<int, string>> $dimensionValues values stored on the node data
+     * @param array<string, string> $targetDimensions target dimensions of the context the node is read in
+     * @param array<int, NodeInterface> $childNodes
+     */
+    private function createStoredNode(
+        string $identifier,
+        NodeType $nodeType,
+        ?NodeInterface $parent,
+        array $dimensionValues = [],
+        array $targetDimensions = [],
+        array $childNodes = []
+    ): NodeInterface {
+        $nodeData = $this->createMock(NodeData::class);
+        $nodeData->method('getDimensionValues')->willReturn($dimensionValues);
+        $nodeData->method('getDimensionsHash')->willReturn(md5(json_encode($dimensionValues, JSON_THROW_ON_ERROR)));
+        $context = $this->createMock(Context::class);
+        $context->method('getTargetDimensions')->willReturn($targetDimensions);
+
         $node = $this->createMock(NodeInterface::class);
         $node->method('getIdentifier')->willReturn($identifier);
         $node->method('getNodeType')->willReturn($nodeType);
         $node->method('getParent')->willReturn($parent);
+        $node->method('getNodeData')->willReturn($nodeData);
+        $node->method('getContext')->willReturn($context);
+        $node->method('getChildNodes')->willReturn($childNodes);
 
         return $node;
     }

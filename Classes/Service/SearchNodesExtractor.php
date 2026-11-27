@@ -12,6 +12,7 @@ use Neos\ContentRepository\Domain\Repository\WorkspaceRepository;
 use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\CreateContentContextTrait;
+use NEOSidekick\AiAssistant\Exception\InvalidContentDimensionsException;
 use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
 
 /**
@@ -49,6 +50,12 @@ class SearchNodesExtractor
     protected $nodeFactory;
 
     /**
+     * @Flow\Inject
+     * @var ContentDimensionResolver
+     */
+    protected $contentDimensionResolver;
+
+    /**
      * Properties to include in the search results response.
      * Configurable via NEOSidekick.AiAssistant.searchNodes.includedProperties
      *
@@ -77,10 +84,11 @@ class SearchNodesExtractor
      *
      * @param string $query The search term or candidate node identifier
      * @param string $workspace Workspace name (default: 'live')
-     * @param array $dimensions Content dimensions
+     * @param array $dimensions Content dimensions as the caller named them; the result reports the ones that were searched
      * @param string|null $nodeTypeFilter Filter by NodeType
      * @param string|null $pathStartingPoint Limit search to nodes under this path
      * @return array Search results
+     * @throws InvalidContentDimensionsException When the dimensions are not configured on this site
      */
     public function search(
         string $query,
@@ -89,6 +97,10 @@ class SearchNodesExtractor
         ?string $nodeTypeFilter = null,
         ?string $pathStartingPoint = null
     ): array {
+        // Also for a search that names no dimensions: without them the repository returns one
+        // variant of each node from whichever dimension it finds first.
+        $dimensions = $this->contentDimensionResolver->resolve($dimensions);
+
         // Resolve workspace object
         $workspaceObject = $this->workspaceRepository->findByIdentifier($workspace);
         if ($workspaceObject === null) {

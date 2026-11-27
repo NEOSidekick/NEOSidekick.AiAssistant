@@ -26,6 +26,7 @@ use NEOSidekick\AiAssistant\Dto\Patch\PatchError;
 use NEOSidekick\AiAssistant\Dto\Patch\PatchResult;
 use NEOSidekick\AiAssistant\Dto\Patch\RefAnchor;
 use NEOSidekick\AiAssistant\Dto\Patch\UpdateNodePatch;
+use NEOSidekick\AiAssistant\Exception\InvalidContentDimensionsException;
 use NEOSidekick\AiAssistant\Exception\PatchFailedException;
 
 /**
@@ -79,6 +80,12 @@ class NodePatchService
     protected $propertyNormalizer;
 
     /**
+     * @Flow\Inject
+     * @var ContentDimensionResolver
+     */
+    protected $contentDimensionResolver;
+
+    /**
      * Nodes created by the batch currently being executed, keyed by the `ref` their createNode patch declared.
      * Anchors (`positionRelativeToNodeId`, `nodeId`, `targetNodeId`) of the form `$<ref>` and
      * `$<ref>/<childName>` are resolved through this map before the context is asked.
@@ -100,12 +107,28 @@ class NodePatchService
      *
      * @param array<int, array<string, mixed>> $patchesData Raw patch data from API request
      * @param string $workspace The workspace name to apply patches in
-     * @param array<string, array<int, string>> $dimensions Content dimensions
+     * @param array<string, array<int, string>> $dimensions Content dimensions, as the caller named them
      * @param array<string, array<int, string>> $sourceDimensions Content dimensions createVariant patches create their variants from
      * @return PatchResult
      */
     public function applyPatches(array $patchesData, string $workspace, array $dimensions, array $sourceDimensions = []): PatchResult
     {
+        // Nothing is written into dimensions the site does not have, or into a language that is
+        // re-translated automatically. Checked here and not in the controller, so it holds for
+        // every caller.
+        try {
+            $dimensions = $this->contentDimensionResolver->resolve($dimensions);
+            if ($sourceDimensions !== []) {
+                $sourceDimensions = $this->contentDimensionResolver->resolve($sourceDimensions, 'sourceDimensions');
+            }
+        } catch (InvalidContentDimensionsException $e) {
+            return PatchResult::failure(new PatchError($e->getMessage(), 0, 'batch'), false);
+        }
+        $syncPresetWriteRefusal = $this->contentDimensionResolver->findSyncPresetWriteRefusal($dimensions);
+        if ($syncPresetWriteRefusal !== null) {
+            return PatchResult::failure(new PatchError($syncPresetWriteRefusal, 0, 'batch'), false);
+        }
+
         // Parse patches from raw data
         $patches = [];
         foreach ($patchesData as $index => $patchData) {

@@ -10,6 +10,7 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\Neos\Domain\Service\ContentContext;
 use Neos\Neos\Routing\Exception\NoSiteException;
+use NEOSidekick\AiAssistant\Exception\InvalidContentDimensionsException;
 use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
 use Psr\Log\LoggerInterface;
 
@@ -49,6 +50,12 @@ class DocumentNodeListExtractor
     protected $logger;
 
     /**
+     * @Flow\Inject
+     * @var ContentDimensionResolver
+     */
+    protected $contentDimensionResolver;
+
+    /**
      * Properties to include in the document list response.
      * Configurable via NEOSidekick.AiAssistant.documentNodeList.includedProperties
      *
@@ -71,12 +78,14 @@ class DocumentNodeListExtractor
      * Extract all document nodes for a site.
      *
      * @param string $workspace Workspace name (default: 'live')
-     * @param array $dimensions Content dimensions
+     * @param array $dimensions Content dimensions as the caller named them; the result reports the ones the list was read in
      * @param string|null $siteNodeName Site node name (null = the site whose Domain record matches the request host, else Neos's default site)
      * @param string $nodeTypeFilter Filter by NodeType
      * @param int $depth Maximum traversal depth (-1 = unlimited)
      * @param string|null $requestHost Host of the incoming request, used when no site node name is given
+     * @param bool $includeContentDimensions Also describe the content dimensions of this installation, for a caller that has to choose one
      * @return array
+     * @throws InvalidContentDimensionsException When the dimensions are not configured on this site
      */
     public function extract(
         string $workspace = 'live',
@@ -84,8 +93,10 @@ class DocumentNodeListExtractor
         ?string $siteNodeName = null,
         string $nodeTypeFilter = self::DOCUMENT_TYPE,
         int $depth = -1,
-        ?string $requestHost = null
+        ?string $requestHost = null,
+        bool $includeContentDimensions = false
     ): array {
+        $dimensions = $this->contentDimensionResolver->resolve($dimensions);
         $context = $this->createContentContext($workspace, $dimensions);
         $availableSiteNodes = $this->findAvailableSiteNodes($context);
         $siteNode = $this->resolveSiteNode($context, $siteNodeName, $requestHost, $availableSiteNodes);
@@ -107,6 +118,7 @@ class DocumentNodeListExtractor
                 'identifier' => $siteNode->getIdentifier(),
             ],
             'availableSites' => $this->describeSiteNodes($availableSiteNodes),
+            ...($includeContentDimensions ? ['contentDimensions' => $this->contentDimensionResolver->describeConfiguration()] : []),
             'documents' => $documents,
             'documentCount' => count($documents),
         ];

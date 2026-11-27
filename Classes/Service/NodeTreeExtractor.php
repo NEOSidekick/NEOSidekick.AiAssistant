@@ -10,6 +10,7 @@ use Neos\ContentRepository\Domain\Service\NodeTypeManager;
 use Neos\Flow\Annotations as Flow;
 use Neos\Media\Domain\Model\Asset;
 use Neos\Neos\Controller\CreateContentContextTrait;
+use NEOSidekick\AiAssistant\Exception\InvalidContentDimensionsException;
 
 /**
  * Service to extract raw node tree data from Neos.
@@ -44,17 +45,25 @@ class NodeTreeExtractor
     protected $nodeTypeManager;
 
     /**
+     * @Flow\Inject
+     * @var ContentDimensionResolver
+     */
+    protected $contentDimensionResolver;
+
+    /**
      * Extract the node tree starting from a given node.
      *
      * @param string $nodeId The node identifier (UUID) to start from
      * @param string $workspace The workspace name
-     * @param array $dimensions The dimension values (e.g., ['language' => ['de']])
+     * @param array $dimensions The dimension values as the caller named them (e.g., ['language' => ['de']])
      * @param int|null $maxDepth Maximum depth for tree extraction (null uses default, prevents stack overflow)
-     * @return array{generatedAt: string, workspace: string, dimensions: array, rootNode: array}
+     * @return array{generatedAt: string, workspace: string, dimensions: array, rootNode: array} `dimensions` are the ones the tree was read in
      * @throws \InvalidArgumentException When node is not found
+     * @throws InvalidContentDimensionsException When the dimensions are not configured on this site
      */
     public function extract(string $nodeId, string $workspace, array $dimensions, ?int $maxDepth = null): array
     {
+        $dimensions = $this->contentDimensionResolver->resolve($dimensions);
         $context = $this->createContentContext($workspace, $dimensions);
         $node = $context->getNodeByIdentifier($nodeId);
 

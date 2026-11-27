@@ -64,12 +64,12 @@ function setup({cached = [], response = [page], blocked = false, documentPath = 
             listeners.find(([type]) => type === 'message')[1]({data, source, origin});
         },
         changePage: path => {activePath = path;},
-        async click(id = identifier) {
-            handler({data: {eventName: 'review-document-node', data: {documentNodeId: id}}});
+        async click(id = identifier, reviewSessionId) {
+            handler({data: {eventName: 'review-document-node', data: {documentNodeId: id, reviewSessionId}}});
             await new Promise(resolve => setImmediate(resolve));
         },
-        async clickDocuments(documents) {
-            handler({data: {eventName: 'review-document-node', data: {documents}}});
+        async clickDocuments(documents, reviewSessionId) {
+            handler({data: {eventName: 'review-document-node', data: {documents, reviewSessionId}}});
             await new Promise(resolve => setImmediate(resolve));
         }
     };
@@ -246,4 +246,22 @@ test('ignores results from other windows, other origins and unknown messages', a
     fixture.postFromPopup({...reviewResult(), version: 2});
     fixture.postFromPopup({type: 'something-else'});
     assert.deepEqual(fixture.forwarded, []);
+});
+
+test('returns the chat correlation ID for exact-context and legacy review buttons', async () => {
+    const sessionId = 'd5fbb203-84cc-4139-bc22-d3c148c73935';
+    for (const legacy of [false, true]) {
+        const fixture = setup();
+        if (legacy) await fixture.click(identifier, sessionId);
+        else await fixture.clickDocuments([page.contextPath], sessionId);
+        fixture.postFromPopup(reviewResult());
+        assert.equal(fixture.forwarded[0][0], sessionId);
+    }
+});
+
+test('ignores malformed correlation IDs while keeping the review usable', async () => {
+    const fixture = setup();
+    await fixture.clickDocuments([page.contextPath], {not: 'a string'});
+    fixture.postFromPopup(reviewResult());
+    assert.equal(typeof fixture.forwarded[0][0], 'string');
 });

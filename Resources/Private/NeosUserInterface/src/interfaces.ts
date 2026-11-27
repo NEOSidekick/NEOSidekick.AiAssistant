@@ -41,6 +41,7 @@ export interface ServerStreamMessage {
             toolCallId?: string;
             documentNodeId?: string;
             documents?: string[];
+            reviewSessionId?: string;
             contentNodeId?: string;
             href?: string;
         };

@@ -60,7 +60,7 @@ export class ContentCanvasService {
         this.iFrameApiService.sendReviewResult(reviewSessionId, result);
     }
 
-    private registerReviewWindow(reviewWindow: Window): void {
+    private registerReviewWindow(reviewWindow: Window, requestedSessionId?: string): void {
         if (!this.listensToReviewPopups) {
             window.addEventListener('message', this.handleReviewPopupMessage);
             this.listensToReviewPopups = true;
@@ -71,9 +71,13 @@ export class ContentCanvasService {
                 this.reviewWindows.delete(knownWindow);
             }
         });
-        const reviewSessionId = typeof crypto?.randomUUID === 'function'
-            ? crypto.randomUUID()
-            : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+        // The chat generates an ID per click and binds it to the originating message/thread.
+        // Older chat clients omit it and retain the previous uncorrelated result behavior.
+        const reviewSessionId = typeof requestedSessionId === 'string' && UUID_REGEX.test(requestedSessionId)
+            ? requestedSessionId
+            : typeof crypto?.randomUUID === 'function'
+                ? crypto.randomUUID()
+                : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
         this.reviewWindows.set(reviewWindow, reviewSessionId);
     }
 
@@ -172,7 +176,7 @@ export class ContentCanvasService {
                 this.focusContentNodePath(message?.data?.data?.contentNodeId || message?.data?.data?.href);
                 break;
             case 'review-document-node':
-                this.openDocumentReview(message?.data?.data?.documentNodeId, message?.data?.data?.documents);
+                this.openDocumentReview(message?.data?.data?.documentNodeId, message?.data?.data?.documents, message?.data?.data?.reviewSessionId);
                 break;
             case 'get-content-tree':
             case 'neosidekick-silent-authorize':
@@ -398,7 +402,7 @@ export class ContentCanvasService {
             JSON.stringify(targetDimensions[dimensionName]) === JSON.stringify(activeDimensions[dimensionName]));
     }
 
-    private async openDocumentReview(documentNodeId?: string, documents?: string[]): Promise<void> {
+    private async openDocumentReview(documentNodeId?: string, documents?: string[], reviewSessionId?: string): Promise<void> {
         const currentDocumentNodePath = this.store.getState()?.cr?.nodes?.documentNode;
         const currentContext = currentDocumentNodePath?.split('@')[1];
         const workspace = currentContext?.split(';')[0];
@@ -446,7 +450,7 @@ export class ContentCanvasService {
         }
         // The opener is kept: the popup is a page of this Neos instance and reports its
         // results to this window through it (see handleReviewPopupMessage).
-        this.registerReviewWindow(reviewWindow);
+        this.registerReviewWindow(reviewWindow, reviewSessionId);
 
         try {
             if (documents === undefined) {

@@ -22,7 +22,7 @@ function setup({cached = [], response = [page], blocked = false, documentPath = 
     const listeners = [];
     const popup = {opener: {}, closed: false, close() { this.closed = true; }, location: {replace: url => destinations.push(url)}};
     const fakeWindow = {
-        location: {href: 'https://backend.example/cms/neos/content?node=current'},
+        location: {href: 'https://backend.example/cms/neos/content?node=current', origin: 'https://backend.example'},
         open: (...args) => {
             opened.push(args);
             if (blocked) return null;
@@ -31,28 +31,38 @@ function setup({cached = [], response = [page], blocked = false, documentPath = 
         },
         addEventListener: (...args) => listeners.push(args)
     };
-    const backend = {get: () => ({q: context => ({find: selector => ({get: async () => {
+    const backend = {get: () => ({endpoints: {getWorkspaceInfo: async () => ({})}, q: context => ({find: selector => ({get: async () => {
         queries.push({context, selector});
         if (failure) throw new Error('lookup failed');
         return response;
     }})})})};
     const module = {exports: {}};
     new Function('require', 'module', 'exports', 'window', serviceCode)(name => {
-        if (name === '@neos-project/neos-ui-redux-store') return {actions: {UI: {FlashMessages: {add: (...args) => args}}}};
+        if (name === '@neos-project/neos-ui-redux-store') return {
+            actions: {
+                UI: {FlashMessages: {add: (...args) => args}},
+                CR: {Workspaces: {update: info => ({type: 'workspaces-update', info})}, Nodes: {reloadState: options => ({type: 'nodes-reload', options})}},
+            },
+            actionTypes: {UI: {ContentCanvas: {RELOAD: 'canvas-reload'}}},
+        };
         if (name === '@neos-project/neos-ui-backend-connector') return backend;
         throw new Error(`Unexpected runtime dependency: ${name}`);
     }, module, module.exports, fakeWindow);
     let handler;
+    const forwarded = [];
     let activePath = documentPath;
     new module.exports.ContentCanvasService(
         {get: name => name === 'i18n'
             ? {translate: (_key, fallback) => fallback}
             : {getRole: () => 'Neos.Neos:Document', getSubTypesOf: () => ['Example:Page']}},
         {getState: () => ({cr: {nodes: {documentNode: activePath, byContextPath: Object.fromEntries(cached.map(n => [n.contextPath, n]))}}}), dispatch: event => events.push(event)},
-        {listenToMessages: fn => {handler = fn;}}
+        {listenToMessages: fn => {handler = fn;}, sendReviewResult: (...args) => forwarded.push(args)}
     );
     return {
-        popup, opened, events, queries, destinations, listeners,
+        popup, opened, events, queries, destinations, listeners, forwarded,
+        postFromPopup(data, {source = popup, origin = 'https://backend.example'} = {}) {
+            listeners.find(([type]) => type === 'message')[1]({data, source, origin});
+        },
         changePage: path => {activePath = path;},
         async click(id = identifier) {
             handler({data: {eventName: 'review-document-node', data: {documentNodeId: id}}});
@@ -72,13 +82,15 @@ function assertPageReview(fixture) {
     assert.equal(url.pathname, '/cms/neos/management/workspaces/show');
     assert.deepEqual([...url.searchParams], [
         ['moduleArguments[workspace][__identity]', 'user-editor'],
+        ['moduleArguments[presentation]', 'popup'],
         ['moduleArguments[documents][]', page.contextPath]
     ]);
     assert.match(url.search, /%3B/);
-    assert.equal(fixture.popup.opener, null);
+    // Kept: the popup reports its results through it.
+    assert.notEqual(fixture.popup.opener, null);
     assert.equal(fixture.opened[0][2], 'popup,width=1200,height=900');
-    assert.equal(fixture.listeners[0][0], 'focus');
-    assert.deepEqual(fixture.listeners[0][2], {once: true});
+    const focusListener = fixture.listeners.find(([type]) => type === 'focus');
+    assert.deepEqual(focusListener[2], {once: true});
     assert.deepEqual(fixture.events, []);
 }
 
@@ -201,4 +213,37 @@ test('rejects non-UUID links and the live workspace before opening a window', as
     const fixture = setup({documentPath: '/sites/example@live;language=de'});
     await fixture.click();
     assert.deepEqual(fixture.opened, []);
+});
+
+const reviewResult = (resultId = 'r1') => ({
+    type: 'workspace-review:result',
+    version: 1,
+    result: {resultId, action: 'published', remainingInScope: 0, scopeResolved: true, changes: []},
+});
+
+test('forwards a result of its own review popup to the assistant once and refreshes the editor', async () => {
+    const fixture = setup();
+    await fixture.clickDocuments(['/sites/example/contact']);
+    fixture.postFromPopup(reviewResult());
+    fixture.postFromPopup(reviewResult());
+    assert.equal(fixture.forwarded.length, 1);
+    const [reviewSessionId, result] = fixture.forwarded[0];
+    assert.equal(typeof reviewSessionId, 'string');
+    assert.equal(result.resultId, 'r1');
+    // Workspace info, document tree and canvas are refreshed.
+    assert.ok(fixture.events.length > 0);
+
+    fixture.postFromPopup(reviewResult('r2'));
+    assert.equal(fixture.forwarded.length, 2);
+    assert.equal(fixture.forwarded[1][0], reviewSessionId);
+});
+
+test('ignores results from other windows, other origins and unknown messages', async () => {
+    const fixture = setup();
+    await fixture.clickDocuments(['/sites/example/contact']);
+    fixture.postFromPopup(reviewResult(), {source: {}});
+    fixture.postFromPopup(reviewResult(), {origin: 'https://evil.example'});
+    fixture.postFromPopup({...reviewResult(), version: 2});
+    fixture.postFromPopup({type: 'something-else'});
+    assert.deepEqual(fixture.forwarded, []);
 });

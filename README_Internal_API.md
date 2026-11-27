@@ -355,6 +355,8 @@ GET /neosidekick/api/document-nodes
 | `nodeTypeFilter` | string | No | `Neos.Neos:Document` | Filter by NodeType |
 | `depth` | int | No | `-1` | Max traversal depth (-1 = unlimited) |
 | `includeContentDimensions` | bool | No | `false` | Also return the content dimension configuration as `contentDimensions` |
+| `sortBy` | string | No | (tree order) | Sort the documents by `creationDateTime`, `lastModificationDateTime` or `lastPublicationDateTime`; any other value answers `400` |
+| `sortDirection` | string | No | `desc` | `desc` (newest first) or `asc`; only read together with `sortBy` |
 
 ### Example Request
 
@@ -375,6 +377,12 @@ curl -G "https://example.com/neosidekick/api/document-nodes" \
 curl -G "https://example.com/neosidekick/api/document-nodes" \
   --data-urlencode "site=my-site" \
   --data-urlencode 'dimensions={"language":["de"]}' \
+  -H "Authorization: Bearer your-api-key" \
+  -H "Accept: application/json"
+
+# Newest pages first
+curl -G "https://example.com/neosidekick/api/document-nodes" \
+  --data-urlencode "sortBy=creationDateTime" \
   -H "Authorization: Bearer your-api-key" \
   -H "Accept: application/json"
 ```
@@ -413,7 +421,10 @@ curl -G "https://example.com/neosidekick/api/document-nodes" \
       },
       "childDocumentCount": 5,
       "isHidden": false,
-      "isHiddenInMenu": false
+      "isHiddenInMenu": false,
+      "creationDateTime": "2025-04-20T19:47:25+02:00",
+      "lastModificationDateTime": "2025-12-31T16:10:51+01:00",
+      "lastPublicationDateTime": "2025-09-23T23:45:23+02:00"
     },
     {
       "identifier": "uuid-2",
@@ -428,7 +439,10 @@ curl -G "https://example.com/neosidekick/api/document-nodes" \
       },
       "childDocumentCount": 2,
       "isHidden": false,
-      "isHiddenInMenu": false
+      "isHiddenInMenu": false,
+      "creationDateTime": "2025-12-31T12:42:03+01:00",
+      "lastModificationDateTime": "2025-12-31T12:42:18+01:00",
+      "lastPublicationDateTime": null
     }
   ],
   "documentCount": 42
@@ -445,7 +459,9 @@ curl -G "https://example.com/neosidekick/api/document-nodes" \
 | `site` | object | Site information |
 | `availableSites` | array | Every site of the installation as `{nodeName, name}`, in tree order |
 | `contentDimensions` | object | Only with `includeContentDimensions=1`: the configured dimensions, see below. Empty on a site without content dimensions |
-| `documents` | array | List of document nodes |
+| `sortBy` | string | Only with `sortBy`: the timestamp the documents are sorted by |
+| `sortDirection` | string | Only with `sortBy`: `desc` or `asc` |
+| `documents` | array | List of document nodes, in tree order unless `sortBy` is given |
 | `documentCount` | int | Total documents returned |
 
 #### Content Dimensions Object
@@ -482,6 +498,19 @@ One entry per dimension, with the labels the editor sees in the dimension switch
 | `childDocumentCount` | int | Number of child pages |
 | `isHidden` | bool | Node visibility |
 | `isHiddenInMenu` | bool | Hidden in navigation |
+| `creationDateTime` | string | When the node was created, see [Node Timestamps](#node-timestamps) |
+| `lastModificationDateTime` | string | When the node itself was last changed |
+| `lastPublicationDateTime` | string\|null | When the node was last published; `null` if never, or if it has unpublished changes |
+
+#### Node Timestamps
+
+`document-nodes` and `search-nodes` pass on the three timestamps Neos stores for a node, as ISO 8601 with the UTC offset of the server's timezone. They are returned as stored and not interpreted:
+
+- **`creationDateTime`** is kept when a node is published and when a dimension variant is created from it. A translation therefore carries the creation time of the node it was translated from, not the time of the translation. A copied node gets a new one.
+- **`lastModificationDateTime`** changes with the node itself: its properties, its visibility, its position. For a document that means title, URL segment and the like. Editing a content element below a document changes the timestamp of that content element, not of the document.
+- **`lastPublicationDateTime`** is set on the record a publication writes to. It is `null` for a node that was never published. It is also `null` for a published node that has unpublished changes in the workspace that is read, because Neos keeps those changes in a record of their own.
+
+With `sortBy`, the documents are sorted by one of these instead of tree order. Documents without a value come last in both directions; documents with the same value keep tree order. `depth` still names the depth in the tree.
 
 ### Configuration
 
@@ -590,6 +619,9 @@ curl -G "https://example.com/neosidekick/api/search-nodes" \
         "text": "<p>Welcome to our website</p>"
       },
       "isHidden": false,
+      "creationDateTime": "2025-12-31T12:42:03+01:00",
+      "lastModificationDateTime": "2026-07-05T16:50:56+02:00",
+      "lastPublicationDateTime": "2026-07-05T16:51:10+02:00",
       "parentDocumentIdentifier": "uuid-doc-1",
       "parentDocumentPath": "/sites/my-site",
       "parentDocumentTitle": "Homepage"
@@ -602,7 +634,10 @@ curl -G "https://example.com/neosidekick/api/search-nodes" \
       "properties": {
         "title": "Welcome Page"
       },
-      "isHidden": false
+      "isHidden": false,
+      "creationDateTime": "2026-10-26T15:51:35+01:00",
+      "lastModificationDateTime": "2026-10-26T15:51:35+01:00",
+      "lastPublicationDateTime": null
     }
   ],
   "resultCount": 2
@@ -634,6 +669,9 @@ If `query` is empty or `*`, this endpoint returns the same document list respons
 | `depth` | int | Depth in node tree |
 | `properties` | object | Selected properties (configurable) |
 | `isHidden` | bool | Node visibility |
+| `creationDateTime` | string | When the node was created, see [Node Timestamps](#node-timestamps) |
+| `lastModificationDateTime` | string | When the node itself was last changed |
+| `lastPublicationDateTime` | string\|null | When the node was last published; `null` if never, or if it has unpublished changes |
 | `parentDocumentIdentifier` | string | Parent page UUID (for content nodes) |
 | `parentDocumentPath` | string | Parent page path (for content nodes) |
 | `parentDocumentTitle` | string | Parent page title (for content nodes) |

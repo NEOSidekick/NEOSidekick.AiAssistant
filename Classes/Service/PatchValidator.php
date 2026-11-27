@@ -138,6 +138,9 @@ class PatchValidator
      *
      * All such nodes of the batch are named at once, so the batch can be resent without them.
      *
+     * Not covered on purpose: moving a page. Neos keeps one place in the tree for all dimension
+     * variants of a document node and moves them together, as it does for an editor in the Neos UI.
+     *
      * @param array<int, AbstractPatch> $patches
      * @throws PatchFailedException
      */
@@ -204,7 +207,7 @@ class PatchValidator
         }
 
         if ($patch instanceof MoveNodePatch && !$node->getNodeType()->isOfType('Neos.Neos:Document') && $this->movesToAnotherParent($patch, $node, $context)) {
-            $fallbackDescendant = $this->findDimensionFallbackDescendant($node);
+            $fallbackDescendant = DimensionFallbackDetector::findFallbackDescendant($node);
             if ($fallbackDescendant !== null) {
                 return sprintf(
                     'contains dimension fallbacks such as "%s", shown from %s, which would be moved there as well',
@@ -249,6 +252,9 @@ class PatchValidator
 
     /**
      * Same-parent reorders keep the children in place; only a new parent moves them.
+     *
+     * Judged against the tree before the batch: an earlier patch may move the anchor, so
+     * NodePatchService::executeMoveNode() checks again with the tree as it is then.
      */
     private function movesToAnotherParent(MoveNodePatch $patch, NodeInterface $node, Context $context): bool
     {
@@ -261,20 +267,6 @@ class PatchValidator
         $newParent = $patch->getPosition() === 'into' ? $targetNode : $targetNode?->getParent();
 
         return $newParent === null || $newParent->getIdentifier() !== $node->getParent()?->getIdentifier();
-    }
-
-    private function findDimensionFallbackDescendant(NodeInterface $node): ?NodeInterface
-    {
-        $pendingNodes = $node->getChildNodes();
-        while ($pendingNodes !== []) {
-            $childNode = array_shift($pendingNodes);
-            if (DimensionFallbackDetector::isDimensionFallback($childNode)) {
-                return $childNode;
-            }
-            array_push($pendingNodes, ...$childNode->getChildNodes());
-        }
-
-        return null;
     }
 
     /**

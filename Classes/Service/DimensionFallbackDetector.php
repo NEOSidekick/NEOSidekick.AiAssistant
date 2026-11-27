@@ -35,4 +35,21 @@ final class DimensionFallbackDetector
 
         return false;
     }
+
+    /**
+     * The first node below the given one that is served as a dimension fallback, if any.
+     */
+    public static function findFallbackDescendant(NodeInterface $node): ?NodeInterface
+    {
+        $pendingNodes = $node->getChildNodes();
+        while ($pendingNodes !== []) {
+            $childNode = array_shift($pendingNodes);
+            if (self::isDimensionFallback($childNode)) {
+                return $childNode;
+            }
+            array_push($pendingNodes, ...$childNode->getChildNodes());
+        }
+
+        return null;
+    }
 }

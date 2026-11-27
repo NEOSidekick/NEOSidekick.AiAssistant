@@ -970,6 +970,10 @@ In a preset with fallback values, the old content repository would carry some ch
 
 One error names every refused node of the request with its reason, so the request can be resent without them. The error carries the index, operation and node id of the first refused patch.
 
+The move check is repeated when the patch is executed, because an earlier patch of the request may have moved the anchor; a refusal at that point rolls the request back (`rollbackPerformed: true`).
+
+**Moving a page is not refused.** Neos keeps one place in the tree for all dimension variants of a page (document node): `moveNode` on a page moves it in every dimension, exactly as when an editor moves the page in the Neos UI. Neos itself refuses the move if a variant would be left without a parent page.
+
 ### Batch-Local References
 
 Node ids are minted by the server and only surface in the response, so without references a nested structure (container → items → texts) needs one request per depth level. A `createNode` patch may instead declare `"ref": "<name>"`; any anchor field of a **later** patch (`positionRelativeToNodeId`, `nodeId`, `targetNodeId`) may then hold, instead of a UUID:

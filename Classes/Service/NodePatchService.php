@@ -572,6 +572,31 @@ class NodePatchService
                 );
             }
 
+            // The validator judged this move against the tree before the batch. Earlier patches may
+            // have moved the anchor, so only here is it certain whether the node gets a new parent -
+            // which would move its dimension-fallback children in the dimension they are shown from.
+            $newParentNode = $patch->getPosition() === 'into' ? $targetNode : $targetNode->getParent();
+            if (
+                !$node->getNodeType()->isOfType('Neos.Neos:Document')
+                && $newParentNode?->getIdentifier() !== $node->getParent()?->getIdentifier()
+            ) {
+                $fallbackDescendant = DimensionFallbackDetector::findFallbackDescendant($node);
+                if ($fallbackDescendant !== null) {
+                    throw new PatchFailedException(
+                        sprintf(
+                            'Not applied, because this change would affect other content dimensions: "%s" contains dimension '
+                            . 'fallbacks such as "%s", shown from %s, which would be moved there as well. Resend the batch without it.',
+                            $node->getIdentifier(),
+                            $fallbackDescendant->getIdentifier(),
+                            $this->describeDimensions($fallbackDescendant->getNodeData()->getDimensionValues())
+                        ),
+                        $index,
+                        'moveNode',
+                        $patch->getNodeId()
+                    );
+                }
+            }
+
             // Execute move based on position
             switch ($patch->getPosition()) {
                 case 'into':

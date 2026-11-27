@@ -53,8 +53,10 @@ class NodePatchServiceDimensionFallbackTest extends FunctionalTestCase
         $textType = $this->nodeTypeManager->getNodeType(self::TEXT_NODE_TYPE);
         $containerType = $this->nodeTypeManager->getNodeType(self::CONTAINER_NODE_TYPE);
 
-        $main = $englishSiteNode->createNode('patch-page', $restrictedPageType)->getNode('main');
-        $otherMain = $englishSiteNode->createNode('other-page', $restrictedPageType)->getNode('main');
+        $page = $englishSiteNode->createNode('patch-page', $restrictedPageType);
+        $otherPage = $englishSiteNode->createNode('other-page', $restrictedPageType);
+        $main = $page->getNode('main');
+        $otherMain = $otherPage->getNode('main');
 
         $textFallback = $main->createNode('text-fallback', $textType);
         $textFallback->setProperty('text', 'english only');
@@ -69,6 +71,8 @@ class NodePatchServiceDimensionFallbackTest extends FunctionalTestCase
         $textUkOnly = $ukContext->getNode(self::MAIN_PATH)->createNode('text-uk-only', $textType);
 
         $this->ids = [
+            'page' => $page->getIdentifier(),
+            'other-page' => $otherPage->getIdentifier(),
             'main' => $main->getIdentifier(),
             'other-main' => $otherMain->getIdentifier(),
             'text-fallback' => $textFallback->getIdentifier(),
@@ -211,6 +215,65 @@ class NodePatchServiceDimensionFallbackTest extends FunctionalTestCase
     }
 
     /**
+     * The anchor's parent is only known once the earlier patches of the batch have run.
+     *
+     * @test
+     */
+    public function aMoveCannotPassTheGuardBehindAnEarlierMoveOfItsAnchor(): void
+    {
+        $result = $this->applyPatches([
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['text-variant'], 'targetNodeId' => $this->ids['other-main'], 'position' => 'into'],
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['container-variant'], 'targetNodeId' => $this->ids['text-variant'], 'position' => 'after'],
+        ]);
+
+        $this->assertFalse($result->isSuccess(), json_encode($result));
+        $this->assertTrue($result->isRollbackPerformed());
+        $this->assertSame(1, $result->getError()->getPatchIndex());
+        $this->assertStringContainsString(
+            sprintf('"%s" contains dimension fallbacks such as "%s", shown from language=en', $this->ids['container-variant'], $this->ids['text-inner']),
+            $result->getError()->getMessage()
+        );
+
+        $this->resetContentRepositoryState();
+        $this->assertSame(self::MAIN_PATH . '/text-variant', $this->getUkNode('text-variant')->getPath(), 'The earlier move was rolled back');
+        $this->assertSame(self::MAIN_PATH . '/container-variant/text-inner', $this->getUkNode('text-inner')->getPath());
+    }
+
+    /**
+     * Not refused: a page has one place in the tree for all its dimension variants, in the Neos UI
+     * as well as here.
+     *
+     * @test
+     */
+    public function movingAPageMovesItInEveryDimension(): void
+    {
+        $variant = $this->applyPatches(
+            [['operation' => 'createVariant', 'nodeId' => $this->ids['other-page'], 'copyContent' => false]],
+            ['language' => ['en']]
+        );
+        $this->assertTrue($variant->isSuccess(), json_encode($variant));
+        // Neos refuses a page move that would leave a variant without a parent, so the new parent
+        // has to exist in every language - German included.
+        $this->contextFactory->create(['workspaceName' => 'live', 'dimensions' => ['language' => ['en']]])
+            ->getNodeByIdentifier($this->ids['page'])
+            ->createVariantForContext($this->contextFactory->create(['workspaceName' => 'live', 'dimensions' => ['language' => ['de']]]));
+        $this->resetContentRepositoryState();
+
+        $result = $this->applyPatches([
+            ['operation' => 'moveNode', 'nodeId' => $this->ids['other-page'], 'targetNodeId' => $this->ids['page'], 'position' => 'into'],
+        ]);
+
+        $this->assertTrue($result->isSuccess(), json_encode($result));
+        $this->resetContentRepositoryState();
+        $englishPage = $this->contextFactory->create([
+            'workspaceName' => $this->currentUserWorkspace,
+            'dimensions' => ['language' => ['en']],
+        ])->getNodeByIdentifier($this->ids['other-page']);
+        $this->assertSame(self::PAGE_PATH . '/other-page', $englishPage->getPath());
+        $this->assertSame(self::PAGE_PATH . '/other-page', $this->getUkNode('other-page')->getPath());
+    }
+
+    /**
      * Why deleting such a variant is refused: publishing removes only the variant.
      *
      * @test
@@ -263,13 +326,15 @@ class NodePatchServiceDimensionFallbackTest extends FunctionalTestCase
 
     /**
      * @param array<int, array<string, mixed>> $patches
+     * @param array<string, array<int, string>> $sourceDimensions
      */
-    private function applyPatches(array $patches): PatchResult
+    private function applyPatches(array $patches, array $sourceDimensions = []): PatchResult
     {
         return $this->objectManager->get(NodePatchService::class)->applyPatches(
             $patches,
             $this->currentUserWorkspace,
-            self::UK_DIMENSIONS
+            self::UK_DIMENSIONS,
+            $sourceDimensions
         );
     }
 

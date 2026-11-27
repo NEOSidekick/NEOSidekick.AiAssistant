@@ -13,6 +13,7 @@ use Neos\ContentRepository\Domain\Utility\NodePaths;
 use Neos\Flow\Annotations as Flow;
 use Neos\Neos\Controller\CreateContentContextTrait;
 use NEOSidekick\AiAssistant\Exception\InvalidContentDimensionsException;
+use NEOSidekick\AiAssistant\Service\Traits\NodeTimestampExtractionTrait;
 use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
 
 /**
@@ -28,6 +29,7 @@ class SearchNodesExtractor
 {
     use CreateContentContextTrait;
     use PropertyExtractionTrait;
+    use NodeTimestampExtractionTrait;
 
     private const DOCUMENT_TYPE = 'Neos.Neos:Document';
 
@@ -223,6 +225,7 @@ class SearchNodesExtractor
             'depth' => $depth,
             'properties' => $this->extractSelectedProperties($node),
             'isHidden' => $node->isHidden(),
+            ...$this->extractTimestamps($node),
         ];
 
         // Add parent document info if available (for content nodes)

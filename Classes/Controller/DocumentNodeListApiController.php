@@ -56,6 +56,8 @@ class DocumentNodeListApiController extends ActionController
      * @param string $nodeTypeFilter Filter by NodeType (default: all documents)
      * @param int $depth Maximum traversal depth (-1 = unlimited)
      * @param bool $includeContentDimensions Also return the content dimension configuration of this installation as "contentDimensions"
+     * @param string $sortBy Sort the documents by creationDateTime, lastModificationDateTime or lastPublicationDateTime instead of tree order
+     * @param string $sortDirection "desc" (newest first, default) or "asc"; only read together with sortBy
      * @return string JSON response
      * @throws JsonException
      * @Flow\SkipCsrfProtection
@@ -66,7 +68,9 @@ class DocumentNodeListApiController extends ActionController
         string $site = '',
         string $nodeTypeFilter = 'Neos.Neos:Document',
         int $depth = -1,
-        bool $includeContentDimensions = false
+        bool $includeContentDimensions = false,
+        string $sortBy = '',
+        string $sortDirection = 'desc'
     ): string {
         // Parse dimensions from JSON string
         $dimensionsArray = json_decode($dimensions, true);
@@ -84,7 +88,9 @@ class DocumentNodeListApiController extends ActionController
                 nodeTypeFilter: $nodeTypeFilter,
                 depth: $depth,
                 requestHost: $this->request->getHttpRequest()->getUri()->getHost(),
-                includeContentDimensions: $includeContentDimensions
+                includeContentDimensions: $includeContentDimensions,
+                sortBy: $sortBy !== '' ? $sortBy : null,
+                sortDirection: $sortDirection
             );
 
             return json_encode($result, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);

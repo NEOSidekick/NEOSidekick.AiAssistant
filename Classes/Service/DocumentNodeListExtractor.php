@@ -11,6 +11,7 @@ use Neos\Neos\Controller\CreateContentContextTrait;
 use Neos\Neos\Domain\Service\ContentContext;
 use Neos\Neos\Routing\Exception\NoSiteException;
 use NEOSidekick\AiAssistant\Exception\InvalidContentDimensionsException;
+use NEOSidekick\AiAssistant\Service\Traits\NodeTimestampExtractionTrait;
 use NEOSidekick\AiAssistant\Service\Traits\PropertyExtractionTrait;
 use Psr\Log\LoggerInterface;
 
@@ -26,10 +27,13 @@ class DocumentNodeListExtractor
 {
     use CreateContentContextTrait;
     use PropertyExtractionTrait;
+    use NodeTimestampExtractionTrait;
 
     private const DOCUMENT_TYPE = 'Neos.Neos:Document';
     private const SITE_TYPE = 'Neos.Neos:Site';
     private const SITES_PATH = '/sites';
+    private const SORTABLE_FIELDS = ['creationDateTime', 'lastModificationDateTime', 'lastPublicationDateTime'];
+    private const SORT_DIRECTIONS = ['asc', 'desc'];
 
     /**
      * @Flow\Inject
@@ -84,8 +88,11 @@ class DocumentNodeListExtractor
      * @param int $depth Maximum traversal depth (-1 = unlimited)
      * @param string|null $requestHost Host of the incoming request, used when no site node name is given
      * @param bool $includeContentDimensions Also describe the content dimensions of this installation, for a caller that has to choose one
+     * @param string|null $sortBy Timestamp to sort the documents by instead of tree order: creationDateTime, lastModificationDateTime or lastPublicationDateTime
+     * @param string $sortDirection "desc" (newest first) or "asc"; only read together with $sortBy
      * @return array
      * @throws InvalidContentDimensionsException When the dimensions are not configured on this site
+     * @throws \InvalidArgumentException When $sortBy or $sortDirection is not one of the allowed values
      */
     public function extract(
         string $workspace = 'live',
@@ -94,8 +101,11 @@ class DocumentNodeListExtractor
         string $nodeTypeFilter = self::DOCUMENT_TYPE,
         int $depth = -1,
         ?string $requestHost = null,
-        bool $includeContentDimensions = false
+        bool $includeContentDimensions = false,
+        ?string $sortBy = null,
+        string $sortDirection = 'desc'
     ): array {
+        $this->assertValidSorting($sortBy, $sortDirection);
         $dimensions = $this->contentDimensionResolver->resolve($dimensions);
         $context = $this->createContentContext($workspace, $dimensions);
         $availableSiteNodes = $this->findAvailableSiteNodes($context);
@@ -107,6 +117,9 @@ class DocumentNodeListExtractor
 
         $documents = [];
         $this->traverseDocuments($siteNode, $nodeTypeFilter, $depth, 0, $documents);
+        if ($sortBy !== null) {
+            $documents = $this->sortDocuments($documents, $sortBy, $sortDirection);
+        }
 
         return [
             'generatedAt' => (new \DateTimeImmutable())->format(\DateTimeInterface::ATOM),
@@ -119,6 +132,7 @@ class DocumentNodeListExtractor
             ],
             'availableSites' => $this->describeSiteNodes($availableSiteNodes),
             ...($includeContentDimensions ? ['contentDimensions' => $this->contentDimensionResolver->describeConfiguration()] : []),
+            ...($sortBy !== null ? ['sortBy' => $sortBy, 'sortDirection' => $sortDirection] : []),
             'documents' => $documents,
             'documentCount' => count($documents),
         ];
@@ -265,6 +279,59 @@ class DocumentNodeListExtractor
             'childDocumentCount' => count($childDocuments),
             'isHidden' => $node->isHidden(),
             'isHiddenInMenu' => (bool)$node->isHiddenInIndex(),
+            ...$this->extractTimestamps($node),
         ];
+    }
+
+    /**
+     * @throws \InvalidArgumentException
+     */
+    private function assertValidSorting(?string $sortBy, string $sortDirection): void
+    {
+        if ($sortBy === null) {
+            return;
+        }
+
+        if (!in_array($sortBy, self::SORTABLE_FIELDS, true)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Cannot sort by "%s". Allowed values for sortBy: %s',
+                $sortBy,
+                implode(', ', self::SORTABLE_FIELDS)
+            ), 1795766400);
+        }
+
+        if (!in_array($sortDirection, self::SORT_DIRECTIONS, true)) {
+            throw new \InvalidArgumentException(sprintf(
+                'Unknown sortDirection "%s". Allowed values: %s',
+                $sortDirection,
+                implode(', ', self::SORT_DIRECTIONS)
+            ), 1795766401);
+        }
+    }
+
+    /**
+     * Sorts the flat document list by one of its timestamps. Documents without a value (never
+     * published) come last in both directions; documents with the same value keep tree order.
+     *
+     * @param array<int, array<string, mixed>> $documents
+     * @return array<int, array<string, mixed>>
+     */
+    private function sortDocuments(array $documents, string $sortBy, string $sortDirection): array
+    {
+        $factor = $sortDirection === 'asc' ? 1 : -1;
+
+        usort($documents, static function (array $left, array $right) use ($sortBy, $factor): int {
+            $leftValue = $left[$sortBy];
+            $rightValue = $right[$sortBy];
+
+            if ($leftValue === null || $rightValue === null) {
+                return ($leftValue === null) <=> ($rightValue === null);
+            }
+
+            // Compared as points in time: the offsets of two ISO strings differ across a DST change.
+            return $factor * (strtotime($leftValue) <=> strtotime($rightValue));
+        });
+
+        return $documents;
     }
 }

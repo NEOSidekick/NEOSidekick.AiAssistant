@@ -140,6 +140,23 @@ except Backend Service, require the JWT Bearer token.
 
 ---
 
+## Content Dimensions
+
+`node-tree`, `document-nodes`, `search-nodes`, `getpreview` and `apply-patches` take the content dimensions to work in as `dimensions`: an object with one list of values per dimension, e.g. `{"language": ["de_CH", "de"]}`. Neos itself does not check context dimensions against the configuration, so every one of these endpoints resolves them first (`ContentDimensionResolver`):
+
+- **A named dimension must be a configured preset.** It is given by the preset's values (`["de_CH", "de"]`), by the first value alone (`["de_CH"]`) or by the preset key as the only value. It is always replaced by the preset's full fallback chain.
+- **A dimension that is not named gets its default preset.** A request without `dimensions` works in the default preset of every dimension.
+- **Everything else is refused**: an unknown dimension, a value that belongs to no preset, a combination the presets' `constraints` forbid, and any `dimensions` on a site without content dimensions. The message names the configured presets.
+- **The response names the dimensions that were used** in its `dimensions` field.
+
+The read endpoints answer a refusal with `400` and `{"error": "Bad Request", "message": "…"}`. `apply-patches` answers with its failure body (`422`, `rollbackPerformed: false`, operation `batch`); its `sourceDimensions` are resolved the same way.
+
+**Sync presets are read-only.** A preset with `options.translationStrategy: sync` (Sitegeist.LostInTranslation) that is not the dimension's default preset is re-translated from the default preset each time a node is published there. `apply-patches` refuses every request into such a preset, because the change would be overwritten; the message names the dimensions to change instead.
+
+`document-nodes` returns the configuration with `includeContentDimensions=1`, see below.
+
+---
+
 ## 1. NodeType Schema API
 
 Returns all NodeType definitions with their properties, childNodes, and constraints. Used by the NEOSidekick LLM Agent platform to understand the content structure.
@@ -337,6 +354,7 @@ GET /neosidekick/api/document-nodes
 | `site` | string | No | (site whose Domain record matches the request host, else Neos's default site) | Site node name; an unknown name, or a value that is not a site node name, answers `400` listing the available ones |
 | `nodeTypeFilter` | string | No | `Neos.Neos:Document` | Filter by NodeType |
 | `depth` | int | No | `-1` | Max traversal depth (-1 = unlimited) |
+| `includeContentDimensions` | bool | No | `false` | Also return the content dimension configuration as `contentDimensions` |
 
 ### Example Request
 
@@ -361,7 +379,7 @@ curl -G "https://example.com/neosidekick/api/document-nodes" \
   -H "Accept: application/json"
 ```
 
-> **Note:** For multi-language Neos sites, the `dimensions` parameter is required to resolve content correctly. Without dimensions, the API may not find any sites.
+> **Note:** Without `dimensions`, the list is read in the default preset of every dimension, see [Content Dimensions](#content-dimensions).
 
 ### Response
 
@@ -426,8 +444,29 @@ curl -G "https://example.com/neosidekick/api/document-nodes" \
 | `dimensions` | object | Dimension values used |
 | `site` | object | Site information |
 | `availableSites` | array | Every site of the installation as `{nodeName, name}`, in tree order |
+| `contentDimensions` | object | Only with `includeContentDimensions=1`: the configured dimensions, see below. Empty on a site without content dimensions |
 | `documents` | array | List of document nodes |
 | `documentCount` | int | Total documents returned |
+
+#### Content Dimensions Object
+
+One entry per dimension, with the labels the editor sees in the dimension switcher:
+
+```json
+{
+  "language": {
+    "label": "Language",
+    "defaultPreset": "de",
+    "presets": {
+      "de": {"label": "Deutsch", "values": ["de"], "sync": false},
+      "de_CH": {"label": "Deutsch (Schweiz)", "values": ["de_CH", "de"], "sync": false},
+      "fr": {"label": "Français", "values": ["fr"], "sync": true, "constraints": {"country": {"at": false}}}
+    }
+  }
+}
+```
+
+`values` is the fallback chain to send as `dimensions`. `sync` marks a preset `apply-patches` refuses to write into. `constraints` is present when the preset restricts the presets of another dimension (`{<dimension>: {<presetKey or "*">: allowed}}`).
 
 #### Document Object
 
@@ -958,7 +997,7 @@ The request body carries the source next to `dimensions`:
 
 ### Content Dimensions and Fallbacks
 
-Patches are applied in the request's `dimensions`. Each dimension takes the full fallback chain of a configured preset, e.g. `{"language":["de_CH","de"]}`; the first value is where content is written. Neos does not check the values against the configured presets, so the caller must send configured chains only.
+Patches are applied in the request's `dimensions`, resolved as described under [Content Dimensions](#content-dimensions): each dimension becomes the full fallback chain of a configured preset, e.g. `{"language":["de_CH","de"]}`, and the first value is where content is written. Dimensions the site does not have and sync presets are refused before anything is written.
 
 In a preset with fallback values, the old content repository would carry some changes into another dimension. The validation pre-pass refuses these before anything is written (`rollbackPerformed: false`):
 

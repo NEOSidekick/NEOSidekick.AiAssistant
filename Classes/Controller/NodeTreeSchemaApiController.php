@@ -8,6 +8,7 @@ use JsonException;
 use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Neos\Service\UserService;
+use NEOSidekick\AiAssistant\Exception\InvalidContentDimensionsException;
 use NEOSidekick\AiAssistant\Service\NodeTreeExtractor;
 
 /**
@@ -75,6 +76,12 @@ class NodeTreeSchemaApiController extends ActionController
         try {
             $tree = $this->treeExtractor->extract($nodeId, $workspace, $dimensionsArray);
             return json_encode($tree, JSON_THROW_ON_ERROR | JSON_PRETTY_PRINT);
+        } catch (InvalidContentDimensionsException $e) {
+            $this->response->setStatusCode(400);
+            return json_encode([
+                'error' => 'Bad Request',
+                'message' => $e->getMessage()
+            ], JSON_THROW_ON_ERROR);
         } catch (\InvalidArgumentException $e) {
             $this->response->setStatusCode(404);
             return json_encode([

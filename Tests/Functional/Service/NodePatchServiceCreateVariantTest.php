@@ -151,7 +151,8 @@ class NodePatchServiceCreateVariantTest extends FunctionalTestCase
     {
         return [
             'a content element' => ['page-text', self::ENGLISH, 'is not a page'],
-            'a page missing in the source dimensions' => ['page', self::GERMAN, 'does not exist in the source dimensions (language=de)'],
+            // the message names the whole fallback chain of the preset, which differs between distributions
+            'a page missing in the source dimensions' => ['page', self::GERMAN, 'does not exist in the source dimensions (language=de'],
             'no source dimensions' => ['page', [], 'createVariant needs "sourceDimensions"'],
         ];
     }

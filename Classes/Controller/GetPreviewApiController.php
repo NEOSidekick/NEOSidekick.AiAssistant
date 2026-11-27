@@ -9,6 +9,8 @@ use Neos\Flow\Annotations as Flow;
 use Neos\Flow\Mvc\Controller\ActionController;
 use Neos\Flow\Security\Context;
 use Neos\Neos\Service\UserService;
+use NEOSidekick\AiAssistant\Exception\InvalidContentDimensionsException;
+use NEOSidekick\AiAssistant\Service\ContentDimensionResolver;
 use NEOSidekick\AiAssistant\Service\PreviewTokenService;
 
 /**
@@ -42,6 +44,12 @@ class GetPreviewApiController extends ActionController
      * @var PreviewTokenService
      */
     protected $previewTokenService;
+
+    /**
+     * @Flow\Inject
+     * @var ContentDimensionResolver
+     */
+    protected $contentDimensionResolver;
 
     /**
      * @var string[]
@@ -90,6 +98,16 @@ class GetPreviewApiController extends ActionController
             return json_encode([
                 'error' => 'Bad Request',
                 'message' => 'The parameter "dimensions" must be a valid JSON object.',
+            ], JSON_THROW_ON_ERROR);
+        }
+
+        try {
+            $dimensionsArray = $this->contentDimensionResolver->resolve($dimensionsArray);
+        } catch (InvalidContentDimensionsException $e) {
+            $this->response->setStatusCode(400);
+            return json_encode([
+                'error' => 'Bad Request',
+                'message' => $e->getMessage(),
             ], JSON_THROW_ON_ERROR);
         }
 

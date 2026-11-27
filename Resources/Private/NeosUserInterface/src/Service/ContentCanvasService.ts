@@ -10,6 +10,8 @@ import {ServerStreamMessage} from "../interfaces";
 const DOCUMENT_NODE_PATH_PROTOCOL = 'document-node-path://';
 const CONTENT_NODE_PATH_PROTOCOL = 'content-node-path://';
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+/** Posted by the review package's popup mode to the window that opened it. */
+const REVIEW_RESULT_MESSAGE_TYPE = 'workspace-review:result';
 
 export const createContentCanvasService = (globalRegistry: SynchronousMetaRegistry<any>, store: Store, iFrameApiService: IFrameApiService): ContentCanvasService => {
     return new ContentCanvasService(globalRegistry, store, iFrameApiService);
@@ -23,6 +25,11 @@ export class ContentCanvasService {
     private documentNavigationRequest: number = 0;
     private workspaceInfoRefreshPromise: Promise<void> | null = null;
     private workspaceInfoRefreshQueued: boolean = false;
+    /** The review popups this window opened, each with the id of its review session. */
+    private reviewWindows: Map<Window, string> = new Map();
+    /** Results already forwarded; a page view of the popup reports each one once, this guards the rest. */
+    private forwardedReviewResults: Set<string> = new Set();
+    private listensToReviewPopups: boolean = false;
 
     constructor(globalRegistry: SynchronousMetaRegistry<any>, store: Store, iFrameApiService: IFrameApiService) {
         this.globalRegistry = globalRegistry;
@@ -30,6 +37,44 @@ export class ContentCanvasService {
         this.iFrameApiService = iFrameApiService;
 
         this.iFrameApiService.listenToMessages(this.handleMessage);
+    }
+
+    /**
+     * Results of the review popups this window opened (Workspace Review package, presentation
+     * "popup"). The popup is a page of this Neos instance, so only messages of this origin from
+     * a window opened here are accepted. Each result refreshes the editor at once - the popup may
+     * close right after - and goes to the assistant.
+     */
+    private handleReviewPopupMessage = (event: MessageEvent): void => {
+        if (event.origin !== window.location.origin || event.data?.type !== REVIEW_RESULT_MESSAGE_TYPE) {
+            return;
+        }
+        const reviewSessionId = event.source ? this.reviewWindows.get(event.source as Window) : undefined;
+        const result = event.data?.result;
+        const resultId = result?.resultId;
+        if (!reviewSessionId || event.data?.version !== 1 || typeof resultId !== 'string' || this.forwardedReviewResults.has(resultId)) {
+            return;
+        }
+        this.forwardedReviewResults.add(resultId);
+        this.reloadAfterContentChange();
+        this.iFrameApiService.sendReviewResult(reviewSessionId, result);
+    }
+
+    private registerReviewWindow(reviewWindow: Window): void {
+        if (!this.listensToReviewPopups) {
+            window.addEventListener('message', this.handleReviewPopupMessage);
+            this.listensToReviewPopups = true;
+        }
+        // A popup the editor closed sends nothing any more.
+        this.reviewWindows.forEach((_, knownWindow) => {
+            if (knownWindow.closed) {
+                this.reviewWindows.delete(knownWindow);
+            }
+        });
+        const reviewSessionId = typeof crypto?.randomUUID === 'function'
+            ? crypto.randomUUID()
+            : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`;
+        this.reviewWindows.set(reviewWindow, reviewSessionId);
     }
 
     streamGenerationIntoInlineProperty = (nodePath: string, propertyName: string, data: object): void => {
@@ -384,6 +429,9 @@ export class ContentCanvasService {
 
         const reviewUrl = new URL('management/workspaces/show', window.location.href);
         reviewUrl.searchParams.set('moduleArguments[workspace][__identity]', workspace);
+        // Without the backend chrome, closing itself when done and reporting what was
+        // published or discarded to this window. Older package versions ignore it.
+        reviewUrl.searchParams.set('moduleArguments[presentation]', 'popup');
         // Each entry needs its own []: commas can be dimension fallback values,
         // never separators between pages. Never omit the filter or drop invalid entries.
         for (const document of reviewDocuments) {
@@ -396,7 +444,9 @@ export class ContentCanvasService {
             this.addFlashMessage('neosidekick-review', 'Allow pop-up windows for this site to open the page review.', 'error');
             return;
         }
-        reviewWindow.opener = null;
+        // The opener is kept: the popup is a page of this Neos instance and reports its
+        // results to this window through it (see handleReviewPopupMessage).
+        this.registerReviewWindow(reviewWindow);
 
         try {
             if (documents === undefined) {

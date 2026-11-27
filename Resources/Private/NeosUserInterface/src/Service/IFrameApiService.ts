@@ -164,6 +164,24 @@ export class IFrameApiService {
     }
 
     /**
+     * Hands a result of the workspace review popup to the assistant: what the editor published
+     * or discarded there. The assistant shows it in the chat and tells the agent on the next turn.
+     *
+     * @param reviewSessionId Identifies the popup the result came from; results of the same popup
+     *        update one entry in the chat.
+     */
+    sendReviewResult = (reviewSessionId: string, result: object): void => {
+        this.sendMessage({
+            version: '1.0',
+            eventName: 'review-result',
+            data: {
+                reviewSessionId,
+                result,
+            },
+        });
+    }
+
+    /**
      * @param siteNodeName Node name of the site the editor currently works on, empty when unknown.
      * @param contentDimensions The configured content dimensions with their presets (Neos UI `cr.contentDimensions.byName`).
      * @param activeDimensions The dimension values active in the Neos UI; the tree's documentContextPath is authoritative for the page it describes.

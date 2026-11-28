@@ -186,6 +186,10 @@ Advanced users can also build their own based on the [NEOSidekick YAML API](http
 
 ![AiPageBriefing.png](docs%2FAiPageBriefing.png)
 
+#### Deprecated: `writingStyle` in a node type's `options.sidekick.arguments`
+
+The argument `writingStyle` (for example `writingStyle: 'tech_advocate'`) still works, but it is deprecated and will be removed in a future release. Describe the tone in the prompt instead, for example in `customPrompt`. The "Change tone" option in the modify modal and the writing style setting per website have already been removed.
+
 ### ImageAltTextEditor and ImageTitleEditor
 
 With a few simple YAML configurations, you can configure NodeType properties for image alternative text and image titles. In addition to AI generation, it also offers the option to configure classic fallbacks:

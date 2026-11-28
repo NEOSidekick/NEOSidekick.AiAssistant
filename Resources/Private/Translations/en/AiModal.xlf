@@ -50,9 +50,6 @@
             <trans-unit id="custom-prompt-button" xml:space="preserve">
                 <source>Custom prompt</source>
             </trans-unit>
-            <trans-unit id="change-tone" xml:space="preserve">
-                <source>Change tone</source>
-            </trans-unit>
             <trans-unit id="selected-text" xml:space="preserve">
                 <source>Selected Text</source>
             </trans-unit>

@@ -33,14 +33,6 @@
   margin-top: -1rem;
 }
 
-.quickGenerationButtons__selectWrapper {
-  flex: 1;
-}
-.quickGenerationButtons__select {
-  /* like style="lighter" */
-  background-color: #3f3f3f;
-}
-
 .originalText {
   pointer-events: none;
   margin-bottom: 0.75rem;

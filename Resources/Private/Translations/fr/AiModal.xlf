@@ -66,10 +66,6 @@
                 <source>Custom prompt</source>
                 <target xml:lang="fr" state="translated">Instruction personnalisée</target>
             </trans-unit>
-            <trans-unit id="change-tone" xml:space="preserve">
-                <source>Change tone</source>
-                <target xml:lang="fr" state="translated">Changer le ton</target>
-            </trans-unit>
             <trans-unit id="selected-text" xml:space="preserve">
                 <source>Selected Text</source>
                 <target xml:lang="fr" state="translated">Texte sélectionné</target>

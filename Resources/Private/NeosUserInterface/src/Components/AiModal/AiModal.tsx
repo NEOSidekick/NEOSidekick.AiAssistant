@@ -2,11 +2,10 @@ import React, {PureComponent} from 'react';
 import PropTypes from "prop-types";
 import {connect} from "react-redux";
 import {neos} from '@neos-project/neos-ui-decorators';
-import {Button, Dialog, TextArea, Icon, Label, SelectBox} from '@neos-project/react-ui-components';
+import {Button, Dialog, TextArea, Icon, Label} from '@neos-project/react-ui-components';
 import I18n from '@neos-project/neos-ui-i18n';
 import {actions, selectors} from "@neos-project/neos-ui-redux-store";
 import {I18nRegistry, NodeTypesRegistry} from "@neos-project/neos-ts-interfaces";
-import {ApiService} from "../../Service/ApiService";
 import {ContentService} from "../../Service/ContentService";
 import {IFrameApiService} from "../../Service/IFrameApiService";
 import {ServerStreamMessage, SidekickFrontendConfiguration} from "../../interfaces";
@@ -20,7 +19,6 @@ interface AiModalProps {
     iFrameApiService: IFrameApiService;
     contentService: ContentService;
     contentCanvasService: ContentCanvasService;
-    externalService: ApiService;
     i18nRegistry: I18nRegistry;
     nodeTypesRegistry: NodeTypesRegistry;
     configuration: SidekickFrontendConfiguration;
@@ -29,7 +27,6 @@ interface AiModalProps {
     currentlyEditedPropertyName: string;
     fullText: string;
     selectedText: string;
-    activeContentDimensions: any;
     node: Node;
     cancelModal: () => void;
     applyModal: () => void;
@@ -39,18 +36,15 @@ interface AiModalProps {
 interface AiModalState {
     customPromptIsVisible: boolean;
     customPrompt: string;
-    writingStyles: Array<{value: string, label: string}>;
     generatedText: string;
     generationState: 'empty' | 'loading' | 'finished';
     generationModificationType?: string;
-    generationWritingStyle?: string;
 }
 
 @neos(globalRegistry => ({
     iFrameApiService: globalRegistry.get('NEOSidekick.AiAssistant').get('iFrameApiService'),
     contentService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentService'),
     contentCanvasService: globalRegistry.get('NEOSidekick.AiAssistant').get('contentCanvasService'),
-    externalService: globalRegistry.get('NEOSidekick.AiAssistant').get('externalService'),
     i18nRegistry: globalRegistry.get('i18n'),
     nodeTypesRegistry: globalRegistry.get('@neos-project/neos-ui-contentrepository'),
     configuration: globalRegistry.get('NEOSidekick.AiAssistant').get('configuration'),
@@ -61,7 +55,6 @@ interface AiModalState {
     currentlyEditedPropertyName: selectors.UI.ContentCanvas.currentlyEditedPropertyName(state),
     fullText: sidekickSelectors.fullText(state),
     selectedText: sidekickSelectors.selectedText(state),
-    activeContentDimensions: selectors.CR.ContentDimensions.active(state),
     node: selectors.CR.Nodes.focusedSelector(state),
 }), {
     cancelModal: sidekickActions.cancelModal,
@@ -73,7 +66,6 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
         iFrameApiService: PropTypes.object.isRequired,
         contentService: PropTypes.object.isRequired,
         contentCanvasService: PropTypes.object.isRequired,
-        externalService: PropTypes.object.isRequired,
         i18nRegistry: PropTypes.object.isRequired,
         nodeTypesRegistry: PropTypes.object.isRequired,
         configuration: PropTypes.object.isRequired,
@@ -82,7 +74,6 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
         currentlyEditedPropertyName: PropTypes.string,
         fullText: PropTypes.string,
         selectedText: PropTypes.string,
-        activeContentDimensions: PropTypes.object,
         node: PropTypes.object,
         cancelModal: PropTypes.func.isRequired,
         applyModal: PropTypes.func.isRequired,
@@ -94,15 +85,9 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
         this.state = {
             customPromptIsVisible: this.props.configuration.modifyTextModalPreferCustomPrompt,
             customPrompt: '',
-            writingStyles: [{value: '', label: 'Loading...'}],
             generatedText: '',
             generationState: 'empty',
         };
-    }
-
-    getLanguage() {
-        const {activeContentDimensions, configuration} = this.props as AiModalProps;
-        return activeContentDimensions.language ? activeContentDimensions.language[0] : configuration.defaultLanguage;
     }
 
     getPropertyConfiguration() : any {
@@ -121,12 +106,6 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
     }
 
     componentDidMount() {
-        const language = this.getLanguage();
-        this.props.externalService.fetch('/api/v1/writing-styles?language=' + language).then((data) => {
-            let filteredData = data.data.filter((style: any) => style.identifier !== 'default' && style.allowed_languages.includes(language));
-            this.setState({writingStyles: filteredData.map((style: any) => ({value: style.identifier, label: style.label}))});
-        });
-
         this.props.iFrameApiService.listenToMessages((message: ServerStreamMessage) => {
             if (!message.data?.data?.modalTarget) {
                 return; // ignore messages that are not for the modal
@@ -181,7 +160,6 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                 generatedText: '',
                 generationState: 'empty',
                 generationModificationType: undefined,
-                generationWritingStyle: undefined,
             });
         }
     }
@@ -323,7 +301,6 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
     }
 
     renderEditButtons() {
-        const {i18nRegistry} = this.props;
         return (
             <div className="quickGenerationButtons">
                 <Button
@@ -361,19 +338,12 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                     <Icon icon="pen-fancy" className="icon--space-right"/>
                     <I18n id="NEOSidekick.AiAssistant:AiModal:custom-prompt-button" fallback="Etwas anderes"/>
                 </Button>
-                <div className="quickGenerationButtons__selectWrapper">
-                    <SelectBox
-                        className="quickGenerationButtons__select"
-                        placeholder={i18nRegistry.translate('NEOSidekick.AiAssistant:AiModal:change-tone')}
-                        onValueChange={(option: any) => this.handleGenerate('style', option)}
-                        options={this.state.writingStyles}/>
-                </div>
             </div>
         )
     }
 
-    handleGenerate = async (modificationType: string, writingStyle = 'default'): Promise<void> => {
-        this.setState({generationModificationType: modificationType, generationWritingStyle: writingStyle});
+    handleGenerate = async (modificationType: string): Promise<void> => {
+        this.setState({generationModificationType: modificationType});
         if (modificationType !== 'custom') {
             this.setState({customPromptIsVisible: false});
         }
@@ -427,7 +397,7 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                 }
                 if (selectedText && selectedText.length) {
                     module = 'modify_selected_text';
-                    args = {fullText, selectedText, modificationType, allowedMarkdownFormattingOptions, customPrompt, writingStyle};
+                    args = {fullText, selectedText, modificationType, allowedMarkdownFormattingOptions, customPrompt};
                 } else {
                     module = 'custom_prompt';
                     args = {
@@ -438,7 +408,7 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
                 break;
             default:
                 module = 'modify_selected_text';
-                args = {fullText, selectedText, modificationType, allowedMarkdownFormattingOptions, customPrompt, writingStyle};
+                args = {fullText, selectedText, modificationType, allowedMarkdownFormattingOptions, customPrompt};
                 break;
         }
 
@@ -459,7 +429,7 @@ export default class AiModal extends PureComponent<AiModalProps, AiModalState> {
 
     handleRegenerate = async (): Promise<void> => {
         // @ts-ignore
-        return this.handleGenerate(this.state.generationModificationType, this.state.generationWritingStyle || 'default');
+        return this.handleGenerate(this.state.generationModificationType);
     }
 
     render() {
